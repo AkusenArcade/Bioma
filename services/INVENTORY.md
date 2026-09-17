@@ -273,6 +273,9 @@ port:
   presence condition, its charge direction inversion.
 - **GPU** — no sampling of any kind.
 - **CPU and GPU clock** — only percentages exist.
+
+  Where these four come from is settled, at least on this machine — see §4.1.
+  None of them needs a new dependency.
 - **Per-application volume**, output/input device selection.
 - **Bluetooth service** — only a settings page.
 - **Clipboard integration** — no `wl-copy`.
@@ -283,6 +286,37 @@ port:
   application, to be split into a headless emitter and a renderer.
 - **A full-screen transparent input surface** — the piece the PRD calls the most
   uncertain in the project. Nothing in Prisma prototypes it.
+
+### 4.1 Where the missing vitals data lives
+
+Checked on the development machine (AMD Radeon RX 9070 / Navi 48 discrete plus a
+Raphael iGPU, no battery). Every quantity vitals needs is a plain file:
+
+| Quantity | Source |
+|---|---|
+| GPU utilisation | `/sys/class/drm/card<N>/device/gpu_busy_percent` — an integer percent |
+| GPU clock | `/sys/class/drm/card<N>/device/pp_dpm_sclk` — the line marked `*` is current |
+| VRAM | `mem_info_vram_used` / `mem_info_vram_total` in the same directory |
+| CPU clock | `/proc/cpuinfo`, `cpu MHz` per core — average these, then smooth |
+| Battery | `/sys/class/power_supply/` — **empty here**, so this machine is the three-indicator case |
+
+Two consequences.
+
+**GPU sampling is not expensive on AMD.** The PRD treats it as the one costly
+service needing a persistent process to avoid spawning per sample. On this
+hardware it is a sysfs read, no more expensive than `/proc/stat`. The persistent
+sampler is still the right shape — one process reading every source on a single
+cadence — but the reason is uniformity, not GPU cost. On NVIDIA, where the
+figure comes from `nvidia-smi`, the original concern stands; write the sampler so
+the GPU source is swappable.
+
+**Pick the right card.** `card0` here is the Raphael iGPU (512 MB of VRAM) and
+`card1` the discrete RX 9070 (17 GB). Selecting by index is wrong; select by
+VRAM size or by device id, and let the configuration override it.
+
+`pp_dpm_sclk` also reports power states, not only frequencies — the discrete card
+reads `S: 0Mhz *` while asleep. Parse a non-numeric state as "idle", not as a
+failure, and do not let it reach the beat mapping as a zero.
 
 ---
 
