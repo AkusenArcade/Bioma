@@ -25,6 +25,9 @@ ShellRoot {
     readonly property var niriWorkspaces: Niri.workspaceList
     readonly property var niriFocused: Niri.focusedWindow
     readonly property var niriLayouts: Niri.windowLayouts
+    readonly property bool wallpaperLoaded: Wallpaper.loaded
+    readonly property string wallpaperPath: Wallpaper.path
+    readonly property string wallpaperMode: Wallpaper.mode
 
     function line(label, value) {
         console.log(("  " + label + "                      ").slice(0, 24) + value);
@@ -72,6 +75,28 @@ ShellRoot {
         line("keyboard", Niri.keyboardLayout.length > 0 ? Niri.keyboardLayout : "—");
     }
 
+    function probeWallpaper() {
+        console.log("── Wallpaper ─────────────────────────────────────");
+        line("state file", Wallpaper.statePath);
+        line("loaded", root.wallpaperLoaded);
+        line("folder", Wallpaper.folder);
+        line("mode", root.wallpaperMode);
+        line("image", root.wallpaperPath.length > 0 ? root.wallpaperPath : "none set");
+
+        // The span arithmetic is the part worth checking against real outputs:
+        // every screen must map onto its own portion of one bounding box.
+        for (const screen of Quickshell.screens) {
+            const g = Wallpaper.spanGeometry(screen.name);
+            if (!g) { line(screen.name, "no span geometry"); continue; }
+            console.log(`    ${screen.name}  box ${g.totalWidth}×${g.totalHeight}`
+                        + `  portion ${g.screenWidth}×${g.screenHeight}`
+                        + `  at ${g.offsetX},${g.offsetY}`
+                        + `  → image drawn ${Math.round(g.totalWidth / g.screenWidth * 100) / 100}×`
+                        + ` the screen width`);
+            line("  resolves to", Wallpaper.pathForScreen(screen.name) || "none");
+        }
+    }
+
     function probeScreens() {
         console.log("── Screens ───────────────────────────────────────");
         for (const s of Quickshell.screens)
@@ -85,6 +110,7 @@ ShellRoot {
         onTriggered: {
             probeScreens();
             probeNiri();
+            probeWallpaper();
             console.log("──────────────────────────────────────────────────");
             Qt.exit(0);
         }

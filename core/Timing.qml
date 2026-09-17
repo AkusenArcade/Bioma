@@ -45,6 +45,11 @@ Singleton {
     // Content enters only once its shape has reached its size.
     readonly property int contentFade: scaled(Config.get("timing.content_fade", 120))
 
+    // Wallpaper crossfade. Slower than a palette change: the picture is the
+    // whole screen, and anything quick here reads as a flicker rather than a
+    // change of scene.
+    readonly property int wallpaper: scaled(Config.get("timing.wallpaper", 600))
+
     // Small capsules may overshoot. Large panels may not — there it reads as a
     // bounce and conflicts with the intended register.
     readonly property list<real> overshoot: [0.2, 0.9, 0.3, 1.15]

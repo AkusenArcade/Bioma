@@ -19,7 +19,14 @@ ShellRoot {
         model: Quickshell.screens
 
         delegate: Scope {
+            id: perScreen
             required property var modelData
+
+            // Below everything, one per monitor. It is not a membrane: it has
+            // no edge, cedes no space, and holds no cells.
+            WallpaperSurface {
+                screen: perScreen.modelData
+            }
 
             Repeater {
                 model: Config.ready ? Config.get("membranes", []) : []

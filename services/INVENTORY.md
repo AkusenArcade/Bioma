@@ -42,7 +42,7 @@ The exception is the dock, which is not a service: `bar/Dock.qml` is a child of
 | Service | Lines | Mechanism | Self-contained | Verdict for Bioma |
 |---|---|---|---|---|
 | `NiriIPC` | 164 | wrapper over `Quickshell.Niri` + `niri msg` dispatch | yes | **Done — rewritten, not ported.** That module does not exist in Quickshell 0.3.1. See §9. |
-| `WallpaperService` | 145 | JSON persistence + span geometry from `Niri.outputs` | yes | **Port as-is**, with `bar/WallpaperWindow.qml`. The only piece the PRD's "port as-is" fully survives contact. |
+| `WallpaperService` | 145 | JSON persistence + span geometry from `Niri.outputs` | yes | **Done.** Ported, but not as-is: `Niri.outputs` does not exist here, the crossfade was broken, and persistence shelled out. See §10. |
 | `MatugenService` | 221 | runs `matugen image --json hex`, parses, patches niri focus ring | yes (calls NiriIPC) | **Port the parser, drop the delivery.** See §3.3 — it does not use templates, and it `sed`s a niri config file. |
 | `SystemMonitorService` | 155 | `/proc/stat`, `/proc/meminfo`, `ps` — a new process per sample | yes | **Rewrite.** Covers maybe 30% of what vitals needs. See §3.4. |
 | `AudioService` | 53 | native `Quickshell.Services.Pipewire` | yes | **Port as a floor, not a base.** Default sink/source volume and mute only. |
@@ -509,6 +509,44 @@ Two collection shapes also coexist: most are an `ObjectModel` and want
 
 ---
 
+## 10. Notes from the wallpaper port
+
+The one service the PRD marked "port as-is" needed four changes, three of them
+forced.
+
+- **Geometry moved to `Quickshell.screens`.** Not a preference: `Niri.outputs`
+  does not exist in this Quickshell (§9.1). The arithmetic is unchanged and was
+  verified against the real layout — a 3440×1440 output at 0,0 above a
+  1920×1080 at 760,1440 gives a 3440×2520 box, with the second screen drawing
+  the image at 1.79× its own width and offset into its own portion.
+- **The crossfade was broken, as suspected.** `Behavior on source` over a string
+  cannot interpolate: the image swapped hard while the opacity animation ran
+  against the already-swapped picture. Replaced with two image layers, where the
+  incoming one is decoded before anything fades.
+- **Persistence uses `FileView.setText` with `atomicWrites`**, not a `printf >`
+  shell process. Worth carrying to `MonitorManager` and `KeybindsPage`, whose
+  non-atomic writes are half of what makes §5.1 and §5.2 dangerous.
+- **`$HOME` is read from the environment**, not awaited from `sh -c "echo $HOME"`,
+  which removes the startup ordering guard the Prisma services all carry.
+
+Two things the port surfaced that Prisma never had to face:
+
+- **Returning to an image the idle layer still holds** — stepping back and forth
+  through a folder, which the theme cell invites — revealed nothing, because the
+  early-return for "already loaded" skipped the reveal as well as the reload.
+  Found by testing the sequence rather than the single transition.
+- **`sourceSize` matters here.** A 6000 px photograph decoded at full size costs
+  that much memory once per screen, per layer. Decoding at the size actually
+  drawn is not an optimisation at two layers times two monitors.
+
+The wallpaper mode is persisted as state in `~/.config/bioma/wallpaper.json`
+rather than in the configuration layers, deliberately: the theme cell rewrites it
+every time the user tries an image, and that churn belongs neither in a file a
+human hand-edits nor in the settings override that has to merge cleanly against
+it. Only the wallpaper *folder* is configuration.
+
+---
+
 ## 8. Port order
 
 Mapped onto PRD §10 phase 1. Each line is verified without UI before any cell
@@ -518,8 +556,11 @@ depends on it.
    IPC socket (§9.1) and verified through `probe.qml`: four windows with
    geometry and pids, six workspaces across two outputs, live title updates.
    `center-window` confirmed.
-2. **WallpaperService + WallpaperWindow** — port as-is, then check the crossfade
-   (§3.2) and move geometry to `Quickshell.screens`.
+2. ~~**WallpaperService + WallpaperWindow**~~ — **done**, as
+   `services/Wallpaper.qml` and `structure/WallpaperSurface.qml`. The crossfade
+   suspicion in §3.2 was correct and is fixed; geometry now comes from
+   `Quickshell.screens`, which is no longer an improvement but a requirement
+   (§9.1). Verified on two outputs, span arithmetic included.
 3. **MatugenService** — port the parser and the role mapping; author the matugen
    template; drop the `sed` and the focus-ring patch.
 4. **MediaService** — port, add cover art and position.

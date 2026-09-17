@@ -86,7 +86,10 @@ Singleton {
         id: overrideFile
         path: root.overridePath
         watchChanges: true
-        // Absent until the settings UI writes it for the first time.
+        atomicWrites: true
+        // Absent until the settings UI writes it for the first time, which is
+        // the normal case and not worth a warning on every start.
+        printErrors: false
         onLoaded: root.rebuild()
         onLoadFailed: root.rebuild()
         onFileChanged: reload()
