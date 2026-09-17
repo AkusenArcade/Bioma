@@ -24,6 +24,11 @@
   "theme": {
     "source": "matugen",
     "palette": "default",
+    "matugen": {
+      "variant": "dark",
+      "scheme": "scheme-tonal-spot",
+      "source_color_index": 0
+    },
     "state": {
       "dark":  { "calm": "#6FA88A", "active": "#E0A63C", "alert": "#D5624C" },
       "light": { "calm": "#3F7D5E", "active": "#B37414", "alert": "#B03A24" }

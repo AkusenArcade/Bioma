@@ -43,7 +43,7 @@ The exception is the dock, which is not a service: `bar/Dock.qml` is a child of
 |---|---|---|---|---|
 | `NiriIPC` | 164 | wrapper over `Quickshell.Niri` + `niri msg` dispatch | yes | **Done — rewritten, not ported.** That module does not exist in Quickshell 0.3.1. See §9. |
 | `WallpaperService` | 145 | JSON persistence + span geometry from `Niri.outputs` | yes | **Done.** Ported, but not as-is: `Niri.outputs` does not exist here, the crossfade was broken, and persistence shelled out. See §10. |
-| `MatugenService` | 221 | runs `matugen image --json hex`, parses, patches niri focus ring | yes (calls NiriIPC) | **Port the parser, drop the delivery.** See §3.3 — it does not use templates, and it `sed`s a niri config file. |
+| `MatugenService` | 221 | runs `matugen image --json hex`, parses, patches niri focus ring | yes (calls NiriIPC) | **Done — neither parser nor delivery survived.** Bioma renders a template and never parses matugen's output. See §11. |
 | `SystemMonitorService` | 155 | `/proc/stat`, `/proc/meminfo`, `ps` — a new process per sample | yes | **Rewrite.** Covers maybe 30% of what vitals needs. See §3.4. |
 | `AudioService` | 53 | native `Quickshell.Services.Pipewire` | yes | **Port as a floor, not a base.** Default sink/source volume and mute only. |
 | `NetworkService` | 93 | Wi-Fi native via `Quickshell.Networking`; ethernet by polling `nmcli` every 10 s | yes | **Port, then extend.** No bluetooth anywhere in it. |
@@ -547,6 +547,82 @@ it. Only the wallpaper *folder* is configuration.
 
 ---
 
+## 11. Notes from the matugen port
+
+Almost nothing was ported. Prisma's service is 221 lines, of which about 120 are
+a parser carrying three matugen JSON formats — and a template makes all of it
+unnecessary. `services/Matugen.qml` runs the binary and reads nothing back:
+matugen renders `config/matugen/palette.json` into
+`~/.config/bioma/generated/palette.json`, `core/Theme.qml` watches that file,
+and the two never meet.
+
+The gain is not only the line count. Format drift now lands in a text file
+rather than in the shell — the exact failure that left Prisma carrying 1.x, 2.x
+and 4.x code paths at once. And it is the same mechanism that will propagate the
+palette to GTK and niri: one block in `config/matugen/config.toml` each, no
+shell change, which is what the requirement that a new consumer cost one config
+block actually means here.
+
+**Bioma ships its own matugen config** and passes it with `--config`. The user's
+`~/.config/matugen/` is neither read nor written, and the scope rule — never
+rewrite another program's config file for theming — holds without an exception
+for matugen itself. Prisma's `_syncFocusRing()`, which `sed`s `active-color` in a
+niri config file, is not ported; when the focus ring is wanted it becomes another
+template plus a reload hook.
+
+### 11.1 More drift than the PRD expected
+
+The PRD describes matugen 2.x. Installed here is **4.2.0**, and Prisma's exact
+invocation now fails: with several candidate source colours and no terminal
+attached, matugen 4.x refuses rather than defaulting. `--source-color-index 0`
+restores the old behaviour and keeps the choice reproducible; the newer
+`--prefer` is the alternative.
+
+Template syntax, verified rather than assumed: `{{colors.<role>.<default|dark|
+light>.hex}}` and `{{image}}`, where `default` follows `--mode`. Output paths
+expand `~` and matugen creates missing directories itself. Relative
+`input_path` resolves against the working directory, which is why the service
+runs the process with `config/matugen` as its own.
+
+### 11.2 The background role: the PRD is right, Prisma was solving a real problem
+
+Prisma deliberately mapped the background to `surface_variant` rather than
+`surface`, because "Material You always makes background near-black". Measured
+on the current wallpaper at scheme-tonal-spot, dark:
+
+| role | dark | light |
+|---|---|---|
+| `surface` | `#0e1415` | `#f4fbfa` |
+| `background` | `#0e1415` | `#f4fbfa` |
+| `surface_variant` | `#3f4949` | `#dae4e4` |
+| `surface_bright` | `#343a3a` | `#f4fbfa` |
+
+`surface` and `background` are identical, and both are very dark — tinted, not
+literally black, but dark enough that Prisma's complaint was not imaginary.
+Bioma keeps the PRD's one-to-one mapping anyway, for two reasons that did not
+apply to Prisma: the cell and tissue fills are semi-transparent over a
+wallpaper, so a deep background is the point rather than a problem, and the
+lighter surfaces Prisma had to borrow from matugen are derived in
+`core/Theme.qml` by luminance shift instead — `#0e1415` yields `#1c2223` and
+`#2b3031`, a ladder that stays coherent by construction where two unrelated
+Material You roles would not.
+
+### 11.3 Verified
+
+Palette file deleted, then regenerated end to end during a probe run: wallpaper
+change → matugen → template → file watch → `Theme`. The transition is animated,
+not applied: ten intermediate frames between the built-in palette and the
+generated one, which is what makes the theme cell able to retint the desktop
+live.
+
+A failing generation leaves the current palette standing rather than clearing
+it. Error reporting needed fixing to be worth anything: matugen prints a
+numbered cause chain followed by two lines about backtraces, so the last line of
+stderr is "Run with RUST_BACKTRACE=full" and the first is "Failed to get source
+color". The deepest numbered line is the one that says what actually happened.
+
+---
+
 ## 8. Port order
 
 Mapped onto PRD §10 phase 1. Each line is verified without UI before any cell
@@ -561,8 +637,9 @@ depends on it.
    suspicion in §3.2 was correct and is fixed; geometry now comes from
    `Quickshell.screens`, which is no longer an improvement but a requirement
    (§9.1). Verified on two outputs, span arithmetic included.
-3. **MatugenService** — port the parser and the role mapping; author the matugen
-   template; drop the `sed` and the focus-ring patch.
+3. ~~**MatugenService**~~ — **done**, as `services/Matugen.qml` plus
+   `config/matugen/`. The parser was not ported at all (§11); the `sed` and the
+   focus-ring patch are gone.
 4. **MediaService** — port, add cover art and position.
 5. **AudioService** — port the default-node layer; treat devices and per-app
    volume as new work.

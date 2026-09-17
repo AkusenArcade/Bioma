@@ -1,0 +1,24 @@
+# Bioma's own matugen configuration.
+#
+# Passed to matugen with `--config`, so the user's own ~/.config/matugen/
+# is never read and never written. Bioma renders its palette through a
+# template and watches the result; it does not parse matugen's output
+# format, and it does not rewrite anybody else's config file.
+#
+# `input_path` is relative, and the service runs matugen with this
+# directory as its working directory. Output paths may use `~`, and
+# matugen creates missing directories itself.
+
+[config]
+
+# The four interface roles, mapped one to one as the specification asks:
+# background <- surface, text <- on-surface, primary, secondary.
+# The three state roles are never generated here. They are a semantic
+# code, and a blue wallpaper would turn them into three blues.
+[templates.palette]
+input_path = "palette.json"
+output_path = "~/.config/bioma/generated/palette.json"
+
+# Propagation to other applications goes here, one block each, when the
+# theme cell arrives: a gtk.css, a niri include, and their reload hooks.
+# Adding one must never require touching the shell.

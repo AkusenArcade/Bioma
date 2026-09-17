@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import qs.core
 import qs.services
 
 // Headless service probe.
@@ -28,6 +29,12 @@ ShellRoot {
     readonly property bool wallpaperLoaded: Wallpaper.loaded
     readonly property string wallpaperPath: Wallpaper.path
     readonly property string wallpaperMode: Wallpaper.mode
+    readonly property bool matugenRunning: Matugen.running
+    readonly property string matugenError: Matugen.lastError
+    readonly property color themeBackground: Theme.background
+    readonly property color themeText: Theme.text
+    readonly property color themePrimary: Theme.primary
+    readonly property color themeSecondary: Theme.secondary
 
     function line(label, value) {
         console.log(("  " + label + "                      ").slice(0, 24) + value);
@@ -97,6 +104,31 @@ ShellRoot {
         }
     }
 
+    function probeTheme() {
+        console.log("── Theme ─────────────────────────────────────────");
+        line("source", Theme.source);
+        line("matugen variant", Matugen.variant + " / " + Matugen.scheme);
+        line("matugen config", Matugen.configDirectory);
+        line("palette file", Theme.matugenPath);
+        line("generating", root.matugenRunning);
+        if (root.matugenError.length > 0)
+            line("last error", root.matugenError);
+
+        // The four interface roles, then two of the derived ones, so a bad
+        // derivation shows up here rather than in a cell.
+        line("background", root.themeBackground);
+        line("text", root.themeText);
+        line("primary", root.themePrimary);
+        line("secondary", root.themeSecondary);
+        line("is dark", Theme.isDark + "  (luminance " + Math.round(Theme.backgroundLuminance * 1000) / 1000 + ")");
+        line("derived surface", Theme.surface);
+        line("derived elevated", Theme.elevated);
+
+        // Fixed, and never from matugen — a blue wallpaper must not turn the
+        // semantic code into three blues.
+        line("calm/active/alert", `${Theme.calm}  ${Theme.active}  ${Theme.alert}`);
+    }
+
     function probeScreens() {
         console.log("── Screens ───────────────────────────────────────");
         for (const s of Quickshell.screens)
@@ -111,6 +143,7 @@ ShellRoot {
             probeScreens();
             probeNiri();
             probeWallpaper();
+            probeTheme();
             console.log("──────────────────────────────────────────────────");
             Qt.exit(0);
         }
