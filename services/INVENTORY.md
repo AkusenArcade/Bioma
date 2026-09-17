@@ -45,7 +45,7 @@ The exception is the dock, which is not a service: `bar/Dock.qml` is a child of
 | `WallpaperService` | 145 | JSON persistence + span geometry from `Niri.outputs` | yes | **Done.** Ported, but not as-is: `Niri.outputs` does not exist here, the crossfade was broken, and persistence shelled out. See §10. |
 | `MatugenService` | 221 | runs `matugen image --json hex`, parses, patches niri focus ring | yes (calls NiriIPC) | **Done — neither parser nor delivery survived.** Bioma renders a template and never parses matugen's output. See §11. |
 | `SystemMonitorService` | 155 | `/proc/stat`, `/proc/meminfo`, `ps` — a new process per sample | yes | **Rewrite.** Covers maybe 30% of what vitals needs. See §3.4. |
-| `AudioService` | 53 | native `Quickshell.Services.Pipewire` | yes | **Port as a floor, not a base.** Default sink/source volume and mute only. |
+| `AudioService` | 53 | native `Quickshell.Services.Pipewire` | yes | **Done.** Devices, per-application volume and a signal monitor added; see §13. |
 | `NetworkService` | 93 | Wi-Fi native via `Quickshell.Networking`; ethernet by polling `nmcli` every 10 s | yes | **Port, then extend.** No bluetooth anywhere in it. |
 | `NotificationService` | 52 | `NotificationServer` + an in-memory list | yes | **Port the server, write the grammar.** No urgency, no queue, no history. |
 | `BrightnessService` | 92 | `brightnessctl`, polled every 10 s | yes | **Port.** Smallest and most complete relative to its job. |
@@ -682,6 +682,76 @@ being read-only, coexists with it perfectly well.
 
 ---
 
+## 13. Notes from the audio port
+
+The PRD calls per-application volume "more work than the rest of that cell
+combined", and against a raw PipeWire API it would be. Against
+`Quickshell.Services.Pipewire` it is a filter over `Pipewire.nodes` and a
+`PwObjectTracker`. Appearing and disappearing streams are handled by the model,
+not by us. **Revise that estimate down**: what remains expensive in the volume
+cell is its interface, not its data.
+
+### 13.1 `isSink` and `isStream` are not enough, and fail plausibly
+
+Filtering inputs as "not a sink and not a stream" produced eleven microphones,
+including `Dummy-Driver`, `Freewheel-Driver`, `Midi-Bridge`, `BLE MIDI 1` and
+both webcams twice. PipeWire's graph holds its own driver nodes, MIDI bridges
+and every video device, and all of them answer false to both.
+
+The node type is a flag set — Audio 1, Video 2, Stream 4, Source 8, Sink 16 —
+so an audio source is 9 and a video source is 10. Masking separates them where
+a boolean cannot:
+
+| List | Test |
+|---|---|
+| outputs | `type & AudioSink === AudioSink` (17), not a stream |
+| inputs | `type & AudioSource === AudioSource` (9), not a stream |
+| playing applications | `type & AudioOutStream === AudioOutStream` (21) |
+| recording applications | `type & AudioInStream === AudioInStream` (13) |
+
+Correctly filtered, this machine has five outputs and five inputs, the webcam
+microphones among them legitimately.
+
+Two smaller findings. The `.monitor` source that every sink publishes **does not
+appear as a node at all** — `pactl` lists them, Quickshell does not — so the code
+written to filter them out was dead, and the visualiser will need another way to
+reach one. And something on this machine holds a recording stream permanently:
+an indicator built naively on "is anyone recording" would claim the microphone is
+live at all times.
+
+### 13.2 PwObjectTracker is not bookkeeping
+
+A node that nothing tracks stays unpopulated: its `audio` is null and its volume
+reads zero. In a list of applications that is indistinguishable from a muted
+application, so the failure is silent and looks like a bug in the cell. Every
+node the service exposes is tracked.
+
+### 13.3 The signal source for Sinestesia already exists
+
+`PwNodePeakMonitor` reports a live peak, per channel, for any node. Verified
+against a 440 Hz tone: 0.445 across two channels, while the real default sink
+correctly read 0 because nothing was playing through it.
+
+This matters for the cell's **condition**, which the PRD defines as the audio
+signal rather than MPRIS playback — a game or a browser tab with no metadata
+must still raise it. That condition needs one number, and here it is: no
+capture, no FFT, no external process. The split of Sinestesia into a headless
+emitter and a renderer is still required for the **bands** the visualiser draws,
+but not for deciding whether the cell exists.
+
+### 13.4 Verified
+
+Against the live graph: five outputs and five inputs correctly separated from
+drivers, MIDI and video; default output and input identified; per-application
+volume set to 25% and back to 100%, and mute toggled, each confirmed
+independently through `pactl`; peak monitoring proved against a real tone.
+
+Testing per-application volume needs a stream, and playing audible sound to test
+a service is a poor trade, so the tone went into a temporary `module-null-sink`
+which was unloaded afterwards. The user's default sink was never touched.
+
+---
+
 ## 8. Port order
 
 Mapped onto PRD §10 phase 1. Each line is verified without UI before any cell
@@ -701,8 +771,8 @@ depends on it.
    focus-ring patch are gone.
 4. ~~**MediaService**~~ — **done**, as `services/Media.qml`, with a test
    fixture in `scripts/mpris-dummy.py`. See §12.
-5. **AudioService** — port the default-node layer; treat devices and per-app
-   volume as new work.
+5. ~~**AudioService**~~ — **done**, as `services/Audio.qml`. Per-application
+   volume turned out to be far less work than the PRD estimated (§13).
 6. **BrightnessService** — port.
 7. **NetworkService** — port, replace the 10 s ethernet poll, then extract a
    BluetoothService out of `BluetoothPage`.

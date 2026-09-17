@@ -40,6 +40,11 @@ ShellRoot {
     readonly property var mediaPlayer: Media.player
     readonly property string mediaTitle: Media.title
     readonly property real mediaPosition: Media.position
+    readonly property var audioOutputs: Audio.outputs
+    readonly property var audioInputs: Audio.inputs
+    readonly property var audioStreams: Audio.streams
+    readonly property real audioVolume: Audio.volume
+    readonly property real audioPeak: Audio.peak
 
     function line(label, value) {
         console.log(("  " + label + "                      ").slice(0, 24) + value);
@@ -159,6 +164,35 @@ ShellRoot {
                     .filter(x => x.length > 0).join(" "));
     }
 
+    function probeAudio() {
+        console.log("── Audio ─────────────────────────────────────────");
+        line("default output", Audio.describe(Audio.sink) || "none");
+        line("volume", `${Audio.volumePercent}%` + (Audio.muted ? "  MUTED" : ""));
+        line("default input", Audio.describe(Audio.source) || "none");
+        line("input volume", `${Math.round(Audio.inputVolume * 100)}%`
+                             + (Audio.inputMuted ? "  MUTED" : ""));
+        line("signal", Audio.monitoring
+             ? `${Math.round(root.audioPeak * 1000) / 1000}` + (Audio.signalPresent ? "  present" : "  silent")
+             : "not monitored");
+
+        console.log(`  outputs (${root.audioOutputs.length})`);
+        for (const node of root.audioOutputs)
+            console.log(`    ${Audio.isDefaultOutput(node) ? "*" : " "} ${Audio.describe(node)}`
+                        + `  vol ${Math.round((node.audio?.volume ?? 0) * 100)}%`);
+
+        console.log(`  inputs (${root.audioInputs.length})`);
+        for (const node of root.audioInputs)
+            console.log(`    ${Audio.isDefaultInput(node) ? "*" : " "} ${Audio.describe(node)}`);
+
+        console.log(`  streams (${root.audioStreams.length} playing, `
+                    + `${Audio.recordingStreams.length} recording)`);
+        for (const node of root.audioStreams)
+            console.log(`      ${Audio.describeStream(node)}`
+                        + `  vol ${Math.round((node.audio?.volume ?? 0) * 100)}%`
+                        + ((node.audio?.muted ?? false) ? "  muted" : "")
+                        + `  icon:${Audio.streamIcon(node) || "—"}`);
+    }
+
     function probeScreens() {
         console.log("── Screens ───────────────────────────────────────");
         for (const s of Quickshell.screens)
@@ -175,6 +209,7 @@ ShellRoot {
             probeWallpaper();
             probeTheme();
             probeMedia();
+            probeAudio();
             console.log("──────────────────────────────────────────────────");
             Qt.exit(0);
         }

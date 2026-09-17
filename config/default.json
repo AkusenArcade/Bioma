@@ -53,6 +53,10 @@
     "folder": "$HOME/Pictures/Wallpapers"
   },
 
+  "audio": {
+    "monitor_signal": true
+  },
+
   "membranes": [
     {
       "monitor": "primary",
