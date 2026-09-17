@@ -1,0 +1,8 @@
+{
+  "name": "Paper",
+  "description": "Light variant. Light or dark is inferred from the background's luminance, never configured.",
+  "background": "#F4F1EA",
+  "text": "#1E1B16",
+  "primary": "#8A6A12",
+  "secondary": "#5E6B5C"
+}

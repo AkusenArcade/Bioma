@@ -1,0 +1,53 @@
+import QtQuick
+import Quickshell
+import "root:/core"
+import "root:/structure"
+
+// Bioma — entry point.
+//
+// Nothing is drawn here. This file reads the configuration and instantiates one
+// Membrane per declared edge per monitor, plus the floating tissues. Every
+// decision about what a membrane does lives in structure/, and every decision
+// about what a cell shows lives in cells/.
+//
+// Note on imports: if this Quickshell build expects module-style singleton
+// imports, `import "root:/core"` becomes `import qs.core`. Change both here and
+// in structure/ together.
+ShellRoot {
+    id: root
+
+    Variants {
+        model: Quickshell.screens
+
+        delegate: Scope {
+            required property var modelData
+
+            Repeater {
+                model: Config.ready ? Config.get("membranes", []) : []
+
+                delegate: Membrane {
+                    required property var modelData: parent.modelData
+                    required property var membraneConfig
+
+                    edge: membraneConfig.edge
+                    reserveSpace: membraneConfig.reserve_space === true
+                    autoHide: membraneConfig.auto_hide === true
+                    scaleStep: membraneConfig.scale || "normal"
+                }
+            }
+        }
+    }
+
+    // TODO Phase 0: filter membranes by their `monitor` key before
+    // instantiating, build the tissue list from `membraneConfig.tissues`, warn
+    // when the percentages on one membrane exceed 100, and instantiate the
+    // floating tissues.
+    //
+    // TODO Phase 0: the full-screen transparent input surface. Three features
+    // need it — click-outside-to-close, pointer-positioned cells, and Bioma's
+    // own screenshot region selection — and Wayland gives a client no other way
+    // to learn the pointer position. It is the single most uncertain piece in
+    // the project; prototype it early.
+
+    Component.onCompleted: console.log("Bioma: configuration", Config.ready ? "loaded" : "pending")
+}

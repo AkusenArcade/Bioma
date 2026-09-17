@@ -1,0 +1,21 @@
+# Runtime / generated
+*.log
+.cache/
+build/
+
+# Palette written by matugen into the config directory (generated, not source)
+config/generated/
+
+# User override layer — written by the settings UI, never committed
+config/override.json
+
+# Editor / OS
+.DS_Store
+*.swp
+*~
+.idea/
+.vscode/
+
+# Prisma snapshot: reference material, kept out of history by default.
+# Remove this line if the snapshot should travel with the repository.
+prisma-pack/

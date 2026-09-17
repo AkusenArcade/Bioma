@@ -1,0 +1,8 @@
+{
+  "name": "Bioma",
+  "description": "The shipped dark palette. Four interface roles only — the three state roles are a semantic code and never come from a theme source.",
+  "background": "#12110F",
+  "text": "#EDE6DC",
+  "primary": "#C9A227",
+  "secondary": "#7C8B7A"
+}

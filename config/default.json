@@ -1,0 +1,174 @@
+{
+  "$comment": "Bioma base layer. Hand-written, version-controlled. The settings UI writes an override file which is loaded last and wins. Structural terms are biological: membrane (an edge of a monitor), tissue (a container on it), cell (a unit of content, never a grid cell). Each key is explained in docs/configuration.md, because JSON has no comments.",
+
+  "appearance": {
+    "radius": 60,
+    "xray": false
+  },
+
+  "cell": {
+    "opacity": 0.85,
+    "blur": true
+  },
+
+  "tissue": {
+    "opacity": 0.75,
+    "padding": 6
+  },
+
+  "fonts": {
+    "expressive": "Spectral",
+    "technical": "Barlow"
+  },
+
+  "theme": {
+    "source": "matugen",
+    "palette": "default",
+    "state": {
+      "dark":  { "calm": "#6FA88A", "active": "#E0A63C", "alert": "#D5624C" },
+      "light": { "calm": "#3F7D5E", "active": "#B37414", "alert": "#B03A24" }
+    }
+  },
+
+  "timing": {
+    "speed": 1.0,
+    "open": 250,
+    "close": 150,
+    "grow": 100,
+    "stagger": 16,
+    "reflow": 220,
+    "theme": 400,
+    "auto_hide": 500,
+    "notification": 5000,
+    "content_fade": 120
+  },
+
+  "membranes": [
+    {
+      "monitor": "primary",
+      "edge": "top",
+      "reserve_space": true,
+      "auto_hide": false,
+      "scale": "normal",
+      "tissues": [
+        {
+          "percentage": 30,
+          "growth": "inward",
+          "orientation": "horizontal",
+          "cells": [
+            {
+              "type": "workspaces",
+              "enabled": true,
+              "visibility": { "type": "always" },
+              "min_width": { "value": 40 }
+            },
+            {
+              "type": "window_title",
+              "enabled": true,
+              "visibility": { "type": "conditional", "confirm": 0, "dwell": 200 },
+              "min_width": { "value": 120 },
+              "width": { "elastic": true, "max_percent": 25 }
+            }
+          ]
+        },
+        {
+          "percentage": 20,
+          "growth": "symmetric",
+          "orientation": "horizontal",
+          "cells": [
+            {
+              "type": "sinestesia",
+              "enabled": true,
+              "visibility": {
+                "type": "conditional",
+                "enter": 0.02,
+                "exit": 0.005,
+                "confirm": 200,
+                "dwell": 4000
+              },
+              "min_width": { "value": 80 }
+            }
+          ]
+        },
+        {
+          "percentage": 30,
+          "growth": "inward",
+          "orientation": "horizontal",
+          "cells": [
+            {
+              "type": "vitals",
+              "enabled": true,
+              "visibility": { "type": "always", "invocable": true, "shortcut": "Mod+V" },
+              "min_width": { "value": 90 },
+              "options": { "gpu": true, "process_sort": "ram" }
+            },
+            {
+              "type": "connectivity",
+              "enabled": true,
+              "visibility": { "type": "conditional", "confirm": 0, "dwell": 1000 },
+              "min_width": { "value": 24 }
+            },
+            {
+              "type": "volume",
+              "enabled": true,
+              "visibility": { "type": "always" },
+              "min_width": { "value": 24 }
+            },
+            {
+              "type": "session",
+              "enabled": true,
+              "visibility": { "type": "always" },
+              "min_width": { "value": 24 }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "monitor": "primary",
+      "edge": "bottom",
+      "reserve_space": false,
+      "auto_hide": true,
+      "scale": "normal",
+      "tissues": [
+        {
+          "percentage": 40,
+          "growth": "symmetric",
+          "orientation": "horizontal",
+          "cells": [
+            { "type": "dock", "enabled": true, "visibility": { "type": "always" } }
+          ]
+        }
+      ]
+    }
+  ],
+
+  "floating": [
+    {
+      "anchor": "top-right",
+      "margins": { "top": 12, "right": 12 },
+      "orientation": "vertical",
+      "cells": [
+        {
+          "type": "notifications",
+          "enabled": true,
+          "visibility": { "type": "conditional", "confirm": 0, "dwell": 5000 },
+          "min_width": { "value": 280 },
+          "options": { "queue_cap": 5 }
+        }
+      ]
+    },
+    {
+      "anchor": "center",
+      "orientation": "vertical",
+      "cells": [
+        {
+          "type": "launcher",
+          "enabled": false,
+          "visibility": { "type": "invoked", "shortcut": "Mod+Space" },
+          "min_width": { "value": 480 }
+        }
+      ]
+    }
+  ]
+}
