@@ -45,6 +45,9 @@ ShellRoot {
     readonly property var audioStreams: Audio.streams
     readonly property real audioVolume: Audio.volume
     readonly property real audioPeak: Audio.peak
+    readonly property string brightnessBackend: Brightness.backend
+    readonly property real brightnessValue: Brightness.brightness
+    readonly property var ddcDisplays: Brightness.ddcDisplays
 
     function line(label, value) {
         console.log(("  " + label + "                      ").slice(0, 24) + value);
@@ -193,6 +196,27 @@ ShellRoot {
                         + `  icon:${Audio.streamIcon(node) || "—"}`);
     }
 
+    function probeBrightness() {
+        console.log("── Brightness ────────────────────────────────────");
+        line("configured", Brightness.configuredBackend);
+        line("backend in use", root.brightnessBackend);
+        line("available", Brightness.available);
+        line("backlight", Brightness.hasBacklight
+             ? `${Brightness.backlightDevice}  ${Brightness.backlightValue}/${Brightness.backlightMax}`
+             : "none — no /sys/class/backlight device");
+        console.log(`  ddc displays (${root.ddcDisplays.length})`);
+        for (const display of root.ddcDisplays)
+            console.log(`    [${display.index}] ${display.name}`
+                        + (display.brightness >= 0
+                           ? `  ${display.brightness}/${display.max}`
+                           : "  not read"));
+        line("brightness", root.brightnessBackend === "none"
+             ? "nothing to control"
+             : `${Math.round(root.brightnessValue * 100)}%`);
+        if (Brightness.lastError.length > 0)
+            line("last error", Brightness.lastError);
+    }
+
     function probeScreens() {
         console.log("── Screens ───────────────────────────────────────");
         for (const s of Quickshell.screens)
@@ -210,6 +234,7 @@ ShellRoot {
             probeTheme();
             probeMedia();
             probeAudio();
+            probeBrightness();
             console.log("──────────────────────────────────────────────────");
             Qt.exit(0);
         }

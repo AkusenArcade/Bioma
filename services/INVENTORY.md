@@ -48,7 +48,7 @@ The exception is the dock, which is not a service: `bar/Dock.qml` is a child of
 | `AudioService` | 53 | native `Quickshell.Services.Pipewire` | yes | **Done.** Devices, per-application volume and a signal monitor added; see §13. |
 | `NetworkService` | 93 | Wi-Fi native via `Quickshell.Networking`; ethernet by polling `nmcli` every 10 s | yes | **Port, then extend.** No bluetooth anywhere in it. |
 | `NotificationService` | 52 | `NotificationServer` + an in-memory list | yes | **Port the server, write the grammar.** No urgency, no queue, no history. |
-| `BrightnessService` | 92 | `brightnessctl`, polled every 10 s | yes | **Port.** Smallest and most complete relative to its job. |
+| `BrightnessService` | 92 | `brightnessctl`, polled every 10 s | yes | **Done**, but it could not be ported: this machine has no backlight at all. See §14. |
 | `ScreenshotService` | 122 | `slurp` → `grim`, plus a `tesseract` pipeline | yes | **Port the capture calls only.** No clipboard, no save location, no recording. |
 | `MediaService` | 35 | native `Quickshell.Services.Mpris`, active-player picking | yes | **Done.** Cover art, position, seeking and explicit player selection added; see §12. |
 | `BarConfigService` | 161 | single-layer JSON at `~/.config/prisma/bar.json` | yes | **Do not port** — `core/Config.qml` replaces it. Read it for the persistence idiom only. |
@@ -752,6 +752,68 @@ which was unloaded afterwards. The user's default sink was never touched.
 
 ---
 
+## 14. Notes from the brightness port
+
+The inventory called this "the smallest and most complete relative to its job".
+It is neither, on this machine: **there is no backlight device at all.**
+`/sys/class/backlight/` is empty, because both monitors are external, and
+`brightnessctl -l` offers only keyboard LEDs and a network-card LED. Prisma's
+service would read nothing, report a confident 0.5, and control a caps-lock
+light at worst.
+
+This is the first ported service where the Prisma version is not merely dated
+but inapplicable, and it is worth stating why the failure is bad rather than
+merely useless: a brightness control that reports a number and changes nothing
+is indistinguishable, from the user's side, from a broken monitor.
+
+So the service has two backends and, above all, a capability check.
+
+| Backend | Route | Notes |
+|---|---|---|
+| `backlight` | `/sys/class/backlight` read directly, written through `brightnessctl --class=backlight` | Laptops. Fast. |
+| `ddc` | DDC/CI over I²C through `ddcutil` | External monitors. Slow — a round trip per call — and not always permitted. |
+
+With neither present the service reports `available: false` and every control is
+a no-op. Nothing above it should be visible in that case: a control that cannot
+change anything is exactly what principle 4 excludes.
+
+### 14.1 Two backlights is the normal case, and the glob picks by alphabet
+
+A laptop commonly exposes a native backlight *and* `acpi_video0`, the generic
+fallback. Reading the enumeration line by line and keeping the last leaves the
+choice to alphabetical order, which is arbitrary and differs between machines.
+Candidates are now collected and one is chosen deliberately, preferring anything
+over `acpi_video*`, and writes name that device explicitly instead of letting
+`brightnessctl` guess again.
+
+Verified against a fabricated `/sys/class/backlight` tree, since there is no
+real one here: two devices, `intel_backlight` at 812/1024 and `acpi_video0` at
+50/100, parse to 0.793 and 0.500 and the native device is the one chosen.
+
+### 14.2 DDC is written but unverified
+
+`ddcutil` is not installed, so the DDC path has never run. The prerequisites are
+in place — `i2c-dev` is loaded and `/dev/i2c-*` exist — but the user is in
+`video` and not `i2c`, which DDC access may still require.
+
+What is verified is the **absence** path: with no backlight and no `ddcutil`, the
+probe exits cleanly, the backend reports `none`, and nothing fabricates a value.
+
+DDC is never polled. A read is one I²C round trip taking a good fraction of a
+second, so each display is read once at startup and the service's own writes are
+the only thing that moves it afterwards — a monitor adjusted by its own buttons
+will go unnoticed, which is the right trade against hammering the bus. Writes
+are debounced, or dragging a slider queues fifty round trips.
+
+### 14.3 There is no brightness cell
+
+Worth noting while this is fresh: the cell catalogue has no brightness cell. The
+PRD mentions brightness only in passing, in the deferred question of a
+system-wide OSD. This service therefore has no consumer yet, and on this
+hardware it would have nothing to say if it did.
+
+---
+
 ## 8. Port order
 
 Mapped onto PRD §10 phase 1. Each line is verified without UI before any cell
@@ -773,7 +835,8 @@ depends on it.
    fixture in `scripts/mpris-dummy.py`. See §12.
 5. ~~**AudioService**~~ — **done**, as `services/Audio.qml`. Per-application
    volume turned out to be far less work than the PRD estimated (§13).
-6. **BrightnessService** — port.
+6. ~~**BrightnessService**~~ — **done**, as `services/Brightness.qml`, with a
+   DDC backend the machine cannot yet verify (§14).
 7. **NetworkService** — port, replace the 10 s ethernet poll, then extract a
    BluetoothService out of `BluetoothPage`.
 8. **System monitor** — rewrite around one persistent sampler; add clock, GPU

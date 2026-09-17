@@ -57,6 +57,11 @@
     "monitor_signal": true
   },
 
+  "brightness": {
+    "backend": "auto",
+    "display": 1
+  },
+
   "membranes": [
     {
       "monitor": "primary",
