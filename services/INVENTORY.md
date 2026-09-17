@@ -50,7 +50,7 @@ The exception is the dock, which is not a service: `bar/Dock.qml` is a child of
 | `NotificationService` | 52 | `NotificationServer` + an in-memory list | yes | **Port the server, write the grammar.** No urgency, no queue, no history. |
 | `BrightnessService` | 92 | `brightnessctl`, polled every 10 s | yes | **Port.** Smallest and most complete relative to its job. |
 | `ScreenshotService` | 122 | `slurp` → `grim`, plus a `tesseract` pipeline | yes | **Port the capture calls only.** No clipboard, no save location, no recording. |
-| `MediaService` | 35 | native `Quickshell.Services.Mpris`, active-player picking | yes | **Port.** Add cover art and position. |
+| `MediaService` | 35 | native `Quickshell.Services.Mpris`, active-player picking | yes | **Done.** Cover art, position, seeking and explicit player selection added; see §12. |
 | `BarConfigService` | 161 | single-layer JSON at `~/.config/prisma/bar.json` | yes | **Do not port** — `core/Config.qml` replaces it. Read it for the persistence idiom only. |
 | `PrismaIPC` | 55 | a named FIFO in `$XDG_RUNTIME_DIR` read by a shell loop | yes | **Replace with `IpcHandler`**, which 0.3.1 provides. See §3.10. |
 | `ShellActions` | 14 | signal bus, five `open*` signals | yes | **Do not port.** In Bioma these are cells whose visibility is `invoked`; the second model the PRD refuses is exactly this file. |
@@ -623,6 +623,65 @@ color". The deepest numbered line is the one that says what actually happened.
 
 ---
 
+## 12. Notes from the media port
+
+Prisma's service is 35 lines: it picks an active player and exposes title,
+artist, album and three transport calls. What it lacks is everything the
+expanded Sinestesia cell asks for — cover art, position, length, seeking, and a
+way to choose among several players. All of it is already on `MprisPlayer`
+(`trackArtUrl`, `position`, `length`, `canSeek`, `seek`), so this was less a port
+than a matter of exposing what was there.
+
+### 12.1 `uniqueId` is not unique
+
+With two players running at once, **both report `uniqueId` 1**. Selecting by it
+does not fail loudly: it finds the first match and silently controls the wrong
+player — exactly the bug that would be blamed on the dropdown rather than on the
+service. `dbusName` is unique by construction, and is what the selection holds.
+
+Found by running two fixtures at once. One player would never have shown it, and
+neither would reading the API.
+
+### 12.2 Position is the only poll
+
+MPRIS does not push position. A player answers when asked and emits `Seeked`
+only when the position jumps, so a progress indicator has to ask. The timer runs
+only while something is actually playing and the player supports position at
+all, so a paused or absent player costs nothing.
+
+One second is right for text. A smooth bar interpolates between ticks rather
+than asking more often — each ask is a D-Bus round trip, per tick, per player.
+
+### 12.3 What this service is not
+
+It is **not** what raises the Sinestesia cell. The PRD is explicit that the
+visualiser and the metadata are two independent inputs and that the cell's
+condition is the audio signal: a game, or a browser tab with no MPRIS player,
+still has sound and the cell must still appear. Choosing a different player here
+changes the text beside the visualiser and nothing else.
+
+### 12.4 Test fixture
+
+`scripts/mpris-dummy.py` publishes a silent MPRIS player with a live position and
+working transport methods — no audio device touched, no package installed. Two
+copies with different `--name` values exercise selection. mpv would have needed
+`mpv-mpris`, and playing real audio to test a service is a poor trade.
+
+Verified through it: discovery of two players, the preference order (chosen →
+playing → first), explicit selection by D-Bus name, `next`, `playPause` and
+`seek` all reaching the player, position advancing, and progress agreeing with
+the seek — 64 s of 320 s reported as 20%.
+
+### 12.5 The shell to switch off is not Prisma
+
+§7's blocking constraint is live right now, and against a different shell than
+the inventory assumed: **Noctalia is the running shell on this machine**, and it
+owns `org.freedesktop.Notifications` and `org.kde.StatusNotifierWatcher`. That is
+what must be disabled before Bioma's notification cell can be tested. Media,
+being read-only, coexists with it perfectly well.
+
+---
+
 ## 8. Port order
 
 Mapped onto PRD §10 phase 1. Each line is verified without UI before any cell
@@ -640,7 +699,8 @@ depends on it.
 3. ~~**MatugenService**~~ — **done**, as `services/Matugen.qml` plus
    `config/matugen/`. The parser was not ported at all (§11); the `sed` and the
    focus-ring patch are gone.
-4. **MediaService** — port, add cover art and position.
+4. ~~**MediaService**~~ — **done**, as `services/Media.qml`, with a test
+   fixture in `scripts/mpris-dummy.py`. See §12.
 5. **AudioService** — port the default-node layer; treat devices and per-app
    volume as new work.
 6. **BrightnessService** — port.

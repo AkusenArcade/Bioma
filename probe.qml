@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Services.Mpris
 import qs.core
 import qs.services
 
@@ -35,6 +36,10 @@ ShellRoot {
     readonly property color themeText: Theme.text
     readonly property color themePrimary: Theme.primary
     readonly property color themeSecondary: Theme.secondary
+    readonly property var mediaPlayers: Media.players
+    readonly property var mediaPlayer: Media.player
+    readonly property string mediaTitle: Media.title
+    readonly property real mediaPosition: Media.position
 
     function line(label, value) {
         console.log(("  " + label + "                      ").slice(0, 24) + value);
@@ -129,6 +134,31 @@ ShellRoot {
         line("calm/active/alert", `${Theme.calm}  ${Theme.active}  ${Theme.alert}`);
     }
 
+    function probeMedia() {
+        console.log("── Media ─────────────────────────────────────────");
+        line("players", root.mediaPlayers.length);
+        for (const p of root.mediaPlayers)
+            console.log(`    ${p.identity}  [${p.dbusName}]`
+                        + `  ${p.playbackState === MprisPlaybackState.Playing ? "playing" : "paused"}`);
+
+        if (!Media.available) {
+            line("active", "none — nothing is playing");
+            return;
+        }
+
+        line("active", Media.identity + (Media.chosenExplicitly ? "  (chosen)" : "  (automatic)"));
+        line("title", Media.title || "—");
+        line("artist", Media.artist || "—");
+        line("album", Media.album || "—");
+        line("art", Media.hasArt ? Media.artUrl : "none");
+        line("playing", Media.playing);
+        line("position", `${Media.formatTime(root.mediaPosition)} / ${Media.formatTime(Media.length)}`
+                         + `  (${Math.round(Media.progress * 100)}%)`);
+        line("can", [Media.canToggle ? "toggle" : "", Media.canGoNext ? "next" : "",
+                     Media.canGoPrevious ? "previous" : "", Media.canSeek ? "seek" : ""]
+                    .filter(x => x.length > 0).join(" "));
+    }
+
     function probeScreens() {
         console.log("── Screens ───────────────────────────────────────");
         for (const s of Quickshell.screens)
@@ -144,6 +174,7 @@ ShellRoot {
             probeNiri();
             probeWallpaper();
             probeTheme();
+            probeMedia();
             console.log("──────────────────────────────────────────────────");
             Qt.exit(0);
         }
