@@ -13,19 +13,19 @@ import qs.core
 // machine has **no backlight device**, because both monitors are external, and
 // `brightnessctl -l` offers only keyboard and network-card LEDs. A service that
 // cheerfully reports 50% while controlling nothing is worse than one that says
-// it cannot help.
+// it cannot help — from the user's side it is indistinguishable from a broken
+// monitor.
 //
-// So there are two backends and a capability check.
+// So there are two backends and, above all, a capability check.
 //
-//   backlight   /sys/class/backlight via brightnessctl — laptops, and any panel
-//               the kernel drives directly. Fast, reliable, one device.
-//   ddc         DDC/CI over I²C via ddcutil — external monitors. Slow, per
-//               display, and not always permitted.
+//   backlight   /sys/class/backlight, written through brightnessctl. Laptops
+//               and any panel the kernel drives directly. Fast, one device.
+//   ddc         DDC/CI over I²C through ddcutil. External monitors, addressed
+//               individually.
 //
 // With neither available the service reports `available: false` and every
 // control is a no-op. Nothing above it should be visible in that case: a
-// brightness control that cannot change brightness is exactly the kind of
-// element that exists without having anything to say.
+// control that cannot change anything is exactly what principle 4 excludes.
 Singleton {
     id: root
 
@@ -39,28 +39,25 @@ Singleton {
             return "off";
         if (root.hasBacklight && root.backlightAllowed)
             return "backlight";
-        if (root.ddcDisplays.length > 0 && root.ddcAllowed)
+        if (root.displays.length > 0 && root.ddcAllowed)
             return "ddc";
         return "none";
     }
 
     readonly property bool available: backend === "backlight" || backend === "ddc"
-    readonly property bool probing: backlightProbe.running || ddcProbe.running
-
-    // 0..1, the brightness of whatever the backend considers current.
-    property real brightness: 0
+    readonly property bool probing: backlightProbe.running || ddcDetect.running
 
     property string lastError: ""
 
     // ── Backlight ────────────────────────────────────────────────────────
 
     property bool hasBacklight: false
+    property string backlightDevice: ""
     property int backlightValue: 0
     property int backlightMax: 0
 
-    // `brightnessctl -l` lists LEDs as well as backlights, and its bare `get`
-    // falls back to whatever it finds first. Asking specifically for the
-    // backlight class is what separates a panel from a caps-lock light.
+    readonly property real backlightBrightness: backlightMax > 0 ? backlightValue / backlightMax : 0
+
     Process {
         id: backlightProbe
         property var found: []
@@ -90,9 +87,9 @@ Singleton {
         }
 
         // A machine can expose more than one backlight — typically a native
-        // driver alongside `acpi_video0`, which is the generic fallback and the
-        // worse of the two. Taking whichever the glob returned last would pick
-        // by alphabet, which is arbitrary and would differ between machines.
+        // driver alongside `acpi_video0`, the generic fallback and the worse of
+        // the two. Taking whichever the glob returned last would pick by
+        // alphabet, which is arbitrary and differs between machines.
         onExited: {
             const candidates = backlightProbe.found;
             if (candidates.length === 0) {
@@ -105,78 +102,141 @@ Singleton {
             root.backlightValue = chosen.value;
             root.backlightMax = chosen.max;
             root.hasBacklight = true;
-            root.brightness = chosen.value / chosen.max;
         }
-    }
-
-    property string backlightDevice: ""
-
-    function setBacklight(fraction) {
-        const percent = Math.max(1, Math.min(100, Math.round(fraction * 100)));
-        writer.command = root.backlightDevice.length > 0
-            ? ["brightnessctl", "--class=backlight", "--device", root.backlightDevice,
-               "set", percent + "%"]
-            : ["brightnessctl", "--class=backlight", "set", percent + "%"];
-        writer.running = false;
-        writer.running = true;
     }
 
     // ── DDC/CI ───────────────────────────────────────────────────────────
     //
-    // Every call is a round trip over I²C and takes a good fraction of a
-    // second, so this is never polled. The value is read once per display at
-    // startup, and after that the service's own writes are the only thing that
-    // changes it — anything else adjusting the monitor (its own buttons) will
-    // not be noticed, which is the correct trade for not hammering the bus.
+    // Measured on this machine, and the numbers decide the design:
     //
-    // VCP feature 10h is luminance, the one every monitor implements.
+    //   ddcutil detect                3.5 s
+    //   ddcutil --display N getvcp    3.4 s
+    //   ddcutil --bus N getvcp        0.09 – 0.12 s
+    //   ddcutil --bus N setvcp        0.33 s
+    //
+    // Nearly all of `--display`'s cost is the bus scan it redoes on every
+    // invocation. Detecting once, keeping each display's I²C bus number and
+    // addressing `--bus` from then on is thirty times faster, and it is the
+    // difference between a control that responds and one that appears broken.
+    //
+    // Nothing is polled. Each display is read once after detection; after that
+    // the service's own writes are the only thing that moves the value. A
+    // monitor adjusted by its own physical buttons goes unnoticed, which is the
+    // right trade against holding the I²C bus busy forever.
+    //
+    // VCP feature 10h is luminance, the one feature every monitor implements.
 
-    // [{ index, name, brightness, max }]
-    property var ddcDisplays: []
+    // [{ index, bus, connector, model, value, max }]
+    property var displays: []
 
-    readonly property int ddcSelected: Config.get("brightness.display", 1)
+    // Which display the bare `brightness` and `set()` refer to. A connector
+    // name — `DP-1`, `HDMI-A-1` — because that is what Wayland calls a monitor
+    // and what a membrane is anchored to, whereas ddcutil's display numbers are
+    // an artefact of its own enumeration order.
+    readonly property string configuredDisplay: Config.get("brightness.display", "")
 
-    function ddcDisplayFor(index) {
-        return root.ddcDisplays.find(display => display.index === index) ?? null;
+    readonly property var display: {
+        if (root.configuredDisplay.length > 0) {
+            const chosen = root.displays.find(d => d.connector === root.configuredDisplay);
+            if (chosen)
+                return chosen;
+        }
+        return root.displays[0] ?? null;
     }
 
+    function displayFor(connector) {
+        return root.displays.find(d => d.connector === connector) ?? null;
+    }
+
+    // A monitor's own words for itself. The EDID model is frequently empty —
+    // one of the two here publishes none at all — so the connector is the name
+    // that always exists.
+    function describe(entry) {
+        if (!entry)
+            return "";
+        return entry.model && entry.model.length > 0
+            ? `${entry.model} (${entry.connector})`
+            : entry.connector;
+    }
+
+    // `detect --brief` is not shaped the way the documentation examples suggest:
+    // there is no `Model:` line, the connector key contains a space rather than
+    // an underscore, and the monitor is published as `MFG:MODEL:SERIAL` with any
+    // field possibly empty. Parsing it wrongly yields an empty display list,
+    // which looks exactly like a machine with no DDC monitors at all.
     Process {
-        id: ddcProbe
+        id: ddcDetect
         property var found: []
+
         command: ["sh", "-c",
                   "command -v ddcutil >/dev/null 2>&1 || exit 0; "
-                  + "ddcutil detect --brief 2>/dev/null "
-                  + "| awk '/^Display/ {d=$2} /Model:/ {$1=\"\"; print d\"\\t\"substr($0,2)}'"]
+                  + "ddcutil detect --brief 2>/dev/null | awk '"
+                  + "/^Display[ \\t]+[0-9]+/ { idx=$2; bus=\"\"; conn=\"\"; model=\"\" } "
+                  + "/I2C bus:/ { bus=$3; sub(/^\\/dev\\/i2c-/, \"\", bus) } "
+                  + "/DRM connector:/ { conn=$3; sub(/^card[0-9]+-/, \"\", conn) } "
+                  + "/Monitor:/ { split($2, m, \":\"); model=m[2] } "
+                  + "/^$/ { if (idx != \"\") { print idx \"\\t\" bus \"\\t\" conn \"\\t\" model; idx=\"\" } } "
+                  + "END { if (idx != \"\") print idx \"\\t\" bus \"\\t\" conn \"\\t\" model }'"]
         running: false
 
-        onRunningChanged: if (running) ddcProbe.found = []
+        onRunningChanged: if (running) ddcDetect.found = []
 
         stdout: SplitParser {
             splitMarker: "\n"
             onRead: line => {
                 const parts = line.split("\t");
                 const index = parseInt(parts[0], 10);
-                if (isNaN(index))
+                const bus = parseInt(parts[1], 10);
+                if (isNaN(index) || isNaN(bus))
                     return;
-                ddcProbe.found.push({
+                ddcDetect.found.push({
                     index: index,
-                    name: (parts[1] ?? "").trim() || `Display ${index}`,
-                    brightness: -1,
+                    bus: bus,
+                    connector: (parts[2] ?? "").trim() || `display-${index}`,
+                    model: (parts[3] ?? "").trim(),
+                    value: -1,
                     max: 100
                 });
             }
         }
 
         onExited: {
-            root.ddcDisplays = ddcProbe.found.slice();
-            if (root.ddcDisplays.length > 0 && !root.hasBacklight)
-                root.readDdc(root.ddcSelected);
+            root.displays = ddcDetect.found.slice();
+            for (const entry of root.displays)
+                root.queueRead(entry.connector);
         }
+    }
+
+    // Reads are queued rather than fired at once. Two ddcutil processes on
+    // different buses are fine in principle, but a burst of them is a good way
+    // to make an unrelated monitor blink.
+    property var readQueue: []
+
+    function queueRead(connector) {
+        root.readQueue = root.readQueue.concat([connector]);
+        if (!ddcRead.running)
+            root.readNext();
+    }
+
+    function readNext() {
+        if (root.readQueue.length === 0)
+            return;
+        const connector = root.readQueue[0];
+        root.readQueue = root.readQueue.slice(1);
+        const entry = root.displayFor(connector);
+        if (!entry) {
+            root.readNext();
+            return;
+        }
+        ddcRead.connector = connector;
+        ddcRead.command = ["ddcutil", "--bus", String(entry.bus), "getvcp", "10", "--brief"];
+        ddcRead.running = false;
+        ddcRead.running = true;
     }
 
     Process {
         id: ddcRead
-        property int index: -1
+        property string connector: ""
         running: false
 
         stdout: SplitParser {
@@ -190,67 +250,113 @@ Singleton {
                 const max = parseInt(parts[4], 10);
                 if (isNaN(current) || !(max > 0))
                     return;
-
-                const updated = root.ddcDisplays.map(display =>
-                    display.index === ddcRead.index
-                        ? Object.assign({}, display, { brightness: current, max: max })
-                        : display);
-                root.ddcDisplays = updated;
-                if (ddcRead.index === root.ddcSelected)
-                    root.brightness = current / max;
+                root.displays = root.displays.map(entry =>
+                    entry.connector === ddcRead.connector
+                        ? Object.assign({}, entry, { value: current, max: max })
+                        : entry);
             }
         }
+
+        onExited: root.readNext()
     }
 
-    function readDdc(index) {
-        ddcRead.index = index;
-        ddcRead.command = ["ddcutil", "--display", String(index), "getvcp", "10", "--brief"];
-        ddcRead.running = false;
-        ddcRead.running = true;
+    // ── Reading ──────────────────────────────────────────────────────────
+
+    readonly property real brightness: {
+        if (root.backend === "backlight")
+            return root.backlightBrightness;
+        if (root.backend === "ddc" && root.display && root.display.value >= 0)
+            return root.display.value / root.display.max;
+        return 0;
     }
 
-    function setDdc(index, fraction) {
-        const display = root.ddcDisplayFor(index);
-        const max = display?.max > 0 ? display.max : 100;
-        const value = Math.max(0, Math.min(max, Math.round(fraction * max)));
-        writer.command = ["ddcutil", "--display", String(index), "setvcp", "10", String(value)];
+    // -1 when that display has not answered yet, which is not the same as 0.
+    function brightnessFor(connector) {
+        const entry = root.displayFor(connector);
+        return entry && entry.value >= 0 ? entry.value / entry.max : -1;
+    }
+
+    // ── Writing ──────────────────────────────────────────────────────────
+    //
+    // A write takes a third of a second, so a control being dragged must
+    // neither queue every intermediate value nor wait for each one. The latest
+    // target per display is held, and the next write starts when the previous
+    // finishes — coalescing to the newest value rather than replaying the drag.
+
+    property var pendingTargets: ({})       // connector -> 0..1
+
+    function set(fraction) {
+        if (root.backend === "backlight")
+            root.setBacklight(fraction);
+        else if (root.backend === "ddc" && root.display)
+            root.setFor(root.display.connector, fraction);
+    }
+
+    function step(delta) {
+        root.set(Math.max(0, Math.min(1, root.brightness + delta)));
+    }
+
+    function setFor(connector, fraction) {
+        if (root.backend !== "ddc")
+            return;
+        const entry = root.displayFor(connector);
+        if (!entry)
+            return;
+
+        const clamped = Math.max(0, Math.min(1, fraction));
+        const targets = Object.assign({}, root.pendingTargets);
+        targets[connector] = clamped;
+        root.pendingTargets = targets;
+
+        // The reported value moves at once and the hardware follows. Waiting a
+        // third of a second for the write would make the control feel broken.
+        root.displays = root.displays.map(candidate =>
+            candidate.connector === connector
+                ? Object.assign({}, candidate, { value: Math.round(clamped * candidate.max) })
+                : candidate);
+
+        if (!writer.running)
+            root.writeNext();
+    }
+
+    function writeNext() {
+        const connectors = Object.keys(root.pendingTargets);
+        if (connectors.length === 0)
+            return;
+
+        const connector = connectors[0];
+        const fraction = root.pendingTargets[connector];
+        const targets = Object.assign({}, root.pendingTargets);
+        delete targets[connector];
+        root.pendingTargets = targets;
+
+        const entry = root.displayFor(connector);
+        if (!entry) {
+            root.writeNext();
+            return;
+        }
+
+        const value = Math.max(0, Math.min(entry.max, Math.round(fraction * entry.max)));
+        writer.command = ["ddcutil", "--bus", String(entry.bus), "setvcp", "10", String(value)];
         writer.running = false;
         writer.running = true;
     }
 
-    // ── Control ──────────────────────────────────────────────────────────
-    //
-    // The displayed value moves immediately and the hardware follows. A DDC
-    // write takes long enough that waiting for it would make a slider feel
-    // broken, and a backlight write is fast enough that it makes no difference.
-    // The write itself is debounced: dragging a slider must not queue fifty
-    // I²C round trips.
-
-    function set(fraction) {
-        if (!root.available)
-            return;
-        root.brightness = Math.max(0, Math.min(1, fraction));
-        writeDebounce.restart();
-    }
-
-    function step(delta) {
-        root.set(root.brightness + delta);
-    }
-
-    Timer {
-        id: writeDebounce
-        interval: root.backend === "ddc" ? 120 : 0
-        onTriggered: {
-            if (root.backend === "backlight")
-                root.setBacklight(root.brightness);
-            else if (root.backend === "ddc")
-                root.setDdc(root.ddcSelected, root.brightness);
-        }
+    function setBacklight(fraction) {
+        const percent = Math.max(1, Math.min(100, Math.round(fraction * 100)));
+        root.backlightValue = Math.round(fraction * root.backlightMax);
+        writer.command = root.backlightDevice.length > 0
+            ? ["brightnessctl", "--class=backlight", "--device", root.backlightDevice,
+               "set", percent + "%"]
+            : ["brightnessctl", "--class=backlight", "set", percent + "%"];
+        writer.running = false;
+        writer.running = true;
     }
 
     Process {
         id: writer
         running: false
+
         stderr: SplitParser {
             splitMarker: "\n"
             onRead: line => {
@@ -259,30 +365,29 @@ Singleton {
                     root.lastError = message;
             }
         }
+
         onExited: code => {
-            if (code === 0) {
-                root.lastError = "";
-                if (root.backend === "backlight")
-                    root.restartBacklightProbe();
-            } else if (root.lastError.length > 0) {
+            if (code !== 0 && root.lastError.length > 0)
                 console.warn("Brightness:", root.lastError);
-            }
+            else if (code === 0)
+                root.lastError = "";
+
+            if (root.backend === "ddc")
+                root.writeNext();
         }
     }
 
-    function restartBacklightProbe() {
-        backlightProbe.running = false;
-        backlightProbe.running = true;
-    }
+    // ── Start ────────────────────────────────────────────────────────────
 
     Component.onCompleted: {
         if (root.configuredBackend === "off")
             return;
-        if (root.backlightAllowed) {
+        if (root.backlightAllowed)
             backlightProbe.running = true;
-        }
-        if (root.ddcAllowed) {
-            ddcProbe.running = true;
-        }
+        // Detection costs three and a half seconds. It runs in the background
+        // and nothing waits on it: until it answers, the backend is `none` and
+        // anything above this service simply has nothing to show yet.
+        if (root.ddcAllowed)
+            ddcDetect.running = true;
     }
 }

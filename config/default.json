@@ -59,7 +59,7 @@
 
   "brightness": {
     "backend": "auto",
-    "display": 1
+    "display": ""
   },
 
   "membranes": [

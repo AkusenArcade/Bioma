@@ -19,7 +19,7 @@ import qs.services
 ShellRoot {
     id: root
 
-    readonly property int settleMs: 2500
+    readonly property int settleMs: 6000
 
     // Bindings — these are what start the services.
     readonly property bool niriConnected: Niri.connected
@@ -47,7 +47,7 @@ ShellRoot {
     readonly property real audioPeak: Audio.peak
     readonly property string brightnessBackend: Brightness.backend
     readonly property real brightnessValue: Brightness.brightness
-    readonly property var ddcDisplays: Brightness.ddcDisplays
+    readonly property var ddcDisplays: Brightness.displays
 
     function line(label, value) {
         console.log(("  " + label + "                      ").slice(0, 24) + value);
@@ -204,12 +204,11 @@ ShellRoot {
         line("backlight", Brightness.hasBacklight
              ? `${Brightness.backlightDevice}  ${Brightness.backlightValue}/${Brightness.backlightMax}`
              : "none — no /sys/class/backlight device");
-        console.log(`  ddc displays (${root.ddcDisplays.length})`);
-        for (const display of root.ddcDisplays)
-            console.log(`    [${display.index}] ${display.name}`
-                        + (display.brightness >= 0
-                           ? `  ${display.brightness}/${display.max}`
-                           : "  not read"));
+        console.log(`  ddc displays (${root.ddcDisplays.length})`
+                    + (Brightness.probing ? "  — still detecting" : ""));
+        for (const entry of root.ddcDisplays)
+            console.log(`    [${entry.index}] bus ${entry.bus}  ${Brightness.describe(entry)}`
+                        + (entry.value >= 0 ? `  ${entry.value}/${entry.max}` : "  not read yet"));
         line("brightness", root.brightnessBackend === "none"
              ? "nothing to control"
              : `${Math.round(root.brightnessValue * 100)}%`);

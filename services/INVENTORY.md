@@ -790,22 +790,68 @@ Verified against a fabricated `/sys/class/backlight` tree, since there is no
 real one here: two devices, `intel_backlight` at 812/1024 and `acpi_video0` at
 50/100, parse to 0.793 and 0.500 and the native device is the one chosen.
 
-### 14.2 DDC is written but unverified
+### 14.2 DDC, measured
 
-`ddcutil` is not installed, so the DDC path has never run. The prerequisites are
-in place — `i2c-dev` is loaded and `/dev/i2c-*` exist — but the user is in
-`video` and not `i2c`, which DDC access may still require.
+Both monitors answer DDC/CI at VCP version 2.2. **No group membership was
+needed**: `/dev/i2c-*` carry an ACL (`crw-rw----+`) granting the session user
+read and write directly, so the usual advice about joining `i2c` did not apply.
+Only the package was missing.
 
-What is verified is the **absence** path: with no backlight and no `ddcutil`, the
-probe exits cleanly, the backend reports `none`, and nothing fabricates a value.
+The timings are the whole design:
 
-DDC is never polled. A read is one I²C round trip taking a good fraction of a
-second, so each display is read once at startup and the service's own writes are
-the only thing that moves it afterwards — a monitor adjusted by its own buttons
-will go unnoticed, which is the right trade against hammering the bus. Writes
-are debounced, or dragging a slider queues fifty round trips.
+| Call | Time |
+|---|---|
+| `ddcutil detect` | 3.5 s |
+| `ddcutil --display N getvcp 10` | 3.4 s |
+| `ddcutil --bus N getvcp 10` | 0.09 – 0.12 s |
+| `ddcutil --bus N setvcp 10` | 0.33 s |
 
-### 14.3 There is no brightness cell
+Almost all of `--display`'s cost is the bus scan it redoes on every invocation.
+**Detect once, keep each display's I²C bus number, address `--bus` from then
+on** — thirty times faster, and the difference between a control that responds
+and one that appears broken. Detection itself runs in the background at startup
+and nothing waits on it.
+
+Two things only the real output could have told us.
+
+**The parser written blind was wrong, and silently so.** `detect --brief` has no
+`Model:` line — the field is `Monitor:` in `MFG:MODEL:SERIAL` form, with any
+part possibly empty — and the connector key is `DRM connector` with a space, not
+the underscore the non-brief output uses. The original awk matched nothing at
+all, which presents identically to a machine with no DDC monitors.
+
+**`DRM connector` is the useful identifier**, not ddcutil's display number. It
+reads `card1-HDMI-A-1` and `card1-DP-1`, which after stripping the card prefix
+are exactly the names Wayland gives those outputs and exactly what a membrane is
+anchored to. Displays are keyed by connector; ddcutil's numbering is an artefact
+of its own enumeration order and is kept only for reference. The EDID model is
+not a substitute: one of these two monitors publishes none.
+
+Nothing is polled. Each display is read once after detection, and afterwards the
+service's own writes are the only thing that moves the value — a monitor
+adjusted by its own buttons goes unnoticed, which is the right trade against
+holding the bus busy. Writes coalesce per display rather than queueing: a third
+of a second each means a dragged control must neither replay every intermediate
+value nor wait for any of them.
+
+### 14.3 Verified
+
+Detection, reading, writing, coalescing and restoration, against both monitors
+and cross-checked against the hardware with `ddcutil` afterwards:
+
+- detection found both displays with their buses, connectors and real values —
+  HDMI-A-1 at 50/100, DP-1 at 77/100
+- a write moved HDMI-A-1 to 60, with the reported value updating immediately and
+  the hardware following
+- a burst of ten values on DP-1, standing in for a dragged control, left exactly
+  one write queued and landed on the last value rather than replaying the drag
+- both displays were restored to their original values, confirmed by reading the
+  hardware directly
+
+The backlight backend remains verified only against a fabricated
+`/sys/class/backlight` tree, since this machine has none.
+
+### 14.4 There is no brightness cell
 
 Worth noting while this is fresh: the cell catalogue has no brightness cell. The
 PRD mentions brightness only in passing, in the deferred question of a
@@ -835,8 +881,8 @@ depends on it.
    fixture in `scripts/mpris-dummy.py`. See §12.
 5. ~~**AudioService**~~ — **done**, as `services/Audio.qml`. Per-application
    volume turned out to be far less work than the PRD estimated (§13).
-6. ~~**BrightnessService**~~ — **done**, as `services/Brightness.qml`, with a
-   DDC backend the machine cannot yet verify (§14).
+6. ~~**BrightnessService**~~ — **done**, as `services/Brightness.qml`. Both
+   backends written; DDC verified against both monitors (§14).
 7. **NetworkService** — port, replace the 10 s ethernet poll, then extract a
    BluetoothService out of `BluetoothPage`.
 8. **System monitor** — rewrite around one persistent sampler; add clock, GPU
