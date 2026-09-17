@@ -1,48 +1,425 @@
 # Service inventory
 
-The first pass over Prisma produces this document and no code: which services
-exist, what each actually does, which are self-contained and which are entangled
-with `Bar.qml`.
+The first pass over Prisma, as required before any code is written: what exists,
+what each service actually does, what is self-contained, and what Bioma still
+has to build from nothing.
 
-Prisma lives at `~/.config/quickshell/prisma`. It is **not under version
-control**, so this is copy-and-adapt, not merge, and there is no diff to review.
-Its sources predate the current Quickshell release — expect API drift.
+- **Source read**: `~/.config/quickshell/prisma`, sources last modified
+  2026-05-08, read 2026-09-17.
+- **Not under version control.** Copy-and-adapt, not merge. No diff to review.
+- **Installed on this machine**: niri 26.04, matugen 4.2.0, Quickshell **not
+  installed** — nothing below has been run, only read.
 
-**Work into this structure, never out of the old one.** Ask for a specific
-capability and bring it here. Port service by service and verify each *without
-UI* before a cell depends on it: a service that silently returns stale data is
-far harder to diagnose once there is a face on top of it.
+Read this together with the correction list in §6: several statements in the PRD
+about Prisma do not match its source, and two of them change how much work a
+phase is.
 
-| Service | Prisma source | Status | Notes |
-|---|---|---|---|
-| Niri IPC | `services/NiriIPC.qml` | not started | Complete in Prisma: workspaces, windows, outputs, focus actions, `reload-config`. Push-based event stream, not polling. Three cells depend on it. |
-| Wallpaper | `services/WallpaperService.qml`, `bar/WallpaperWindow.qml` | not started | Port as-is. Native QML rendering on a Background-layer `PanelWindow`, no external daemon. Modes: single, span, per-monitor. |
-| matugen | `services/MatugenService.qml` | not started | Already adapted to matugen 2.x `scheme-tonal-spot`. |
-| System monitor | `services/SystemMonitorService.qml` | not started | CPU/RAM/process present. **GPU sampling must be added** — the only expensive one; use a persistent process, never one per sample. |
-| Audio | `services/AudioService.qml` | not started | Per-application volume means following PipeWire nodes as they appear and disappear — more work than the rest of that cell combined. |
-| Network | `services/NetworkService.qml` | not started | Wi-Fi + ethernet via `nmcli`. Watch the ethernet detection race Prisma already fixed. |
-| Notifications | `services/NotificationService.qml` | not started | **Blocking**: one owner per session. Cannot be tested alongside another running shell. Build last (PRD §10, phase 4). |
-| Brightness | `services/BrightnessService.qml` | not started | |
-| Screenshot | `services/ScreenshotService.qml` | not started | `grim`, `slurp` and `tesseract` OCR already wired. Selection UI is Bioma's own, not `slurp`. |
-| Media | `services/MediaService.qml` | not started | MPRIS. Independent of the audio signal feeding the visualiser — two inputs, not one. |
-| Monitor layout | `dashboard/MonitorManager.qml` | not started | Drag-and-drop with magnetic snap; writes `niri.kdl` preserving non-output sections. Substantial and working. |
-| Keybinds | `settings/pages/KeybindsPage.qml` | not started | Parses the `binds` block, writes, calls `niri msg action reload-config`. |
-| OSD | `osd/VolumeOSD.qml`, `BrightnessOSD.qml`, `WorkspaceOSD.qml` | deferred | Whether Bioma adopts a system-wide OSD is an open question (PRD §11). |
+---
 
-## Do not port
+## 1. Dependency shape — the good news
 
-- `bar/Bar.qml` — the bar-model monolith.
-- `bar/SysStats.qml` — numeric CPU/RAM readout, the opposite of Bioma's indicators.
-- `services/I18n.qml` — English-only project.
+The PRD expected to find services entangled with `Bar.qml`. They are not.
 
-## Low reuse value
+`services/*.qml` import **only** Qt and Quickshell modules — never `../theme`,
+never a widget. The dependency graph is one-directional: every presentation
+directory imports `../services` and `../theme`, and nothing points back. There
+are exactly three service-to-service edges:
 
-- `launcher/*` — substring match over name/genericName/id, alphabetical sort.
-  Functional, but fuzzy matching, frequency ranking and icon resolution are
-  absent, and those are the launcher.
+- `MatugenService` → `NiriIPC` (reloads niri after patching the focus ring)
+- `WallpaperService` → `MatugenService` (pushes the wallpaper path)
+- `PrismaIPC` → `ShellActions` (signal bus)
 
-## Bugs Prisma already fixed — do not re-introduce
+So "disentangling the service from its widget" is work Bioma does **not** have
+to do. The porting cost is API drift and missing capability, not extraction.
 
-- Dock reveal zone must be **inside** the surface bounds.
-- File-picker layer ordering.
-- Ethernet detection race.
+The exception is the dock, which is not a service: `bar/Dock.qml` is a child of
+`Bar.qml` and reads `BarConfigService` directly.
+
+---
+
+## 2. Services — verdicts
+
+| Service | Lines | Mechanism | Self-contained | Verdict for Bioma |
+|---|---|---|---|---|
+| `NiriIPC` | 164 | wrapper over the **native `Quickshell.Niri` module** + `niri msg` dispatch | yes | **Port the dispatch half.** The data half is one-line pass-through of a native module — re-derive rather than copy. |
+| `WallpaperService` | 145 | JSON persistence + span geometry from `Niri.outputs` | yes | **Port as-is**, with `bar/WallpaperWindow.qml`. The only piece the PRD's "port as-is" fully survives contact. |
+| `MatugenService` | 221 | runs `matugen image --json hex`, parses, patches niri focus ring | yes (calls NiriIPC) | **Port the parser, drop the delivery.** See §3.3 — it does not use templates, and it `sed`s a niri config file. |
+| `SystemMonitorService` | 155 | `/proc/stat`, `/proc/meminfo`, `ps` — a new process per sample | yes | **Rewrite.** Covers maybe 30% of what vitals needs. See §3.4. |
+| `AudioService` | 53 | native `Quickshell.Services.Pipewire` | yes | **Port as a floor, not a base.** Default sink/source volume and mute only. |
+| `NetworkService` | 93 | Wi-Fi native via `Quickshell.Networking`; ethernet by polling `nmcli` every 10 s | yes | **Port, then extend.** No bluetooth anywhere in it. |
+| `NotificationService` | 52 | `NotificationServer` + an in-memory list | yes | **Port the server, write the grammar.** No urgency, no queue, no history. |
+| `BrightnessService` | 92 | `brightnessctl`, polled every 10 s | yes | **Port.** Smallest and most complete relative to its job. |
+| `ScreenshotService` | 122 | `slurp` → `grim`, plus a `tesseract` pipeline | yes | **Port the capture calls only.** No clipboard, no save location, no recording. |
+| `MediaService` | 35 | native `Quickshell.Services.Mpris`, active-player picking | yes | **Port.** Add cover art and position. |
+| `BarConfigService` | 161 | single-layer JSON at `~/.config/prisma/bar.json` | yes | **Do not port** — `core/Config.qml` replaces it. Read it for the persistence idiom only. |
+| `PrismaIPC` | 55 | a named FIFO in `$XDG_RUNTIME_DIR` read by a shell loop | yes | **Replace**, see §3.10. |
+| `ShellActions` | 14 | signal bus, five `open*` signals | yes | **Do not port.** In Bioma these are cells whose visibility is `invoked`; the second model the PRD refuses is exactly this file. |
+| `I18n` | 322 | it/en string table | yes | **Do not port.** English-only project. |
+| `theme/Theme.qml` | 102 | hardcoded teal palette, spacing, radii, durations | yes | **Do not port.** Superseded by `core/Theme.qml`, `core/Timing.qml`, `core/Scale.qml`. Worth one read as the precedent for a named timing set. |
+
+### Non-service pieces worth naming
+
+| Piece | Lines | Verdict |
+|---|---|---|
+| `bar/WallpaperWindow.qml` | 80 | **Port with WallpaperService.** Background-layer `PanelWindow`, no daemon. One suspect line — see §3.2. |
+| `dashboard/MonitorManager.qml` | 452 | **Port the interaction, rewrite the writer.** See §5.1 — the current writer loses monitor settings. |
+| `settings/pages/KeybindsPage.qml` | 609 | **Port the include-following, rewrite the parser.** See §5.2 — the current one destroys multi-line binds. |
+| `settings/pages/NetworkPage.qml` | 459 | Reference for Wi-Fi connect + password entry. |
+| `settings/pages/BluetoothPage.qml` | 372 | **The only bluetooth code in Prisma.** There is no BluetoothService; it lives inline in the page. |
+| `osd/*.qml` | 551 | Working. Whether Bioma adopts an OSD is still open (PRD §11). |
+| `bar/Dock.qml`, `DockItem.qml` | 324 | **Low value** — see §6, correction 4. |
+| `launcher/*` | 411 | **Low value**, as the PRD says. |
+
+---
+
+## 3. What each service actually does
+
+### 3.1 NiriIPC
+
+Two halves with very different value.
+
+The **data half** is pass-through: `Niri.focusedWindow`, `Niri.workspaces`,
+`Niri.windows`, `Niri.outputs`, `Niri.overviewActive`, keyboard layout — all
+straight from the native `Quickshell.Niri` module, which is push-based. Prisma
+adds `activeWorkspaceForOutput()`, a global `activeWorkspace` with a
+focused → active → first fallback chain, and two filter helpers. Perhaps 40
+lines of genuine logic.
+
+The **dispatch half** is the part worth having. It resolves `NIRI_SOCKET` at
+startup by globbing `/run/user/$(id -u)/niri.$WAYLAND_DISPLAY.*.sock`, because
+the inherited `NIRI_SOCKET` points at the wrong session when the shell is
+spawned from a different TTY. That is a real bug already solved, and it is not
+obvious. Actions: `focus-window`, `focus-workspace`, `focus-workspace-up/down`,
+`move-column-to-workspace`, `focus-monitor`, `toggle-overview`, `close-window`,
+`do-screen-transition`, `quit`, `reload-config`.
+
+For Bioma: three cells depend on this (window title, workspaces, utility's
+window mode). **No action centres a window on screen** — PRD §9.1 needs one, and
+the exact name must be checked against niri 26.04.
+
+### 3.2 WallpaperService + WallpaperWindow
+
+Three modes — single, span, per-monitor — persisted as JSON at
+`~/.config/prisma/wallpaper.json`, with a 300 ms debounce before writing.
+`spanGeometry()` computes the bounding box over `Niri.outputs` and returns
+per-screen offsets; `WallpaperWindow` is a `WlrLayer.Background` `PanelWindow`
+that scales the image to the total box and translates negatively with `clip`.
+No external daemon. This is the cleanest thing in Prisma.
+
+Two things to check on arrival:
+
+- `WallpaperWindow` declares `Behavior on source` with a `SequentialAnimation`
+  over a **string** property. A `Behavior` cannot interpolate a string, so the
+  intended crossfade very likely does not happen — the image swaps hard while
+  the opacity animation runs against the already-swapped image. A real crossfade
+  needs two `Image` layers. Verify before assuming the transition works.
+- Geometry comes from `Niri.outputs` rather than `Quickshell.screens`, which
+  makes the wallpaper compositor-specific for no reason.
+
+### 3.3 MatugenService
+
+Runs `matugen image <path> --json hex --old-json-output --source-color-index 0
+--quiet` and parses the JSON from `~/.cache/prisma/colors.json`. It handles
+**three** matugen formats: 4.x (`colors.primary.dark` as string or object),
+2.x (`scheme-tonal-spot.dark.*`) and 1.x (`colors.<key>.default.hex`). Installed
+here is matugen 4.2.0, so the 4.x path is the live one.
+
+Its role mapping is deliberate and worth stealing: it takes `surface_variant`
+for the background rather than `background`, because Material You always drives
+`background` to near-black, and `surface_bright` for panels. Bioma's PRD §6.1
+maps `background ← surface`; expect the same near-black problem and treat
+Prisma's choice as the tested one.
+
+Two divergences from Bioma's design, both deliberate on Bioma's side:
+
+- **No templates.** Prisma reads matugen's `--json` output directly. Bioma's
+  design is that matugen writes into Bioma's config directory *through a
+  template* and the shell watches that file. The template does not exist in
+  Prisma and must be authored.
+- **It `sed`s a niri config file.** `_syncFocusRing()` rewrites `active-color`
+  in `~/.config/niri/prisma-window.kdl`, then calls `reload-config`. Bioma's
+  scope rule is explicit: *never parse or rewrite another program's config file
+  for theming purposes* — that path is a matugen template plus a reload hook.
+  Take the `#AARRGGBB` conversion helper, drop the `sed`.
+
+### 3.4 SystemMonitorService — the largest gap
+
+What it has: CPU percent from `/proc/stat` deltas, RAM used/total/percent from
+`/proc/meminfo`, a top-80 process list from `ps -eo pid,comm,pcpu,pmem`, and
+`kill -TERM`. Polls on two timers, 2 s and 3 s.
+
+What Bioma's vitals cell needs and this does **not** provide:
+
+| Needed by PRD §9.2 | Present |
+|---|---|
+| CPU **clock** — drives the cardiac beat rate | no |
+| Moving average over the clock (mandatory — per-core boost is violently noisy) | no |
+| GPU utilisation | no |
+| GPU clock (encoded separately from utilisation — they diverge) | no |
+| Battery presence, charge, charging state, time remaining | **no — nothing anywhere in Prisma** |
+
+So vitals gets its RAM fill and its process list from here and nothing else.
+Colour comes from percentages that exist; every motion in the cell — beat rate,
+satellite rotation, battery direction — is driven by a quantity that has to be
+sourced from scratch.
+
+Note also that the PRD calls GPU sampling "the only expensive one". In fact
+**every** sample here spawns a process: `sh -c head -1 /proc/stat` and
+`sh -c grep /proc/meminfo` every 2 s, `ps` every 3 s. That is three process
+spawns per 2–3 s for data available by reading two files. Bioma's rule — a
+persistent process, never one per sample — applies to the rewrite of all of it,
+not only to GPU.
+
+### 3.5 AudioService
+
+Default sink and source volume (0–1.5, PipeWire allows over 100%), mute, mic
+mute, and a `PwObjectTracker` keeping the two default nodes bound.
+
+Absent, and the whole of PRD §9.5's expanded state: **output device selection,
+input device selection, and per-application volume.** Following PipeWire nodes
+as they appear and disappear is not started here. The PRD's estimate that
+per-app volume is "more work than the rest of that cell combined" stands, with
+the correction that there is no foundation to build it on — only the default-node
+convenience layer.
+
+### 3.6 NetworkService
+
+Wi-Fi comes from the **native** `Quickshell.Networking` module: device lookup by
+`DeviceType.Wifi`, connected network, SSID, signal strength, and a 0–4 bar
+bucket. Ethernet is polled every 10 s with `nmcli -t -f TYPE,STATE,DEVICE,CONNECTION
+device`, accumulating into scratch properties and applying them atomically in
+`onExited` — this is the shape the ethernet race fix took, and it is worth
+preserving verbatim.
+
+For Bioma's connectivity cell (§9.11), which draws one icon per *active*
+connection: Wi-Fi and ethernet are covered, **bluetooth is not** — there is no
+bluetooth service at all, only `settings/pages/BluetoothPage.qml`. Extracting a
+`BluetoothService` out of that page is new work, and it is on the critical path
+for the cell's central idea.
+
+A 10 s ethernet poll is also too slow for a cell whose whole point is that its
+width tells you what is live. Consider an event source.
+
+### 3.7 NotificationService
+
+`NotificationServer { keepOnReload: true }`, an array of tracked notifications,
+`dismiss`, `dismissById`, `clearAll`, `count`. That is the whole file.
+
+`NotificationPopup.qml` shows `notifications.slice(-3)` and dismisses each on a
+timer of `expireTimeout` or 4000 ms.
+
+Measured against PRD §9.10, what is missing is the entire temporal grammar:
+
+- **Urgency is never read.** Critical notifications are dismissed after 4 s,
+  which is precisely the freedesktop convention Bioma commits to honouring.
+- **No queue.** `slice(-3)` silently drops the rest of a burst rather than
+  collapsing to a count and deferring to history.
+- **No hover-suspend**, and Bioma makes that mandatory here rather than
+  optional, because the actions live in the hover state.
+- **No action buttons** are rendered at all.
+- **No history** beyond the in-memory array, which does not survive a reload.
+
+Port the server. Everything above it is Bioma's to write.
+
+### 3.8 BrightnessService
+
+`brightnessctl get` / `max` / `set N%`, re-read after every write, refreshed
+every 10 s. Single display only, no DDC for external monitors. Small and
+correct for what it claims.
+
+### 3.9 ScreenshotService
+
+`captureRegion()` runs `slurp`, then `grim -g`. `captureScreen()` runs `grim`,
+optionally `-o <output>`. `captureOCR()` is a single `sh -c` pipeline of
+`grim -g "$(slurp)"` into `tesseract … stdout`. Signals for taken, cancelled,
+OCR result.
+
+Against PRD §9.6, what is missing is most of the cell:
+
+- **No clipboard.** `wl-copy` appears nowhere in Prisma. Results go to
+  `/tmp/prisma-shot.png` and stay there.
+- **No screenshots folder**, no configurable destination.
+- **No video recording at all** — neither `wl-screenrec` nor `wf-recorder`
+  appears anywhere. The recording cell, the elapsed timer, the save-or-discard
+  confirmation and the even-dimension rounding for H.264 are entirely new.
+- **Selection is `slurp`.** Bioma draws its own selection over the full-screen
+  input surface, so the `slurp` half is replaced, not ported. What survives is
+  the `grim -g "<region>"` invocation and the tesseract pipeline.
+
+Note the OCR path re-runs `slurp` inside its own shell rather than reusing the
+region already selected — harmless in Prisma, wrong once Bioma owns selection.
+
+### 3.10 PrismaIPC and ShellActions
+
+`PrismaIPC` creates a FIFO at `$XDG_RUNTIME_DIR/prisma.ipc`, holds it open with
+`exec 3<>`, reads lines in a shell `while` loop, and restarts itself 2 s after
+exit. Niri binds `spawn sh -c "echo launcher > $FIFO"`. Each command emits a
+`ShellActions` signal.
+
+It works, and it is a shell loop kept alive to route five strings. Bioma's
+invoked cells need the same capability; Quickshell's own IPC handler is the
+place to start, with this file as the fallback if it proves insufficient.
+`ShellActions` itself is the "second model for launcher, session menu and
+settings" the PRD explicitly refuses — do not bring it.
+
+---
+
+## 4. Does not exist in Prisma at all
+
+Listed because each is a cell or part of a cell in Bioma, and none of it is a
+port:
+
+- **Battery** — no UPower, no `BAT0`, nothing. Vitals' fourth indicator, its
+  presence condition, its charge direction inversion.
+- **GPU** — no sampling of any kind.
+- **CPU and GPU clock** — only percentages exist.
+- **Per-application volume**, output/input device selection.
+- **Bluetooth service** — only a settings page.
+- **Clipboard integration** — no `wl-copy`.
+- **Video recording** — no recorder of any kind.
+- **Cover art and playback position** — `MediaService` exposes title, artist,
+  album, player name and transport only.
+- **Audio signal capture / FFT** — Sinestesia is a separate Rust + GTK4
+  application, to be split into a headless emitter and a renderer.
+- **A full-screen transparent input surface** — the piece the PRD calls the most
+  uncertain in the project. Nothing in Prisma prototypes it.
+
+---
+
+## 5. Code that must not be ported as it stands
+
+### 5.1 MonitorManager rewrites output blocks destructively
+
+`_patchKdl()` strips **every** `output "NAME" { … }` block from
+`~/.config/niri/config.kdl` using a brace-matching scan, then appends fresh
+blocks containing **only** `position x= y=`.
+
+Any other key inside an output block — `mode`, `scale`, `transform`,
+`variable-refresh-rate`, `focus-at-startup`, `off` — is silently deleted the
+first time the user drags a monitor. The write is also non-atomic
+(`printf '%s' > file`) and unbacked: an interrupted write truncates the niri
+config.
+
+The PRD describes this as "non-destructive `niri.kdl` patching". It preserves
+non-output *sections*; it does not preserve output *contents*.
+
+Port the canvas, the drag, the 12 px magnetic snap and the virtual↔canvas
+coordinate transforms — that is the part that took the work. Write the KDL with
+a real edit: change the `position` line inside each existing block, leave the
+rest of the block alone, write to a temporary file and rename.
+
+### 5.2 KeybindsPage destroys multi-line binds on save
+
+The parser matches one bind per line with
+`/^([\w+\-]+)\s*((?:[\w\-]+=(?:"[^"]*"|\S+)\s*)*)\{([^}]+)\}/` — shortcut,
+attributes, and a body that must close on the same line. A bind written across
+several lines does not match and is dropped from `_binds`.
+
+`_saveBinds()` then rebuilds the whole `binds { … }` block from `_binds` alone
+and substitutes it into the file. So every bind the parser could not read, and
+every comment inside the block, disappears on the first save.
+
+What is genuinely valuable and should be ported: the **include-following**. It
+reads `config.kdl`, finds `include` directives, scans each included file in
+sequence and locates whichever one holds the top-level `binds` block. That is
+the part nobody enjoys writing twice.
+
+### 5.3 Everything that spawns `sh -c "echo $HOME"`
+
+Five services resolve the home directory by starting a shell at startup and
+waiting for its output before they can build any path, which is why they all
+carry a `_homeDir` property and a "do nothing until it arrives" guard. Bioma
+reads the environment directly. Dropping this removes a startup ordering hazard
+and about a dozen lines per service.
+
+---
+
+## 6. Corrections to the PRD's picture of Prisma
+
+The PRD's service table was written from memory of the project, and six of its
+statements do not survive reading the source. None invalidate a design decision;
+two change the size of a phase.
+
+1. **"Niri IPC — complete."** Complete, but mostly because
+   `Quickshell.Niri` is complete. The port is small. The socket-detection trick
+   is the part worth carrying.
+2. **"matugen — already adapted to matugen 2.x `scheme-tonal-spot`."** It handles
+   1.x, 2.x *and* 4.x, and 4.x is the live path against the installed matugen
+   4.2.0. Better than advertised. It also does not use templates at all, and it
+   patches a niri config with `sed` — which Bioma's own scope rule forbids.
+3. **"Network — Wi-Fi + ethernet via `nmcli`."** Only ethernet is `nmcli`. Wi-Fi
+   is the native `Quickshell.Networking` module. And there is no bluetooth
+   service to port, only a settings page — that is new work on the connectivity
+   cell's critical path.
+4. **"Dock carries the expensive part: window tracking, desktop-file icon
+   resolution, matching processes to applications."** Window tracking is
+   `Niri.windows.values.some(w => w.appId === id)`. Icon resolution is
+   `Quickshell.iconPath()` plus `DesktopEntries.heuristicLookup()`, both native,
+   about ten lines including the fallback that suppresses a 404 when the name
+   does not resolve. Matching processes to applications does not exist. The rest
+   of the dock is presentation Bioma does not want — circular icons, a hash
+   colour per app-id, a dot indicator. **Treat the dock as low reuse value**,
+   alongside the launcher. The ten lines of icon resolution are still exactly
+   what PRD §9.1 asks for, and the "plain name means unresolved" guard is worth
+   copying verbatim.
+5. **"System monitor — GPU sampling must be added and is the only expensive
+   one."** Every existing sample already spawns a process. The rewrite is
+   broader than adding GPU.
+6. **"Prisma's `PROGRESS.md` documents feature status."** It is dated
+   2026-05-05/07 and is partly stale against the 05-08 sources — it records the
+   wallpaper being applied through `swww → wpaperd → swaybg`, while the current
+   `WallpaperService` renders natively in QML with no daemon. Read it for the
+   bug list, not for the architecture.
+
+---
+
+## 7. Bugs already fixed — do not re-introduce
+
+From `PROGRESS.md`, confirmed against the source where possible:
+
+- **Dock reveal zone must be inside the surface bounds.** The `PanelWindow`
+  height includes the hover zone and `exclusiveZone` excludes it. Bioma hits the
+  same class of bug with auto-hiding membranes, which must remain present as a
+  surface with a few-pixel reveal zone.
+- **Ethernet detection race** — a single process accumulating into scratch
+  properties and applying them atomically on exit, never property-by-property as
+  lines arrive.
+- **File picker layer ordering** — the settings surface drops to the Bottom
+  layer before an external picker opens, via signals, with `Qt.callLater`
+  deferring the dialog until the layer switch has committed.
+- **`NIRI_SOCKET` from the wrong session** — resolve the socket by globbing on
+  `$WAYLAND_DISPLAY` rather than trusting the inherited variable.
+- **Icon resolution needs an explicit `size`** on `IconImage`, or icons fall
+  back to letters.
+- **`FileView` double-fire** — KeybindsPage reads config through `cat` processes
+  specifically to avoid it. Worth knowing before `core/Config.qml` is trusted:
+  Bioma uses `FileView` with `watchChanges` for both config layers and both
+  palette sources.
+
+---
+
+## 8. Port order
+
+Mapped onto PRD §10 phase 1. Each line is verified without UI before any cell
+depends on it.
+
+1. **NiriIPC** — three cells wait on it. Confirm the action that centres a
+   window against niri 26.04.
+2. **WallpaperService + WallpaperWindow** — port as-is, then check the crossfade
+   (§3.2) and move geometry to `Quickshell.screens`.
+3. **MatugenService** — port the parser and the role mapping; author the matugen
+   template; drop the `sed` and the focus-ring patch.
+4. **MediaService** — port, add cover art and position.
+5. **AudioService** — port the default-node layer; treat devices and per-app
+   volume as new work.
+6. **BrightnessService** — port.
+7. **NetworkService** — port, replace the 10 s ethernet poll, then extract a
+   BluetoothService out of `BluetoothPage`.
+8. **System monitor** — rewrite around one persistent sampler; add clock, GPU
+   and battery.
+9. **ScreenshotService** — port the `grim` and `tesseract` calls only.
+10. **NotificationService** — **last.** One owner per session: the cell cannot be
+    tested while another shell runs.
+
+Outside this list and not blocking: `MonitorManager` and `KeybindsPage` arrive
+with phase 5, each needing its writer rewritten (§5.1, §5.2).
