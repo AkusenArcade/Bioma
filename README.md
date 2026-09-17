@@ -64,4 +64,6 @@ and demonstrates the vocabulary — it is not exhaustive.
 ## Documentation
 
 - `docs/bioma-prd.md` — the product requirements, and the source of truth
+- `PROGRESS.md` — where the work stands, and what is not done
+- `services/INVENTORY.md` — the Prisma inventory and every decision taken since
 - `CLAUDE.md` — architecture rules for anyone (or anything) writing code here
