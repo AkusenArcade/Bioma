@@ -1,7 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
-import "root:/core"
+import qs.core
 
 // One edge of one monitor. Tissues anchored to it share its length.
 //

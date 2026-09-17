@@ -31,10 +31,21 @@ ln -s "$PWD" ~/.config/quickshell/bioma
 quickshell -c bioma
 ```
 
+## Verifying a service without a UI
+
+```sh
+qs -p "$PWD/probe.qml"
+```
+
+Creates no surfaces. It binds each service the way a cell would, waits for the
+data to arrive, prints what came back, and exits. Every service is verified
+through this before a cell is built on it.
+
 ## Layout
 
 ```
 shell.qml          entry point
+probe.qml          headless service verification
 core/              Config, Theme, Timing, Scale — global singletons
 structure/         Membrane, Tissue, Cell — the layout engine
 components/        shared primitives

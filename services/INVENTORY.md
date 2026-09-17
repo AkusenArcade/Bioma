@@ -41,7 +41,7 @@ The exception is the dock, which is not a service: `bar/Dock.qml` is a child of
 
 | Service | Lines | Mechanism | Self-contained | Verdict for Bioma |
 |---|---|---|---|---|
-| `NiriIPC` | 164 | wrapper over the **native `Quickshell.Niri` module** + `niri msg` dispatch | yes | **Port the dispatch half.** The data half is one-line pass-through of a native module — re-derive rather than copy. |
+| `NiriIPC` | 164 | wrapper over `Quickshell.Niri` + `niri msg` dispatch | yes | **Done — rewritten, not ported.** That module does not exist in Quickshell 0.3.1. See §9. |
 | `WallpaperService` | 145 | JSON persistence + span geometry from `Niri.outputs` | yes | **Port as-is**, with `bar/WallpaperWindow.qml`. The only piece the PRD's "port as-is" fully survives contact. |
 | `MatugenService` | 221 | runs `matugen image --json hex`, parses, patches niri focus ring | yes (calls NiriIPC) | **Port the parser, drop the delivery.** See §3.3 — it does not use templates, and it `sed`s a niri config file. |
 | `SystemMonitorService` | 155 | `/proc/stat`, `/proc/meminfo`, `ps` — a new process per sample | yes | **Rewrite.** Covers maybe 30% of what vitals needs. See §3.4. |
@@ -52,7 +52,7 @@ The exception is the dock, which is not a service: `bar/Dock.qml` is a child of
 | `ScreenshotService` | 122 | `slurp` → `grim`, plus a `tesseract` pipeline | yes | **Port the capture calls only.** No clipboard, no save location, no recording. |
 | `MediaService` | 35 | native `Quickshell.Services.Mpris`, active-player picking | yes | **Port.** Add cover art and position. |
 | `BarConfigService` | 161 | single-layer JSON at `~/.config/prisma/bar.json` | yes | **Do not port** — `core/Config.qml` replaces it. Read it for the persistence idiom only. |
-| `PrismaIPC` | 55 | a named FIFO in `$XDG_RUNTIME_DIR` read by a shell loop | yes | **Replace**, see §3.10. |
+| `PrismaIPC` | 55 | a named FIFO in `$XDG_RUNTIME_DIR` read by a shell loop | yes | **Replace with `IpcHandler`**, which 0.3.1 provides. See §3.10. |
 | `ShellActions` | 14 | signal bus, five `open*` signals | yes | **Do not port.** In Bioma these are cells whose visibility is `invoked`; the second model the PRD refuses is exactly this file. |
 | `I18n` | 322 | it/en string table | yes | **Do not port.** English-only project. |
 | `theme/Theme.qml` | 102 | hardcoded teal palette, spacing, radii, durations | yes | **Do not port.** Superseded by `core/Theme.qml`, `core/Timing.qml`, `core/Scale.qml`. Worth one read as the precedent for a named timing set. |
@@ -432,13 +432,92 @@ From `PROGRESS.md`, confirmed against the source where possible:
 
 ---
 
+## 9. What Quickshell 0.3.1 changes — read this before porting anything
+
+Everything above was written from Prisma's source alone. With Quickshell
+installed and probed, several verdicts move, all but one in our favour.
+
+### 9.1 `Quickshell.Niri` does not exist
+
+There is no Niri module in 0.3.1 — `Hyprland` and `I3` are there, Niri is not.
+Prisma was built against one, so **the data half of `NiriIPC` cannot be ported
+at all**: it will not compile. Every consumer of it in Prisma is affected too —
+the dock, the OSDs, `WallpaperService.spanGeometry()` and `MonitorManager` all
+read `Niri.outputs` or `Niri.windows`.
+
+`services/Niri.qml` is written instead against niri's own IPC socket: one
+connection, one `"EventStream"` request, then newline-delimited JSON events for
+the life of the session. Push-based, nothing polls. The fourteen event variants
+niri 26.04 emits are all handled.
+
+This is **better** than what Prisma had, not worse. The socket carries window
+geometry, pids, workspace indices and output names — none of which the
+compositor-agnostic protocols provide, and the pid in particular is what makes
+matching a process to a window possible, which Prisma could not do.
+
+### 9.2 Much of what the inventory called "new work" is native
+
+| Called missing in §4 | Actually available |
+|---|---|
+| Battery — "nothing anywhere in Prisma" | `Quickshell.Services.UPower`: `UPower.displayDevice`, `isLaptopBattery`, device states, plus `PowerProfiles` |
+| Bluetooth service — "new work on the critical path" | `Quickshell.Bluetooth`: adapter, devices, pairing states |
+| Ethernet, replacing the 10 s `nmcli` poll | `Quickshell.Networking` exposes `WiredDevice` alongside `WifiDevice` — the poll goes away entirely |
+
+Probed on this machine: `Networking.devices` returns `eno1` (wired) and `wlan0`
+(wifi) natively; `UPower.displayDevice.isLaptopBattery` is false, agreeing with
+the empty `/sys/class/power_supply/` and confirming the three-indicator case.
+
+Also present and worth knowing before writing anything by hand:
+`ToplevelManager` and `WindowManager` (compositor-agnostic windows and
+workspaces — the fallback if Bioma ever leaves niri), `IpcHandler` (replaces
+PrismaIPC's FIFO), `FileView.setText` and `writeAdapter` (config writes with no
+shell process, unlike every save in Prisma), `ColorQuantizer` (colours from an
+image), `Socket` and `SocketServer`.
+
+### 9.3 Blur is confirmed, on both sides
+
+`Quickshell.Wayland._BackgroundEffect` exports `BackgroundEffect` with an
+animatable `blurRegion`, and niri 26.04 advertises `ext_background_effect_v1`.
+The PRD's §6.6 plan — declare the cell shapes as blur regions, never a
+compositor layer rule — is supported exactly as designed. niri also advertises
+`ext_foreign_toplevel_list_v1` and `ext_workspace_v1`, which is what makes the
+agnostic fallback real rather than theoretical.
+
+### 9.4 The trap that costs a day
+
+**Quickshell singletons and compositor-backed models initialise on their first
+property binding, not on first access.** Probed imperatively from inside a
+function, `ToplevelManager.toplevels`, `UPower.devices`, `Networking.devices`
+and `Bluetooth.devices` all returned empty on a live session with four windows
+open. Bound to a property first, they filled immediately.
+
+Nothing in the API hints at this, and the failure looks exactly like "the
+service is broken" or "this compositor does not support it". `probe.qml` binds
+before it reads, and every service added to it must do the same.
+
+Two collection shapes also coexist: most are an `ObjectModel` and want
+`.values`, but `WindowManager.windowsets` is a plain JS array.
+
+### 9.5 Answers to two PRD verification items
+
+- **`center-window` exists in niri 26.04** and centres the *focused* window.
+  The window title cell shows the focused window, so no prior focus call is
+  needed there; anything else centring a window must focus it first.
+- **Window titles churn harder than expected.** Measured on a terminal running a
+  spinner: ten title events in eight seconds, one window. PRD §9.1 asks for
+  debouncing; treat it as required, not advisory.
+
+---
+
 ## 8. Port order
 
 Mapped onto PRD §10 phase 1. Each line is verified without UI before any cell
 depends on it.
 
-1. **NiriIPC** — three cells wait on it. Confirm the action that centres a
-   window against niri 26.04.
+1. ~~**NiriIPC**~~ — **done**, as `services/Niri.qml`, rewritten against the
+   IPC socket (§9.1) and verified through `probe.qml`: four windows with
+   geometry and pids, six workspaces across two outputs, live title updates.
+   `center-window` confirmed.
 2. **WallpaperService + WallpaperWindow** — port as-is, then check the crossfade
    (§3.2) and move geometry to `Quickshell.screens`.
 3. **MatugenService** — port the parser and the role mapping; author the matugen

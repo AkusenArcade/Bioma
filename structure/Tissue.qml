@@ -1,6 +1,6 @@
 import QtQuick
 import Quickshell
-import "root:/core"
+import qs.core
 
 // A positioned container. Owns anchor, margins, orientation, monitor, max width
 // and the ordered list of its cells. It has no opinion about what a cell shows.

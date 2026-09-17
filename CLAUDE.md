@@ -53,6 +53,38 @@ Three levels, each knowing only the one below:
   `ext-background-effect`, never compositor layer rules.
 - **One service singleton per domain.** Never a poller per cell.
 
+## Quickshell 0.3.1 — what this build actually gives us
+
+Verified against the installed build, not assumed.
+
+**Singletons and compositor-backed models initialise on their first property
+binding, not on first access.** Read `ToplevelManager.toplevels` from inside a
+function and it answers empty; bind it to a property and it fills. This is the
+single most expensive thing to learn the hard way here — every service is
+verified through `probe.qml`, which binds before it reads.
+
+**There is no `Quickshell.Niri` module.** Prisma was built against one; it does
+not exist in 0.3.1. `services/Niri.qml` reads niri's own IPC socket instead —
+one connection, one `"EventStream"` request, newline-delimited JSON for the life
+of the session. Nothing polls.
+
+Available and already relied on, so do not write these by hand:
+
+| Need | Use |
+|---|---|
+| Blur on a declared shape | `Quickshell.Wayland` → `BackgroundEffect.blurRegion` (niri 26.04 implements `ext_background_effect_v1`) |
+| Battery | `Quickshell.Services.UPower` — `UPower.displayDevice`, `isLaptopBattery` |
+| Bluetooth | `Quickshell.Bluetooth` — adapter, devices, states |
+| Wi-Fi **and ethernet** | `Quickshell.Networking` — `WifiDevice`, `WiredDevice` |
+| Windows / workspaces, compositor-agnostic | `ToplevelManager`, `WindowManager` — the fallback if Bioma ever leaves niri |
+| Keybind → invoked cell | `Quickshell.Io` → `IpcHandler` |
+| Writing config back | `FileView.setText` / `writeAdapter` — no shell process |
+| Colours from an image | `ColorQuantizer` |
+
+Two shapes come back from these APIs: most collections are an `ObjectModel`
+(read `.values`), but `WindowManager.windowsets` is a plain JS array. Check
+before iterating.
+
 ## Layout
 
 ```

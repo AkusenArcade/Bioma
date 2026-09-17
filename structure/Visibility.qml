@@ -1,6 +1,6 @@
 import QtQuick
 import Quickshell
-import "root:/core"
+import qs.core
 
 // The temporal grammar, in one place. Every cell owns one of these.
 //

@@ -1,6 +1,6 @@
 import QtQuick
 import Quickshell
-import "root:/core"
+import qs.core
 
 // A unit of content with one domain. It has no position of its own and no max
 // width of its own: it takes what the tissue grants.
