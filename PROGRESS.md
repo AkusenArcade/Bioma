@@ -27,7 +27,9 @@ the PRD calls it the single most uncertain piece in the project.
 
 ## Phase 1 — Service porting
 
-Six of ten done, each verified headlessly through `probe.qml` before moving on.
+Seven of ten done, each verified headlessly through `probe.qml` before moving
+on. Seven items, eight services: network and bluetooth are separate domains and
+therefore separate singletons.
 
 | Service | State |
 |---|---|
@@ -37,18 +39,26 @@ Six of ten done, each verified headlessly through `probe.qml` before moving on.
 | `services/Media.qml` | Done. MPRIS metadata, art, position, transport, player selection. |
 | `services/Audio.qml` | Done. Devices, per-application volume, peak monitor. |
 | `services/Brightness.qml` | Done. Backlight and DDC backends. |
-| Network | **Next.** Replace the 10 s `nmcli` poll with native `WiredDevice`; extract a bluetooth service — `Quickshell.Bluetooth` exists, so Prisma's 372 inline page lines are not the starting point. |
-| System monitor | Rewrite, not port. One persistent sampler; add CPU clock, GPU, battery (§4.1, §9.2). |
+| `services/Network.qml` | Done. Wired and Wi-Fi, native, no `nmcli` and no poll. |
+| `services/Bluetooth.qml` | Done. Adapter, devices, pairing, native. Nothing taken from Prisma's page. |
+| System monitor | **Next.** Rewrite, not port. One persistent sampler; add CPU clock, GPU, battery (§4.1, §9.2). |
 | Screenshot | Port the `grim` and `tesseract` calls only. |
 | Notifications | **Last.** See below. |
 
 ### Verified, and not
 
-Everything above was checked against live state. Two gaps are known:
+Everything above was checked against live state. Four gaps are known, all of
+them missing hardware rather than missing work:
 
 - **The backlight path of `Brightness.qml`** has only ever run against a
   fabricated `/sys/class/backlight` tree. This machine has no backlight. The DDC
   path is verified against both real monitors.
+- **Joining a Wi-Fi network** — the radio, the scanner, the list and the
+  security detection are all verified, but every network in range belongs to
+  someone else, so `join`, `joinWithPassword` and the failure path have never
+  run.
+- **Every device-level bluetooth path**, including the battery scale, which is
+  a documented guess. There is no paired device on this machine.
 - **`structure/Visibility.qml`** has no test at all. It is the heart of the
   temporal grammar and the first cell will be its first exercise.
 
@@ -67,12 +77,18 @@ qs -p "$PWD/probe.qml"      # every service, headless, no surfaces
 
 Allow six seconds: DDC detection alone costs three and a half.
 
+The probe reports the Wi-Fi radio as it finds it and never turns it on. The
+scan path was verified with a throwaway probe that toggled the radio through
+`Network.setWifiEnabled` and put it back; it is not kept in the repository,
+because a file that flips the machine's radio as a side effect of being run is a
+trap. Rebuild it from §15.6 if the Wi-Fi path needs checking again.
+
 `scripts/mpris-dummy.py` publishes a silent MPRIS player for testing the media
 service; run two with different `--name` values to exercise player selection.
 
 ## Decisions taken since the PRD was written
 
-Recorded in full in `services/INVENTORY.md` §9–§14. The ones that change the
+Recorded in full in `services/INVENTORY.md` §9–§15. The ones that change the
 plan rather than an implementation detail:
 
 - There is no `Quickshell.Niri` module. The compositor service reads niri's own
@@ -86,3 +102,10 @@ plan rather than an implementation detail:
   required for the bands the visualiser draws (§13.3).
 - The palette goes through a matugen template, so format drift lands in a text
   file rather than in the shell (§11).
+- §9.4's trap has a second half: a bound property is still at its default for an
+  instant after binding, so a function that *gates an action* on one silently
+  does nothing. Properties display state; they do not decide whether to call the
+  backend (§15.1).
+- Prisma's Wi-Fi signal bars were wrong — `signalStrength` is 0–1, not 0–100 —
+  which is worth knowing as a measure of how much of Prisma to trust on sight
+  (§15.2).

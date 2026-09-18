@@ -860,6 +860,138 @@ hardware it would have nothing to say if it did.
 
 ---
 
+## 15. Notes from the network and bluetooth port
+
+Two services, `services/Network.qml` and `services/Bluetooth.qml`, and between
+them they run no processes at all. Prisma's ten second `nmcli` poll is gone, and
+so are the four `bluetoothctl` processes the bluetooth page walked one device at
+a time. Both are pure property bindings over D-Bus.
+
+Both imports are namespaced — `Quickshell.Networking as Net`,
+`Quickshell.Bluetooth as Bluez` — because each module exports a type that would
+otherwise collide with the service's own file name inside `qs.services`:
+`Network` and `Bluetooth` respectively. This is not cosmetic; without it the
+file cannot refer to either the module or itself unambiguously.
+
+### 15.1 The §9.4 trap has a second half
+
+§9.4 says a model is empty until something binds it. That is only half of it.
+**Even with the binding in place, the value arrives a moment later**, and a
+function called in between reads the pre-initialisation default.
+
+This cost a real bug, caught only because the verification ran the path rather
+than reading it:
+
+```qml
+function setWifiEnabled(on) {
+    if (root.wifiHardwareEnabled || !on)   // false for the first instant
+        Net.Networking.wifiEnabled = on;   // never runs
+}
+```
+
+`wifiHardwareEnabled` is false before the module answers, so a guard meant to
+say "rfkill is holding the radio down" silently swallowed the request and
+reported nothing. The probe turned the radio on, the radio stayed off, and the
+service claimed it had done as it was asked.
+
+The fix is not a longer wait. It is to stop guarding at all: NetworkManager and
+BlueZ both refuse these writes themselves when rfkill holds the hardware, so the
+write goes straight through and `wifiHardwareEnabled` / `blocked` exist to
+explain why a switch did not move, never to decide whether to try. The same
+guard was in `Bluetooth.setEnabled` and came out for the same reason.
+
+The general rule for this codebase: **a property is for displaying state, not
+for gating an action against the backend that owns it.**
+
+### 15.2 `signalStrength` is 0–1, and Prisma's bars were wrong
+
+Quickshell divides NetworkManager's 0–100 before handing the number over.
+Prisma bucketed it at 25 / 50 / 75 as though it were still a percentage, so
+every network in its list drew **one bar** regardless of strength — 0.47 is not
+47 and falls in the first bucket. Measured here at 0.47, 0.35, 0.35 and 0.10
+against four neighbouring networks.
+
+The thresholds are fractional now, and `signalPercent` / `percentFor()` exist so
+no cell has to remember which scale it is holding. Do not copy Prisma's numbers
+back.
+
+### 15.3 Two kinds of off, and NetworkManager owns one of them
+
+- `Networking.wifiEnabled` is the soft switch. rfkill's **soft** block shows up
+  here, and writing true clears it — the radio really does come on.
+- `Networking.wifiHardwareEnabled` is rfkill's **hard** block, the physical
+  switch. Nothing in software clears it.
+
+On this machine the radio sits soft-blocked, which reads as `wifiEnabled: false`
+with `wifiHardwareEnabled: true` — and the device stays in the list the whole
+time, in state Unknown. The connectivity cell therefore keys on
+`wifiConnected`, never on the device being present.
+
+Bluetooth has the same split: `BluetoothAdapterState.Blocked` is rfkill, and
+`Enabling` / `Disabling` are real intermediate states — a toggle that snaps to
+its new position before the adapter agrees is lying, so `settling` is exposed.
+
+### 15.4 The wired connection has no pretty name
+
+`WiredDevice.network.name` returns `eno1`, the interface, not the
+NetworkManager profile name (`Wired connection 1`), which is what Prisma's
+`nmcli` parser read out of the CONNECTION column. Nothing is lost for the cell —
+§9.11 draws one icon per live connection and the name is at most a tooltip — but
+a settings page wanting the profile name will not find it here.
+
+Link speed is real and worth having: 2500 Mb/s, correctly, on this machine's
+2.5 GbE port. `hasLink` is separate from `connected`, which is the difference
+between an unplugged cable and one plugged into a dead switch.
+
+### 15.5 Scanning belongs to the cell, not the service
+
+Neither the Wi-Fi scanner nor bluetooth discovery starts on its own. Both wake
+a radio and cost power, and both are only ever wanted while an expanded cell is
+open — so each service exposes a `scanning` / `discovering` request that the
+cell turns on when it opens and off when it closes.
+
+Both are `Binding` elements rather than property handlers, and that detail was
+load-bearing in testing: the Wi-Fi device does not exist yet at the moment the
+scan is requested, because NetworkManager takes a second to present an interface
+that was rfkilled. A handler that had already fired would have left the scanner
+off and the list empty for the life of the cell.
+
+### 15.6 Verified
+
+Against live hardware, radio returned to its original state afterwards:
+
+- wired: `eno1`, Connected, link up at 2500 Mb/s, address and state correct
+  against `nmcli`
+- reachability: NetworkManager's connectivity check is enabled here and reports
+  Full; `online` is only believed when `canCheckReachability` says the answer
+  means anything
+- the radio was turned on **through `Network.setWifiEnabled(true)`**, not
+  through `nmcli` — the device appeared, the scanner came on through the
+  `Binding`, four networks arrived with WPA2 and WPA3 detected correctly and
+  `needsPassword` true for all four (none known), and the radio was put back
+  soft-blocked exactly as it was found
+- bluetooth: adapter `hci0` "AkuLinux", Enabled, powered, not discovering,
+  zero devices — which is what `bluetoothctl show` and `devices` report
+- the connectivity cell's `active` list composes correctly: one entry, wired,
+  and empty on the bluetooth side, which is §9.11's "no active device, no glyph"
+
+Not verified, and both need hardware that is not here:
+
+- **joining a network**, with or without a password, and therefore the
+  `pending` / `connectionFailed` path and `describeFailure`. The only networks
+  in range belong to other people.
+- **every device-level bluetooth path** — connect, pair, forget, trust, busy
+  states — and in particular the **battery scale**. BlueZ's own Battery1 is
+  0–100, Quickshell's UPower device is 0–1, and with no paired device there is
+  nothing to settle it with. `batteryPercent()` reads a value below 1 as a
+  fraction and above it as a percentage, which is right either way except at
+  exactly 1%; check it against a real headset and delete the heuristic.
+
+Given §15.2, treat the battery scale as genuinely unknown rather than probably
+0–1. This module has already been found dividing one scale and not another.
+
+---
+
 ## 8. Port order
 
 Mapped onto PRD §10 phase 1. Each line is verified without UI before any cell
@@ -883,8 +1015,10 @@ depends on it.
    volume turned out to be far less work than the PRD estimated (§13).
 6. ~~**BrightnessService**~~ — **done**, as `services/Brightness.qml`. Both
    backends written; DDC verified against both monitors (§14).
-7. **NetworkService** — port, replace the 10 s ethernet poll, then extract a
-   BluetoothService out of `BluetoothPage`.
+7. ~~**NetworkService**~~ — **done**, as `services/Network.qml` and
+   `services/Bluetooth.qml`. The ethernet poll is gone and nothing was taken
+   from `BluetoothPage`; both are native and process-free. Two bugs came out of
+   it — a guard that ate its own call, and Prisma's signal bars (§15).
 8. **System monitor** — rewrite around one persistent sampler; add clock, GPU
    and battery.
 9. **ScreenshotService** — port the `grim` and `tesseract` calls only.

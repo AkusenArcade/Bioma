@@ -48,6 +48,16 @@ ShellRoot {
     readonly property string brightnessBackend: Brightness.backend
     readonly property real brightnessValue: Brightness.brightness
     readonly property var ddcDisplays: Brightness.displays
+    readonly property var networkDevices: Network.devices
+    readonly property bool wiredConnected: Network.wiredConnected
+    readonly property bool wifiConnected: Network.wifiConnected
+    readonly property var wifiNetworks: Network.visibleNetworks
+    readonly property int reachability: Network.reachability
+    readonly property var networkActive: Network.active
+    readonly property var btAdapter: Bluetooth.adapter
+    readonly property var btDevices: Bluetooth.devices
+    readonly property var btConnected: Bluetooth.connectedDevices
+    readonly property bool btEnabled: Bluetooth.enabled
 
     function line(label, value) {
         console.log(("  " + label + "                      ").slice(0, 24) + value);
@@ -216,6 +226,95 @@ ShellRoot {
             line("last error", Brightness.lastError);
     }
 
+    function probeNetwork() {
+        console.log("── Network ───────────────────────────────────────");
+        line("backend", Network.backendName + (Network.available ? "" : "  — no backend"));
+        line("devices", root.networkDevices.length);
+
+        line("wired", Network.wiredPresent
+             ? `${Network.wiredInterface}  ${Network.describeState(Network.wiredState)}`
+             : "no wired device");
+        if (Network.wiredPresent) {
+            line("  link", Network.wiredHasLink
+                 ? (Network.wiredSpeed > 0 ? `up  ${Network.wiredSpeed} Mb/s` : "up")
+                 : "down — nothing plugged in");
+            line("  connection", Network.wiredName || "—");
+            line("  address", Network.wiredAddress || "—");
+        }
+
+        line("wifi", Network.wifiPresent
+             ? `${Network.wifiDevice.name}  ${Network.describeState(Network.wifiState)}`
+             : "no wifi device");
+        if (Network.wifiPresent) {
+            // Two switches, and the hard one wins: the soft switch cannot be
+            // turned on while rfkill holds the radio down.
+            line("  radio", (Network.wifiEnabled ? "enabled" : "disabled")
+                 + (Network.wifiHardwareEnabled ? "" : "  — blocked by rfkill"));
+            line("  connected", root.wifiConnected
+                 ? `${Network.ssid}  ${Network.signalPercent}%  ${Network.signalBars}/4 bars`
+                 : "no");
+            console.log(`    networks (${root.wifiNetworks.length}, scanner `
+                        + `${Network.scanning ? "on" : "off"})`);
+            for (const n of root.wifiNetworks)
+                console.log(`      ${n.connected ? "*" : " "} ${n.name}`
+                            + `  ${Network.percentFor(n.signalStrength)}%  ${Network.barsFor(n.signalStrength)}/4`
+                            + `  ${Network.security(n)}`
+                            + (n.known ? "  known" : "")
+                            + (Network.needsPassword(n) ? "  needs password" : ""));
+        }
+
+        line("reachability", Network.canCheckReachability
+             ? Network.reachabilityName + (Network.captivePortal ? "  — captive portal" : "")
+             : "not checked — NetworkManager connectivity check is off");
+        line("online", Network.reachabilityKnown ? Network.online : "unknown");
+        if (Network.lastError.length > 0)
+            line("last error", Network.lastError);
+
+        // What the connectivity cell composes itself from: one entry per live
+        // connection, and an empty list means the cell is absent entirely.
+        console.log(`  active connections (${root.networkActive.length})`);
+        for (const entry of root.networkActive)
+            console.log(`      ${entry.kind}  ${entry.label}`
+                        + (entry.detail.length > 0 ? `  ${entry.detail}` : ""));
+    }
+
+    function probeBluetooth() {
+        console.log("── Bluetooth ─────────────────────────────────────");
+        if (!Bluetooth.available) {
+            line("adapter", "none — no bluetooth hardware or bluez is not running");
+            return;
+        }
+
+        line("adapter", `${Bluetooth.adapterName}  [${Bluetooth.adapterId}]`);
+        line("state", Bluetooth.stateName
+             + (Bluetooth.blocked ? "  — blocked by rfkill" : "")
+             + (Bluetooth.settling ? "  — still settling" : ""));
+        line("powered", root.btEnabled);
+        line("discovering", Bluetooth.scanning
+             + (Bluetooth.discovering === Bluetooth.scanning ? "" : "  (asked for "
+                + Bluetooth.discovering + ")"));
+
+        console.log(`  devices (${root.btDevices.length}: `
+                    + `${root.btConnected.length} connected, `
+                    + `${Bluetooth.pairedDevices.length} paired)`);
+        for (const d of root.btDevices)
+            console.log(`      ${d.connected ? "*" : " "} ${Bluetooth.describe(d)}`
+                        + `  ${d.address}`
+                        + `  ${Bluetooth.describeState(d)}`
+                        + (d.paired ? "  paired" : "")
+                        + (d.trusted ? "  trusted" : "")
+                        + (Bluetooth.isBusy(d) ? "  busy" : "")
+                        + `  icon:${Bluetooth.icon(d) || "—"}`
+                        + (Bluetooth.hasBattery(d)
+                           ? `  battery ${Bluetooth.batteryPercent(d)}% (raw ${Bluetooth.battery(d)})`
+                           : ""));
+
+        console.log(`  active connections (${Bluetooth.active.length})`);
+        for (const entry of Bluetooth.active)
+            console.log(`      ${entry.kind}  ${entry.label}`
+                        + (entry.detail.length > 0 ? `  ${entry.detail}` : ""));
+    }
+
     function probeScreens() {
         console.log("── Screens ───────────────────────────────────────");
         for (const s of Quickshell.screens)
@@ -234,6 +333,8 @@ ShellRoot {
             probeMedia();
             probeAudio();
             probeBrightness();
+            probeNetwork();
+            probeBluetooth();
             console.log("──────────────────────────────────────────────────");
             Qt.exit(0);
         }
