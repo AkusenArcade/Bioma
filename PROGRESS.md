@@ -5,6 +5,24 @@ reasoning; this is the short version and the list of what is *not* done.
 
 Last worked: 2026-09-18.
 
+## Where to pick up
+
+Phase 1 is nine services of ten and every one of them is verified. The tenth is
+notifications, and it is the only piece of remaining work that cannot be done
+without switching the running shell off — see the pre-flight below.
+
+So there are two ways in, and they are independent:
+
+1. **Notifications**, which closes phase 1 and burns the bridge.
+2. **The layout engine**, which is phase 0 work and is where the project is
+   actually thin: `Membrane`, `Tissue` and `Cell` are skeletons, nothing has
+   ever been drawn, and `structure/Visibility.qml` — the heart of the temporal
+   grammar — has never run. Nine services are waiting for a face.
+
+The second needs nothing switched off and is the larger risk, because the
+full-screen input surface of PRD §8 has not been prototyped and the PRD calls it
+the most uncertain piece in the project.
+
 ## Phase 0 — Foundations
 
 Scaffolded, partly real, not finished.
@@ -74,6 +92,28 @@ but the last two are missing hardware rather than missing work:
 that owner is **Noctalia**, which is the running shell. It also holds
 `org.kde.StatusNotifierWatcher`. It has to be switched off first, and that is
 the point of no return the PRD describes.
+
+Checked on 2026-09-18, so the cutover does not have to be worked out from
+scratch:
+
+| Fact | Value |
+|---|---|
+| Owner of both bus names | one process, `noctalia`, pid 1776 at the time of checking |
+| How it starts | `spawn-at-startup "noctalia" "-d"` in `~/.config/niri/config.kdl`, with `include "noctalia-binds.kdl"` on the next line |
+| Parent | `systemd --user` — niri spawns it detached, so killing niri's child does not help and there is no user unit to stop |
+
+The cutover is therefore: comment out those two lines in the niri config, kill
+the process, and start Bioma in its place. The keybind file goes with it, which
+means every shortcut the machine currently has for a shell stops working at the
+same moment — worth doing when there is time to finish, not at the end of a
+session.
+
+Confirm the names are free before writing the cell:
+
+```sh
+busctl --user call org.freedesktop.DBus /org/freedesktop/DBus \
+  org.freedesktop.DBus GetConnectionUnixProcessID s org.freedesktop.Notifications
+```
 
 ## How to check the state of things
 
