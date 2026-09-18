@@ -992,6 +992,139 @@ Given §15.2, treat the battery scale as genuinely unknown rather than probably
 
 ---
 
+## 16. Notes from the system monitor rewrite
+
+`services/SystemMonitor.qml`. A rewrite, as §3.4 said it had to be: Prisma
+sampled CPU percent, RAM and a process list, and vitals needs CPU clock, GPU
+utilisation, GPU clock and battery on top — every quantity that makes the cell
+*move*. The old service supplied none of them.
+
+**Nothing spawns a process on the sampling path.** Prisma ran three per two to
+three seconds to read two files. Here a single timer calls `reload()` on six
+`FileView`s. Two processes remain and neither is per sample: one `sh` glob at
+startup to find the GPU, the same shape as the backlight probe, and `ps` only
+while the expanded cell is asking for a process list.
+
+### 16.1 FileView reads kernel files, and reload() is asynchronous
+
+Both halves matter, and the second is a trap.
+
+`/proc` and `/sys` files report a size of zero, which is the usual reason a
+naive reader returns nothing. `FileView` handles them: `/proc/stat` came back at
+4356 bytes, `/proc/cpuinfo` at 58766, `gpu_busy_percent` at 2. So the whole
+sampler needs no `cat` and no shell.
+
+But `reload()` schedules the read and returns. **The text is still the previous
+sample for the rest of the tick**, and reading it immediately after the call —
+which is the obvious way to write it — yields the value from two seconds ago,
+forever. Measured directly: three ticks in a row printed the same
+`/proc/stat` line before the call and after it, with the new content arriving
+on `onLoaded` between ticks.
+
+This is the third member of the family in §9.4 and §15.1. Stated generally:
+**in Quickshell, asking for a value and having it are separate moments.** Bind
+and wait for the signal; never read back what you just asked for.
+
+For a CPU percentage the failure is silent and convincing — the delta between
+two identical readings is zero, and a flat zero looks exactly like an idle
+machine.
+
+### 16.2 The GPU, and why the card number is not a choice
+
+Picked by VRAM, overridable through `vitals.gpu_card`. On this machine `card0`
+is the 512 MB integrated Raphael and `card1` the 17 GB discrete RX 9070, so an
+index is wrong half the time and wrong silently — an integrated GPU at 0% is a
+plausible-looking reading.
+
+`pp_dpm_sclk` gives both the current clock and, in the same table, the card's
+own operating range:
+
+```
+0: 500Mhz
+1: 1602Mhz *
+2: 2520Mhz
+```
+
+so the satellite's rotation has a ceiling that came from the hardware rather
+than from a number written into a cell.
+
+The sleep state predicted in §4.1 is real and was caught in the probe: the card
+answers `S: 68Mhz *` — a state, not an index. It is parsed as *asleep*, it is
+excluded from the range so it cannot drag the floor down, and the clock fraction
+clamps to zero. A sleeping card is not a broken one and must not read as a
+stopped satellite.
+
+Utilisation and clock stay separate the whole way through, per §9.2: they
+diverge, and collapsing them into one number destroys the only thing that
+indicator says.
+
+### 16.3 The moving average is not a refinement
+
+Measured at idle, six consecutive samples of the mean clock across 32 cores:
+
+```
+raw       3801  3962  3629  3467  3589  3390 MHz
+averaged  3801  3844  3790  3726  3683  3607 MHz
+```
+
+The raw figure swings ±300 MHz between samples **on an idle machine**. A beat
+following it would be visibly arrhythmic, which is why §9.2 calls the average
+mandatory rather than advisory. Five samples at the 2 s cadence is ten seconds
+of smoothing.
+
+The range comes from `cpuinfo_min_freq` and `cpuinfo_max_freq` — 417 to
+5763 MHz here — read once, not sampled, and exposed as a fraction so the beat
+mapping lives in the cell without a hardcoded ceiling. A machine with no cpufreq
+says so through `cpuClockRangeKnown` rather than through a plausible wrong
+number.
+
+### 16.4 Reading /proc/cpuinfo every tick is affordable
+
+58 KB parsed with a global regex, timed over twenty runs: **0.05 ms per
+sample**. The alternative — one `scaling_cur_freq` file per core — is 32
+`FileView`s to avoid a twentieth of a millisecond.
+
+### 16.5 The process list is the one sample that is not free
+
+It is also the only one nobody is looking at most of the time. `listProcesses`
+gates it: the expanded cell sets it when it opens, clears it when it closes, and
+`ps` does not run in between. Prisma ran it every three seconds for the life of
+the session to feed a list that is on screen for a few seconds at a time.
+
+`kill` is TERM, never KILL. The confirmation §9.2 asks for belongs to the cell;
+the refusal to escalate belongs here.
+
+### 16.6 Verified
+
+Against live hardware and cross-checked outside the shell:
+
+- CPU 32 cores, matching `/proc/cpuinfo`; load moving tick to tick rather than
+  stuck, which is the failure mode §16.1 describes
+- RAM 6.3 of 30.5 GiB, 20.5% — `free -m` reports 31201 total and 24871
+  available at the same moment, which is 20.3%. Used is computed from
+  *available*, not from free, or the page cache would report a healthy machine
+  as nearly full.
+- GPU: `card1` chosen over `card0` unprompted, utilisation 5% against 8% from
+  `gpu_busy_percent` read seconds later, VRAM 1447 of 16304 MiB, and the sleep
+  state parsed as asleep with the fraction clamped
+- battery: absent, `hasBattery` false, so vitals composes three indicators here
+  and this is the three-indicator machine §4.1 called it
+- processes: 60 rows with pid, name, CPU, RSS — the top row during the run was
+  `ddcutil` at 99.6%, which is this project's own brightness probe, so the list
+  is demonstrably live
+
+Not verified, for want of hardware:
+
+- **Everything battery.** `UPower.displayDevice.percentage` is left raw and
+  named `batteryLevelRaw` rather than converted, because
+  `Networking.signalStrength` turned out to be a fraction where Prisma assumed a
+  percentage (§15.2). Settle the scale on a laptop before any cell divides it.
+- **NVIDIA GPUs**, where these figures come from `nvidia-smi` rather than
+  sysfs. Every GPU read goes through `gpuPath`, so the source is swappable, but
+  nothing has swapped it.
+
+---
+
 ## 8. Port order
 
 Mapped onto PRD §10 phase 1. Each line is verified without UI before any cell
@@ -1019,8 +1152,11 @@ depends on it.
    `services/Bluetooth.qml`. The ethernet poll is gone and nothing was taken
    from `BluetoothPage`; both are native and process-free. Two bugs came out of
    it — a guard that ate its own call, and Prisma's signal bars (§15).
-8. **System monitor** — rewrite around one persistent sampler; add clock, GPU
-   and battery.
+8. ~~**System monitor**~~ — **done**, as `services/SystemMonitor.qml`. Rewritten
+   around `FileView` rather than a persistent process, which turned out to be
+   better than the plan: no process at all on the sampling path. Clock, GPU and
+   battery added; the moving average and the GPU sleep state are both real and
+   measured (§16).
 9. **ScreenshotService** — port the `grim` and `tesseract` calls only.
 10. **NotificationService** — **last.** One owner per session: the cell cannot be
     tested while another shell runs.

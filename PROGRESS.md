@@ -27,8 +27,8 @@ the PRD calls it the single most uncertain piece in the project.
 
 ## Phase 1 — Service porting
 
-Seven of ten done, each verified headlessly through `probe.qml` before moving
-on. Seven items, eight services: network and bluetooth are separate domains and
+Eight of ten done, each verified headlessly through `probe.qml` before moving
+on. Eight items, nine services: network and bluetooth are separate domains and
 therefore separate singletons.
 
 | Service | State |
@@ -41,14 +41,14 @@ therefore separate singletons.
 | `services/Brightness.qml` | Done. Backlight and DDC backends. |
 | `services/Network.qml` | Done. Wired and Wi-Fi, native, no `nmcli` and no poll. |
 | `services/Bluetooth.qml` | Done. Adapter, devices, pairing, native. Nothing taken from Prisma's page. |
-| System monitor | **Next.** Rewrite, not port. One persistent sampler; add CPU clock, GPU, battery (§4.1, §9.2). |
-| Screenshot | Port the `grim` and `tesseract` calls only. |
+| `services/SystemMonitor.qml` | Done. Load, memory, CPU clock, GPU, battery, processes. No process on the sampling path at all. |
+| Screenshot | **Next.** Port the `grim` and `tesseract` calls only. |
 | Notifications | **Last.** See below. |
 
 ### Verified, and not
 
-Everything above was checked against live state. Four gaps are known, all of
-them missing hardware rather than missing work:
+Everything above was checked against live state. Five gaps are known, and all
+but the last are missing hardware rather than missing work:
 
 - **The backlight path of `Brightness.qml`** has only ever run against a
   fabricated `/sys/class/backlight` tree. This machine has no backlight. The DDC
@@ -59,6 +59,9 @@ them missing hardware rather than missing work:
   run.
 - **Every device-level bluetooth path**, including the battery scale, which is
   a documented guess. There is no paired device on this machine.
+- **Everything battery**, in `SystemMonitor.qml`. There is no battery here, and
+  UPower's percentage scale is deliberately left raw rather than converted on a
+  guess (§16.6).
 - **`structure/Visibility.qml`** has no test at all. It is the heart of the
   temporal grammar and the first cell will be its first exercise.
 
@@ -88,7 +91,7 @@ service; run two with different `--name` values to exercise player selection.
 
 ## Decisions taken since the PRD was written
 
-Recorded in full in `services/INVENTORY.md` §9–§15. The ones that change the
+Recorded in full in `services/INVENTORY.md` §9–§16. The ones that change the
 plan rather than an implementation detail:
 
 - There is no `Quickshell.Niri` module. The compositor service reads niri's own
@@ -109,3 +112,8 @@ plan rather than an implementation detail:
 - Prisma's Wi-Fi signal bars were wrong — `signalStrength` is 0–1, not 0–100 —
   which is worth knowing as a measure of how much of Prisma to trust on sight
   (§15.2).
+- The vitals sampler needs no persistent process either: `FileView` reads
+  `/proc` and `/sys` directly, so the shell spawns nothing to sample the
+  machine. `reload()` is asynchronous, though, and reading the text back
+  immediately returns the previous sample — a third instance of the same trap
+  (§16.1).

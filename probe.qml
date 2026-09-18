@@ -58,6 +58,13 @@ ShellRoot {
     readonly property var btDevices: Bluetooth.devices
     readonly property var btConnected: Bluetooth.connectedDevices
     readonly property bool btEnabled: Bluetooth.enabled
+    readonly property real cpuPercent: SystemMonitor.cpuPercent
+    readonly property real cpuClock: SystemMonitor.cpuClock
+    readonly property real ramPercent: SystemMonitor.ramPercent
+    readonly property real gpuPercent: SystemMonitor.gpuPercent
+    readonly property real gpuClock: SystemMonitor.gpuClock
+    readonly property var vitalProcesses: SystemMonitor.processes
+    readonly property bool hasBattery: SystemMonitor.hasBattery
 
     function line(label, value) {
         console.log(("  " + label + "                      ").slice(0, 24) + value);
@@ -315,12 +322,60 @@ ShellRoot {
                         + (entry.detail.length > 0 ? `  ${entry.detail}` : ""));
     }
 
+    function probeVitals() {
+        console.log("── Vitals ────────────────────────────────────────");
+        line("sampling every", SystemMonitor.interval + " ms");
+        line("cpu", `${Math.round(root.cpuPercent)}%  across ${SystemMonitor.cores} cores`);
+        line("cpu clock", `${Math.round(root.cpuClock)} MHz averaged`
+             + `  (raw ${Math.round(SystemMonitor.cpuClockRaw)},`
+             + ` window ${SystemMonitor.clockSamples.length}/${SystemMonitor.averageWindow})`);
+        line("  range", SystemMonitor.cpuClockRangeKnown
+             ? `${Math.round(SystemMonitor.cpuClockMin)}–${Math.round(SystemMonitor.cpuClockMax)} MHz`
+               + `  → fraction ${Math.round(SystemMonitor.cpuClockFraction * 100) / 100}`
+             : "unknown — no cpufreq, the beat has no ceiling to map onto");
+        line("ram", `${SystemMonitor.ramUsedGb}/${SystemMonitor.ramTotalGb} GiB`
+             + `  ${Math.round(root.ramPercent)}%`);
+        line("swap", SystemMonitor.swapTotal > 0
+             ? `${Math.round(SystemMonitor.swapUsed)}/${Math.round(SystemMonitor.swapTotal)} MiB`
+             : "none");
+
+        if (!SystemMonitor.gpuPresent) {
+            line("gpu", "none found");
+        } else {
+            line("gpu", `${SystemMonitor.gpuName}  ${SystemMonitor.gpuPath}`);
+            // Utilisation and clock are separate quantities and diverge; the
+            // cell encodes one as colour and the other as rotation.
+            line("  utilisation", `${Math.round(root.gpuPercent)}%`);
+            line("  clock", `${Math.round(root.gpuClock)} MHz`
+                 + `  of ${Math.round(SystemMonitor.gpuClockMin)}–${Math.round(SystemMonitor.gpuClockMax)}`
+                 + `  → fraction ${Math.round(SystemMonitor.gpuClockFraction * 100) / 100}`
+                 + (SystemMonitor.gpuAsleep ? "  — asleep, a power state not an index" : ""));
+            line("  vram", `${Math.round(SystemMonitor.vramUsed)}/${Math.round(SystemMonitor.vramTotal)} MiB`
+                 + `  ${Math.round(SystemMonitor.vramPercent)}%`);
+        }
+
+        // Presence, not state: vitals draws three indicators here and four on a
+        // laptop, from the same cell.
+        line("battery", root.hasBattery
+             ? `${SystemMonitor.batteryLevelRaw} raw  ${SystemMonitor.batteryStateName}`
+               + `  ${Math.round(SystemMonitor.batterySecondsLeft / 60)} min left`
+             : "none — desktop, so vitals shows three indicators");
+
+        console.log(`  processes (${root.vitalProcesses.length}, `
+                    + `sampling ${SystemMonitor.listProcesses ? "on" : "off"})`);
+        for (const p of root.vitalProcesses.slice(0, 5))
+            console.log(`      ${p.pid}  ${p.name}`
+                        + `  cpu ${p.cpu}%  ram ${p.memMb} MiB (${p.memPercent}%)`);
+    }
+
     function probeScreens() {
         console.log("── Screens ───────────────────────────────────────");
         for (const s of Quickshell.screens)
             console.log(`    ${s.name}  ${s.width}×${s.height}  scale ${s.devicePixelRatio}`
                         + `  at ${s.x},${s.y}`);
     }
+
+    Component.onCompleted: SystemMonitor.listProcesses = true
 
     Timer {
         interval: root.settleMs
@@ -335,6 +390,7 @@ ShellRoot {
             probeBrightness();
             probeNetwork();
             probeBluetooth();
+            probeVitals();
             console.log("──────────────────────────────────────────────────");
             Qt.exit(0);
         }
