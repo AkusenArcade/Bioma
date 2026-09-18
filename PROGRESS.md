@@ -27,8 +27,8 @@ the PRD calls it the single most uncertain piece in the project.
 
 ## Phase 1 — Service porting
 
-Eight of ten done, each verified headlessly through `probe.qml` before moving
-on. Eight items, nine services: network and bluetooth are separate domains and
+Nine of ten done, each verified headlessly through `probe.qml` before moving
+on. Nine items, ten services: network and bluetooth are separate domains and
 therefore separate singletons.
 
 | Service | State |
@@ -42,13 +42,13 @@ therefore separate singletons.
 | `services/Network.qml` | Done. Wired and Wi-Fi, native, no `nmcli` and no poll. |
 | `services/Bluetooth.qml` | Done. Adapter, devices, pairing, native. Nothing taken from Prisma's page. |
 | `services/SystemMonitor.qml` | Done. Load, memory, CPU clock, GPU, battery, processes. No process on the sampling path at all. |
-| Screenshot | **Next.** Port the `grim` and `tesseract` calls only. |
-| Notifications | **Last.** See below. |
+| `services/Capture.qml` | Done. Stills, window capture through niri, text recognition, video with save or discard. |
+| Notifications | **Next, and last.** See below. |
 
 ### Verified, and not
 
-Everything above was checked against live state. Five gaps are known, and all
-but the last are missing hardware rather than missing work:
+Everything above was checked against live state. Six gaps are known, and all
+but the last two are missing hardware rather than missing work:
 
 - **The backlight path of `Brightness.qml`** has only ever run against a
   fabricated `/sys/class/backlight` tree. This machine has no backlight. The DDC
@@ -62,6 +62,9 @@ but the last are missing hardware rather than missing work:
 - **Everything battery**, in `SystemMonitor.qml`. There is no battery here, and
   UPower's percentage scale is deliberately left raw rather than converted on a
   guess (§16.6).
+- **Bioma's own selection rectangle**, which `Capture.selectRegion()` stands in
+  for with `slurp`. It needs the full-screen input surface of PRD §8, which is
+  phase 0 work that has never been prototyped.
 - **`structure/Visibility.qml`** has no test at all. It is the heart of the
   temporal grammar and the first cell will be its first exercise.
 
@@ -91,7 +94,7 @@ service; run two with different `--name` values to exercise player selection.
 
 ## Decisions taken since the PRD was written
 
-Recorded in full in `services/INVENTORY.md` §9–§16. The ones that change the
+Recorded in full in `services/INVENTORY.md` §9–§17. The ones that change the
 plan rather than an implementation detail:
 
 - There is no `Quickshell.Niri` module. The compositor service reads niri's own
@@ -117,3 +120,7 @@ plan rather than an implementation detail:
   machine. `reload()` is asynchronous, though, and reading the text back
   immediately returns the previous sample — a third instance of the same trap
   (§16.1).
+- Capture is bigger than §8 assumed. Prisma has no clipboard, no destination
+  folder and no recorder, so only two command lines were ported; and a window
+  cannot be captured with `grim` at all, because niri reports no window
+  position — the compositor does it by id instead (§17.1).

@@ -1125,6 +1125,124 @@ Not verified, for want of hardware:
 
 ---
 
+## 17. Notes from the capture port
+
+`services/Capture.qml`. §8 said "port the `grim` and `tesseract` calls only",
+and that was right about what Prisma contains and wrong about what §9.6 needs:
+the clipboard, a destination folder and video have no predecessor at all —
+`wl-copy` appears nowhere in Prisma, screenshots land in `/tmp/prisma-shot.png`
+and stay there, and there is no recorder of any kind. What was ported is two
+command lines; the rest is new.
+
+Not here, deliberately: the selection rectangle. §9.6 gives that to Bioma's own
+input surface (§8), which does not exist yet. `selectRegion()` shells out to
+`slurp` in the meantime, and every region path takes a region string, so
+replacing it later touches one function.
+
+### 17.1 A window cannot be captured with grim on this niri
+
+`grim -g` needs the window's rectangle in layout coordinates, and niri reports
+`tile_pos_in_workspace_view` as **null for every window**, focused and visible
+ones included. Size, yes; position, no. Checked against the `windows` snapshot
+and the event stream both.
+
+niri captures by window id instead, which is better than a rectangle anyway: it
+captures the window rather than whatever happened to be in that part of the
+screen, so nothing overlapping is included.
+
+`--write-to-disk` is a **boolean, not a path** — it writes wherever *niri's*
+configuration says. Passing a filename to it fails with `invalid value ...
+[possible values: true, false]`, which is how that was found. Bioma asks for the
+clipboard instead and writes the clipboard out itself, so the destination stays
+Bioma's and the image is on the clipboard where §9.6 wants it.
+
+### 17.2 The clipboard lies twice, and the second lie is the interesting one
+
+`niri msg` returns when the action has been **dispatched**, not when the image is
+on the clipboard. Chaining `niri msg ... && wl-paste > file` therefore writes
+*the previous clipboard contents* and reports success. Reproduced deliberately
+by copying a red 101×51 image first: the window capture produced a red 101×51
+image, three runs in a row, with no error anywhere.
+
+The obvious fix is to clear the clipboard first and wait for something to
+appear. **It does not work on this machine, and probably not on most.** A
+clipboard manager is running — `wl-paste --watch cliphist store` — and the old
+selection comes straight back: after `wl-copy --clear`, twenty polls over four
+hundred milliseconds still returned the decoy. Text behaves the same way; this
+is not specific to images.
+
+What works is waiting for the contents to *change*, by checksum, which is
+indifferent to who owns the selection. Measured: the window image lands within
+one fifty-millisecond poll. With the decoy in place and the checksum wait, the
+capture returns 3416×1372, exactly niri's reported window size.
+
+The cost is honest and bounded: capturing the same unchanged window twice waits
+the full two seconds before writing the same bytes. Rare, and better than being
+confidently wrong in the common case.
+
+### 17.3 Even dimensions cannot be fixed by rounding the region
+
+§9.6 says to round the region because H.264 refuses odd dimensions. That was
+implemented first and does not work. The region is in **logical** coordinates
+and the encoder works in **physical** pixels, and the conversion is not
+invertible: 101 logical at 1.5× is 151.5 physical; rounding to 152 and dividing
+back gives 101 again, and the region comes out exactly as odd as it went in.
+
+`wl-screenrec --encode-resolution` takes physical pixels and is the one place
+evenness can actually be stated. The region is passed through untouched —
+cropping a hand-drawn selection to suit a codec would move the rectangle the
+user drew.
+
+Verified: a deliberately odd 601×451 region records as 600×450 H.264.
+
+### 17.4 Two captures in one second overwrote each other
+
+Filenames were timestamped to the second, and the probe took two captures inside
+one second by accident — which a held keybind would do on purpose. The second
+overwrote the first, silently. A sequence suffix now appears only when a second
+is reused, so ordinary filenames stay readable.
+
+Worth stating because it is the same class as everything else in this file: the
+failure produced a plausible result and no error.
+
+### 17.5 Verified
+
+Every path run against the live compositor, artefacts removed afterwards:
+
+- full output: `grim -o DP-1` → 3440×1440 PNG, and `wl-paste --list-types`
+  confirms `image/png` on the clipboard
+- region: an odd 101×51 selection captured at exactly 101×51 — stills keep the
+  dimensions asked for, it is only video that cannot
+- window: by id, with a decoy image on the clipboard, → 3416×1372, matching
+  niri's reported window size
+- text: `grim` piped into `tesseract`, real text recognised off the screen and
+  copied; an empty region returns an empty string, which is a result and not an
+  error
+- video: 601×451 region → H.264 600×450; a second recording of a full output →
+  1920×1080. Both endings exercised: discard removes the temporary file, save
+  moves it into the video folder. Nothing was left in the temporary directory.
+- the recorder is stopped with SIGINT, which exits 130 — treating a non-zero
+  exit as failure would discard every successful recording. wl-screenrec
+  finalises the container on that signal; killing it leaves an unplayable file.
+
+Not verified:
+
+- **`selectRegion()`**, because `slurp` is interactive and this probe is not.
+  It is interim code anyway.
+- **Fractional output scale.** Both outputs here are 1×, so `encodeResolution`
+  was checked as arithmetic — 101×51 at 1.5× gives 152×76 — not against
+  hardware.
+- **`wf-recorder`**, the fallback for hardware where wl-screenrec's VAAPI path
+  does not work. Not written; wl-screenrec covers AMD, which is what this is.
+
+A note on frame rate, since it looks wrong in a recording's metadata:
+`wl-screenrec` copies a frame only when the screen changes, so a static screen
+records at a fraction of the 60 fps ceiling. A three second recording of an idle
+monitor reports about 1.5 fps and a duration slightly under three seconds. That
+is the recorder working as designed, not a dropped-frame problem.
+
+---
+
 ## 8. Port order
 
 Mapped onto PRD §10 phase 1. Each line is verified without UI before any cell
@@ -1157,7 +1275,10 @@ depends on it.
    better than the plan: no process at all on the sampling path. Clock, GPU and
    battery added; the moving average and the GPU sleep state are both real and
    measured (§16).
-9. **ScreenshotService** — port the `grim` and `tesseract` calls only.
+9. ~~**ScreenshotService**~~ — **done**, as `services/Capture.qml`. The two
+   command lines were ported; the clipboard, the destination folder and video
+   are new, because Prisma has none of them. Window capture goes through niri,
+   which was the only way to get a window's rectangle at all (§17).
 10. **NotificationService** — **last.** One owner per session: the cell cannot be
     tested while another shell runs.
 

@@ -62,6 +62,16 @@
     "display": ""
   },
 
+  "capture": {
+    "folder": "$HOME/Pictures/Screenshots",
+    "video_folder": "$HOME/Videos/Recordings",
+    "clipboard": true,
+    "ocr_language": "eng",
+    "fps": 60,
+    "codec": "avc",
+    "bitrate": "5 MB"
+  },
+
   "vitals": {
     "interval": 2000,
     "clock_average": 5,

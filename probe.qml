@@ -65,6 +65,9 @@ ShellRoot {
     readonly property real gpuClock: SystemMonitor.gpuClock
     readonly property var vitalProcesses: SystemMonitor.processes
     readonly property bool hasBattery: SystemMonitor.hasBattery
+    readonly property string captureFolder: Capture.folder
+    readonly property bool capturing: Capture.busy
+    readonly property bool capturingVideo: Capture.recording
 
     function line(label, value) {
         console.log(("  " + label + "                      ").slice(0, 24) + value);
@@ -368,6 +371,30 @@ ShellRoot {
                         + `  cpu ${p.cpu}%  ram ${p.memMb} MiB (${p.memPercent}%)`);
     }
 
+    function probeCapture() {
+        console.log("── Capture ───────────────────────────────────────");
+        // Nothing here takes a screenshot: this probe reports state, and a
+        // capture writes files and takes the clipboard. The capture paths are
+        // exercised separately — see INVENTORY §17.
+        line("stills", root.captureFolder);
+        line("video", Capture.videoFolder);
+        line("temporary", Capture.temporaryDirectory);
+        line("clipboard", Capture.copyToClipboard ? "yes" : "no");
+        line("ocr language", Capture.language);
+        line("video", `${Capture.codec}  ${Capture.fps} fps  ${Capture.bitrate}`);
+        line("busy", root.capturing + (root.capturingVideo
+             ? `  recording, ${Capture.elapsed}s` : ""));
+
+        // The one piece of arithmetic no hardware here can confirm: this
+        // machine has no fractional-scale output.
+        line("encode 101x51 @1x", Capture.encodeResolution("0,0 101x51", 1));
+        line("encode 101x51 @1.5x", Capture.encodeResolution("0,0 101x51", 1.5));
+        if (Capture.lastPath.length > 0)
+            line("last", Capture.lastPath);
+        if (Capture.lastError.length > 0)
+            line("last error", Capture.lastError);
+    }
+
     function probeScreens() {
         console.log("── Screens ───────────────────────────────────────");
         for (const s of Quickshell.screens)
@@ -391,6 +418,7 @@ ShellRoot {
             probeNetwork();
             probeBluetooth();
             probeVitals();
+            probeCapture();
             console.log("──────────────────────────────────────────────────");
             Qt.exit(0);
         }

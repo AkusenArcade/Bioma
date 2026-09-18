@@ -123,6 +123,10 @@ what a cell displays. A cell's own settings live in its `options`.
 | `audio.monitor_signal` | Whether the peak monitor on the default sink runs. It is Sinestesia's visibility condition, and it is the only continuous audio work in the shell. |
 | `brightness.backend` | `auto` \| `backlight` \| `ddc` \| `none`. `auto` prefers a real backlight and falls back to DDC. |
 | `brightness.display` | Which DDC display to drive, by connector (`DP-1`) or I²C bus. Empty means the first found. |
+| `capture.folder` / `capture.video_folder` | Where stills and recordings are kept. A recording is written to a temporary directory first and moved here only when saved, so a discarded one never appears. |
+| `capture.clipboard` | Whether a capture also takes the clipboard. §9.6 wants it; a window capture always does, because the compositor is what produces the image. |
+| `capture.ocr_language` | tesseract language code. |
+| `capture.fps` / `capture.codec` / `capture.bitrate` | H.264 at 60 fps by default, no audio. `fps` is a ceiling: the recorder copies a frame only when the screen changes, so a still screen records at far less. |
 | `vitals.interval` | Sampling cadence, milliseconds. One cadence for load, memory, clock and GPU — they are read at the same instant so they can be compared. |
 | `vitals.clock_average` | How many samples the CPU clock is averaged over. **Not optional** (PRD §9.2): the raw clock swings hundreds of megahertz between samples and an unsmoothed beat is arrhythmic. At the default cadence, 5 samples is ten seconds. |
 | `vitals.gpu_card` | Which card to sample, matched against its sysfs path (`card1`). Empty picks the one with the most VRAM, which on a machine with an integrated and a discrete GPU is the discrete one. |
