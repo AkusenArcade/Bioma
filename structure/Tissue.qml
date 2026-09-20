@@ -140,6 +140,7 @@ Item {
                 "metrics": Qt.binding(() => root.metrics),
                 "radius": Qt.binding(() => root.cellRadius),
                 "origin": Qt.binding(() => root.anchorSide),
+                "originGap": Qt.binding(() => root.padding),
                 "output": Qt.binding(() => root.output),
                 "edge": Qt.binding(() => root.edge),
                 "config": entry

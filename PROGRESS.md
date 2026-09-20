@@ -100,6 +100,12 @@ so the dismissal itself is verified by hand.
   is not installed and a relative `import "."` does not resolve either — so a
   sibling type is invisible to the cell beside it. `Dial` and `WorkspaceBars`
   are there for that reason as much as for reuse.
+- **An expansion starts where the membrane ends.** The thread is as long as
+  the margin the tissue keeps around its cells — two pixels at the default, not
+  the 24 of CELLS.md §03 — so every panel hangs from the line where niri begins
+  drawing windows, whatever the height of the cell above it. Measured: the
+  cell's lower rim at y 53, the panel's upper rim at y 56, the exclusive zone
+  56. Akusen's rule, 2026-09-20.
 - **The input surface's region is the screen minus what the shell claims.**
   Layer-shell surfaces of one layer stack in creation order, which is not
   something to build a behaviour on: the catcher subtracts every cell and panel
