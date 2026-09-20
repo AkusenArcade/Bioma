@@ -7,20 +7,40 @@ Last worked: 2026-09-20.
 
 ## Where to pick up
 
-Phase 1 is nine services of ten, every one verified. Phase 0's layout engine now
-draws: membranes, tissues and cells are real, and two cells stand on them.
+Phase 1 is nine services of ten, every one verified. Phase 0's engine draws and
+has been exercised by four cells; phase 2 is finished — window title,
+workspaces and vitals, the last of them opening into pods and a process list.
 
 Three ways in, and they are independent:
 
-1. **Notifications**, which closes phase 1 and burns the bridge — the only work
+1. **Phase 3 cells**: sinestesia, theme, utility. Sinestesia is the one with
+   real unknowns — the band's behaviour is defined against the author's own
+   Sinestesia code, and capture and FFT have to be split from rendering into a
+   headless process before a cell draws anything.
+2. **Notifications**, which closes phase 1 and burns the bridge — the only work
    that cannot be done without switching the running shell off. See the
    pre-flight below.
-2. **The rest of the engine**: expansion (grown, never yet opened), auto-hide,
-   vertical and floating tissues, and the full-screen input surface of PRD §8,
-   which the PRD calls the most uncertain piece in the project and which nothing
-   has prototyped.
-3. **Cells**, in build order. Phase 2 is done — window title, workspaces and
-   vitals — so the next is phase 3: sinestesia, theme, utility.
+3. **The rest of the engine**: auto-hide, vertical and floating tissues,
+   keyboard focus for invoked cells, and the two remaining users of the
+   full-screen input surface — cells positioned at the pointer, and Bioma's own
+   selection rectangle, which `Capture.selectRegion()` still stands in for with
+   `slurp`.
+
+### Waiting for a pair of hands
+
+Nothing here can press a mouse button — there is no `ydotool` or `wtype` on
+this machine — so three things are written, look right in a screenshot, and
+have never been confirmed by a real click:
+
+- **a press outside an open cell dismisses it**, through `structure/InputSurface.qml`;
+- **the scrollbar** in both lists, which appears while the list is moving;
+- **pressing the vitals search field**, which used to dismiss the cell and
+  should not any more: the masks are rebound when an expansion finishes
+  growing, not only when it appears.
+
+The way to verify anything visual here is a temporary `Timer` that sets
+`open = true` a couple of seconds after start, then `grim` for a frame or a
+burst of them. Take the patch out before committing.
 
 ## How to try it without touching the running shell
 
