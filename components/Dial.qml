@@ -26,13 +26,33 @@ Item {
 
     // The fill is data. When the source steps — the clock ticks once a second —
     // the step is smoothed just enough not to read as a tick.
-    property real sweep: (root.fraction % 1) * 360
+    //
+    // A cycle that closes does **not** rewind. At the end of the minute the
+    // dial is at 354° and the next reading is 0°: animated, that is the hand
+    // sweeping backwards round the face, which says the opposite of what
+    // happened. The new cycle starts at its first frame instead, and only a
+    // rising value is animated.
+    readonly property real angle: (root.fraction % 1) * 360
+    property real sweep: 0
 
-    Behavior on sweep {
-        NumberAnimation {
-            duration: Timing.transition
-            easing.type: Easing.OutQuad
+    onAngleChanged: {
+        if (root.angle < root.sweep) {
+            fill.stop();
+            root.sweep = root.angle;
+        } else {
+            fill.to = root.angle;
+            fill.restart();
         }
+    }
+
+    Component.onCompleted: root.sweep = root.angle
+
+    NumberAnimation {
+        id: fill
+        target: root
+        property: "sweep"
+        duration: Timing.transition
+        easing.type: Easing.OutQuad
     }
 
     Shape {
