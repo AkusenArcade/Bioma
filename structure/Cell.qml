@@ -86,12 +86,22 @@ Item {
     // no other.
     property string output: ""
 
-    // Contracted and expanded content. The contracted content is entirely
-    // replaced by the expanded one — there is no pre-collapse. The outgoing and
-    // incoming are staggered; a simultaneous crossfade reads as overlap.
+    // The edge of the membrane this cell sits on, so an expansion knows which
+    // way is away from the screen edge.
+    property string edge: "top"
+
+    // Contracted content, and the panel an expansion hangs below it. The cell
+    // itself keeps its contracted shape: what grows is the panel, out of the
+    // node of the thread that ties it back here.
     default property alias contracted: contractedSlot.data
-    property Component expanded: null
+    property Component panel: null
     property bool open: false
+
+    // Whether opening replaces what the cell was showing. The vitals cell does:
+    // its mini indicators fade and the cell becomes the header of its own
+    // expansion. Most do not — the workspaces cell keeps its mark and its name,
+    // because that is what the panel is a list of.
+    property bool replacesContent: false
 
     // ---- Size --------------------------------------------------------------
 
@@ -117,46 +127,27 @@ Item {
     // cell asks for the width of its content.
     property real grantedWidth: contractedWidth
 
-    readonly property real expandedWidth: expansion.item ? expansion.item.implicitWidth : contractedWidth
-    readonly property real expandedHeight: expansion.item ? expansion.item.implicitHeight : contractedHeight
-
     implicitWidth: contractedWidth
     implicitHeight: contractedHeight
 
-    // Growth animates width and height, never `transform: scale`. Scale is
-    // cheaper but deforms everything inside: the rim changes thickness
-    // throughout the growth, radii distort, and text is stretched. The rim is
-    // the signature of Bioma's surfaces, so scale is disqualified.
-    width: open ? expandedWidth : grantedWidth
-    height: open ? expandedHeight : contractedHeight
+    width: grantedWidth
+    height: contractedHeight
 
     // A cell that is not shown occupies nothing; the tissue reflows around it.
     visible: shown || appearance.running
     opacity: shown ? 1 : 0
 
-    // A cell resizes for two different reasons, and they are not the same
-    // event. An expansion opens and closes on its own timings; a contracted
-    // cell that takes a longer title is reflowing, and must move at the rate
-    // its tissue and its neighbours move at, or the row tears.
+    // A contracted cell resizes to fit its content, and that is a reflow: it
+    // must move at the rate its tissue and its neighbours move at, or the row
+    // tears. Expansion no longer touches this — what grows is the panel.
     //
-    // Being expanded is legible from the height: only an expansion changes it.
-    readonly property bool expanding: open || height > contractedHeight + 1
-
-    // Reversible from wherever they are, never queued: a Behavior interrupted
+    // Reversible from wherever it is, never queued: a Behavior interrupted
     // mid-flight retargets, which is exactly the required behaviour.
     Behavior on width {
         NumberAnimation {
-            duration: root.expanding ? (root.open ? Timing.open : Timing.close) : Timing.reflow
+            duration: Timing.reflow
             easing.type: Easing.Bezier
-            easing.bezierCurve: root.open || !root.expanding ? Timing.easeOpenFlat : Timing.easeClose
-        }
-    }
-
-    Behavior on height {
-        NumberAnimation {
-            duration: root.open ? Timing.open : Timing.close
-            easing.type: Easing.Bezier
-            easing.bezierCurve: root.open ? Timing.easeOpenFlat : Timing.easeClose
+            easing.bezierCurve: Timing.easeOpenFlat
         }
     }
 
@@ -207,26 +198,133 @@ Item {
         // What the content asks for, so the cell can be as wide as its job.
         implicitWidth: childrenRect.width
         // Never clipped, or the rim goes with it: long text ellipsises itself.
-        opacity: root.open ? 0 : 1
+        opacity: root.open && root.replacesContent ? 0 : 1
 
         Behavior on opacity { NumberAnimation { duration: Timing.contentFade } }
     }
 
-    // Content enters only once the shape is at size, with opacity plus a 4 px
-    // upward translation. Text is never scaled.
-    Loader {
-        id: expansion
-        anchors.fill: parent
-        active: root.open || root.height > root.contractedHeight + 1
-        sourceComponent: root.expanded
-        opacity: root.contentReady ? 1 : 0
-        y: root.contentReady ? 0 : 4
+    // ---- Expansion ---------------------------------------------------------
+    //
+    // It is born from its point. The panel grows out of the node of the thread
+    // that connects it to this cell, animating width and height, and it grows
+    // away from the screen edge — over the windows, never into reserved space.
+    //
+    // The cascade is the one in STYLE_GUIDE §6: the thread draws, the panel
+    // grows out of its far node a stagger later, and the content arrives only
+    // once the shape is at size. Closing reverses it and is quicker: it opens
+    // calmly, it closes quickly.
 
-        Behavior on opacity { NumberAnimation { duration: Timing.contentFade } }
-        Behavior on y { NumberAnimation { duration: Timing.contentFade; easing.type: Easing.OutQuad } }
+    readonly property bool hasPanel: panel !== null
+    readonly property real gap: metrics.gap
+
+    // A top membrane opens downward, a bottom one upward.
+    readonly property bool opensDown: edge !== "bottom"
+
+    property real threadProgress: 0
+    property real panelGrowth: 0
+    readonly property bool panelVisible: panelGrowth > 0
+    readonly property bool panelReady: open && panelGrowth > 0.999
+
+    Thread {
+        id: thread
+        vertical: true
+        visible: root.hasPanel && root.threadProgress > 0
+        progress: root.threadProgress
+        width: implicitWidth
+        height: root.gap
+        x: (root.width - width) / 2
+        y: root.opensDown ? root.height : -root.gap
     }
 
-    readonly property bool contentReady: open && Math.abs(width - expandedWidth) < 1 && Math.abs(height - expandedHeight) < 1
+    Panel {
+        id: panelShape
+        metrics: root.metrics
+        visible: root.hasPanel && root.panelGrowth > 0
+        growth: root.panelGrowth
+        contentReady: root.panelReady
+
+        // The node the shape is born from: the far end of the thread.
+        nodeX: root.width / 2
+        nodeY: root.opensDown ? root.height + root.gap : -root.gap
+
+        // Where it settles. A cell anchored to a corner keeps that edge and
+        // the panel opens inward; a centred one opens from both sides.
+        anchorX: root.origin === "end" ? root.width - targetWidth
+               : root.origin === "centre" ? (root.width - targetWidth) / 2
+               : 0
+        anchorY: root.opensDown ? root.height + root.gap : -root.gap - targetHeight
+
+        Loader {
+            id: panelContent
+            active: root.open || root.panelGrowth > 0
+            sourceComponent: root.panel
+        }
+    }
+
+    onOpenChanged: {
+        if (!hasPanel)
+            return;
+        closing.stop();
+        opening.stop();
+        if (open)
+            opening.start();
+        else
+            closing.start();
+    }
+
+    // Both run from wherever the values already are, so invoking a cell
+    // mid-opening sends it back rather than restarting it.
+    ParallelAnimation {
+        id: opening
+
+        NumberAnimation {
+            target: root
+            property: "threadProgress"
+            to: 1
+            duration: Timing.grow
+            easing.type: Easing.Bezier
+            easing.bezierCurve: Timing.easeOpenFlat
+        }
+
+        SequentialAnimation {
+            PauseAnimation { duration: Timing.stagger * 2 }
+            NumberAnimation {
+                target: root
+                property: "panelGrowth"
+                to: 1
+                duration: Timing.grow
+                easing.type: Easing.Bezier
+                // A panel is not a small capsule: overshoot here reads as a
+                // bounce and conflicts with the register.
+                easing.bezierCurve: Timing.easeOpenFlat
+            }
+        }
+    }
+
+    ParallelAnimation {
+        id: closing
+
+        NumberAnimation {
+            target: root
+            property: "panelGrowth"
+            to: 0
+            duration: Timing.close
+            easing.type: Easing.Bezier
+            easing.bezierCurve: Timing.easeClose
+        }
+
+        SequentialAnimation {
+            PauseAnimation { duration: Timing.stagger * 2 }
+            NumberAnimation {
+                target: root
+                property: "threadProgress"
+                to: 0
+                duration: Timing.close - Timing.stagger * 2
+                easing.type: Easing.Bezier
+                easing.bezierCurve: Timing.easeClose
+            }
+        }
+    }
 
     // ---- Interaction -------------------------------------------------------
 
@@ -240,14 +338,22 @@ Item {
     readonly property bool hovered: hover.hovered
 
     // What the membrane needs to declare the blur region and the input mask:
-    // the shape this cell actually occupies.
-    function shape() {
-        return { "item": root, "radius": root.radius };
+    // every shape this cell actually occupies. The thread is not one of them —
+    // it takes no input, and blurring a 1.3 px line would only smear it.
+    function shapes() {
+        const out = [{ "item": root, "radius": root.radius }];
+        if (root.panelVisible)
+            out.push({ "item": panelShape, "radius": panelShape.radius });
+        return out;
     }
 
     // TODO Phase 0: `appearance.xray` — blur a static copy of the wallpaper
     // instead of the live content underneath. It is a configuration key, not a
     // fixed choice, and the cheap path is the one this build has not exercised.
-    // TODO Phase 2: shadow on invoked and expanded cells only (0 14 28 / 45%),
-    // and the thread that ties an expansion back to its origin node.
+    // TODO Phase 2: a cell that replaces its contracted content with a header
+    // form when it opens — the vitals indicators fade and the cell becomes the
+    // title of its own expansion.
+    // TODO Phase 0: clicking outside closes an open cell, which needs the
+    // full-screen input surface of PRD §8; and a panel whose anchor would take
+    // it off the screen has to be pushed back inside.
 }

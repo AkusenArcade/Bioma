@@ -50,7 +50,7 @@ Drawn, and verified on screen against the design handoff.
 | `structure/Tissue.qml` | Real. Ceiling-not-reservation widths, elastic share, reflow, the punched band. |
 | `structure/Cell.qml` | Real, contracted. Glass, rim, config-driven width and visibility, growth mechanics written. |
 | `structure/Visibility.qml` | **Exercised at last** — the window title appears and disappears with focus. |
-| `components/` | `Rim`, `Ring`, `Dial`, `Icon`, `LightGradient`, `WorkspaceBars`. |
+| `components/` | `Rim`, `Ring`, `DashedRing`, `Disc`, `Dial`, `Icon`, `LightGradient`, `Thread`, `Panel`, `Well`, `WorkspaceBars`. |
 | `cells/clock`, `cells/window_title`, `cells/workspaces` | Three cells. The first two proved the engine; the third is the first per-monitor one. |
 
 Verified on HDMI-A-1: cells float with no band, the rim reads, the app icon
@@ -58,8 +58,13 @@ resolves and the fallback glyph is tinted, the title elides and cross-fades, the
 minute dial fills, and **blur through `ext-background-effect` is confirmed** —
 the wallpaper is sharp outside the pills and smoothed inside them.
 
-Not yet exercised: expansion (no cell opens yet), auto-hide, vertical tissues,
-floating tissues, several elastic cells in one tissue, keyboard focus.
+Expansion works, and the workspaces list is the first one drawn: the thread
+draws out of the cell, the panel grows from its far node, and the content
+arrives once the shape is at size. Closing reverses it, quicker.
+
+Not yet exercised: auto-hide, vertical tissues, floating tissues, several
+elastic cells in one tissue, keyboard focus, and clicking outside to close —
+which needs the full-screen input surface of PRD §8.
 
 ### Decisions taken while building it
 
@@ -92,6 +97,20 @@ floating tissues, several elastic cells in one tissue, keyboard focus.
   is not installed and a relative `import "."` does not resolve either — so a
   sibling type is invisible to the cell beside it. `Dial` and `WorkspaceBars`
   are there for that reason as much as for reuse.
+- **A cell keeps its content when it opens**, unless it says otherwise.
+  PRD §6.7 says the contracted content is entirely replaced by the expanded
+  one; that is true of vitals, whose cell becomes the header of its own
+  expansion, and wrong for the workspaces cell, which the mockup shows keeping
+  its mark and its name while the list hangs below. `Cell.replacesContent`
+  carries the difference.
+- **The window title has no minimum width.** CELLS.md §01 gives it 186 px as a
+  stabiliser; on the machine it read as a wide empty pill next to a short
+  title, so it now takes exactly the width of its text. Akusen's call,
+  2026-09-20.
+- **A cell's panel content is loaded by URL, not imported.** There is no QML
+  module for a cell's directory, so `cells/<name>/` holds the contracted cell
+  and its expansion as separate files, and the cell loads the second with
+  `Qt.resolvedUrl` — which keeps the layout CLAUDE.md describes.
 - **A cell knows its monitor.** The membrane passes its screen name down
   through the tissue, so the workspaces cell answers for its own output, as
   CELLS.md §03 decided against PRD §9.3.

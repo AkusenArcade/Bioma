@@ -142,6 +142,7 @@ PanelWindow {
                 metrics: root.metrics
                 cellsConfig: modelData.cells || []
                 output: root.screenItem ? root.screenItem.name : ""
+                edge: root.edge
                 orientation: modelData.orientation || (root.horizontal ? "horizontal" : "vertical")
                 padding: modelData.padding !== undefined
                          ? Math.max(2, Math.min(12, modelData.padding))
@@ -291,10 +292,11 @@ PanelWindow {
             for (const cell of tissue.cells) {
                 if (!cell.shown)
                     continue;
-                const shape = cell.shape();
-                input.push(shape);
-                if (cell.blur)
-                    blur.push(shape);
+                for (const shape of cell.shapes()) {
+                    input.push(shape);
+                    if (cell.blur)
+                        blur.push(shape);
+                }
             }
         }
 

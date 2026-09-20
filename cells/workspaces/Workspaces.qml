@@ -59,10 +59,29 @@ Cell {
     // ---- Interaction ------------------------------------------------------
 
     TapHandler {
-        // TODO Phase 2: opens the list downward, aligned left — a panel hung on
-        // a 24 px thread from the cell's centre. The expansion machinery is
-        // written but no cell has opened yet; this is the first that will.
+        // Click opens and closes the list; a row jumps and closes on its own.
         onTapped: root.open = !root.open
+    }
+
+    // The panel's content lives in its own file beside this one, and arrives
+    // through a Loader: Quickshell generates no QML module for a cell's own
+    // directory, so a sibling type cannot be imported — but a URL resolved
+    // against this file can be loaded.
+    panel: Component {
+        Loader {
+            id: listLoader
+            source: Qt.resolvedUrl("WorkspaceList.qml")
+
+            onLoaded: {
+                item.output = Qt.binding(() => root.output);
+                item.metrics = Qt.binding(() => root.metrics);
+            }
+
+            Connections {
+                target: listLoader.item
+                function onJumped() { root.open = false; }
+            }
+        }
     }
 
     WheelHandler {

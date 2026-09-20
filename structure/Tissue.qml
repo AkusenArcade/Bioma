@@ -23,6 +23,9 @@ Item {
     // screen rather than per session.
     property string output: ""
 
+    // And its edge, so an expansion knows which way is away from the screen.
+    property string edge: "top"
+
     property bool floating: false
     property string orientation: "horizontal"
     readonly property bool horizontal: orientation === "horizontal"
@@ -138,6 +141,7 @@ Item {
                 "radius": Qt.binding(() => root.cellRadius),
                 "origin": Qt.binding(() => root.anchorSide),
                 "output": Qt.binding(() => root.output),
+                "edge": Qt.binding(() => root.edge),
                 "config": entry
             });
 
@@ -152,6 +156,9 @@ Item {
             // the width changes — and the cell never grows to fit its content.
             cell.contractedWidthChanged.connect(root.bump);
             cell.shownChanged.connect(root.bump);
+            // A panel coming or going changes what the membrane has to mask
+            // and blur, and the membrane is listening to this.
+            cell.panelVisibleChanged.connect(root.bump);
             built.push(cell);
         }
 
