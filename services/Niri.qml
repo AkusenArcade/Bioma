@@ -312,6 +312,74 @@ Singleton {
         }
     }
 
+    // ── The compositor's own layout figures ──────────────────────────────
+    //
+    // Windows do not begin at the edge of a reserved strip: niri insets them by
+    // its `gaps`, and by any `struts`, and a cell's expansion has to hang from
+    // the line where they actually start rather than from where the shell
+    // stopped. There is no IPC for the configuration — `niri msg` lists
+    // outputs, workspaces, windows and layers and nothing else — so this reads
+    // niri's own file and watches it.
+
+    readonly property string configPath: `${Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config"}/niri/config.kdl`
+
+    property real windowGap: 0
+    property var struts: ({ "top": 0, "bottom": 0, "left": 0, "right": 0 })
+
+    function strutFor(edge) {
+        return root.struts[edge] !== undefined ? root.struts[edge] : 0;
+    }
+
+    // The block a key belongs to, with its own braces balanced, so a `gaps`
+    // inside some other section is not mistaken for the layout's.
+    function blockOf(text, name) {
+        const opening = text.search(new RegExp(`(^|\\n)\\s*${name}\\s*\\{`));
+        if (opening < 0)
+            return "";
+        let depth = 0;
+        for (let i = text.indexOf("{", opening); i < text.length; i++) {
+            if (text[i] === "{")
+                depth++;
+            else if (text[i] === "}" && --depth === 0)
+                return text.slice(opening, i);
+        }
+        return "";
+    }
+
+    function readLayout(text) {
+        if (!text)
+            return;
+        // Comments first: a commented-out `gaps 0` is not a value.
+        const stripped = text.replace(/\/\/[^\n]*/g, "");
+        const layout = root.blockOf(stripped, "layout");
+        if (!layout)
+            return;
+
+        const gaps = layout.match(/(^|\s)gaps\s+(-?\d+(?:\.\d+)?)/);
+        root.windowGap = gaps ? parseFloat(gaps[2]) : 0;
+
+        const struts = root.blockOf(layout, "struts");
+        const read = side => {
+            const match = struts.match(new RegExp(`(^|\\s)${side}\\s+(-?\\d+(?:\\.\\d+)?)`));
+            return match ? parseFloat(match[2]) : 0;
+        };
+        root.struts = {
+            "top": read("top"),
+            "bottom": read("bottom"),
+            "left": read("left"),
+            "right": read("right")
+        };
+    }
+
+    FileView {
+        id: niriConfig
+        path: root.configPath
+        watchChanges: true
+        printErrors: false
+        onLoaded: root.readLayout(text())
+        onFileChanged: reload()
+    }
+
     function focusWindow(id) { root.dispatch(["action", "focus-window", "--id", String(id)]); }
     function closeWindow() { root.dispatch(["action", "close-window"]); }
     function focusWorkspace(reference) { root.dispatch(["action", "focus-workspace", String(reference)]); }

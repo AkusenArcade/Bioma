@@ -23,8 +23,17 @@ Item {
     // screen rather than per session.
     property string output: ""
 
-    // And its edge, so an expansion knows which way is away from the screen.
+    // And its edge, so an expansion knows which way is away from the screen,
+    // plus the line the compositor's windows begin on: a panel hangs from
+    // there, so the thread is however long it has to be to reach it.
     property string edge: "top"
+    property real windowLine: 0
+    property bool opensAway: true
+
+    readonly property real originGap: {
+        const outer = opensAway ? y + padding + metrics.cellHeight : y + padding;
+        return Math.max(0, opensAway ? windowLine - outer : outer - windowLine);
+    }
 
     property bool floating: false
     property string orientation: "horizontal"
@@ -140,7 +149,7 @@ Item {
                 "metrics": Qt.binding(() => root.metrics),
                 "radius": Qt.binding(() => root.cellRadius),
                 "origin": Qt.binding(() => root.anchorSide),
-                "originGap": Qt.binding(() => root.padding + root.metrics.marginEdge),
+                "originGap": Qt.binding(() => root.originGap),
                 "output": Qt.binding(() => root.output),
                 "edge": Qt.binding(() => root.edge),
                 "config": entry

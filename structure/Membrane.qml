@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import qs.core
+import qs.services
 
 // One edge of one monitor. Tissues anchored to it share its length.
 //
@@ -54,11 +55,21 @@ PanelWindow {
 
     readonly property real tissueThickness: metrics.cellHeight + Math.max(2, Math.min(12, Config.get("tissue.padding", 2))) * 2
 
-    // The strip the membrane actually occupies. The edge margin is a frame, and
-    // a frame has two sides: the same margin sits between the tissue and the
-    // windows as between the tissue and the screen edge. That lower edge is
-    // where every expansion hangs from.
-    readonly property real strip: metrics.marginEdge * 2 + tissueThickness
+    // The strip the membrane actually occupies: the screen edge margin is a
+    // frame, not a surface, but it is part of what the windows must not cover.
+    readonly property real strip: metrics.marginEdge + tissueThickness
+
+    // Where the compositor actually starts drawing windows, in this surface's
+    // coordinates. It is not the edge of the reserved strip: niri insets its
+    // windows by `gaps`, and by any `struts`, and an expansion hangs from the
+    // line the windows really begin on — otherwise the panel floats a gap above
+    // them and the alignment the eye checks is the one that is wrong.
+    readonly property real windowInset: Niri.windowGap + Niri.strutFor(edge)
+    readonly property real windowLine: {
+        if (edge === "top" || edge === "left")
+            return strip + windowInset;
+        return (horizontal ? height : width) - strip - windowInset;
+    }
 
     // When space is reserved it stays reserved even while a conditional cell
     // inside is invisible — the "slot" model, so windows never reflow. An
@@ -149,6 +160,8 @@ PanelWindow {
                 cellsConfig: modelData.cells || []
                 output: root.screenItem ? root.screenItem.name : ""
                 edge: root.edge
+                windowLine: root.windowLine
+                opensAway: root.edge === "top" || root.edge === "left"
                 orientation: modelData.orientation || (root.horizontal ? "horizontal" : "vertical")
                 padding: modelData.padding !== undefined
                          ? Math.max(2, Math.min(12, modelData.padding))

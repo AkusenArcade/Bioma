@@ -100,15 +100,16 @@ so the dismissal itself is verified by hand.
   is not installed and a relative `import "."` does not resolve either — so a
   sibling type is invisible to the cell beside it. `Dial` and `WorkspaceBars`
   are there for that reason as much as for reuse.
-- **An expansion hangs from the membrane's edge, not from its cell.** The
-  screen-edge margin is a frame and a frame has two sides, so the membrane
-  reserves the same margin below the tissue as above it, and the thread is as
-  long as the cell's whole inset inside the membrane — the tissue's padding
-  plus that frame, 14 px at the default rather than the 24 of CELLS.md §03.
-  Every panel therefore begins on the line niri draws windows from, whatever
-  the height of the cell above it. Measured: cell's lower rim at y 53, thread
-  to 68, panel's upper rim at 68, exclusive zone 68. Akusen's rule,
-  2026-09-20.
+- **An expansion hangs from the line the compositor draws windows on.** Not
+  from the cell, and not from the edge of the reserved strip: niri insets its
+  windows by `gaps` and by any `struts`, so a panel hung at the strip's edge
+  floats a gap above the windows and the alignment the eye actually checks is
+  the one that is wrong. `services/Niri.qml` reads those two figures out of
+  niri's own `config.kdl` and watches it — `niri msg` has no configuration
+  query, only outputs, workspaces, windows and layers — and the tissue makes
+  each thread however long it must be to reach that line. Measured with
+  `gaps 12`: the panel's upper rim and the window's top edge both at y 68.
+  Akusen's rule, 2026-09-20.
 - **The input surface's region is the screen minus what the shell claims.**
   Layer-shell surfaces of one layer stack in creation order, which is not
   something to build a behaviour on: the catcher subtracts every cell and panel
