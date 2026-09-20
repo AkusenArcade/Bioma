@@ -2,7 +2,6 @@ import QtQuick
 import Quickshell
 import qs.core
 import qs.cells
-import qs.components
 
 // A positioned container. Owns anchor, margins, orientation, padding, opacity
 // and the ordered list of its cells. It has no opinion about what a cell shows.
@@ -228,54 +227,26 @@ Item {
 
     // ---- Background --------------------------------------------------------
     //
-    // The band is drawn **only in the band**. One rectangle behind the cells
-    // would put the tissue fill between the blurred background and the cell
-    // glass: the blur would be seen through two layers and the cell's opacity
-    // would stop meaning what it declares.
+    // One continuous fill, behind the cells, following the tissue's own radius.
     //
-    // So it is a ring — it follows the outer radius, which a band tiled out of
-    // plain rectangles cannot — plus one straight bridge in each gap between
-    // two cells. Nothing is drawn where a cell is.
+    // docs/design/IMPLEMENTATION.md asks for the fill to be drawn only in the
+    // band, with the cell areas punched out of it, so that cell blur is not
+    // seen through two layers. That was tried first and it is wrong at this
+    // scale: with a 2 px margin the punched band *is* a one-pixel outline
+    // around every cell plus a rule standing in the gap between two of them,
+    // which is exactly what the design forbids. The design page draws the
+    // tissue as a plain background behind its cells, and so does this.
+    //
+    // The cost is real and worth stating: a cell composites over the band
+    // rather than straight over the blurred desktop, so its declared opacity
+    // reads a little heavier than the number says.
 
-    readonly property color bandColour: Qt.alpha(Theme.elevated, fillOpacity)
-
-    Ring {
+    Rectangle {
         anchors.fill: parent
+        color: Qt.alpha(Theme.elevated, root.fillOpacity)
         radius: root.radius
-        thickness: root.padding
-        innerRadius: root.cellRadius
-        colour: root.bandColour
+        antialiasing: true
         z: -1
-    }
-
-    // The bridges: the band showing through between two cells, a gap wide and
-    // as tall as the cells themselves. Each binds to its neighbours' live
-    // geometry, so the band follows a reflow frame by frame rather than being
-    // recomputed after it.
-    Repeater {
-        model: root.cells.length
-
-        delegate: Rectangle {
-            required property int index
-
-            readonly property Item cell: root.cells[index]
-            readonly property Item previous: {
-                root.revision;
-                for (let i = index - 1; i >= 0; i--)
-                    if (root.cells[i].shown)
-                        return root.cells[i];
-                return null;
-            }
-
-            visible: cell !== undefined && cell.shown && previous !== null
-            color: root.bandColour
-            z: -1
-
-            x: root.horizontal ? (previous ? previous.x + previous.width : 0) : root.padding
-            y: root.horizontal ? root.padding : (previous ? previous.y + previous.height : 0)
-            width: root.horizontal ? (visible ? Math.max(0, cell.x - x) : 0) : root.width - root.padding * 2
-            height: root.horizontal ? root.height - root.padding * 2 : (visible ? Math.max(0, cell.y - y) : 0)
-        }
     }
 
     // What the membrane needs in order to declare its blur region and its input

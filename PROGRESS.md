@@ -76,10 +76,16 @@ floating tissues, several elastic cells in one tissue, keyboard focus.
   its own `contentWidth` collapses it to nothing once it elides, so a cell that
   elides reports `implicitWidth` through `Cell.contentWidth` and elides against
   what it is granted.
-- **The tissue band ships invisible** (`tissue.opacity: 0`). Every mockup shows
-  cells floating, with nothing outlining them and no divider between them. The
-  band is still drawn when the value is raised, as one continuous fill with the
-  cell shapes punched out — never as an outline.
+- **The tissue is one continuous fill behind its cells**, at the token's 0.5.
+  `docs/design/IMPLEMENTATION.md` asks for the band to be drawn only around the
+  cells, punching their shapes out of it, so that cell blur is not seen through
+  two layers. That was built first and it is wrong at this scale: with a 2 px
+  margin a punched band *is* a one-pixel outline around every cell plus a rule
+  standing in the gap between two of them — the outline and the divider the
+  design forbids. The design page draws the tissue as a plain background behind
+  its cells, and so does this. The cost, stated rather than hidden: a cell
+  composites over the band, so its declared opacity reads a little heavier than
+  the number says.
 - **A tissue's place on its membrane is derived from its order**: first is the
   start corner, last the end corner, anything else centred, `growth: symmetric`
   forces the centre and an explicit `anchor` overrides all of it. The
