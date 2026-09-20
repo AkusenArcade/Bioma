@@ -39,6 +39,10 @@ PanelWindow {
     screen: screenItem
     color: "transparent"
 
+    // Named on the wayland side, so that `niri msg layers` and any compositor
+    // rule can tell one Bioma surface from another.
+    WlrLayershell.namespace: `bioma-membrane-${edge}`
+
     anchors {
         top: edge !== "bottom"
         bottom: edge !== "top"
@@ -282,6 +286,24 @@ PanelWindow {
     mask: maskRegion
     BackgroundEffect.blurRegion: blurRegion
 
+    // Everything on this membrane that takes input: the cells, and the panel
+    // of whichever is open. The full-screen surface subtracts these so that a
+    // press on a cell never reaches it.
+    function inputShapes() {
+        const out = [];
+        for (const tissue of root.tissues) {
+            if (!tissue || !tissue.visible)
+                continue;
+            for (const cell of tissue.cells) {
+                if (!cell.shown)
+                    continue;
+                for (const shape of cell.shapes())
+                    out.push(shape);
+            }
+        }
+        return out;
+    }
+
     function refreshRegions() {
         const input = [];
         const blur = [];
@@ -306,8 +328,17 @@ PanelWindow {
 
         root.maskRegion = Regions.rebind(root, root.maskRegion, input);
         root.blurRegion = Regions.rebind(root, root.blurRegion, blur);
+
+        // The catcher builds its own region out of these.
+        Focus.bump();
     }
 
     onRevealedChanged: refreshRegions()
-    Component.onCompleted: refreshRegions()
+
+    Component.onCompleted: {
+        Focus.register(root);
+        refreshRegions();
+    }
+
+    Component.onDestruction: Focus.unregister(root)
 }

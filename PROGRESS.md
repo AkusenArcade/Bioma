@@ -51,6 +51,7 @@ Drawn, and verified on screen against the design handoff.
 | `structure/Cell.qml` | Real, contracted. Glass, rim, config-driven width and visibility, growth mechanics written. |
 | `structure/Visibility.qml` | **Exercised at last** — the window title appears and disappears with focus. |
 | `components/` | `Rim`, `Ring`, `DashedRing`, `Disc`, `Dial`, `Icon`, `LightGradient`, `Thread`, `Panel`, `Well`, `WorkspaceBars`. |
+| `structure/InputSurface.qml` + `core/Focus.qml` | The full-screen surface of PRD §8, and the register of what is open. Built; the press path still needs a human to click. |
 | `cells/clock`, `cells/window_title`, `cells/workspaces` | Three cells. The first two proved the engine; the third is the first per-monitor one. |
 
 Verified on HDMI-A-1: cells float with no band, the rim reads, the app icon
@@ -63,8 +64,10 @@ draws out of the cell, the panel grows from its far node, and the content
 arrives once the shape is at size. Closing reverses it, quicker.
 
 Not yet exercised: auto-hide, vertical tissues, floating tissues, several
-elastic cells in one tissue, keyboard focus, and clicking outside to close —
-which needs the full-screen input surface of PRD §8.
+elastic cells in one tissue, and keyboard focus. Clicking outside to close is
+written and mapped — `niri msg layers` shows `bioma-input` appear on every
+monitor the moment a cell opens — but no test here can press a mouse button,
+so the dismissal itself is verified by hand.
 
 ### Decisions taken while building it
 
@@ -97,6 +100,13 @@ which needs the full-screen input surface of PRD §8.
   is not installed and a relative `import "."` does not resolve either — so a
   sibling type is invisible to the cell beside it. `Dial` and `WorkspaceBars`
   are there for that reason as much as for reuse.
+- **The input surface's region is the screen minus what the shell claims.**
+  Layer-shell surfaces of one layer stack in creation order, which is not
+  something to build a behaviour on: the catcher subtracts every cell and panel
+  from its own input region instead, so the two never overlap and the right
+  surface receives a press whatever the compositor stacked where.
+- **One cell is open at a time.** `core/Focus.qml` holds it: opening a second
+  closes the first, because two panels on screen are two conversations.
 - **A cell keeps its content when it opens**, unless it says otherwise.
   PRD §6.7 says the contracted content is entirely replaced by the expanded
   one; that is true of vitals, whose cell becomes the header of its own

@@ -38,6 +38,29 @@ Singleton {
         return true;
     }
 
+    // The same, inverted: everything of `base` except the shapes. This is what
+    // a full-screen catcher wants — the screen minus every surface the shell
+    // already claims — so that its input region and the membranes' never
+    // overlap and the stacking order stops mattering.
+    function hole(owner, count) {
+        const children = new Array(Math.max(0, count))
+            .fill("  Region { intersection: Intersection.Subtract }")
+            .join("\n");
+        return Qt.createQmlObject(`import Quickshell\nRegion {\n${children}\n}`, owner);
+    }
+
+    function rebindHoles(owner, previous, base, shapes) {
+        let region = previous;
+        if (!region || region.regions.length !== shapes.length) {
+            if (region)
+                region.destroy();
+            region = root.hole(owner, shapes.length);
+        }
+        region.item = base;
+        root.bind(region, shapes);
+        return region;
+    }
+
     // Rebuilds only when the count changed, binds either way. `previous` is
     // destroyed when it is replaced.
     function rebind(owner, previous, shapes) {

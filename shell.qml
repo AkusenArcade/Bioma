@@ -40,6 +40,12 @@ ShellRoot {
                 screen: perScreen.modelData
             }
 
+            // Over everything, and only while a cell is open: the surface that
+            // knows where the pointer is. PRD §8.
+            InputSurface {
+                screenItem: perScreen.modelData
+            }
+
             Variants {
                 model: {
                     if (!Config.ready)
@@ -64,11 +70,9 @@ ShellRoot {
     // TODO Phase 0: the floating tissues — anchor plus margins rather than a
     // percentage of an edge, on their own surface, allowed to overlap.
     //
-    // TODO Phase 0: the full-screen transparent input surface. Three features
-    // need it — click-outside-to-close, pointer-positioned cells, and Bioma's
-    // own screenshot region selection — and Wayland gives a client no other way
-    // to learn the pointer position. It is the single most uncertain piece in
-    // the project; prototype it early.
+    // TODO Phase 3: the two remaining users of the input surface — cells
+    // positioned at the pointer, and Bioma's own selection rectangle, which
+    // `Capture.selectRegion()` still stands in for with `slurp`.
 
     Component.onCompleted: console.log("Bioma: configuration", Config.ready ? "loaded" : "pending")
 }

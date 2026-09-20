@@ -284,6 +284,13 @@ Item {
     }
 
     onOpenChanged: {
+        // One cell at a time: opening this one closes whatever was open, and a
+        // press anywhere the shell does not claim closes this one.
+        if (open)
+            Focus.opened(root);
+        else
+            Focus.released(root);
+
         if (!hasPanel)
             return;
         closing.stop();
