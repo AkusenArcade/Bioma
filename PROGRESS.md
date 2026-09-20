@@ -3,45 +3,87 @@
 Where the work stands. `services/INVENTORY.md` holds the detail and the
 reasoning; this is the short version and the list of what is *not* done.
 
-Last worked: 2026-09-18.
+Last worked: 2026-09-20.
 
 ## Where to pick up
 
-Phase 1 is nine services of ten and every one of them is verified. The tenth is
-notifications, and it is the only piece of remaining work that cannot be done
-without switching the running shell off — see the pre-flight below.
+Phase 1 is nine services of ten, every one verified. Phase 0's layout engine now
+draws: membranes, tissues and cells are real, and two cells stand on them.
 
-So there are two ways in, and they are independent:
+Three ways in, and they are independent:
 
-1. **Notifications**, which closes phase 1 and burns the bridge.
-2. **The layout engine**, which is phase 0 work and is where the project is
-   actually thin: `Membrane`, `Tissue` and `Cell` are skeletons, nothing has
-   ever been drawn, and `structure/Visibility.qml` — the heart of the temporal
-   grammar — has never run. Nine services are waiting for a face.
+1. **Notifications**, which closes phase 1 and burns the bridge — the only work
+   that cannot be done without switching the running shell off. See the
+   pre-flight below.
+2. **The rest of the engine**: expansion (grown, never yet opened), auto-hide,
+   vertical and floating tissues, and the full-screen input surface of PRD §8,
+   which the PRD calls the most uncertain piece in the project and which nothing
+   has prototyped.
+3. **Cells**, in build order: workspaces and vitals next.
 
-The second needs nothing switched off and is the larger risk, because the
-full-screen input surface of PRD §8 has not been prototyped and the PRD calls it
-the most uncertain piece in the project.
+## How to try it without touching the running shell
+
+Noctalia owns the DP-1 membrane; HDMI-A-1 is free. `~/.config/bioma/override.json`
+declares one membrane there and nothing else, so
+
+```sh
+qs -p "$PWD/shell.qml"
+```
+
+draws Bioma on the second monitor while the session's own shell keeps running.
+The override file is outside the repository, and replaces `membranes` wholesale
+because arrays are replaced, not merged.
 
 ## Phase 0 — Foundations
 
-Scaffolded, partly real, not finished.
+Drawn, and verified on screen against the design handoff.
 
 | Piece | State |
 |---|---|
 | `core/Config.qml` | Working. Two layers, deep merge, hot reload. |
-| `core/Theme.qml` | Working. Four roles from a source, three fixed, the rest derived. Animated. |
-| `core/Timing.qml`, `core/Scale.qml`, `core/Typography.qml` | Working, unused so far. |
-| `structure/Visibility.qml` | Written. Dual threshold, confirm, dwell that resumes. **Never exercised.** |
-| `structure/Membrane.qml`, `Tissue.qml`, `Cell.qml` | Skeletons. Every real behaviour is a TODO naming its PRD section. |
-| `shell.qml` | Instantiates wallpaper surfaces per screen. Membrane instantiation is a stub. |
+| `core/Theme.qml` | Working. Four roles from a source, three fixed, the rest derived in HSL — surfaces, the outline family, the two gradient stops. With the shipped palette the derivations reproduce `docs/design/tokens.css` to within a step or two. |
+| `core/Metrics.qml` | The token geometry. **Renamed from `Scale`**: `QtQuick` exports a `Scale` type and shadows a singleton of that name everywhere. |
+| `core/Timing.qml`, `core/Typography.qml` | Aligned to the handoff: one named set, curves included; two voices, Orbitron and Spectral. |
+| `core/Regions.qml` | Region trees built at runtime, for the input mask and the blur region. |
+| `structure/Membrane.qml` | Real. Slot placement from percentages, anchors derived from the list, exclusive zone, input mask, blur region, auto-hide written. |
+| `structure/Tissue.qml` | Real. Ceiling-not-reservation widths, elastic share, reflow, the punched band. |
+| `structure/Cell.qml` | Real, contracted. Glass, rim, config-driven width and visibility, growth mechanics written. |
+| `structure/Visibility.qml` | **Exercised at last** — the window title appears and disappears with focus. |
+| `components/` | `Rim`, `Ring`, `Dial`, `Icon`, `LightGradient`. |
+| `cells/clock`, `cells/window_title` | The first two cells, and the engine's proof. |
 
-**Nothing of the layout engine has ever been drawn.** Percentage sharing, reflow,
-growth away from the anchor, the slot model for reserved space, auto-hide, blur
-regions — all still to write.
+Verified on HDMI-A-1: cells float with no band, the rim reads, the app icon
+resolves and the fallback glyph is tinted, the title elides and cross-fades, the
+minute dial fills, and **blur through `ext-background-effect` is confirmed** —
+the wallpaper is sharp outside the pills and smoothed inside them.
 
-The full-screen transparent input surface (PRD §8) has not been prototyped, and
-the PRD calls it the single most uncertain piece in the project.
+Not yet exercised: expansion (no cell opens yet), auto-hide, vertical tissues,
+floating tissues, several elastic cells in one tissue, keyboard focus.
+
+### Decisions taken while building it
+
+- **`Scale` → `Metrics`.** Name collision with `QtQuick.Scale`, which wins in
+  every file that imports QtQuick.
+- **Dynamic `Region` children do not work.** An object created with
+  `Qt.createQmlObject` or `Component.createObject` and given a Region as parent
+  never joins its `regions` list. The tree is built from a QML string that
+  contains the children, and the leaves are bound afterwards — `core/Regions.qml`.
+- **Icons are recoloured as text, not tinted as bitmaps.** The files paint in
+  `currentColor`, which Qt renders black; `components/Icon.qml` substitutes the
+  colour in the SVG source. It must emit `rgb()`: Qt writes a colour as
+  `#AARRGGBB`, SVG reads that as `#RRGGBBAA`, and the glyph silently vanishes.
+- **A cell's content declares an unelided width.** Binding a `Text`'s width to
+  its own `contentWidth` collapses it to nothing once it elides, so a cell that
+  elides reports `implicitWidth` through `Cell.contentWidth` and elides against
+  what it is granted.
+- **The tissue band ships invisible** (`tissue.opacity: 0`). Every mockup shows
+  cells floating, with nothing outlining them and no divider between them. The
+  band is still drawn when the value is raised, as one continuous fill with the
+  cell shapes punched out — never as an outline.
+- **A tissue's place on its membrane is derived from its order**: first is the
+  start corner, last the end corner, anything else centred, `growth: symmetric`
+  forces the centre and an explicit `anchor` overrides all of it. The
+  configuration declared growth but never where the tissue sits.
 
 ## Phase 1 — Service porting
 
