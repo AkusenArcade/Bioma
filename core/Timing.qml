@@ -29,12 +29,22 @@ Singleton {
     // Delay between consecutive capsules in a staggered entrance.
     readonly property int stagger: scaled(Config.get("timing.stagger", 16))
 
+    // A state change with no live value behind it: the workspace bars shifting
+    // one step, a segmented control's pill sliding to the chosen option. It is
+    // an event, not an indicator, and it is still the rest of the time.
+    readonly property int transition: scaled(Config.get("timing.transition", 180))
+
+    // Titles rewrite on every browser tab; a reflow triggered by one character
+    // of width is motion with nothing behind it. Both wait this long.
+    readonly property int debounce: scaled(Config.get("timing.debounce", 180))
+
     // A cell appearing or disappearing reflows its tissue. This is a design
     // moment, not an incidental animation.
     readonly property int reflow: scaled(Config.get("timing.reflow", 220))
 
-    // Palette changes are animated, never instantaneous.
-    readonly property int theme: scaled(Config.get("timing.theme", 400))
+    // Palette changes are animated, never instantaneous, and every surface
+    // crosses together.
+    readonly property int theme: scaled(Config.get("timing.theme", 250))
 
     // How long after the pointer leaves before an auto-hiding membrane slides out.
     readonly property int autoHide: scaled(Config.get("timing.auto_hide", 500))
@@ -50,8 +60,14 @@ Singleton {
     // change of scene.
     readonly property int wallpaper: scaled(Config.get("timing.wallpaper", 600))
 
-    // Small capsules may overshoot. Large panels may not — there it reads as a
-    // bounce and conflicts with the intended register.
-    readonly property list<real> overshoot: [0.2, 0.9, 0.3, 1.15]
-    readonly property list<real> standard: [0.2, 0.0, 0.0, 1.0]
+    // ---- Curves ----------------------------------------------------------
+    //
+    // In the form QML wants for `easing.bezierCurve`: the two control points
+    // followed by the end point. Small capsules may overshoot. Large panels may
+    // not — there it reads as a bounce and conflicts with the intended
+    // register. Closing never overshoots: it opens calmly, it closes quickly.
+
+    readonly property list<real> easeOpen: [0.2, 0.9, 0.3, 1.15, 1, 1]
+    readonly property list<real> easeOpenFlat: [0.2, 0.9, 0.3, 1.0, 1, 1]
+    readonly property list<real> easeClose: [0.5, 0.0, 0.9, 0.5, 1, 1]
 }

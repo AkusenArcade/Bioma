@@ -1,0 +1,114 @@
+pragma Singleton
+
+import QtQuick
+import Quickshell
+
+// Scale is a discrete step set, not a free value, and it is a membrane
+// property — a smaller second monitor can run `compact`.
+//
+// Scale and density are separate concerns. Wayland reports each surface's
+// output scale factor and Qt applies it, so everything here is written as
+// though that factor were 1: these are logical units, the equivalent of
+// Android `dp`. Scale is the aesthetic preference layered on top; it
+// multiplies the density, it does not replace it.
+//
+// The base figures are the ones in docs/design/tokens.css, at `normal`.
+Singleton {
+    id: root
+
+    // ---- Base geometry, logical units, normal scale ------------------------
+
+    readonly property real cellHeight: 40      // every contracted cell
+    readonly property real rowHeight: 30       // list rows: icon 20, name, value
+    readonly property real fieldHeight: 40     // search and text fields
+
+    readonly property real marginEdge: 12      // screen edge: a frame, not a surface
+    readonly property real marginTissue: 2     // tissue to cell: the tissue stays a line
+    readonly property real gapShape: 24        // between the shapes of an open cell
+
+    readonly property real radiusPanel: 20     // fixed, for rectangular content
+    readonly property real radiusWell: 10      // concentric inside a panel
+    readonly property real pillCeiling: 110    // above this, radius 20 rather than 100%
+
+    readonly property real blurRadius: 20      // glass
+
+    // ---- Critical dimensions ----------------------------------------------
+    //
+    // Hairlines do not take the scale step: a thread is 1.3 px because that is
+    // the weight at which it reads as a connection rather than as an edge, and
+    // multiplying it by an aesthetic preference only smears it. They are
+    // rounded to whole physical pixels instead — see `crisp`.
+
+    readonly property real thread: 1.3
+    readonly property real nodeSize: 2.5
+    readonly property real rimWidth: 1
+
+    // ---- Steps -------------------------------------------------------------
+
+    readonly property var factors: ({
+        "compact": 0.85,
+        "normal": 1.0,
+        "comfortable": 1.15
+    })
+
+    function factor(name) {
+        return root.factors[name] !== undefined ? root.factors[name] : 1.0;
+    }
+
+    // Everything a membrane, a tissue or a cell needs at one step. Density
+    // values scale; hairlines do not.
+    function step(name) {
+        const f = root.factor(name);
+        return {
+            "name": root.factors[name] !== undefined ? name : "normal",
+            "factor": f,
+
+            "cellHeight": root.cellHeight * f,
+            "rowHeight": root.rowHeight * f,
+            "fieldHeight": root.fieldHeight * f,
+
+            "marginEdge": root.marginEdge * f,
+            "tissuePadding": root.marginTissue * f,
+            "gap": root.gapShape * f,
+
+            "radiusPanel": root.radiusPanel * f,
+            "radiusWell": root.radiusWell * f,
+            "pillCeiling": root.pillCeiling * f,
+
+            "thread": root.thread,
+            "nodeSize": root.nodeSize,
+            "rimWidth": root.rimWidth,
+            "blurRadius": root.blurRadius * f,
+
+            // Type scale. Sizes live here because they follow the density step;
+            // families, weights and numeral features live in Typography.
+            "fontValue": 20 * f,
+            "fontLabel": 15 * f,
+            "fontSecondary": 13 * f,
+            "fontMeta": 11 * f,
+            "fontTitle": 14.5 * f
+        };
+    }
+
+    // A pill up to the ceiling, the panel radius above it. Past 110 px the cap
+    // reaches sixty or eighty pixels, stops being a border and starts dictating
+    // the content — eating the corners of images and lists.
+    function radiusFor(height, metrics) {
+        const m = metrics || root.step("normal");
+        return height <= m.pillCeiling ? height / 2 : m.radiusPanel;
+    }
+
+    // Concentric by construction: a well inset by `inset` inside a shape of
+    // radius `outer` takes outer − inset, never below zero.
+    function innerRadius(outer, inset) {
+        return Math.max(0, outer - inset);
+    }
+
+    // Hairlines, thread strokes and icon strokes must land on whole physical
+    // pixels under fractional scaling, or they blur or vanish. Layouts stay
+    // fluid — only critical dimensions are rounded.
+    function crisp(logical, devicePixelRatio) {
+        const ratio = devicePixelRatio > 0 ? devicePixelRatio : 1;
+        return Math.max(1, Math.round(logical * ratio)) / ratio;
+    }
+}

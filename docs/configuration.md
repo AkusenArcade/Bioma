@@ -41,6 +41,11 @@ applies to cells only. `tissue.opacity`, `tissue.padding` (2–12) — the tissu
 background is a surface, not a border: at a wide padding the band reads as a
 tray, and it is never blurred.
 
+`tissue.opacity` ships at **0**. The cells float, as every mockup shows them,
+and nothing outlines them or divides one from the next. The band is still drawn
+when the value is raised — as one continuous fill with the cell shapes punched
+out of it, never as an outline — for anyone who wants the tray.
+
 ### `fonts`
 
 Declared as roles, not names, so a machine without the intended faces degrades

@@ -2,23 +2,23 @@
   "$comment": "Bioma base layer. Hand-written, version-controlled. The settings UI writes an override file which is loaded last and wins. Structural terms are biological: membrane (an edge of a monitor), tissue (a container on it), cell (a unit of content, never a grid cell). Each key is explained in docs/configuration.md, because JSON has no comments.",
 
   "appearance": {
-    "radius": 60,
+    "radius": 100,
     "xray": false
   },
 
   "cell": {
-    "opacity": 0.85,
+    "opacity": 0.72,
     "blur": true
   },
 
   "tissue": {
-    "opacity": 0.75,
-    "padding": 6
+    "opacity": 0.0,
+    "padding": 2
   },
 
   "fonts": {
     "expressive": "Spectral",
-    "technical": "Barlow"
+    "technical": "Orbitron"
   },
 
   "theme": {
@@ -30,8 +30,8 @@
       "source_color_index": 0
     },
     "state": {
-      "dark":  { "calm": "#6FA88A", "active": "#E0A63C", "alert": "#D5624C" },
-      "light": { "calm": "#3F7D5E", "active": "#B37414", "alert": "#B03A24" }
+      "dark":  { "calm": "#6EE7A6", "active": "#F2C14E", "alert": "#FF6B5D" },
+      "light": { "calm": "#2E9C6A", "active": "#B37414", "alert": "#C43A2E" }
     }
   },
 
@@ -41,8 +41,10 @@
     "close": 150,
     "grow": 100,
     "stagger": 16,
+    "transition": 180,
+    "debounce": 180,
     "reflow": 220,
-    "theme": 400,
+    "theme": 250,
     "auto_hide": 500,
     "notification": 5000,
     "content_fade": 120,

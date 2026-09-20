@@ -55,7 +55,7 @@ The exception is the dock, which is not a service: `bar/Dock.qml` is a child of
 | `PrismaIPC` | 55 | a named FIFO in `$XDG_RUNTIME_DIR` read by a shell loop | yes | **Replace with `IpcHandler`**, which 0.3.1 provides. See §3.10. |
 | `ShellActions` | 14 | signal bus, five `open*` signals | yes | **Do not port.** In Bioma these are cells whose visibility is `invoked`; the second model the PRD refuses is exactly this file. |
 | `I18n` | 322 | it/en string table | yes | **Do not port.** English-only project. |
-| `theme/Theme.qml` | 102 | hardcoded teal palette, spacing, radii, durations | yes | **Do not port.** Superseded by `core/Theme.qml`, `core/Timing.qml`, `core/Scale.qml`. Worth one read as the precedent for a named timing set. |
+| `theme/Theme.qml` | 102 | hardcoded teal palette, spacing, radii, durations | yes | **Do not port.** Superseded by `core/Theme.qml`, `core/Timing.qml`, `core/Metrics.qml`. Worth one read as the precedent for a named timing set. |
 
 ### Non-service pieces worth naming
 
