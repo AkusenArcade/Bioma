@@ -19,7 +19,7 @@ quiet when nothing is happening.
 | matugen | optional, wallpaper-reactive palette |
 | grim, slurp, tesseract | screenshot and OCR |
 | wl-screenrec (VAAPI) | video capture; `wf-recorder` as fallback |
-| Spectral, Orbitron | fonts; declared as roles — expressive and technical — so absence degrades rather than breaks |
+| Spectral, Orbitron | fonts; declared as roles — expressive and technical — so absence degrades rather than breaks. Both are SIL OFL: on Arch, `ttf-spectral` and AUR `ttf-orbitron`, or drop the families from Google Fonts into `~/.local/share/fonts` |
 
 ## Running
 
