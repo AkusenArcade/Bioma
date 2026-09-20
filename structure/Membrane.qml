@@ -54,9 +54,11 @@ PanelWindow {
 
     readonly property real tissueThickness: metrics.cellHeight + Math.max(2, Math.min(12, Config.get("tissue.padding", 2))) * 2
 
-    // The strip the membrane actually occupies: the screen edge margin is a
-    // frame, not a surface, but it is part of what the windows must not cover.
-    readonly property real strip: metrics.marginEdge + tissueThickness
+    // The strip the membrane actually occupies. The edge margin is a frame, and
+    // a frame has two sides: the same margin sits between the tissue and the
+    // windows as between the tissue and the screen edge. That lower edge is
+    // where every expansion hangs from.
+    readonly property real strip: metrics.marginEdge * 2 + tissueThickness
 
     // When space is reserved it stays reserved even while a conditional cell
     // inside is invisible — the "slot" model, so windows never reflow. An

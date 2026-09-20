@@ -238,11 +238,12 @@ Item {
 
     readonly property bool hasPanel: panel !== null
 
-    // The thread is as long as the margin the tissue keeps around its cells, so
-    // an expansion starts exactly where the membrane ends — on the line where
-    // niri begins drawing windows. Every open cell therefore hangs its panel
-    // from the same edge, whatever its own height or its tissue's.
-    property real originGap: metrics.tissuePadding
+    // The thread is as long as the cell's own inset inside the membrane — the
+    // tissue's margin plus the membrane's frame — so an expansion starts
+    // exactly at the membrane's edge, on the line where niri begins drawing
+    // windows. Every open cell hangs its panel from that same edge, whatever
+    // its own height or its tissue's padding.
+    property real originGap: metrics.marginEdge + metrics.tissuePadding
     readonly property real gap: originGap
 
     // A top membrane opens downward, a bottom one upward.
