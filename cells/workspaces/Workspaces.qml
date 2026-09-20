@@ -37,7 +37,43 @@ Cell {
     readonly property bool named: workspace && workspace.name
     readonly property string label: workspace ? (workspace.name || String(workspace.idx)) : ""
 
-    contentWidth: markSize + spacing + (named ? name.implicitWidth : number.implicitWidth)
+    // Open, the capsule stops naming the workspace and names itself: the cell
+    // is the title of the list hanging under it, so it takes the technical
+    // face — a label, not a name.
+    readonly property string title: "Workspaces"
+
+    TextMetrics {
+        id: titleMetrics
+        text: root.title
+        font: Qt.font({
+            "family": Typography.technical,
+            "pixelSize": root.metrics.fontLabel,
+            "weight": Typography.weightLabel,
+            "letterSpacing": Typography.tracking(root.metrics.fontLabel, Typography.labelTracking)
+        })
+    }
+
+    contentWidth: markSize + spacing + (open ? titleMetrics.width
+                                             : (named ? name.implicitWidth : number.implicitWidth))
+
+    header: Component {
+        Row {
+            spacing: root.spacing
+
+            WorkspaceBars {
+                anchors.verticalCenter: parent.verticalCenter
+                width: root.markSize
+                height: root.markSize
+            }
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: root.title
+                color: Theme.text
+                font: titleMetrics.font
+            }
+        }
+    }
     readonly property real available: Math.max(0, width - paddingLeading - paddingTrailing - markSize - spacing)
 
     // ---- The confirmation -------------------------------------------------

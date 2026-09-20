@@ -97,11 +97,15 @@ Item {
     property Component panel: null
     property bool open: false
 
-    // Whether opening replaces what the cell was showing. The vitals cell does:
-    // its mini indicators fade and the cell becomes the header of its own
-    // expansion. Most do not — the workspaces cell keeps its mark and its name,
-    // because that is what the panel is a list of.
+    // What the cell shows while it is open, if that is not what it shows at
+    // rest. A cell with a header becomes the title of its own expansion: the
+    // contracted content goes and the header arrives in its place.
+    property Component header: null
+
+    // Or it can simply stop speaking, with nothing in its place.
     property bool replacesContent: false
+
+    readonly property bool showsHeader: open && header !== null
 
     // ---- Size --------------------------------------------------------------
 
@@ -198,9 +202,27 @@ Item {
         // What the content asks for, so the cell can be as wide as its job.
         implicitWidth: childrenRect.width
         // Never clipped, or the rim goes with it: long text ellipsises itself.
-        opacity: root.open && root.replacesContent ? 0 : 1
+        opacity: root.open && (root.replacesContent || root.showsHeader) ? 0 : 1
 
         Behavior on opacity { NumberAnimation { duration: Timing.contentFade } }
+    }
+
+    // The outgoing and the incoming are staggered rather than crossfaded: two
+    // strings dissolving through each other read as overlap, not as a change.
+    Loader {
+        id: headerSlot
+        active: root.header !== null && (root.open || opacity > 0)
+        sourceComponent: root.header
+        anchors.verticalCenter: parent.verticalCenter
+        x: root.paddingLeading
+        opacity: root.showsHeader ? 1 : 0
+
+        Behavior on opacity {
+            SequentialAnimation {
+                PauseAnimation { duration: Timing.stagger * 2 }
+                NumberAnimation { duration: Timing.contentFade }
+            }
+        }
     }
 
     // ---- Expansion ---------------------------------------------------------
