@@ -121,13 +121,21 @@ Item {
     visible: shown || appearance.running
     opacity: shown ? 1 : 0
 
+    // A cell resizes for two different reasons, and they are not the same
+    // event. An expansion opens and closes on its own timings; a contracted
+    // cell that takes a longer title is reflowing, and must move at the rate
+    // its tissue and its neighbours move at, or the row tears.
+    //
+    // Being expanded is legible from the height: only an expansion changes it.
+    readonly property bool expanding: open || height > contractedHeight + 1
+
     // Reversible from wherever they are, never queued: a Behavior interrupted
     // mid-flight retargets, which is exactly the required behaviour.
     Behavior on width {
         NumberAnimation {
-            duration: root.open ? Timing.open : Timing.close
+            duration: root.expanding ? (root.open ? Timing.open : Timing.close) : Timing.reflow
             easing.type: Easing.Bezier
-            easing.bezierCurve: root.open ? Timing.easeOpenFlat : Timing.easeClose
+            easing.bezierCurve: root.open || !root.expanding ? Timing.easeOpenFlat : Timing.easeClose
         }
     }
 

@@ -78,6 +78,28 @@ Item {
     width: horizontal ? length : thickness
     height: horizontal ? thickness : length
 
+    // A tissue changes length whenever a cell appears, disappears or takes a
+    // longer string. That change is the reflow, and the PRD calls it a design
+    // moment rather than an incidental animation — so the tissue grows at the
+    // same rate as the cells inside it, and a centred tissue is re-placed from
+    // this animated width, which is what makes it grow from its middle instead
+    // of jumping to a new centre.
+    Behavior on width {
+        NumberAnimation {
+            duration: Timing.reflow
+            easing.type: Easing.Bezier
+            easing.bezierCurve: Timing.easeOpenFlat
+        }
+    }
+
+    Behavior on height {
+        NumberAnimation {
+            duration: Timing.reflow
+            easing.type: Easing.Bezier
+            easing.bezierCurve: Timing.easeOpenFlat
+        }
+    }
+
     // A tissue with nothing to show is not an empty tray.
     visible: contentLength > 0
 
@@ -120,7 +142,11 @@ Item {
                 continue;
             }
 
-            cell.widthChanged.connect(root.bump);
+            // `contractedWidth` is the one that must be watched: it is what a
+            // cell asks for. Listening to `width` alone deadlocks — the width
+            // only changes once the layout runs, and the layout only runs once
+            // the width changes — and the cell never grows to fit its content.
+            cell.contractedWidthChanged.connect(root.bump);
             cell.shownChanged.connect(root.bump);
             built.push(cell);
         }

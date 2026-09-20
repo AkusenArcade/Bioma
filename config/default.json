@@ -105,8 +105,8 @@
               "type": "window_title",
               "enabled": true,
               "visibility": { "type": "conditional", "confirm": 0, "dwell": 200 },
-              "min_width": { "value": 120 },
-              "width": { "elastic": true, "max_percent": 25 }
+              "min_width": { "value": 186 },
+              "width": { "elastic": true, "max_percent": 28 }
             }
           ]
         },

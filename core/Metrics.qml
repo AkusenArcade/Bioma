@@ -82,11 +82,15 @@ Singleton {
 
             // Type scale. Sizes live here because they follow the density step;
             // families, weights and numeral features live in Typography.
-            "fontValue": 20 * f,
-            "fontLabel": 15 * f,
-            "fontSecondary": 13 * f,
-            "fontMeta": 11 * f,
-            "fontTitle": 14.5 * f
+            //
+            // Rounded, because Qt's `font.pixelSize` is an integer and silently
+            // truncates a fractional one — the 14.5 of the design lands on 14
+            // rather than 15, and every string in the shell is a little small.
+            "fontValue": Math.round(20 * f),
+            "fontLabel": Math.round(15 * f),
+            "fontSecondary": Math.round(13 * f),
+            "fontMeta": Math.round(11 * f),
+            "fontTitle": Math.round(14.5 * f)
         };
     }
 

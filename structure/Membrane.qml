@@ -210,12 +210,16 @@ PanelWindow {
         let centreTotal = 0;
         let centreBefore = 0;
 
+        // Every length here is the tissue's **animated** size, not the value it
+        // is heading for. Placement then follows the growth frame by frame: a
+        // centred tissue widens around its own middle rather than snapping to
+        // the centre its final width would have.
         for (let i = 0; i < tissues.length; i++) {
             const other = tissues[i];
             if (!other || !other.visible)
                 continue;
             const side = other.anchorSide;
-            const length = other.length;
+            const length = root.horizontal ? other.width : other.height;
 
             if (side === "start" && i < index)
                 startRun += length + margin;
@@ -229,11 +233,12 @@ PanelWindow {
             }
         }
 
+        const own = root.horizontal ? tissue.width : tissue.height;
         const side = tissue.anchorSide;
         if (side === "start")
             return margin + startRun;
         if (side === "end")
-            return membraneLength - margin - endRun - tissue.length;
+            return membraneLength - margin - endRun - own;
 
         // Centred: the group is centred on the membrane, then clamped between
         // whatever the corner tissues occupy.
@@ -251,7 +256,7 @@ PanelWindow {
         let total = 0;
         for (const tissue of tissues) {
             if (tissue && tissue.visible && tissue.anchorSide === side)
-                total += tissue.length + metrics.marginEdge;
+                total += (root.horizontal ? tissue.width : tissue.height) + metrics.marginEdge;
         }
         return total;
     }
