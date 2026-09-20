@@ -92,8 +92,63 @@ Cell {
         }
     }
 
-    // TODO Phase 2: the expansion — three horizontal pods of 236 x 108 on a
-    // desktop, four vertical ones in a 2 x 2 matrix where there is a battery,
-    // and the process list beside them, with the indicators doubling as its
-    // sort control.
+    // ---- Open ---------------------------------------------------------------
+    //
+    // The mini indicators fade and the cell becomes the header of its own
+    // expansion: this is the cell PRD §6.7 describes, where the contracted
+    // content is entirely replaced.
+
+    replacesContent: true
+
+    TapHandler {
+        onTapped: root.open = !root.open
+    }
+
+    // The process list is the one sample that costs something, so the service
+    // takes it only while it is being looked at.
+    onOpenChanged: SystemMonitor.listProcesses = root.open
+
+    header: Component {
+        Row {
+            spacing: 12 * root.metrics.factor
+
+            Vital {
+                anchors.verticalCenter: parent.verticalCenter
+                width: 22 * root.metrics.factor
+                height: width
+                kind: "cpu"
+                load: SystemMonitor.cpuPercent / 100
+                rate: SystemMonitor.cpuClockFraction
+            }
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: "Machine Vitals & Tasks"
+                color: Theme.text
+                font.family: Typography.expressive
+                font.pixelSize: root.metrics.fontTitle
+                font.weight: Typography.weightTitle
+            }
+        }
+    }
+
+    // The expansion is a composition — pods, threads and a panel — so it lives
+    // in its own file beside this one and arrives through a Loader: a cell's
+    // directory is not a QML module.
+    expansion: Component {
+        Loader {
+            id: expansionLoader
+            source: Qt.resolvedUrl("VitalsExpansion.qml")
+            onLoaded: {
+                item.cell = root;
+                item.metrics = Qt.binding(() => root.metrics);
+            }
+
+            // The cell asks whatever it loaded for the shapes it occupies; the
+            // loader is in the middle and passes the question on.
+            function shapes() {
+                return expansionLoader.item ? expansionLoader.item.shapes() : [];
+            }
+        }
+    }
 }

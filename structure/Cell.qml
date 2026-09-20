@@ -94,7 +94,12 @@ Item {
     // itself keeps its contracted shape: what grows is the panel, out of the
     // node of the thread that ties it back here.
     default property alias contracted: contractedSlot.data
+
+    // One panel, for a cell whose expansion is a single surface — and, for one
+    // that is a composition of several, a free-form expansion that lays out its
+    // own shapes and threads. A cell declares one or the other.
     property Component panel: null
+    property Component expansion: null
     property bool open: false
 
     // What the cell shows while it is open, if that is not what it shows at
@@ -236,7 +241,7 @@ Item {
     // once the shape is at size. Closing reverses it and is quicker: it opens
     // calmly, it closes quickly.
 
-    readonly property bool hasPanel: panel !== null
+    readonly property bool hasPanel: panel !== null || expansion !== null
 
     // How far the panel hangs below the cell: the distance from the cell's
     // outer edge to the line where the compositor begins drawing windows. Set
@@ -267,7 +272,7 @@ Item {
     Panel {
         id: panelShape
         metrics: root.metrics
-        visible: root.hasPanel && root.panelGrowth > 0
+        visible: root.panel !== null && root.panelGrowth > 0
         growth: root.panelGrowth
         contentReady: root.panelReady
 
@@ -287,6 +292,20 @@ Item {
             active: root.open || root.panelGrowth > 0
             sourceComponent: root.panel
         }
+    }
+
+    // A composition places itself: it is given the anchor — the line the
+    // windows start on, on the side the cell was born from — and grows its own
+    // shapes out of the thread's far node.
+    Loader {
+        id: expansionSlot
+        active: root.expansion !== null && (root.open || root.panelGrowth > 0)
+        sourceComponent: root.expansion
+
+        y: root.opensDown ? root.height + root.gap : -root.gap - height
+        x: root.origin === "end" ? root.width - width
+         : root.origin === "centre" ? (root.width - width) / 2
+         : 0
     }
 
     onOpenChanged: {
@@ -377,8 +396,11 @@ Item {
     // it takes no input, and blurring a 1.3 px line would only smear it.
     function shapes() {
         const out = [{ "item": root, "radius": root.radius }];
-        if (root.panelVisible)
+        if (root.panelVisible && root.panel !== null)
             out.push({ "item": panelShape, "radius": panelShape.radius });
+        if (expansionSlot.item && expansionSlot.item.shapes)
+            for (const shape of expansionSlot.item.shapes())
+                out.push(shape);
         return out;
     }
 

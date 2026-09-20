@@ -19,9 +19,8 @@ Three ways in, and they are independent:
    vertical and floating tissues, and the full-screen input surface of PRD §8,
    which the PRD calls the most uncertain piece in the project and which nothing
    has prototyped.
-3. **Cells**, in build order. Vitals is at rest; what it still owes is the
-   expansion — pods and the process list, with the indicators doubling as the
-   sort control — and that is the next piece of work.
+3. **Cells**, in build order. Phase 2 is done — window title, workspaces and
+   vitals — so the next is phase 3: sinestesia, theme, utility.
 
 ## How to try it without touching the running shell
 
@@ -53,7 +52,7 @@ Drawn, and verified on screen against the design handoff.
 | `structure/Visibility.qml` | **Exercised at last** — the window title appears and disappears with focus. |
 | `components/` | `Rim`, `Ring`, `DashedRing`, `Disc`, `Dial`, `Icon`, `LightGradient`, `Thread`, `Panel`, `Well`, `WorkspaceBars`, `Vital`. |
 | `structure/InputSurface.qml` + `core/Focus.qml` | The full-screen surface of PRD §8, and the register of what is open. Built; the press path still needs a human to click. |
-| `cells/clock`, `cells/window_title`, `cells/workspaces`, `cells/vitals` | Four cells. Vitals is at rest only: the three indicators move, the expansion is not built. |
+| `cells/clock`, `cells/window_title`, `cells/workspaces`, `cells/vitals` | Four cells. Vitals opens: pods, threads and the process list. |
 
 Verified on HDMI-A-1: cells float with no band, the rim reads, the app icon
 resolves and the fallback glyph is tinted, the title elides and cross-fades, the
@@ -101,6 +100,14 @@ so the dismissal itself is verified by hand.
   is not installed and a relative `import "."` does not resolve either — so a
   sibling type is invisible to the cell beside it. `Dial` and `WorkspaceBars`
   are there for that reason as much as for reuse.
+- **An expansion can be a composition, not only a panel.** `Cell.panel` is the
+  single-surface case; `Cell.expansion` hands a cell the anchor and lets it lay
+  out its own shapes and threads, which is what the vitals pods needed. The
+  cell asks whatever it loaded for the shapes it occupies, so the membrane's
+  mask and blur region follow a composition as readily as a rectangle.
+- **A Loader sets its item's properties after that item is built.** Anything a
+  loaded expansion has to do on arrival belongs in `onCellChanged`, not in
+  `Component.onCompleted` — the first pod cascade never ran because of it.
 - **A liquid's level is measured against its vessel.** The memory indicator
   fills the inside of the ring, not the square the ring is drawn in: half full
   lands on the centre line either way, which is what the design draws, but a
