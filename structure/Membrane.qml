@@ -141,6 +141,7 @@ PanelWindow {
 
                 metrics: root.metrics
                 cellsConfig: modelData.cells || []
+                output: root.screenItem ? root.screenItem.name : ""
                 orientation: modelData.orientation || (root.horizontal ? "horizontal" : "vertical")
                 padding: modelData.padding !== undefined
                          ? Math.max(2, Math.min(12, modelData.padding))

@@ -99,7 +99,8 @@
               "type": "workspaces",
               "enabled": true,
               "visibility": { "type": "always" },
-              "min_width": { "value": 40 }
+              "min_width": { "value": 96 },
+              "width": { "max": 220 }
             },
             {
               "type": "window_title",

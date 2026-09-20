@@ -19,6 +19,10 @@ Item {
     property var metrics: Metrics.step("normal")
     property var cellsConfig: []
 
+    // The membrane's monitor, passed through to the cells that answer per
+    // screen rather than per session.
+    property string output: ""
+
     property bool floating: false
     property string orientation: "horizontal"
     readonly property bool horizontal: orientation === "horizontal"
@@ -133,6 +137,7 @@ Item {
                 "metrics": Qt.binding(() => root.metrics),
                 "radius": Qt.binding(() => root.cellRadius),
                 "origin": Qt.binding(() => root.anchorSide),
+                "output": Qt.binding(() => root.output),
                 "config": entry
             });
 

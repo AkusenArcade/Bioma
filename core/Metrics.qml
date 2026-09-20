@@ -108,6 +108,14 @@ Singleton {
         return Math.max(0, outer - inset);
     }
 
+    // Lands a dimension on a whole physical pixel without forcing it to at
+    // least one: the position and size of a small shape, where `crisp` would
+    // turn a zero into a pixel.
+    function snap(logical, devicePixelRatio) {
+        const ratio = devicePixelRatio > 0 ? devicePixelRatio : 1;
+        return Math.round(logical * ratio) / ratio;
+    }
+
     // Hairlines, thread strokes and icon strokes must land on whole physical
     // pixels under fractional scaling, or they blur or vanish. Layouts stay
     // fluid — only critical dimensions are rounded.

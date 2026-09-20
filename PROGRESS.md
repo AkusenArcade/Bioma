@@ -19,7 +19,8 @@ Three ways in, and they are independent:
    vertical and floating tissues, and the full-screen input surface of PRD §8,
    which the PRD calls the most uncertain piece in the project and which nothing
    has prototyped.
-3. **Cells**, in build order: workspaces and vitals next.
+3. **Cells**, in build order: vitals next. Workspaces is built at rest and
+   still owes its list, which is the first expansion anyone will see.
 
 ## How to try it without touching the running shell
 
@@ -49,8 +50,8 @@ Drawn, and verified on screen against the design handoff.
 | `structure/Tissue.qml` | Real. Ceiling-not-reservation widths, elastic share, reflow, the punched band. |
 | `structure/Cell.qml` | Real, contracted. Glass, rim, config-driven width and visibility, growth mechanics written. |
 | `structure/Visibility.qml` | **Exercised at last** — the window title appears and disappears with focus. |
-| `components/` | `Rim`, `Ring`, `Dial`, `Icon`, `LightGradient`. |
-| `cells/clock`, `cells/window_title` | The first two cells, and the engine's proof. |
+| `components/` | `Rim`, `Ring`, `Dial`, `Icon`, `LightGradient`, `WorkspaceBars`. |
+| `cells/clock`, `cells/window_title`, `cells/workspaces` | Three cells. The first two proved the engine; the third is the first per-monitor one. |
 
 Verified on HDMI-A-1: cells float with no band, the rim reads, the app icon
 resolves and the fallback glyph is tinted, the title elides and cross-fades, the
@@ -86,6 +87,14 @@ floating tissues, several elastic cells in one tissue, keyboard focus.
   its cells, and so does this. The cost, stated rather than hidden: a cell
   composites over the band, so its declared opacity reads a little heavier than
   the number says.
+- **A cell's private visual pieces live in `components/`.** Quickshell
+  generates no QML module for a cell's own directory — `import qs.cells.clock`
+  is not installed and a relative `import "."` does not resolve either — so a
+  sibling type is invisible to the cell beside it. `Dial` and `WorkspaceBars`
+  are there for that reason as much as for reuse.
+- **A cell knows its monitor.** The membrane passes its screen name down
+  through the tissue, so the workspaces cell answers for its own output, as
+  CELLS.md §03 decided against PRD §9.3.
 - **A tissue's place on its membrane is derived from its order**: first is the
   start corner, last the end corner, anything else centred, `growth: symmetric`
   forces the centre and an explicit `anchor` overrides all of it. The

@@ -40,8 +40,16 @@ Item {
     // object rather than a bare number so a per-cell weight stays possible
     // later without a schema change.
     property bool elastic: config.width ? config.width.elastic === true : false
-    property real maxWidth: config.width && config.width.max_percent !== undefined
-                            ? Screen.width * config.width.max_percent / 100 : -1
+    property real maxWidth: {
+        const width = config.width;
+        if (!width)
+            return -1;
+        if (width.max !== undefined)
+            return width.max * metrics.factor;
+        if (width.max_percent !== undefined)
+            return Screen.width * width.max_percent / 100;
+        return -1;
+    }
 
     // The temporal grammar, from the same block. Confirm and dwell are
     // asymmetric on purpose: appear promptly, leave slowly.
@@ -72,6 +80,11 @@ Item {
     // The side the cell was born from: an expansion grows away from it, and the
     // node of its first thread sits on it. Inherited from the parent tissue.
     property string origin: "start"        // "start" | "end" | "centre"
+
+    // The monitor this cell is on, inherited from the membrane. A cell whose
+    // domain is per-screen — workspaces, the dock — answers for this output and
+    // no other.
+    property string output: ""
 
     // Contracted and expanded content. The contracted content is entirely
     // replaced by the expanded one — there is no pre-collapse. The outgoing and

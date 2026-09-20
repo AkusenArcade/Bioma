@@ -317,6 +317,12 @@ Singleton {
     function focusWorkspace(reference) { root.dispatch(["action", "focus-workspace", String(reference)]); }
     function moveWindowToWorkspace(reference) { root.dispatch(["action", "move-column-to-workspace", String(reference)]); }
     function focusMonitor(name) { root.dispatch(["action", "focus-monitor", name]); }
+
+    // The neighbours of the focused workspace. niri numbers workspaces per
+    // output and keeps an empty one at the end, so "down" is the next index on
+    // this monitor rather than the next id.
+    function focusWorkspaceDown() { root.dispatch(["action", "focus-workspace-down"]); }
+    function focusWorkspaceUp() { root.dispatch(["action", "focus-workspace-up"]); }
     function toggleOverview() { root.dispatch(["action", "toggle-overview"]); }
     function reloadConfig() { root.dispatch(["action", "reload-config"]); }
 
