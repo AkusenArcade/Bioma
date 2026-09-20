@@ -150,10 +150,13 @@ Item {
             }
         }
 
-        // The scrollbar lives inside the well, and only while there is
-        // something to scroll.
+        // The scrollbar lives inside the well and only while the list is
+        // moving: at rest the shell does not speak.
         Rectangle {
             visible: view.contentHeight > view.height
+            opacity: view.moving || view.flicking || view.dragging ? 1 : 0
+
+            Behavior on opacity { NumberAnimation { duration: Timing.contentFade } }
             width: 3 * root.metrics.factor
             radius: width / 2
             color: Theme.line

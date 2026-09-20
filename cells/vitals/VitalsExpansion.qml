@@ -163,8 +163,11 @@ Item {
 
             metrics: root.metrics
             // Up to the pill ceiling the cap is still a border rather than a
-            // shape that dictates the content, so a pod is a full pill.
+            // shape that dictates the content, so a pod is a full pill — and
+            // its content is held off the cap by rather more than a panel's
+            // padding, or the indicator sits in the curve.
             radius: root.podHeight / 2
+            padding: 23 * root.factor
             targetWidth: root.podWidth
             targetHeight: root.podHeight
             growth: progress
@@ -182,6 +185,7 @@ Item {
             }
 
             Row {
+                anchors.verticalCenter: parent.verticalCenter
                 spacing: 14 * root.factor
 
                 Vital {
@@ -287,6 +291,7 @@ Item {
         nodeY: 0
 
         Column {
+            anchors.top: parent.top
             spacing: 10 * root.factor
 
             // The search field is the launcher's: a lens in the primary, no
@@ -338,12 +343,35 @@ Item {
             }
 
             Well {
+                id: well
                 metrics: root.metrics
                 width: root.panelWidth - 20 * root.factor
                 height: root.height - 20 * root.factor - root.metrics.fieldHeight - 10 * root.factor
                         - (confirmation.visible ? confirmation.height + 10 * root.factor : 0)
 
+                // The scrollbar lives inside the well and only while the list
+                // is moving: at rest the shell does not speak, and a bar that
+                // stays is a figure nobody asked for.
+                Rectangle {
+                    z: 1
+                    visible: processes.contentHeight > processes.height
+                    opacity: processes.moving || processes.flicking || processes.dragging ? 1 : 0
+                    width: 3 * root.factor
+                    radius: width / 2
+                    color: Theme.line
+                    x: well.width - width - 4 * root.factor
+                    height: Math.max(width * 4, processes.height * processes.height
+                                     / Math.max(1, processes.contentHeight))
+                    y: processes.contentHeight > processes.height
+                       ? processes.y + (processes.contentY / (processes.contentHeight - processes.height))
+                         * (processes.height - height)
+                       : 0
+
+                    Behavior on opacity { NumberAnimation { duration: Timing.contentFade } }
+                }
+
                 ListView {
+                    id: processes
                     anchors.fill: parent
                     anchors.margins: 6 * root.factor
                     model: root.sorted

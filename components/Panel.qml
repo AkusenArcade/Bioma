@@ -69,6 +69,9 @@ Item {
         radius: root.radius
     }
 
+    // The content sits inside the padding and is centred in what is left: a
+    // pill with its content against the top edge reads as a mistake, and every
+    // pod in the shell is a pill.
     Item {
         id: contentSlot
         x: root.padding

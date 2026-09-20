@@ -167,8 +167,12 @@ Item {
             cell.contractedWidthChanged.connect(root.bump);
             cell.shownChanged.connect(root.bump);
             // A panel coming or going changes what the membrane has to mask
-            // and blur, and the membrane is listening to this.
+            // and blur, and the membrane is listening to this. So does the
+            // moment it finishes growing: a region bound while the shape was
+            // still a point describes a point, and the shell would go on
+            // treating the panel as though it were not there.
             cell.panelVisibleChanged.connect(root.bump);
+            cell.panelReadyChanged.connect(root.bump);
             built.push(cell);
         }
 

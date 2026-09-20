@@ -27,11 +27,33 @@ Cell {
     readonly property real indicator: 26 * metrics.factor
     readonly property real pitch: 10 * metrics.factor
 
+    // Open, the capsule names itself rather than the machine's parts, and a
+    // label is machine language: the technical face, like the workspaces cell.
+    readonly property string title: "MACHINE VITALS & TASKS"
+
+    TextMetrics {
+        id: titleMetrics
+        text: root.title
+        font: Qt.font({
+            "family": Typography.technical,
+            "pixelSize": root.metrics.fontLabel,
+            "weight": Typography.weightLabel,
+            "letterSpacing": Typography.tracking(root.metrics.fontLabel, Typography.labelTracking)
+        })
+    }
+
+    readonly property real headerMark: 22 * metrics.factor
+    readonly property real headerGap: 12 * metrics.factor
+
     readonly property bool showsGpu: option("gpu", true) && SystemMonitor.gpuPresent
     readonly property bool showsBattery: SystemMonitor.hasBattery
     readonly property int count: 2 + (showsGpu ? 1 : 0) + (showsBattery ? 1 : 0)
 
-    contentWidth: count * indicator + (count - 1) * pitch
+    // Open, it is as wide as its title; contracted, as wide as its indicators.
+    // Either way the tissue is anchored to the end of the membrane, so the cell
+    // keeps its right edge and grows leftwards.
+    contentWidth: open ? headerMark + headerGap + titleMetrics.width
+                       : count * indicator + (count - 1) * pitch
 
     // Conditional visibility, when it is configured that way, watches the worst
     // of the vitals rather than any one of them: the cell appears because the
@@ -110,11 +132,11 @@ Cell {
 
     header: Component {
         Row {
-            spacing: 12 * root.metrics.factor
+            spacing: root.headerGap
 
             Vital {
                 anchors.verticalCenter: parent.verticalCenter
-                width: 22 * root.metrics.factor
+                width: root.headerMark
                 height: width
                 kind: "cpu"
                 load: SystemMonitor.cpuPercent / 100
@@ -123,11 +145,9 @@ Cell {
 
             Text {
                 anchors.verticalCenter: parent.verticalCenter
-                text: "Machine Vitals & Tasks"
+                text: root.title
                 color: Theme.text
-                font.family: Typography.expressive
-                font.pixelSize: root.metrics.fontTitle
-                font.weight: Typography.weightTitle
+                font: titleMetrics.font
             }
         }
     }
