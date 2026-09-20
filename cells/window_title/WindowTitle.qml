@@ -46,8 +46,7 @@ Cell {
     // only element in the shell that does not follow the palette, because it
     // belongs to the application. The fallback does follow it.
 
-    readonly property var entry: Niri.focusedAppId ? DesktopEntries.heuristicLookup(Niri.focusedAppId) : null
-    readonly property string iconSource: entry && entry.icon ? Quickshell.iconPath(entry.icon, true) : ""
+    readonly property string iconSource: Apps.iconFor(Niri.focusedAppId)
 
     // ---- Title -------------------------------------------------------------
     //

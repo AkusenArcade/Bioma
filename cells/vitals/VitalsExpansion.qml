@@ -391,13 +391,49 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             spacing: 12 * root.factor
 
-                            Ring {
+                            // A process is not always an application: `ps`
+                            // gives an executable name, and half of them are
+                            // helpers and daemons with no desktop file. Where
+                            // one resolves, the application's own icon goes in
+                            // the circle — untinted, because it belongs to the
+                            // application — and where none does, the neutral
+                            // glyph, which does follow the palette. Never
+                            // another application's logo.
+                            Item {
+                                id: processIcon
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: 20 * root.factor
                                 height: width
-                                radius: width / 2
-                                thickness: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
-                                colour: Theme.line
+
+                                readonly property string source: Apps.iconFor(processRow.modelData.name)
+
+                                Ring {
+                                    anchors.fill: parent
+                                    radius: width / 2
+                                    thickness: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+                                    colour: Theme.line
+                                }
+
+                                Image {
+                                    anchors.centerIn: parent
+                                    visible: processIcon.source !== ""
+                                    width: parent.width * 0.62
+                                    height: width
+                                    source: processIcon.source
+                                    sourceSize.width: width * Screen.devicePixelRatio
+                                    sourceSize.height: height * Screen.devicePixelRatio
+                                    fillMode: Image.PreserveAspectFit
+                                    smooth: true
+                                }
+
+                                Icon {
+                                    anchors.centerIn: parent
+                                    visible: processIcon.source === ""
+                                    width: parent.width * 0.58
+                                    height: width
+                                    name: "app-fallback"
+                                    colour: Theme.textMuted
+                                }
                             }
 
                             Text {
