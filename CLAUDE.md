@@ -29,6 +29,27 @@ Three levels, each knowing only the one below:
 
 `cell` here is a biological term, never a grid cell.
 
+## Design
+
+The visual specification lives in `docs/design/`. It is normative for anything
+drawn. Read `docs/design/STYLE_GUIDE.md` and `docs/design/IMPLEMENTATION.md`
+before writing any UI code, and the matching section of `docs/design/CELLS.md`
+before building a cell, with the matching images from `docs/design/mockups/`
+open beside it.
+
+- Measurements in the documents win over the images; the renders show the
+  result, they are not there to be pixel-measured.
+- `docs/design/tokens.css` is the token set. It is translated into `core/`
+  singletons — `Theme`, `Timing`, `Metrics`, `Typography` — and nothing reads the
+  CSS at runtime. When a token changes, it changes in the singleton.
+- `docs/design/icons/` is the drawn source; `assets/icons/` is the runtime copy
+  the shell loads. Keep them identical.
+- `docs/design/pages/` holds the three design pages as live HTML — the animated
+  indicators actually move there. Open them when a behaviour is easier to see
+  than to read.
+- Where the spec leaves something open, follow the principle it falls under
+  rather than inventing a rule.
+
 ## Rules that are easy to break by accident
 
 - **At rest the interface does not speak.** No figures in contracted cells.
@@ -49,6 +70,9 @@ Three levels, each knowing only the one below:
   into a cell — that is what lets the theme cell retint the desktop live.
 - **All dimensions are logical units**, never physical pixels. Round only
   critical dimensions (hairlines, 1.3 px threads) to the physical pixel.
+- **The geometry singleton is `core/Metrics.qml`, not `Scale`.** `QtQuick`
+  already exports a `Scale` type — the transform — and it shadows a singleton of
+  that name wherever `QtQuick` is imported, which is everywhere.
 - **Blur applies to cells only, never to the tissue background**, and via
   `ext-background-effect`, never compositor layer rules.
 - **One service singleton per domain.** Never a poller per cell.
@@ -89,7 +113,7 @@ before iterating.
 
 ```
 shell.qml          Quickshell entry point
-core/              Config, Theme, Timing, Scale — global singletons
+core/              Config, Theme, Timing, Metrics — global singletons
 structure/         Membrane, Tissue, Cell — the layout engine
 components/        Shared primitives (capsules, threads, indicators)
 services/          One singleton per system domain (ported from Prisma)

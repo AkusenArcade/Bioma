@@ -1,0 +1,74 @@
+/* Bioma design tokens.
+   Interface roles come from the theme source (matugen or a Bioma preset).
+   State roles are fixed and hand-written: they never pass through matugen,
+   or a blue wallpaper would turn all three into three blues.
+   Derived roles — elevated surface, muted text, borders, shadows — are computed
+   from the background, never asked of the user. Light or dark is deduced from the
+   background luminance, not configured. */
+
+:root {
+  /* --- interface --- */
+  --bg:             #12160f;   /* fill of tissues and cells */
+  --bg-elevated:    #1b2117;
+  --cell-bg:        #232a1e;
+  --text:           #eaf1e6;
+  --text-muted:     rgba(234, 241, 230, 0.56);
+  --line:           #4f6340;   /* outlines and threads */
+  --node:           #6b8457;
+  --rim:            #8ba86e;   /* light on the top edge */
+  --primary:        #b9de6b;
+  --secondary:      #3fbfa0;
+
+  /* --- state: fixed, never generated --- */
+  --calm:           #6ee7a6;   /* < 30%   */
+  --active:         #f2c14e;   /* 30–80%  */
+  --alert:          #ff6b5d;   /* >= 80%  */
+
+  /* --- gradients: 165deg, ~22% luminance delta --- */
+  --grad-primary:   linear-gradient(165deg, #ddf5a4, #8cbb43);
+  --grad-secondary: linear-gradient(165deg, #7fe3c9, #23937b);
+  --grad-calm:      linear-gradient(165deg, #b0f7d0, #36bf7e);
+  --grad-active:    linear-gradient(165deg, #ffe08f, #dd8f26);
+  --grad-alert:     linear-gradient(165deg, #ffa88c, #da3947);
+
+  /* --- surfaces --- */
+  --glass:          rgba(35, 42, 30, 0.72);
+  --glass-blur:     20px;
+  --well:           rgba(24, 30, 20, 0.80);
+  --tissue:         rgba(27, 33, 23, 0.50);
+  --shadow:         0 14px 28px rgba(0, 0, 0, 0.45);
+  --shadow-float:   0 24px 52px rgba(0, 0, 0, 0.60);
+
+  /* --- geometry --- */
+  --margin-edge:    12px;   /* screen edge */
+  --margin-tissue:  2px;    /* tissue to cell */
+  --gap-shape:      24px;   /* between shapes of an open cell */
+  --radius-panel:   20px;
+  --radius-well:    10px;   /* concentric: panel radius minus padding */
+  --pill-ceiling:   110px;  /* up to here radius 100%, above it --radius-panel */
+  --cell-height:    40px;
+  --row-height:     30px;
+  --thread:         1.3px;
+  --node-size:      2.5px;
+  --rim-width:      1px;
+
+  /* --- typography --- */
+  --font-machine:   'Orbitron', sans-serif;   /* declared as a role, not a name */
+  --font-human:     'Spectral', serif;
+
+  /* --- timing: one named set, no scattered constants --- */
+  --t-open:         250ms;
+  --t-close:        150ms;
+  --t-shape:        100ms;   /* growth of a single shape */
+  --t-stagger:      16ms;    /* between capsules */
+  --t-transition:   180ms;   /* state transitions, e.g. the workspaces icon */
+  --t-theme:        250ms;   /* whole shell at once */
+  --t-debounce:     180ms;   /* title changes, width reflow */
+  --ease-open:      cubic-bezier(.2, .9, .3, 1.15);  /* small capsules only */
+  --ease-open-flat: cubic-bezier(.2, .9, .3, 1);     /* large panels */
+  --ease-close:     cubic-bezier(.5, 0, .9, .5);
+
+  /* --- thresholds --- */
+  --threshold-calm:   0.30;
+  --threshold-alert:  0.80;
+}
