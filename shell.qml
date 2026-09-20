@@ -15,6 +15,18 @@ import qs.structure
 ShellRoot {
     id: root
 
+    // Which monitor a membrane belongs to. `primary` is the first screen the
+    // compositor reports — niri has no notion of a primary output — and `all`
+    // puts the same membrane on every one of them.
+    function membraneMatches(entry, screen) {
+        const monitor = entry.monitor || "primary";
+        if (monitor === "all" || monitor === "*")
+            return true;
+        if (monitor === "primary")
+            return Quickshell.screens.length > 0 && Quickshell.screens[0] === screen;
+        return screen && screen.name === monitor;
+    }
+
     Variants {
         model: Quickshell.screens
 
@@ -28,26 +40,29 @@ ShellRoot {
                 screen: perScreen.modelData
             }
 
-            Repeater {
-                model: Config.ready ? Config.get("membranes", []) : []
+            Variants {
+                model: {
+                    if (!Config.ready)
+                        return [];
+                    return Config.get("membranes", []).filter(entry => root.membraneMatches(entry, perScreen.modelData));
+                }
 
                 delegate: Membrane {
-                    required property var modelData: parent.modelData
-                    required property var membraneConfig
+                    required property var modelData
 
-                    edge: membraneConfig.edge
-                    reserveSpace: membraneConfig.reserve_space === true
-                    autoHide: membraneConfig.auto_hide === true
-                    scaleStep: membraneConfig.scale || "normal"
+                    screenItem: perScreen.modelData
+                    edge: modelData.edge || "top"
+                    reserveSpace: modelData.reserve_space === true
+                    autoHide: modelData.auto_hide === true
+                    scaleStep: modelData.scale || "normal"
+                    tissuesConfig: modelData.tissues || []
                 }
             }
         }
     }
 
-    // TODO Phase 0: filter membranes by their `monitor` key before
-    // instantiating, build the tissue list from `membraneConfig.tissues`, warn
-    // when the percentages on one membrane exceed 100, and instantiate the
-    // floating tissues.
+    // TODO Phase 0: the floating tissues — anchor plus margins rather than a
+    // percentage of an edge, on their own surface, allowed to overlap.
     //
     // TODO Phase 0: the full-screen transparent input surface. Three features
     // need it — click-outside-to-close, pointer-positioned cells, and Bioma's
