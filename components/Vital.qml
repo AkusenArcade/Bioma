@@ -158,13 +158,16 @@ Item {
     // translation closes on itself.
 
     readonly property bool ramFull: kind === "ram" && level >= 0.995
+    // The liquid's source item is hidden — it exists to be sampled by the mask
+    // — so nothing inside it may take its `running` from being visible.
+    readonly property bool ramMoving: kind === "ram" && !ramFull
 
     // The liquid is held inside the ring by a mask, not by a clip: clipping in
     // Qt Quick is rectangular and cannot follow a circle. Source and mask are
     // both hidden and only the masked result is drawn.
     OpacityMask {
         anchors.fill: parent
-        visible: root.kind === "ram" && !root.ramFull
+        visible: root.ramMoving
         source: liquid
         maskSource: liquidShape
     }
@@ -195,7 +198,7 @@ Item {
             preferredRendererType: Shape.CurveRenderer
 
             NumberAnimation on x {
-                running: liquid.visible
+                running: root.ramMoving
                 loops: Animation.Infinite
                 from: -liquid.period
                 to: 0
@@ -274,16 +277,18 @@ Item {
         visible: root.kind === "gpu"
 
         property real angle: 0
-        readonly property int period: Math.round(4000 - root.rate * 2800)
 
-        RotationAnimation {
-            target: orbit
-            property: "angle"
-            running: orbit.visible && root.rate > 0.01
-            loops: Animation.Infinite
-            from: 0
-            to: 360
-            duration: orbit.period
+        // A card at idle still has a clock, so the satellite never stops: it
+        // turns at its slowest and speeds up in proportion. And it is advanced
+        // frame by frame rather than by an animation with a duration — changing
+        // a duration restarts the animation, which sends the satellite back to
+        // where it began and reads as a stutter rather than as a change of
+        // speed.
+        readonly property real period: 6000 - root.rate * 4800
+
+        FrameAnimation {
+            running: orbit.visible
+            onTriggered: orbit.angle = (orbit.angle + 360 * frameTime * 1000 / orbit.period) % 360
         }
 
         Disc {
