@@ -19,8 +19,9 @@ Three ways in, and they are independent:
    vertical and floating tissues, and the full-screen input surface of PRD §8,
    which the PRD calls the most uncertain piece in the project and which nothing
    has prototyped.
-3. **Cells**, in build order: vitals next. Workspaces is built at rest and
-   still owes its list, which is the first expansion anyone will see.
+3. **Cells**, in build order. Vitals is at rest; what it still owes is the
+   expansion — pods and the process list, with the indicators doubling as the
+   sort control — and that is the next piece of work.
 
 ## How to try it without touching the running shell
 
@@ -50,9 +51,9 @@ Drawn, and verified on screen against the design handoff.
 | `structure/Tissue.qml` | Real. Ceiling-not-reservation widths, elastic share, reflow, the punched band. |
 | `structure/Cell.qml` | Real, contracted. Glass, rim, config-driven width and visibility, growth mechanics written. |
 | `structure/Visibility.qml` | **Exercised at last** — the window title appears and disappears with focus. |
-| `components/` | `Rim`, `Ring`, `DashedRing`, `Disc`, `Dial`, `Icon`, `LightGradient`, `Thread`, `Panel`, `Well`, `WorkspaceBars`. |
+| `components/` | `Rim`, `Ring`, `DashedRing`, `Disc`, `Dial`, `Icon`, `LightGradient`, `Thread`, `Panel`, `Well`, `WorkspaceBars`, `Vital`. |
 | `structure/InputSurface.qml` + `core/Focus.qml` | The full-screen surface of PRD §8, and the register of what is open. Built; the press path still needs a human to click. |
-| `cells/clock`, `cells/window_title`, `cells/workspaces` | Three cells. The first two proved the engine; the third is the first per-monitor one. |
+| `cells/clock`, `cells/window_title`, `cells/workspaces`, `cells/vitals` | Four cells. Vitals is at rest only: the three indicators move, the expansion is not built. |
 
 Verified on HDMI-A-1: cells float with no band, the rim reads, the app icon
 resolves and the fallback glyph is tinted, the title elides and cross-fades, the
@@ -100,6 +101,15 @@ so the dismissal itself is verified by hand.
   is not installed and a relative `import "."` does not resolve either — so a
   sibling type is invisible to the cell beside it. `Dial` and `WorkspaceBars`
   are there for that reason as much as for reuse.
+- **A liquid's level is measured against its vessel.** The memory indicator
+  fills the inside of the ring, not the square the ring is drawn in: half full
+  lands on the centre line either way, which is what the design draws, but a
+  fifth of the memory has to read as a fifth rather than as a sliver below the
+  glass.
+- **A mask's source has to render itself.** Qt Quick clips rectangles only, so
+  the liquid is held inside the ring by an `OpacityMask` — and in Qt 6 an item
+  that is merely `visible: false` draws nothing for a mask to sample. Both the
+  source and the mask carry `layer.enabled`.
 - **The edge margin is measured to the cell, not to the band.** The outermost
   cell on a membrane sits at the margin from the screen edge and its tissue's
   padding hangs outside it, so the cell lines up with the left and right edges

@@ -14,7 +14,8 @@ Singleton {
     readonly property var files: ({
         "clock": "clock/Clock.qml",
         "window_title": "window_title/WindowTitle.qml",
-        "workspaces": "workspaces/Workspaces.qml"
+        "workspaces": "workspaces/Workspaces.qml",
+        "vitals": "vitals/Vitals.qml"
     })
 
     property var cache: ({})
