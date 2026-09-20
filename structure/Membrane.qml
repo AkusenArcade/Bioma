@@ -226,6 +226,11 @@ PanelWindow {
     // rather than allowed to overlap.
     function offsetFor(tissue, index) {
         const margin = metrics.marginEdge;
+        // The margin is measured to the **cell**, not to the band around it, so
+        // the outermost cell on a membrane lines up with the edge of the
+        // windows the compositor draws. The tissue's own padding therefore
+        // hangs outside it.
+        const outer = Math.max(0, margin - tissue.padding);
         let startRun = 0;
         let endRun = 0;
         let centreTotal = 0;
@@ -257,9 +262,9 @@ PanelWindow {
         const own = root.horizontal ? tissue.width : tissue.height;
         const side = tissue.anchorSide;
         if (side === "start")
-            return margin + startRun;
+            return outer + startRun;
         if (side === "end")
-            return membraneLength - margin - endRun - own;
+            return membraneLength - outer - endRun - own;
 
         // Centred: the group is centred on the membrane, then clamped between
         // whatever the corner tissues occupy.

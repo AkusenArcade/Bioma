@@ -100,6 +100,11 @@ so the dismissal itself is verified by hand.
   is not installed and a relative `import "."` does not resolve either — so a
   sibling type is invisible to the cell beside it. `Dial` and `WorkspaceBars`
   are there for that reason as much as for reuse.
+- **The edge margin is measured to the cell, not to the band.** The outermost
+  cell on a membrane sits at the margin from the screen edge and its tissue's
+  padding hangs outside it, so the cell lines up with the left and right edges
+  of the windows — which niri insets by the same `gaps`. Measured: cell and
+  window both at x 12.
 - **An expansion hangs from the line the compositor draws windows on.** Not
   from the cell, and not from the edge of the reserved strip: niri insets its
   windows by `gaps` and by any `struts`, so a panel hung at the strip's edge
