@@ -366,6 +366,16 @@ so the dismissal itself is verified by hand.
   output — they know their own edge and size, which is the only way a layer
   surface can know where it is — and the catcher subtracts those.
 
+- **The wallpaper carousel travels rather than swapping.** A step is a movement
+  that answers a gesture — the class the style guide allows beside the segmented
+  pill and the slider — so it takes the transition timing and is still again
+  afterwards. The strip is five places wide and clipped to the panel's inside:
+  the wallpaper arriving grows from the neighbour's width to the middle one's
+  while the one leaving shrinks, which is the movement itself rather than a
+  slide with a swap at the end. The wallpaper changes first and the strip is
+  displaced one place against the direction of travel, so the first frame is
+  what was on screen before the step. Akusen asked for it, 2026-09-21.
+
 ## Phase 1 — Service porting
 
 Nine of ten done, each verified headlessly through `probe.qml` before moving

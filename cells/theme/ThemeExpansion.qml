@@ -174,6 +174,77 @@ Item {
     }
 
     // ---- The carousel -------------------------------------------------------
+    //
+    // Stepping through the folder is a movement that answers a gesture, like
+    // the segmented control's pill and the slider's travel — not an indicator,
+    // so nothing is encoded in its rate. It is an event: the strip travels one
+    // place at the transition timing and is still again.
+    //
+    // The strip is five places wide and clipped to the panel's inside, so the
+    // two beyond the neighbours are what a step brings in. A place is as wide
+    // as its distance from the centre says: the wallpaper arriving grows from
+    // the neighbour's width to the middle one's while the one leaving shrinks,
+    // which is the movement itself rather than a slide with a swap at the end.
+
+    readonly property int reach: 2
+    readonly property real stripWidth: carouselWidth - 20 * factor
+
+    property real travel: 0
+
+    NumberAnimation {
+        id: glide
+        target: root
+        property: "travel"
+        to: 0
+        duration: Timing.transition
+        easing.type: Easing.Bezier
+        easing.bezierCurve: Timing.easeOpenFlat
+    }
+
+    // The wallpaper changes first and the strip is then displaced by one place
+    // in the opposite direction, so the first frame of the animation is what
+    // was on screen before the step and the last is the truth.
+    function slide(delta) {
+        if (Wallpaper.entries.length < 2)
+            return;
+        glide.stop();
+        Wallpaper.step(delta);
+        root.travel = -delta;
+        glide.start();
+    }
+
+    function closeness(place) {
+        return Math.max(0, 1 - Math.abs(place));
+    }
+
+    function placeWidth(place) {
+        return root.neighbourWidth + (root.tileWidth - root.neighbourWidth) * root.closeness(place);
+    }
+
+    // Every place's left edge, shifted so that the point the carousel is
+    // centred on — which during a step falls between two places — lands in the
+    // middle of the strip.
+    readonly property var places: {
+        const widths = [];
+        for (let i = -root.reach; i <= root.reach; i++)
+            widths.push(root.placeWidth(i - root.travel));
+
+        const lefts = [];
+        let x = 0;
+        for (let k = 0; k < widths.length; k++) {
+            lefts.push(x);
+            x += widths[k] + root.tilePitch;
+        }
+
+        const centreOf = k => lefts[k] + widths[k] / 2;
+        const base = Math.max(0, Math.min(widths.length - 1, root.travel + root.reach));
+        const first = Math.floor(base);
+        const second = Math.min(widths.length - 1, Math.ceil(base));
+        const middle = centreOf(first) + (centreOf(second) - centreOf(first)) * (base - first);
+        const shift = root.stripWidth / 2 - middle;
+
+        return { "widths": widths, "lefts": lefts.map(left => left + shift) };
+    }
 
     // Wallpapers are looked at inside shapes of their own: the current one at
     // full light in the centre, its neighbours half-seen at the sides. That is
@@ -184,7 +255,9 @@ Item {
 
         property string image: ""
         property real corner: root.tileRadius
-        property bool current: false
+        // 1 in the middle, 0 at the sides: the lit border belongs to the
+        // wallpaper being looked at, and it arrives with it.
+        property real lit: 0
 
         visible: tile.image.length > 0
 
@@ -230,7 +303,8 @@ Item {
         Rim {
             anchors.fill: parent
             radius: tile.corner
-            visible: tile.current
+            opacity: tile.lit
+            visible: tile.lit > 0
         }
     }
 
@@ -254,37 +328,51 @@ Item {
             acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
             onWheel: event => {
                 if (event.angleDelta.y > 0)
-                    Wallpaper.step(-1);
+                    root.slide(-1);
                 else if (event.angleDelta.y < 0)
-                    Wallpaper.step(1);
+                    root.slide(1);
             }
         }
 
-        Row {
+        // Clipped here and not on the panel: the strip has to run past the
+        // inside edges, and the rim belongs to the panel, which is a different
+        // item. Clipping a surface that carries the rim eats it.
+        Item {
             anchors.centerIn: parent
-            spacing: root.tilePitch
+            width: root.stripWidth
+            height: root.tileHeight
+            clip: true
 
-            Tile {
-                width: root.neighbourWidth
-                height: root.tileHeight
-                image: Wallpaper.neighbour(-1)
-                opacity: 0.40
-                TapHandler { onTapped: Wallpaper.step(-1) }
-            }
+            Repeater {
+                model: root.reach * 2 + 1
 
-            Tile {
-                width: root.tileWidth
-                height: root.tileHeight
-                image: Wallpaper.path
-                current: true
-            }
+                delegate: Tile {
+                    id: place
 
-            Tile {
-                width: root.neighbourWidth
-                height: root.tileHeight
-                image: Wallpaper.neighbour(1)
-                opacity: 0.40
-                TapHandler { onTapped: Wallpaper.step(1) }
+                    required property int index
+
+                    readonly property int offset: place.index - root.reach
+                    readonly property real position: place.offset - root.travel
+
+                    x: root.places.lefts[place.index]
+                    y: 0
+                    width: root.places.widths[place.index]
+                    height: root.tileHeight
+
+                    image: Wallpaper.neighbour(place.offset)
+                    // Full light in the middle, the shipped 0.40 at the sides,
+                    // and everything between while it travels.
+                    opacity: 0.40 + 0.60 * root.closeness(place.position)
+                    lit: root.closeness(place.position)
+
+                    // The two beyond the neighbours exist so a step has
+                    // something to bring in; they are outside the strip and
+                    // answer nothing.
+                    TapHandler {
+                        enabled: Math.abs(place.offset) === 1 && Math.abs(place.position) > 0.5
+                        onTapped: root.slide(place.offset)
+                    }
+                }
             }
         }
 
