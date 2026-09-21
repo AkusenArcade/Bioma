@@ -46,6 +46,12 @@ ShellRoot {
                 screenItem: perScreen.modelData
             }
 
+            // Over everything again, and only while a region is being drawn:
+            // Bioma's own selection rectangle, in place of `slurp`. PRD §9.6.
+            SelectionSurface {
+                screenItem: perScreen.modelData
+            }
+
             Variants {
                 model: {
                     if (!Config.ready)
@@ -70,9 +76,8 @@ ShellRoot {
     // TODO Phase 0: the floating tissues — anchor plus margins rather than a
     // percentage of an edge, on their own surface, allowed to overlap.
     //
-    // TODO Phase 3: the two remaining users of the input surface — cells
-    // positioned at the pointer, and Bioma's own selection rectangle, which
-    // `Capture.selectRegion()` still stands in for with `slurp`.
+    // TODO Phase 3: the last user of the input surface — cells positioned at
+    // the pointer, which need the pointer position it is the only way to learn.
 
     Component.onCompleted: console.log("Bioma: configuration", Config.ready ? "loaded" : "pending")
 }

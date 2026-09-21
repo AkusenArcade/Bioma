@@ -140,6 +140,7 @@ what a cell displays. A cell's own settings live in its `options`.
 | `audio.monitor_signal` | Whether the peak monitor on the default sink runs. It is Sinestesia's visibility condition, and it is the only continuous audio work in the shell. |
 | `brightness.backend` | `auto` \| `backlight` \| `ddc` \| `none`. `auto` prefers a real backlight and falls back to DDC. |
 | `brightness.display` | Which DDC display to drive, by connector (`DP-1`) or I²C bus. Empty means the first found. |
+| `capture.what` / `capture.from` | The last pair the utility cell used — `image` \| `video` \| `text`, and `screen` \| `window` \| `region`. Written by the cell itself, so the common case stays one press. |
 | `capture.folder` / `capture.video_folder` | Where stills and recordings are kept. A recording is written to a temporary directory first and moved here only when saved, so a discarded one never appears. |
 | `capture.clipboard` | Whether a capture also takes the clipboard. §9.6 wants it; a window capture always does, because the compositor is what produces the image. |
 | `capture.ocr_language` | tesseract language code. |

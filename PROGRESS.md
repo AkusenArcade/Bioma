@@ -8,30 +8,30 @@ Last worked: 2026-09-21.
 ## Where to pick up
 
 Phase 1 is nine services of ten, every one verified. Phase 0's engine draws and
-has been exercised by five cells; phase 2 is finished — window title,
+has been exercised by seven cells; phase 2 is finished — window title,
 workspaces and vitals, the last of them opening into pods and a process list —
-and phase 3 has started: the theme cell is drawn and retints the shell live.
+and phase 3 has started: the theme cell retints the shell live, and the utility
+cell captures — with Bioma's own selection rectangle, not `slurp`.
 
 Three ways in, and they are independent:
 
-1. **The rest of phase 3**: sinestesia and utility. Sinestesia is the one with
-   real unknowns — the band's behaviour is defined against the author's own
-   Sinestesia code, and capture and FFT have to be split from rendering into a
-   headless process before a cell draws anything.
+1. **The rest of phase 3**: sinestesia, and it is the one with real unknowns —
+   the band's behaviour is defined against the author's own Sinestesia code, and
+   capture and FFT have to be split from rendering into a headless process
+   before a cell draws anything.
 2. **Notifications**, which closes phase 1 and burns the bridge — the only work
    that cannot be done without switching the running shell off. See the
    pre-flight below.
 3. **The rest of the engine**: auto-hide, vertical and floating tissues,
-   keyboard focus for invoked cells, and the two remaining users of the
-   full-screen input surface — cells positioned at the pointer, and Bioma's own
-   selection rectangle, which `Capture.selectRegion()` still stands in for with
-   `slurp`.
+   keyboard focus for invoked cells, and the last user of the full-screen input
+   surface — cells positioned at the pointer, which need the pointer position it
+   is the only way to learn.
 
 ### Waiting for a pair of hands
 
 Nothing here can press a mouse button — there is no `ydotool` or `wtype` on
-this machine — so three things are written, look right in a screenshot, and
-have never been confirmed by a real click:
+this machine — so the following are written, look right in a screenshot, and
+have never been confirmed by a real click or a real drag:
 
 - **a press outside an open cell dismisses it**, through `structure/InputSurface.qml`;
 - **the scrollbar** in both lists, which appears while the list is moving;
@@ -42,7 +42,12 @@ have never been confirmed by a real click:
   neighbours, the source switch, the dropdown and its rows. Each was driven from
   a throwaway timer instead — the list opens, the switch slides, and the palette
   written through `Config.set` retints the whole shell in a screenshot taken
-  three seconds later — but no press has ever reached any of them.
+  three seconds later — but no press has ever reached any of them;
+- **the drag that draws a selection rectangle.** The surface comes up, dims the
+  desktop, takes the keyboard and goes away again on cancel, all of it verified;
+  the rectangle itself, its readout and the region it produces have only ever
+  been reasoned about. Everything downstream of the region *is* verified, from
+  when `slurp` still drew it.
 
 The way to verify anything visual here is a temporary `Timer` that sets
 `open = true` a couple of seconds after start, then `grim` for a frame or a
@@ -78,7 +83,9 @@ Drawn, and verified on screen against the design handoff.
 | `structure/Visibility.qml` | **Exercised at last** — the window title appears and disappears with focus. |
 | `components/` | `Rim`, `Ring`, `DashedRing`, `Disc`, `Dial`, `Icon`, `LightGradient`, `Thread`, `Panel`, `Well`, `WorkspaceBars`, `Vital`. |
 | `structure/InputSurface.qml` + `core/Focus.qml` | The full-screen surface of PRD §8, and the register of what is open. Built; the press path still needs a human to click. |
-| `cells/clock`, `cells/window_title`, `cells/workspaces`, `cells/vitals`, `cells/theme` | Five cells. Vitals opens into pods, threads and the process list; theme into the wallpaper carousel and the two palette capsules. |
+| `cells/clock`, `cells/window_title`, `cells/workspaces`, `cells/vitals`, `cells/theme`, `cells/utility`, `cells/recording` | Seven cells. Vitals opens into pods, threads and the process list; theme into the wallpaper carousel and the two palette capsules; utility into the capture panel, and generates the recording cell. |
+| `structure/SelectionSurface.qml` | Bioma's own selection rectangle, over the whole desktop, in place of `slurp`. Up only while a region is being asked for, and it holds the keyboard for that long so Escape means cancel. |
+| `components/Segmented.qml` | The segmented control, shared: the theme cell's source switch and the utility cell's three kinds are the same object. |
 | `core/Config.qml` write-back | `Config.set` writes one key into the override layer. Brought forward from phase 5 because the theme cell has to keep a choice. |
 
 Verified on HDMI-A-1: cells float with no band, the rim reads, the app icon
@@ -221,6 +228,25 @@ so the dismissal itself is verified by hand.
   that would not be a fourth thing to read. The mode stays in the wallpaper
   service, where it already lives, and lands in the settings cell.
 
+- **A capture waits for the shell to be gone.** Everything Bioma draws is on the
+  screen being photographed, and closing the cell is an animation: `grim` run in
+  the same instant catches the panel mid-close, and the recorder catches it in
+  its first frames. The wait is in the service, once, where every path goes
+  through it — `Timing.close` plus a frame — rather than in each caller.
+- **A pair that cannot be done is shown as unavailable.** The recorder takes an
+  output or a region and never a window, and text is recognised from a region,
+  which a window does not have here — niri reports no window position, so the
+  compositor captures it by id. Two independent choices are still two, and the
+  ones that cannot meet are dimmed rather than offered and then refused.
+- **The selection rectangle is one surface per monitor**, so a rectangle drawn
+  across two outputs is not possible: the pointer leaves the surface it started
+  on. `slurp` has the same limit for the same reason, and the region grim wants
+  is one output's anyway.
+- **The recording cell is conditional on the file, not on the recorder.** It
+  stands while `wl-screenrec` runs and stays for the question afterwards,
+  because the file it is asking about is the one it just made. When the answer
+  arrives the condition lapses and the cell leaves on its own.
+
 ## Phase 1 — Service porting
 
 Nine of ten done, each verified headlessly through `probe.qml` before moving
@@ -238,7 +264,7 @@ therefore separate singletons.
 | `services/Network.qml` | Done. Wired and Wi-Fi, native, no `nmcli` and no poll. |
 | `services/Bluetooth.qml` | Done. Adapter, devices, pairing, native. Nothing taken from Prisma's page. |
 | `services/SystemMonitor.qml` | Done. Load, memory, CPU clock, GPU, battery, processes. No process on the sampling path at all. |
-| `services/Capture.qml` | Done. Stills, window capture through niri, text recognition, video with save or discard. |
+| `services/Capture.qml` | Done. Stills, window capture through niri, text recognition, video with save or discard. The selection rectangle is now Bioma's own — the service raises a flag and `structure/SelectionSurface.qml` answers with a region. |
 | Notifications | **Next, and last.** See below. |
 
 ### Verified, and not
@@ -258,9 +284,8 @@ but the last two are missing hardware rather than missing work:
 - **Everything battery**, in `SystemMonitor.qml`. There is no battery here, and
   UPower's percentage scale is deliberately left raw rather than converted on a
   guess (§16.6).
-- **Bioma's own selection rectangle**, which `Capture.selectRegion()` stands in
-  for with `slurp`. It needs the full-screen input surface of PRD §8, which is
-  phase 0 work that has never been prototyped.
+- **The drag inside Bioma's own selection rectangle.** The surface is written
+  and comes up; nothing here can draw a rectangle with it.
 - **`structure/Visibility.qml`** has no test at all. It is the heart of the
   temporal grammar and the first cell will be its first exercise.
 

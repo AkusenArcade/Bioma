@@ -14,11 +14,12 @@ import qs.core
 // nowhere in Prisma, screenshots land in `/tmp/prisma-shot.png` and stay there,
 // and there is no recorder of any kind.
 //
-// What is deliberately **not** here: the selection rectangle. §9.6 is explicit
-// that Bioma draws its own over the full-screen input surface (§8), which does
-// not exist yet. Until it does, `selectRegion()` shells out to `slurp` — every
-// region path takes a region string, so replacing the interim selector later
-// touches this one function and nothing else.
+// The selection rectangle is not here either, and that is deliberate a second
+// time: §9.6 asks for Bioma's own, drawn over a full-screen surface, and a
+// service singleton owns no surfaces. `selectRegion()` raises a flag;
+// `structure/SelectionSurface.qml` is what draws the rectangle and answers with
+// `regionChosen` or `cancelSelection`. The service never learns how the region
+// was picked, which is what kept `slurp` swappable for as long as it stood in.
 Singleton {
     id: root
 
@@ -137,46 +138,69 @@ Singleton {
         return 1;
     }
 
-    // Interim. The real selector is Bioma's own, drawn on the input surface of
-    // §8; this exists so the capture paths below can be used and verified
-    // before that surface is written. When it arrives, this function goes and
-    // nothing else changes.
-    function selectRegion() {
-        root.lastError = "";
-        selector.running = false;
-        selector.running = true;
-    }
+    // ── Selection ────────────────────────────────────────────────────────
+    //
+    // Raising a flag rather than running a program. The surface that draws the
+    // rectangle watches this, and hands back a region in the compositor's
+    // logical coordinates — the same string `slurp` used to print, so every
+    // path below is unchanged.
 
+    property bool selecting: false
     property string pendingAction: ""   // "still" | "text" | "record"
 
-    Process {
-        id: selector
-        command: ["slurp"]
-        running: false
-        property string region: ""
+    function selectRegion() {
+        root.lastError = "";
+        root.selecting = true;
+    }
 
-        onRunningChanged: if (running) selector.region = "";
-
-        stdout: SplitParser {
-            splitMarker: "\n"
-            onRead: line => selector.region = line.trim()
+    function regionChosen(region) {
+        root.selecting = false;
+        if (!region || region.length === 0) {
+            root.cancelled();
+            return;
         }
+        if (root.pendingAction === "text")
+            root.recogniseRegion(region);
+        else if (root.pendingAction === "record")
+            root.recordRegion(region);
+        else
+            root.captureRegion(region);
+    }
 
-        // A cancelled selection is not a failure. Pressing escape is a normal
-        // way to finish with a screenshot tool, and a cell that reported an
-        // error for it would be wrong about what the user did.
-        onExited: code => {
-            if (code !== 0 || selector.region.length === 0) {
-                root.cancelled();
-                return;
-            }
-            const region = selector.region;
-            if (root.pendingAction === "text")
-                root.recogniseRegion(region);
-            else if (root.pendingAction === "record")
-                root.recordRegion(region);
-            else
-                root.captureRegion(region);
+    // Escape is a normal way to finish with a screenshot tool, so a cancelled
+    // selection is not a failure and nothing reports one.
+    function cancelSelection() {
+        root.selecting = false;
+        root.cancelled();
+    }
+
+    // ── Settling ─────────────────────────────────────────────────────────
+    //
+    // Everything Bioma draws is on the screen being photographed. The cell
+    // closes before a capture is asked for and the selection rectangle is taken
+    // down before the region is used, but both are animations and neither is
+    // finished when the call returns — `grim` run in the same instant catches
+    // the panel mid-close, and the recorder catches it in its first frames.
+    //
+    // So a capture waits for the shell to be gone, once, here: every path goes
+    // through it, rather than each caller remembering.
+    readonly property int settleTime: Timing.close + 80
+
+    property var pending: null
+
+    function settleThen(action) {
+        root.pending = action;
+        settle.restart();
+    }
+
+    Timer {
+        id: settle
+        interval: root.settleTime
+        onTriggered: {
+            const action = root.pending;
+            root.pending = null;
+            if (action)
+                action();
         }
     }
 
@@ -197,8 +221,10 @@ Singleton {
         root.busy = true;
         still.target = command[command.length - 1];
         still.command = command;
-        still.running = false;
-        still.running = true;
+        root.settleThen(() => {
+            still.running = false;
+            still.running = true;
+        });
     }
 
     Process {
@@ -326,8 +352,10 @@ Singleton {
         ocr.command = ["sh", "-c",
                        `grim -g ${JSON.stringify(region)} - | `
                        + `tesseract - stdout -l ${root.language} 2>/dev/null`];
-        ocr.running = false;
-        ocr.running = true;
+        root.settleThen(() => {
+            ocr.running = false;
+            ocr.running = true;
+        });
     }
 
     Process {
@@ -416,8 +444,10 @@ Singleton {
         root.elapsed = 0;
         root.pendingVideo = `${root.temporaryDirectory}/recording-${root.timestamp()}.mp4`;
         recorder.pending = target;
-        prepareTemporary.running = false;
-        prepareTemporary.running = true;
+        root.settleThen(() => {
+            prepareTemporary.running = false;
+            prepareTemporary.running = true;
+        });
     }
 
     Process {

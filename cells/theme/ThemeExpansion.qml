@@ -305,123 +305,6 @@ Item {
 
     // ---- Source -------------------------------------------------------------
 
-    component Segmented: Item {
-        id: control
-
-        property var options: []
-        property string current: ""
-        signal chose(string key)
-
-        implicitWidth: track.width
-        implicitHeight: track.height
-
-        readonly property real buttonHeight: 26 * root.factor
-        readonly property real buttonPadding: 14 * root.factor
-        readonly property real trackPadding: 3 * root.factor
-
-        // The selected option carries the gradient, so it is set in the bold
-        // weight and every button is measured at that weight: a pill that
-        // resized itself on selection would be a second animation nobody asked
-        // for, over the one that is meant to be seen.
-        readonly property var buttonFont: Qt.font({
-            "family": Typography.technical,
-            "pixelSize": root.fontControl,
-            "weight": Typography.weightTitle,
-            "letterSpacing": Typography.tracking(root.fontControl, 0.04)
-        })
-
-        Well {
-            id: track
-            metrics: root.metrics
-            clip: false
-            width: buttons.width + control.trackPadding * 2
-            height: control.buttonHeight + control.trackPadding * 2
-            radius: height / 2
-            border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
-            border.color: Theme.line
-
-            // The selection slides to the chosen option with the opening
-            // timings: it does not vanish on one side and appear on the other.
-            Rectangle {
-                id: selection
-
-                readonly property int index: {
-                    for (let i = 0; i < control.options.length; i++)
-                        if (control.options[i].key === control.current)
-                            return i;
-                    return -1;
-                }
-
-                readonly property Item chosenItem: selection.index >= 0 && selection.index < buttonList.count
-                                                   ? buttonList.itemAt(selection.index) : null
-
-                x: control.trackPadding + (selection.chosenItem ? selection.chosenItem.x : 0)
-                y: control.trackPadding
-                width: selection.chosenItem ? selection.chosenItem.width : 0
-                height: control.buttonHeight
-                radius: height / 2
-                antialiasing: true
-                visible: width > 0
-
-                gradient: Gradient {
-                    GradientStop { position: 0; color: Theme.gradientTop(Theme.primary) }
-                    GradientStop { position: 1; color: Theme.gradientBottom(Theme.primary) }
-                }
-
-                Behavior on x {
-                    NumberAnimation {
-                        duration: Timing.transition
-                        easing.type: Easing.Bezier
-                        easing.bezierCurve: Timing.easeOpenFlat
-                    }
-                }
-
-                Behavior on width {
-                    NumberAnimation {
-                        duration: Timing.transition
-                        easing.type: Easing.Bezier
-                        easing.bezierCurve: Timing.easeOpenFlat
-                    }
-                }
-            }
-
-            Row {
-                id: buttons
-                x: control.trackPadding
-                y: control.trackPadding
-                spacing: 2 * root.factor
-
-                Repeater {
-                    id: buttonList
-                    model: control.options
-
-                    delegate: Item {
-                        id: button
-
-                        required property var modelData
-
-                        readonly property bool chosen: button.modelData.key === control.current
-
-                        width: label.implicitWidth + control.buttonPadding * 2
-                        height: control.buttonHeight
-
-                        Text {
-                            id: label
-                            anchors.centerIn: parent
-                            text: button.modelData.label
-                            // A selected control is not a surface: it takes the
-                            // fill it sits on, and the others stay quiet.
-                            color: button.chosen ? Theme.background : Theme.textMuted
-                            font: control.buttonFont
-                        }
-
-                        TapHandler { onTapped: control.chose(button.modelData.key) }
-                    }
-                }
-            }
-        }
-    }
-
     Panel {
         id: source
 
@@ -457,6 +340,8 @@ Item {
 
             Segmented {
                 anchors.horizontalCenter: parent.horizontalCenter
+                metrics: root.metrics
+                fontSize: root.fontControl
                 options: [
                     { "key": "matugen", "label": "matugen" },
                     { "key": "manual", "label": "Bioma" }
