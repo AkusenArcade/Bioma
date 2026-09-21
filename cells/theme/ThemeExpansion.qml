@@ -301,22 +301,41 @@ Item {
 
     // The carousel hangs the source capsule off its own edge, at that capsule's
     // centre line — the thread is computed from both shapes, never placed.
+    // Both threads have their ends on the shapes they touch rather than on the
+    // coordinates those shapes settle at. It is the same rule the design states
+    // for the opening — a thread stays attached while a shape grows — and it is
+    // the closing that shows what breaks without it: the shapes retract towards
+    // the cell and a thread computed from resting coordinates stays behind,
+    // hanging between two places where nothing is any more.
     Thread {
+        id: descent
+
+        // Not `top` and `bottom`: an Item declares those final, and shadowing
+        // them costs a warning and the binding.
+        readonly property real headY: root.upward ? source.y + source.height
+                                                  : carousel.y + carousel.height
+        readonly property real footY: root.upward ? carousel.y : source.y
+
         vertical: true
         progress: root.linkProgress
         width: implicitWidth
-        height: root.gap
-        x: root.capsuleWidth / 2 - width / 2
-        y: root.upward ? root.capsuleHeight : root.carouselHeight
+        height: Math.max(0, descent.footY - descent.headY)
+        x: Math.max(source.x, Math.min(source.x + source.width, root.capsuleWidth / 2)) - width / 2
+        y: descent.headY
     }
 
     Thread {
+        id: crossing
+
+        readonly property real from: source.x + source.width
+
         vertical: false
         progress: root.linkProgress
-        width: root.gap
+        width: Math.max(0, palette.x - crossing.from)
         height: implicitHeight
-        x: root.capsuleWidth
-        y: root.capsuleY + root.capsuleHeight / 2 - height / 2
+        x: crossing.from
+        y: Math.max(source.y, Math.min(source.y + source.height,
+                                       root.capsuleY + root.capsuleHeight / 2)) - height / 2
     }
 
     // ---- Source -------------------------------------------------------------
@@ -332,11 +351,12 @@ Item {
         growth: root.sourceProgress
         contentReady: root.sourceProgress > 0.999
 
-        // Born from the node where the vertical thread meets its cap.
+        // Born from the node where the vertical thread meets its cap — on the
+        // carousel's edge as it is, not as it will be.
         anchorX: 0
         anchorY: root.capsuleY
-        nodeX: root.capsuleWidth / 2
-        nodeY: root.capsuleNear
+        nodeX: Math.max(carousel.x, Math.min(carousel.x + carousel.width, root.capsuleWidth / 2))
+        nodeY: root.upward ? carousel.y : carousel.y + carousel.height
 
         Column {
             anchors.centerIn: parent
@@ -384,11 +404,13 @@ Item {
         growth: root.paletteProgress
         contentReady: root.paletteProgress > 0.999
 
-        // Born from the far node of the horizontal thread.
+        // Born from the far node of the horizontal thread, which rides on the
+        // source capsule's edge.
         anchorX: root.capsuleWidth + root.gap
         anchorY: root.capsuleY
-        nodeX: root.capsuleWidth + root.gap
-        nodeY: root.capsuleY + root.capsuleHeight / 2
+        nodeX: source.x + source.width
+        nodeY: Math.max(source.y, Math.min(source.y + source.height,
+                                           root.capsuleY + root.capsuleHeight / 2))
 
         Column {
             anchors.centerIn: parent

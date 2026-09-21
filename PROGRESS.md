@@ -326,6 +326,17 @@ so the dismissal itself is verified by hand.
   144 ms) and nobody could see it. The surface now follows `expanded` — open, or
   still on its way back — and outlives the closing by the 169 ms it takes.
 
+- **A thread's ends belong to the shapes, not to their coordinates.**
+  `IMPLEMENTATION.md` says it — the thread is a child of the common container
+  with its ends bound to both shapes — and both compositions had them at the
+  coordinates the shapes come to rest at instead. Opening hides the difference,
+  because everything arrives where the arithmetic said it would. Closing does
+  not: the panel retracts towards the cell while the pods and capsules retract
+  towards points it has already left, so the composition comes apart instead of
+  going home. Bound to the live geometry, the pod chases the panel's edge all
+  the way in — measured, the gap between them closes from 18.5 px to 0 while
+  both travel towards the cell.
+
 ## Phase 1 — Service porting
 
 Nine of ten done, each verified headlessly through `probe.qml` before moving

@@ -149,6 +149,7 @@ Item {
     // ---- The pods ----------------------------------------------------------
 
     Repeater {
+        id: podList
         model: root.domains
 
         delegate: Panel {
@@ -173,11 +174,17 @@ Item {
             growth: progress
             contentReady: progress > 0.999
 
-            // It is born from the node where its own thread meets the panel.
+            // It is born from the node where its own thread meets the panel —
+            // and the panel is a moving shape, not a coordinate. Bound to where
+            // that edge *is*, the pod grows out of the panel as it opens and
+            // goes back into it as it closes; bound to where it will be, the
+            // pod retracted into empty space once the panel had left.
+            readonly property real centre: index * (root.podHeight + root.gap) + root.podHeight / 2
+
             anchorX: 0
             anchorY: index * (root.podHeight + root.gap)
-            nodeX: root.podWidth
-            nodeY: index * (root.podHeight + root.gap) + root.podHeight / 2
+            nodeX: list.x
+            nodeY: Math.max(list.y, Math.min(list.y + list.height, pod.centre))
 
             TapHandler {
                 // The indicators double as the sort control.
@@ -254,20 +261,26 @@ Item {
         }
     }
 
-    // One thread per pod, from the pod's cap to the panel's edge. They are
-    // drawn before the pods and stay attached while the pods grow, because
-    // their ends are bound to the geometry of both shapes.
+    // One thread per pod, from the pod's cap to the panel's edge, both ends
+    // bound to the shape they touch. A thread computed from the coordinates the
+    // shapes will end up at is right only while they are at rest — and at rest
+    // is the one moment a thread is not being looked at.
     Repeater {
         model: root.domains
 
         delegate: Thread {
+            id: link
+
             required property int index
+
+            readonly property Item pod: podList.itemAt(link.index)
+            readonly property real from: link.pod ? link.pod.x + link.pod.width : list.x
 
             vertical: false
             progress: root.cell ? root.cell.threadProgress : 0
-            x: root.podWidth
-            y: index * (root.podHeight + root.gap) + root.podHeight / 2 - height / 2
-            width: root.gap
+            x: link.from
+            y: (link.pod ? link.pod.y + link.pod.height / 2 : list.y) - height / 2
+            width: Math.max(0, list.x - link.from)
             height: implicitHeight
         }
     }
