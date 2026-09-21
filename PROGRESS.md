@@ -291,6 +291,18 @@ so the dismissal itself is verified by hand.
   when its neighbours need less. The two monitors behaved differently only
   because 30% of 3440 is room enough for anything.
 
+- **A full-screen surface asks for `exclusiveZone: -1`, not 0.** Zero does not
+  mean "reserve nothing": it asks the compositor to keep the surface clear of
+  every *other* exclusive zone, which it does by shrinking it. The selection
+  rectangle was therefore drawn on a surface whose origin was 44 px below the
+  output's — the height of the other shell's bar — and it handed `grim` its own
+  coordinates as though they were the screen's. Select a line of text and the
+  line above it lands in the clipboard. Measured both ways: a rectangle drawn at
+  400,400 sits at 444 on screen with a zone of 0 and at 400 with -1. The input
+  surface had the same declaration and the same flaw waiting in it: the holes in
+  its region are computed from items on other surfaces, and the pointer position
+  it exists to report is read straight out of it.
+
 ## Phase 1 — Service porting
 
 Nine of ten done, each verified headlessly through `probe.qml` before moving

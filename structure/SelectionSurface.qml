@@ -25,7 +25,15 @@ PanelWindow {
     color: "transparent"
 
     visible: Capture.selecting
-    exclusiveZone: 0
+
+    // -1, not 0. A layer surface anchored to all four edges with a zone of 0
+    // is *shrunk* by the compositor to what the other surfaces' exclusive
+    // zones leave over — another shell's bar, Bioma's own reserved strip — so
+    // its origin is not the output's origin. The rectangle then reads its own
+    // coordinates as though they were the screen's and hands `grim` a region
+    // that much too high: select a line of text and the line above it is what
+    // lands in the clipboard.
+    exclusiveZone: -1
 
     anchors { top: true; bottom: true; left: true; right: true }
 

@@ -24,8 +24,14 @@ PanelWindow {
     color: "transparent"
 
     // Never reserve, never hide anything: it is a sheet of glass over the
-    // desktop and it exists only while it has something to catch.
-    exclusiveZone: 0
+    // desktop and it exists only while it has something to catch. -1 rather
+    // than 0, because 0 asks the compositor to keep the surface clear of every
+    // other exclusive zone — which it does by shrinking it, leaving the sheet
+    // smaller than the screen and its coordinates offset from the output's.
+    // The holes punched in its input region are computed from items on other
+    // surfaces, and the pointer position it exists to report is read straight
+    // out of it.
+    exclusiveZone: -1
     visible: Focus.anyOpen
 
     anchors {
