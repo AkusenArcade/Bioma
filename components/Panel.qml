@@ -9,8 +9,11 @@ import qs.core
 // cell it came out of. Growth animates width and height from that node, never a
 // scale: scaling deforms the rim, distorts the radius and stretches the text.
 //
-// Content enters only once the shape is at size, with opacity plus a 4 px
-// upward translation, and is never scaled.
+// Content enters only once the shape is at size, and it enters the way it
+// leaves: growing from its own centre. STYLE_GUIDE §6 asks for opacity plus a
+// 4 px rise instead; on the machine that reads as the content dropping in from
+// above, and a shell where things arrive one way and leave another has two
+// gestures where it needs one. Akusen's call, 2026-09-21.
 Item {
     id: root
 
@@ -80,12 +83,13 @@ Item {
     // under it. At full size the two are the same figure, so this changes
     // nothing that is ever still.
     //
-    // Leaving is the one place in the shell where content scales. Shapes never
-    // do — a scaled shape deforms its rim and its radii — but the content of a
-    // shape that is going away has no rim to deform, and shrinking in place
-    // about its own centre is what reads as "put back" rather than "dropped".
-    // It also leaves before the capsule does, which is the order the style
-    // guide asks for: gone at `contentFade`, while the shape has `close`.
+    // Content is the one thing in the shell that scales. Shapes never do — a
+    // scaled shape deforms its rim and its radii — but content has neither, and
+    // growing and shrinking about its own centre is what reads as arriving in
+    // the shape and being put back into it.
+    //
+    // It still arrives only once the shape is at size, and it still leaves
+    // before the shape does: `contentFade` against the shape's `close`.
     Item {
         id: contentSlot
 
@@ -96,7 +100,7 @@ Item {
         height: contentSlot.innerHeight
 
         x: (root.width - width) / 2
-        y: (root.height - height) / 2 + (root.contentReady ? 0 : 4)
+        y: (root.height - height) / 2
 
         opacity: root.contentReady ? 1 : 0
         scale: root.contentReady ? 1 : 0.88
@@ -104,6 +108,5 @@ Item {
 
         Behavior on opacity { NumberAnimation { duration: Timing.contentFade } }
         Behavior on scale { NumberAnimation { duration: Timing.contentFade; easing.type: Easing.OutQuad } }
-        Behavior on y { NumberAnimation { duration: Timing.contentFade; easing.type: Easing.OutQuad } }
     }
 }

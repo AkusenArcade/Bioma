@@ -337,6 +337,12 @@ so the dismissal itself is verified by hand.
   the way in — measured, the gap between them closes from 18.5 px to 0 while
   both travel towards the cell.
 
+- **Content arrives the way it leaves: growing from its own centre.**
+  STYLE_GUIDE §6 asks for opacity plus a 4 px rise on the way in; on the machine
+  that reads as the content dropping in from above, and a shell where things
+  arrive one way and leave another has two gestures where it needs one. The
+  guide still says 4 px — this is a decision against it, not an oversight.
+  Akusen's call, 2026-09-21.
 - **A panel's content is laid out at the size the panel settles at, not the
   size it is at.** The slot was bound to the animated width, so everything
   centred in it re-centred on every frame: at rest nothing shows, and on the way
