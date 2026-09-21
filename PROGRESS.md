@@ -27,27 +27,36 @@ Three ways in, and they are independent:
    surface — cells positioned at the pointer, which need the pointer position it
    is the only way to learn.
 
-### Waiting for a pair of hands
+### Confirmed by a real hand, at last
+
+2026-09-21, driving the shell on both monitors: a tap opens a cell; the capture
+panel's three sources act on the press; the selection rectangle is drawn,
+measured and released; a screenshot of a whole output lands with the panel
+absent from it; a recording runs, stops and is saved or discarded from its own
+cell; and text recognition reaches the clipboard from a rectangle drawn by hand.
+
+Four defects came out of that hour and are fixed: a tissue that laid its cells
+outside itself on a narrow membrane, a save-or-discard control dropped by the
+rule that replaced it, a cell frozen on the membrane when its condition lapsed
+under the pointer, and a selection region 44 px too high because a full-screen
+surface asked for `exclusiveZone: 0`.
+
+### Still waiting for a pair of hands
 
 Nothing here can press a mouse button — there is no `ydotool` or `wtype` on
-this machine — so the following are written, look right in a screenshot, and
-have never been confirmed by a real click or a real drag:
+this machine — so these are written, look right in a screenshot, and have never
+been confirmed by a real press:
 
 - **a press outside an open cell dismisses it**, through `structure/InputSurface.qml`;
 - **the scrollbar** in both lists, which appears while the list is moving;
 - **pressing the vitals search field**, which used to dismiss the cell and
   should not any more: the masks are rebound when an expansion finishes
   growing, not only when it appears;
-- **every control in the theme cell**: the carousel's wheel and its two
-  neighbours, the source switch, the dropdown and its rows. Each was driven from
-  a throwaway timer instead — the list opens, the switch slides, and the palette
+- **the theme cell's controls**: the carousel's wheel and its two neighbours,
+  the source switch, the dropdown and its rows. Each was driven from a
+  throwaway timer instead — the list opens, the switch slides, and a palette
   written through `Config.set` retints the whole shell in a screenshot taken
-  three seconds later — but no press has ever reached any of them;
-- **the drag that draws a selection rectangle.** The surface comes up, dims the
-  desktop, takes the keyboard and goes away again on cancel, all of it verified;
-  the rectangle itself, its readout and the region it produces have only ever
-  been reasoned about. Everything downstream of the region *is* verified, from
-  when `slurp` still drew it.
+  three seconds later — but no press has ever reached any of them.
 
 The way to verify anything visual here is a temporary `Timer` that sets
 `open = true` a couple of seconds after start, then `grim` for a frame or a
