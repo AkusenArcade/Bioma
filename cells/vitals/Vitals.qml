@@ -122,10 +122,6 @@ Cell {
 
     replacesContent: true
 
-    TapHandler {
-        onTapped: root.open = !root.open
-    }
-
     // The process list is the one sample that costs something, so the service
     // takes it only while it is being looked at.
     onOpenChanged: SystemMonitor.listProcesses = root.open

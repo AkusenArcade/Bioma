@@ -94,11 +94,6 @@ Cell {
 
     // ---- Interaction ------------------------------------------------------
 
-    TapHandler {
-        // Click opens and closes the list; a row jumps and closes on its own.
-        onTapped: root.open = !root.open
-    }
-
     // The panel's content lives in its own file beside this one, and arrives
     // through a Loader: Quickshell generates no QML module for a cell's own
     // directory, so a sibling type cannot be imported — but a URL resolved

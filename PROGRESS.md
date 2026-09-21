@@ -312,6 +312,20 @@ so the dismissal itself is verified by hand.
   its region are computed from items on other surfaces, and the pointer position
   it exists to report is read straight out of it.
 
+- **A cell's own tap target is the pill, not its content.** Everything a cell
+  declares goes into `contractedSlot`, which is inset by the cell's padding — so
+  the `TapHandler` each cell declared answered over its icons and nowhere else.
+  On a 40 px square cell that is the icon and two pixels of frame, which is why
+  opening one was fiddly. Opening is the same gesture on every cell that has an
+  expansion, so it lives in `structure/Cell.qml` now, on the cell itself, and
+  the cells declare nothing.
+- **A surface that shrinks on `open` clips the closing away.** The membrane took
+  the whole screen while a cell was open and went back to its strip the instant
+  the cell stopped being open — which is the first frame of the retraction, not
+  the last. The animation ran the whole time (measured: growth 0.99 → 0 over
+  144 ms) and nobody could see it. The surface now follows `expanded` — open, or
+  still on its way back — and outlives the closing by the 169 ms it takes.
+
 ## Phase 1 — Service porting
 
 Nine of ten done, each verified headlessly through `probe.qml` before moving

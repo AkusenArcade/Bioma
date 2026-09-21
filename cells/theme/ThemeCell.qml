@@ -85,10 +85,6 @@ Cell {
 
     // ---- Open ---------------------------------------------------------------
 
-    TapHandler {
-        onTapped: root.open = !root.open
-    }
-
     // The expansion is a composition — a carousel, two capsules and the threads
     // between them — so it lives in its own file beside this one and arrives
     // through a Loader: a cell's directory is not a QML module.

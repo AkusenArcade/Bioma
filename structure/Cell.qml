@@ -265,6 +265,13 @@ Item {
 
     readonly property bool hasPanel: panel !== null || expansion !== null
 
+    // Open, or still on its way back. The membrane offers a surface the size of
+    // the screen for as long as something is expanded on it, and "expanded" has
+    // to include the closing: a surface that shrinks the instant the cell is no
+    // longer open clips the retraction away, and what the eye sees is a panel
+    // that vanished rather than one that closed.
+    readonly property bool expanded: open || panelGrowth > 0 || threadProgress > 0
+
     // How far the panel hangs below the cell: the distance from the cell's
     // outer edge to the line where the compositor begins drawing windows. Set
     // by the tissue, which knows where both are. Every open cell therefore
@@ -403,6 +410,18 @@ Item {
     }
 
     // ---- Interaction -------------------------------------------------------
+
+    // The whole pill opens the cell, caps included. It cannot live with the
+    // content: anything a cell declares goes into `contractedSlot`, which is
+    // inset by the cell's own padding — so a handler declared there answers
+    // over the icons and nowhere else, which on a 40 px square cell is the icon
+    // and a two-pixel frame around it.
+    property bool opensOnTap: hasPanel
+
+    TapHandler {
+        enabled: root.opensOnTap
+        onTapped: root.open = !root.open
+    }
 
     HoverHandler {
         id: hover

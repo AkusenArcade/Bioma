@@ -98,10 +98,6 @@ Cell {
         return "";
     }
 
-    TapHandler {
-        onTapped: root.open = !root.open
-    }
-
     panel: Component {
         Loader {
             id: panelLoader

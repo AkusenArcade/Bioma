@@ -89,8 +89,20 @@ PanelWindow {
         return false;
     }
 
-    implicitHeight: horizontal ? (anyOpen ? (screen ? screen.height : strip) : strip) : 0
-    implicitWidth: horizontal ? 0 : (anyOpen ? (screen ? screen.width : strip) : strip)
+    // Open, or still retracting. The surface has to outlast the closing
+    // animation: cut it at the moment the cell stops being open and the
+    // expansion is clipped away mid-retraction, which looks exactly like an
+    // expansion that never animated at all.
+    readonly property bool anyExpanded: {
+        for (const tissue of root.tissues)
+            for (const cell of tissue.cells)
+                if (cell.expanded)
+                    return true;
+        return false;
+    }
+
+    implicitHeight: horizontal ? (anyExpanded ? (screen ? screen.height : strip) : strip) : 0
+    implicitWidth: horizontal ? 0 : (anyExpanded ? (screen ? screen.width : strip) : strip)
 
     // Invoked cells acquire keyboard focus and release it on close.
     focusable: anyOpen
