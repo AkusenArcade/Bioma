@@ -52,6 +52,12 @@ Cell {
 
     readonly property bool named: root.track.length > 0
 
+    // A name needs room to be a name. Below it the cell says the band alone and
+    // centres it in whatever the tissue could give — the same answer the design
+    // gives for a track with no metadata, reached from the other direction.
+    readonly property real leastName: 60 * metrics.factor
+    readonly property bool showsName: root.named && root.available >= root.leastName
+
     contentWidth: open ? headerMark + headerGap + titleMetrics.width
                        : bandWidth + (named ? spacing + label.implicitWidth : 0)
 
@@ -121,6 +127,7 @@ Cell {
 
     Row {
         anchors.verticalCenter: parent.verticalCenter
+        x: root.showsName ? 0 : Math.max(0, (parent.width - root.bandWidth) / 2)
         spacing: root.spacing
 
         Band {
@@ -139,7 +146,7 @@ Cell {
         Text {
             id: label
             anchors.verticalCenter: parent.verticalCenter
-            visible: root.named
+            visible: root.showsName
             width: root.available
             elide: Text.ElideRight
             maximumLineCount: 1

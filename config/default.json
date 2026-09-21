@@ -137,7 +137,8 @@
                 "confirm": 200,
                 "dwell": 4000
               },
-              "min_width": { "value": 80 }
+              "min_width": { "value": 81 },
+              "width": { "elastic": true, "max_percent": 22 }
             }
           ]
         },

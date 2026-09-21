@@ -468,6 +468,14 @@ the fold to fourteen showing the shape of the music rather than a flat line.
   which of the two holds the other. With no MPRIS source the panel is absent
   rather than empty, and it arrives and goes as a track appears and ends without
   the cell closing.
+- **A cell whose content is a name needs a ceiling.** Sinestesia asked for its
+  band plus a whole track title with nothing capping it, and being conditional
+  it outranks the cells that are simply always there — so on a narrow membrane
+  it took the tissue and the clock and the window title stood down. The window
+  title has carried a cap since it was written, for exactly this; sinestesia has
+  one now too, elastic with the band as its floor. Below the room a name needs
+  it shows the band alone and centres it, which is the answer the design already
+  gives for a track with no metadata, arrived at from the other direction.
 - **The player selector takes what the transport leaves.** The controls that act
   are not negotiable and a name can be shortened: with one player the selector
   is absent, with a long identity it elides, and below sixty pixels of room it
