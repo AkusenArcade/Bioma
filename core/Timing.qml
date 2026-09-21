@@ -55,6 +55,12 @@ Singleton {
     // Content enters only once its shape has reached its size.
     readonly property int contentFade: scaled(Config.get("timing.content_fade", 120))
 
+    // The loader's round trip: 600 ms out, 600 ms back. The one motion in the
+    // shell that runs while nothing is being measured — because the movement
+    // *is* the measurement, and it means "no value yet". It stops on the frame
+    // the value lands. See docs/design/icons/LOADER.md.
+    readonly property int loader: scaled(Config.get("timing.loader", 1200))
+
     // Wallpaper crossfade. Slower than a palette change: the picture is the
     // whole screen, and anything quick here reads as a flicker rather than a
     // change of scene.
@@ -66,6 +72,12 @@ Singleton {
     // followed by the end point. Small capsules may overshoot. Large panels may
     // not — there it reads as a bounce and conflicts with the intended
     // register. Closing never overshoots: it opens calmly, it closes quickly.
+
+    // The loader's own curve, and nothing else's: symmetric, so the segment
+    // eases out of each end and crosses the middle at speed. It reads as
+    // breathing rather than as a progress bar, which is exactly what it must
+    // not be mistaken for.
+    readonly property list<real> sweep: [0.45, 0, 0.55, 1, 1, 1]
 
     readonly property list<real> easeOpen: [0.2, 0.9, 0.3, 1.15, 1, 1]
     readonly property list<real> easeOpenFlat: [0.2, 0.9, 0.3, 1.0, 1, 1]

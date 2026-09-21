@@ -26,8 +26,57 @@ Cell {
     // square: 20 between two tens.
     readonly property real iconSize: 20 * metrics.factor
     paddingLeading: 10 * metrics.factor
-    paddingTrailing: 10 * metrics.factor
-    contentWidth: iconSize
+    // Contracted the cell is a square around its glyph; open it carries a name
+    // as well, and a name keeps the full margin on its side.
+    paddingTrailing: open ? 16 : 10 * metrics.factor
+
+    // Open, the cell becomes the title of the panel it opened: the glyph of its
+    // domain and its name, in the technical voice, like every other cell with
+    // an expansion.
+    //
+    // Its category rather than what it does today. `CAPTURE` would be the truer
+    // word for a cell that only captures, and the wrong one for a cell expected
+    // to grow other functions — a title that has to be renamed when it does is
+    // the wrong title. Akusen's call, 2026-09-22.
+    readonly property string title: "UTILITY"
+
+    readonly property real headerGap: 12 * metrics.factor
+
+    TextMetrics {
+        id: titleMetrics
+        text: root.title
+        font: Qt.font({
+            "family": Typography.technical,
+            "pixelSize": root.metrics.fontLabel,
+            "weight": Typography.weightLabel,
+            "letterSpacing": Typography.tracking(root.metrics.fontLabel, Typography.labelTracking)
+        })
+    }
+
+    contentWidth: open ? iconSize + headerGap + titleMetrics.width : iconSize
+
+    replacesContent: true
+
+    header: Component {
+        Row {
+            spacing: root.headerGap
+
+            Icon {
+                anchors.verticalCenter: parent.verticalCenter
+                name: "capture"
+                width: root.iconSize
+                height: width
+                gradient: true
+            }
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: root.title
+                color: Theme.text
+                font: titleMetrics.font
+            }
+        }
+    }
 
     // Two independent choices — what is captured, and where from. They are two
     // rows rather than six buttons, and the last pair used stays selected,

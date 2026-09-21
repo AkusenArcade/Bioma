@@ -35,9 +35,12 @@ Cell {
     // `implicitWidth` is the unconstrained width of the string; `contentWidth`
     // is what it actually occupies once elided, and binding the label's width
     // to that would make the two chase each other down to nothing.
-    contentWidth: iconSize + spacing + label.implicitWidth
+    readonly property real loaderSize: 16 * metrics.factor
 
-    readonly property real available: Math.max(0, width - paddingLeading - paddingTrailing - iconSize - spacing)
+    contentWidth: iconSize + spacing + (root.waiting ? loaderSize + spacing : 0) + label.implicitWidth
+
+    readonly property real available: Math.max(0, width - paddingLeading - paddingTrailing - iconSize - spacing
+                                                 - (root.waiting ? loaderSize + spacing : 0))
 
     // ---- Icon --------------------------------------------------------------
     //
@@ -53,7 +56,60 @@ Cell {
     // Browsers rewrite the title on every tab. The text waits out the debounce
     // and then crosses over; it is never swapped abruptly.
 
-    readonly property string incoming: Niri.focusedTitle
+    // A window that is working says so in its own title: a terminal, a browser
+    // tab, an editor indexing. They all do it the same way — a spinner glyph in
+    // front of the name, rewritten several times a second — and the shell has
+    // its own way of saying it. So the glyph is taken out of the string and
+    // shown as the loader instead: one drawing for "working", whichever
+    // application asked.
+    //
+    // It also settles the title. A spinner rewrites faster than the debounce,
+    // so a cell that watched the raw string was never looking at a title that
+    // had stopped changing.
+    function spins(code) {
+        return (code >= 0x25D0 && code <= 0x25D3)      // half-filled circles
+            || (code >= 0x25F4 && code <= 0x25F7)      // quartered circles
+            || (code >= 0x2800 && code <= 0x28FF)      // braille, the usual dots
+            || (code >= 0x1F550 && code <= 0x1F55B)    // clock faces
+            || (code >= 0x1F311 && code <= 0x1F318);   // moon phases
+    }
+
+    function settled(title) {
+        if (!title || title.length === 0)
+            return { "waiting": false, "text": "" };
+
+        const first = title.codePointAt(0);
+        if (!root.spins(first))
+            return { "waiting": false, "text": title };
+
+        const rest = title.slice(String.fromCodePoint(first).length);
+        return { "waiting": true, "text": rest.replace(/^[\s\u00a0]+/, "") };
+    }
+
+    readonly property var reading: root.settled(Niri.focusedTitle)
+    readonly property string incoming: root.reading.text
+
+    // Late in, immediate out. A wait under a moment must show nothing — a
+    // loader that flashes is worse than a moment of stillness — but the moment
+    // the work finishes the loader is wrong, and waiting for a cycle to end
+    // would be the shell lying about the state of the machine.
+    readonly property bool spinning: root.reading.waiting
+    property bool waiting: false
+
+    onSpinningChanged: {
+        if (root.spinning) {
+            appear.restart();
+        } else {
+            appear.stop();
+            root.waiting = false;
+        }
+    }
+
+    Timer {
+        id: appear
+        interval: Timing.debounce
+        onTriggered: root.waiting = true
+    }
 
     // A cell that has nothing on it yet has nothing to cross-fade from, and a
     // title that never settles — a terminal with a spinner in it rewrites faster
@@ -125,6 +181,18 @@ Cell {
                 name: "app-fallback"
                 colour: Theme.textMuted
             }
+        }
+
+        // Beside the name, never in place of the application's icon: replacing
+        // the glyph would make the row jump twice, once when the wait starts
+        // and once when it ends.
+        Sweep {
+            anchors.verticalCenter: parent.verticalCenter
+            visible: root.waiting
+            width: root.loaderSize
+            height: width
+            running: root.waiting
+            colour: Theme.textMuted
         }
 
         Text {

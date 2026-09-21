@@ -48,6 +48,7 @@
     "auto_hide": 500,
     "notification": 5000,
     "content_fade": 120,
+    "loader": 1200,
     "wallpaper": 600
   },
 

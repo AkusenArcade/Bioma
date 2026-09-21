@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import qs.components
 import qs.core
 import qs.structure
 import qs.services
@@ -25,7 +26,10 @@ Cell {
 
     domain: "theme"
 
-    paddingLeading: 16
+    // Contracted the chips take the full margin on both sides; open, the header
+    // leads with a round glyph, which sits against the cap and concentric with
+    // it like every other icon in the shell.
+    paddingLeading: open ? 10 * metrics.factor : 16
     paddingTrailing: 16
 
     readonly property real chipWidth: 10 * metrics.factor
@@ -37,11 +41,51 @@ Cell {
     // number of roles is fixed, and it is part of what the cell says.
     readonly property var roles: Theme.targetRoles
 
-    contentWidth: roles.length * chipWidth + (roles.length - 1) * chipGap
+    // Open, the cell stops being the palette and becomes the title of what it
+    // opened, like every other cell with an expansion: the glyph of its domain
+    // and its name, in the technical voice. The palette is still on screen —
+    // the second capsule holds the same seven roles, larger.
+    readonly property string title: "THEME"
 
-    // The chips are the palette and stay the palette while the cell is open:
-    // the expansion says where the colours come from, not what they are.
-    replacesContent: false
+    readonly property real headerMark: 20 * metrics.factor
+    readonly property real headerGap: 12 * metrics.factor
+
+    TextMetrics {
+        id: titleMetrics
+        text: root.title
+        font: Qt.font({
+            "family": Typography.technical,
+            "pixelSize": root.metrics.fontLabel,
+            "weight": Typography.weightLabel,
+            "letterSpacing": Typography.tracking(root.metrics.fontLabel, Typography.labelTracking)
+        })
+    }
+
+    contentWidth: open ? headerMark + headerGap + titleMetrics.width
+                       : roles.length * chipWidth + (roles.length - 1) * chipGap
+
+    replacesContent: true
+
+    header: Component {
+        Row {
+            spacing: root.headerGap
+
+            Icon {
+                anchors.verticalCenter: parent.verticalCenter
+                name: "theme"
+                width: root.headerMark
+                height: width
+                gradient: true
+            }
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: root.title
+                color: Theme.text
+                font: titleMetrics.font
+            }
+        }
+    }
 
     Row {
         anchors.verticalCenter: parent.verticalCenter

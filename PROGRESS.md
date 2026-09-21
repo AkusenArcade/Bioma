@@ -384,6 +384,28 @@ so the dismissal itself is verified by hand.
   displaced one place against the direction of travel, so the first frame is
   what was on screen before the step. Akusen asked for it, 2026-09-21.
 
+- **A window that is working says so in its own title, and the shell says it
+  its own way.** Terminals, browsers and editors all put a spinner glyph in
+  front of the name and rewrite it several times a second. The window title cell
+  now takes that glyph out of the string and shows `components/Sweep.qml` in its
+  place — one drawing for "working", whichever application asked — which also
+  settles the title: a spinner rewrites faster than the debounce, so the cell
+  was never watching a string that had stopped changing. The loader appears only
+  after `debounce` and goes the frame the glyph does, per
+  `docs/design/icons/LOADER.md`.
+- **The loader is drawn, not loaded.** `assets/icons/loader.svg` is deliberately
+  static and an SVG cannot move without being rasterised again every frame, so
+  the component carries the file's own geometry in its own 24-unit space. It is
+  called `Sweep` because `QtQuick` exports `Loader` — the same trap that cost
+  `Scale` its name.
+- **The theme and utility cells become their own title when they open**, like
+  workspaces and vitals: the glyph of the domain and the name in the technical
+  voice, with the contracted content standing down. Akusen's request, with the
+  theme cell's icon drawn for it, 2026-09-22. The utility cell says `UTILITY`
+  and not `CAPTURE`, which would describe what it does today: the cell is named
+  for its category because it is expected to grow other functions, and a title
+  that has to be renamed when it does is the wrong title.
+
 ## Phase 1 — Service porting
 
 Nine of ten done, each verified headlessly through `probe.qml` before moving
