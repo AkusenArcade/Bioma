@@ -265,6 +265,15 @@ so the dismissal itself is verified by hand.
   case that shows why — hung downwards on a bottom membrane it would lie over
   the carousel.
 
+- **Interaction suspends disappearance, and something has to un-suspend it.**
+  `structure/Visibility.qml` paused a running dwell on hover and resumed it on
+  exit, which is right — but when the condition lapses *while* the pointer is on
+  the cell no timer was ever started, so there was nothing to resume and the
+  cell stayed for ever. Found on the recording cell: stop and save with the
+  pointer still on it, and the counter stood frozen on the membrane. The pointer
+  leaving now re-evaluates the condition. This matters most for notifications,
+  where the actions live in the hover state.
+
 ## Phase 1 — Service porting
 
 Nine of ten done, each verified headlessly through `probe.qml` before moving
@@ -306,6 +315,16 @@ but the last two are missing hardware rather than missing work:
   and comes up; nothing here can draw a rectangle with it.
 - **`structure/Visibility.qml`** has no test at all. It is the heart of the
   temporal grammar and the first cell will be its first exercise.
+
+### What the notification cell already owes
+
+Asked for while using the capture cell, and recorded here so it is not
+rediscovered later: **a capture that succeeded has to say so.** A screenshot is
+instantaneous and leaves nothing on screen — the file is written, the clipboard
+is set, and the shell says nothing at all. That is the notification cell's job
+(§10) rather than a second state of the utility cell, and it is the first real
+consumer of it: image, text and video each end with something worth announcing,
+and the video's announcement is the one that carries a path.
 
 ### Before notifications can be touched
 

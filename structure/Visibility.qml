@@ -76,6 +76,14 @@ QtObject {
             dwell.interval = root.remaining;
             root.remaining = 0;
             dwell.restart();
+        } else if (!interacting) {
+            // The condition may have lapsed *while* the pointer was on the
+            // cell, in which case no timer was ever started and there is
+            // nothing to resume — the cell would simply stay for ever. The
+            // recording cell is where this showed: stop and save with the
+            // pointer still on it, and the counter stood frozen on the
+            // membrane afterwards.
+            root.evaluate();
         }
     }
 
