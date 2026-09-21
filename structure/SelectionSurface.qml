@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Shapes
 import Quickshell
 import Quickshell.Wayland
 import qs.components
@@ -36,13 +37,6 @@ PanelWindow {
 
     readonly property var metrics: Metrics.step("normal")
 
-    // The desktop, dimmed. Four of these describe everything outside the
-    // rectangle exactly, which is cheaper and sharper than a mask redrawn on
-    // every pointer move.
-    component Shade: Rectangle {
-        color: Qt.alpha(Theme.background, 0.45)
-    }
-
     // The rectangle as drawn, in this surface's coordinates.
     property real anchorX: 0
     property real anchorY: 0
@@ -58,6 +52,13 @@ PanelWindow {
     // A rectangle too small to be meant is a click, and a click is how someone
     // changes their mind. It cancels rather than capturing four pixels.
     readonly property real minimum: 6
+
+    // One radius for the hole in the veil and for the border around it. They
+    // are the same shape seen twice, and a rectangle cut square inside a
+    // rounded border leaves four lit splinters at the corners — which is
+    // exactly what it looked like.
+    readonly property real corner: Math.min(root.metrics.radiusWell,
+                                            Math.min(root.selectionWidth, root.selectionHeight) / 2)
 
     // The region goes out in the compositor's own coordinates, which is where
     // this surface's origin sits on the layout — the same string slurp printed.
@@ -84,42 +85,36 @@ PanelWindow {
 
         Keys.onEscapePressed: Capture.cancelSelection()
 
-        // ---- The scrim -----------------------------------------------------
+        // ---- The veil ------------------------------------------------------
         //
-        // Four pieces rather than one with a hole in it: the selection has to
-        // be seen at its own brightness, and a mask over the whole screen is a
-        // full-screen layer redrawn on every pointer move for a rectangle four
-        // straight edges describe exactly.
+        // The whole screen, dimmed, with the selection cut out of it: one shape
+        // with an odd-even fill, the same construction as the rim. Four plain
+        // rectangles around the selection were the first version and they cut
+        // the hole square — at every corner a lit splinter stood outside the
+        // rounded border.
 
-        Shade {
-            x: 0
-            y: 0
-            width: parent.width
-            height: root.drawing ? root.selectionY : parent.height
-        }
+        Shape {
+            anchors.fill: parent
+            preferredRendererType: Shape.CurveRenderer
 
-        Shade {
-            visible: root.drawing
-            x: 0
-            y: root.selectionY + root.selectionHeight
-            width: parent.width
-            height: Math.max(0, parent.height - y)
-        }
+            ShapePath {
+                fillRule: ShapePath.OddEvenFill
+                fillColor: Qt.alpha(Theme.background, 0.45)
+                strokeWidth: -1
 
-        Shade {
-            visible: root.drawing
-            x: 0
-            y: root.selectionY
-            width: root.selectionX
-            height: root.selectionHeight
-        }
+                PathRectangle {
+                    width: keys.width
+                    height: keys.height
+                }
 
-        Shade {
-            visible: root.drawing
-            x: root.selectionX + root.selectionWidth
-            y: root.selectionY
-            width: Math.max(0, parent.width - x)
-            height: root.selectionHeight
+                PathRectangle {
+                    x: root.selectionX
+                    y: root.selectionY
+                    width: root.drawing ? root.selectionWidth : 0
+                    height: root.drawing ? root.selectionHeight : 0
+                    radius: root.corner
+                }
+            }
         }
 
         // ---- The rectangle -------------------------------------------------
@@ -138,8 +133,7 @@ PanelWindow {
             // way every other shape here says it.
             Rim {
                 anchors.fill: parent
-                radius: Math.min(root.metrics.radiusWell,
-                                 Math.min(selection.width, selection.height) / 2)
+                radius: root.corner
             }
 
             // What the region actually is, in the technical voice, tabular so
