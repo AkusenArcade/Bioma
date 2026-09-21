@@ -15,13 +15,11 @@ cell captures — with Bioma's own selection rectangle, not `slurp`.
 
 Three ways in, and they are independent:
 
-1. **The sinestesia cell**, which is now the only thing left in phase 3 that
-   draws. The unknowns are settled: the band's behaviour has been read out of
-   Sinestesia and lives in `tools/sinestesia-bands`, and the service that reads
-   it is verified against real audio. What remains is the cell — the contracted
-   band of fourteen capsules, the visualiser capsule, and the track panel with
-   cover, title, progress and transport hung under it, which is where the media
-   service finally gets a face.
+1. **Phase 3 is done.** Sinestesia draws: fourteen capsules and the track's name
+   contracted, the visualiser capsule and the track panel open. What is left of
+   it is the two things CELLS §04 left open — what to do on a narrow screen, and
+   whether a long title scrolls on hover — plus reduced motion, which asks for
+   the band to become a single bar rather than stop.
 2. **Notifications**, which closes phase 1 and burns the bridge — the only work
    that cannot be done without switching the running shell off. See the
    pre-flight below.
@@ -95,7 +93,7 @@ Drawn, and verified on screen against the design handoff.
 | `structure/Visibility.qml` | **Exercised at last** — the window title appears and disappears with focus. |
 | `components/` | `Rim`, `Ring`, `DashedRing`, `Disc`, `Dial`, `Icon`, `LightGradient`, `Thread`, `Panel`, `Well`, `WorkspaceBars`, `Vital`. |
 | `structure/InputSurface.qml` + `core/Focus.qml` | The full-screen surface of PRD §8, and the register of what is open. Built; the press path still needs a human to click. |
-| `cells/clock`, `cells/window_title`, `cells/workspaces`, `cells/vitals`, `cells/theme`, `cells/utility`, `cells/recording` | Seven cells. Vitals opens into pods, threads and the process list; theme into the wallpaper carousel and the two palette capsules; utility into the capture panel, and generates the recording cell. |
+| `cells/clock`, `cells/window_title`, `cells/workspaces`, `cells/vitals`, `cells/theme`, `cells/utility`, `cells/recording`, `cells/sinestesia` | Eight cells. Vitals opens into pods, threads and the process list; theme into the wallpaper carousel and the two palette capsules; utility into the capture panel, and generates the recording cell. |
 | `structure/SelectionSurface.qml` | Bioma's own selection rectangle, over the whole desktop, in place of `slurp`. Up only while a region is being asked for, and it holds the keyboard for that long so Escape means cancel. |
 | `components/Segmented.qml` | The segmented control, shared: the theme cell's source switch and the utility cell's three kinds are the same object. |
 | `core/Config.qml` write-back | `Config.set` writes one key into the override layer. Brought forward from phase 5 because the theme cell has to keep a choice. |
@@ -452,6 +450,28 @@ what leaves the machine, summed before the transform.
 
 Verified end to end with real audio playing: 64 bands arriving, level 0.35, and
 the fold to fourteen showing the shape of the music rather than a flat line.
+
+- **The band is a mask over one gradient, not a row of filled bars.** The
+  design says the gradient is defined over the height of the band and not of the
+  single bar — a short bar samples the middle of it, a tall one runs its whole
+  length — which is the only way to keep one light source on something that
+  changes shape thirty times a second. So `components/Band.qml` draws the bars
+  into a layer, draws the gradient into another, and shows the first through the
+  second.
+- **The bars grow from the middle line**, not from the floor. Filling from the
+  bottom already means something else in this shell — it is how memory is drawn
+  — and sound has no floor: it is a displacement either side of nothing. A band
+  at zero is a row of dots rather than a row of gaps, because an instrument with
+  missing teeth reads as broken rather than as quiet.
+- **The track panel hangs from the visualiser, and does not exist without a
+  track.** Sound is always there and a track only sometimes, so the thread says
+  which of the two holds the other. With no MPRIS source the panel is absent
+  rather than empty, and it arrives and goes as a track appears and ends without
+  the cell closing.
+- **The player selector takes what the transport leaves.** The controls that act
+  are not negotiable and a name can be shortened: with one player the selector
+  is absent, with a long identity it elides, and below sixty pixels of room it
+  stands down rather than overlapping the buttons.
 
 ## Phase 1 — Service porting
 

@@ -18,7 +18,8 @@ Singleton {
         "vitals": "vitals/Vitals.qml",
         "theme": "theme/ThemeCell.qml",
         "utility": "utility/Utility.qml",
-        "recording": "recording/Recording.qml"
+        "recording": "recording/Recording.qml",
+        "sinestesia": "sinestesia/Sinestesia.qml"
     })
 
     property var cache: ({})
