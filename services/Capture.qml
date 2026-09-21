@@ -54,6 +54,10 @@ Singleton {
     function fail(reason) {
         root.lastError = reason;
         root.busy = false;
+        // Said here rather than at each call site: every failure in this
+        // service ends up on this line, and a capture that fails silently is
+        // indistinguishable from one that was never asked for.
+        console.warn("Capture:", reason);
         root.failed(reason);
     }
 
@@ -345,12 +349,21 @@ Singleton {
 
     readonly property string language: Config.get("capture.ocr_language", "eng")
 
+    // Tesseract wants something like a scanned page and a screen is not one:
+    // interface text at 1× is a third of the resolution it reads comfortably,
+    // and small labels come back as nothing at all rather than as mistakes.
+    // Upscaling the crop before it is read costs one process and turns "no
+    // text" into text. Where ImageMagick is absent the crop goes straight
+    // through, which is what it did before.
     function recogniseRegion(region) {
         root.lastError = "";
         root.busy = true;
         ocr.buffer = "";
         ocr.command = ["sh", "-c",
                        `grim -g ${JSON.stringify(region)} - | `
+                       + `{ command -v magick >/dev/null 2>&1 `
+                       + `&& magick - -resize 300% -colorspace Gray -sharpen 0x1 - `
+                       + `|| cat; } | `
                        + `tesseract - stdout -l ${root.language} 2>/dev/null`];
         root.settleThen(() => {
             ocr.running = false;
@@ -378,10 +391,17 @@ Singleton {
                 return;
             }
             // Nothing recognised is a result, not an error: a region of empty
-            // desktop genuinely contains no text.
+            // desktop genuinely contains no text. It is still worth saying,
+            // because the alternative is a shell that answers a request with
+            // silence — and until the notification cell exists there is
+            // nowhere else for either outcome to be seen.
             root.lastText = text;
-            if (text.length > 0 && root.copyToClipboard)
-                root.copyText(text);
+            if (text.length > 0) {
+                if (root.copyToClipboard)
+                    root.copyText(text);
+            } else {
+                console.info("Capture: nothing legible in that region");
+            }
             root.recognised(text);
         }
     }
