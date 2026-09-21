@@ -30,6 +30,9 @@ ShellRoot {
     readonly property bool wallpaperLoaded: Wallpaper.loaded
     readonly property string wallpaperPath: Wallpaper.path
     readonly property string wallpaperMode: Wallpaper.mode
+    readonly property var wallpaperEntries: Wallpaper.entries
+    readonly property var wallpaperCached: Wallpaper.cached
+    readonly property var themePalettes: Theme.palettes
     readonly property bool matugenRunning: Matugen.running
     readonly property string matugenError: Matugen.lastError
     readonly property color themeBackground: Theme.background
@@ -135,6 +138,20 @@ ShellRoot {
                         + ` the screen width`);
             line("  resolves to", Wallpaper.pathForScreen(screen.name) || "none");
         }
+
+        // The library behind the theme cell's carousel: what is in the folder,
+        // and how much of it has a thumbnail yet.
+        line("library", `${root.wallpaperEntries.length} images`);
+        line("current index", Wallpaper.index);
+        if (root.wallpaperEntries.length > 0) {
+            line("  previous", Wallpaper.neighbour(-1));
+            line("  next", Wallpaper.neighbour(1));
+        }
+        line("thumbnails", Wallpaper.thumbnails ? (Wallpaper.broken ? "unavailable" : "on") : "off");
+        line("cache", `${Object.keys(root.wallpaperCached).length} files in ${Wallpaper.cacheDirectory}`);
+        if (root.wallpaperPath.length > 0)
+            line("  current is", Wallpaper.thumbnail(root.wallpaperPath) === root.wallpaperPath
+                                 ? "not cached yet" : "cached");
     }
 
     function probeTheme() {
@@ -143,6 +160,8 @@ ShellRoot {
         line("matugen variant", Matugen.variant + " / " + Matugen.scheme);
         line("matugen config", Matugen.configDirectory);
         line("palette file", Theme.matugenPath);
+        line("palettes", root.themePalettes.map(p => `${p.name} (${p.file})`).join(", ") || "none found");
+        line("chosen", `${Theme.manualPalette} → ${Theme.paletteName}`);
         line("generating", root.matugenRunning);
         if (root.matugenError.length > 0)
             line("last error", root.matugenError);

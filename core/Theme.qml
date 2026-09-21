@@ -1,6 +1,7 @@
 pragma Singleton
 
 import QtQuick
+import Qt.labs.folderlistmodel
 import Quickshell
 import Quickshell.Io
 
@@ -25,11 +26,23 @@ Singleton {
     id: root
 
     // ---- Interface roles (theme source) ----------------------------------
+    //
+    // The palette as loaded is one thing and the palette on screen is another:
+    // a theme change crosses every surface together over `Timing.theme`, so
+    // what cells bind to is the colour in transit. The target is kept beside it
+    // for the one thing that needs the destination rather than the journey —
+    // the theme cell's chips, which have to arrive one at a time and cannot do
+    // that while chasing the shell's own transition.
 
-    property color background: "#12160F"
-    property color text: "#EAF1E6"
-    property color primary: "#B9DE6B"
-    property color secondary: "#3FBFA0"
+    property color backgroundTarget: "#12160F"
+    property color textTarget: "#EAF1E6"
+    property color primaryTarget: "#B9DE6B"
+    property color secondaryTarget: "#3FBFA0"
+
+    property color background: root.backgroundTarget
+    property color text: root.textTarget
+    property color primary: root.primaryTarget
+    property color secondary: root.secondaryTarget
 
     // ---- State roles (fixed, never from matugen) --------------------------
 
@@ -97,19 +110,28 @@ Singleton {
     // what keeps them reading as structure rather than as accent — and borrow
     // the primary's only when the background has no hue of its own.
 
-    readonly property real structuralHue: background.hslSaturation > 0.05 && background.hslHue >= 0
-                                          ? background.hslHue
-                                          : Math.max(0, primary.hslHue)
-    readonly property real structuralSaturation: Math.max(
-        Math.min(background.hslSaturation + 0.04, 0.40),
-        Math.min(primary.hslSaturation * 0.33, 0.28))
+    readonly property real structuralHue: hueOf(background, primary)
+    readonly property real structuralSaturation: saturationOf(background, primary)
 
     readonly property color line: structural(isDark ? 0.32 : 0.72)
     readonly property color node: structural(isDark ? 0.43 : 0.62)
     readonly property color rim: structural(isDark ? 0.55 : 0.50)
 
+    function hueOf(bg, accent) {
+        return bg.hslSaturation > 0.05 && bg.hslHue >= 0 ? bg.hslHue : Math.max(0, accent.hslHue);
+    }
+
+    function saturationOf(bg, accent) {
+        return Math.max(Math.min(bg.hslSaturation + 0.04, 0.40),
+                        Math.min(accent.hslSaturation * 0.33, 0.28));
+    }
+
+    function structuralWith(bg, accent, lightness) {
+        return Qt.hsla(root.hueOf(bg, accent), root.saturationOf(bg, accent), lightness, 1);
+    }
+
     function structural(lightness) {
-        return Qt.hsla(root.structuralHue, root.structuralSaturation, lightness, 1);
+        return root.structuralWith(root.background, root.primary, lightness);
     }
 
     // ---- Gradients --------------------------------------------------------
@@ -146,7 +168,11 @@ Singleton {
     // Moves a colour away from the background's side: lighter on a dark theme,
     // darker on a light one, keeping hue and saturation.
     function lift(colour, amount) {
-        const step = root.isDark ? amount : -amount;
+        return root.liftAway(colour, amount, root.isDark);
+    }
+
+    function liftAway(colour, amount, dark) {
+        const step = dark ? amount : -amount;
         return Qt.hsla(Math.max(0, colour.hslHue),
                        colour.hslSaturation,
                        Math.max(0, Math.min(1, colour.hslLightness + step)),
@@ -169,10 +195,10 @@ Singleton {
     function applyPalette(palette) {
         if (!palette)
             return;
-        if (palette.background) root.background = palette.background;
-        if (palette.text) root.text = palette.text;
-        if (palette.primary) root.primary = palette.primary;
-        if (palette.secondary) root.secondary = palette.secondary;
+        if (palette.background) root.backgroundTarget = palette.background;
+        if (palette.text) root.textTarget = palette.text;
+        if (palette.primary) root.primaryTarget = palette.primary;
+        if (palette.secondary) root.secondaryTarget = palette.secondary;
     }
 
     function load(text, label) {
@@ -182,6 +208,99 @@ Singleton {
             root.applyPalette(JSON.parse(text));
         } catch (error) {
             console.warn(`Bioma: ${label} is not valid JSON — ${error.message}`);
+        }
+    }
+
+    // ---- The seven roles, where the palette is going ------------------------
+    //
+    // What the theme cell shows: the background it sits on, the raised surface,
+    // the two structural tones, the two accents and the text — the roles the
+    // eye can actually check against the shell around them. The three state
+    // colours are not among them: they are a semantic code, they do not come
+    // from the theme source and they do not change when it does.
+
+    readonly property bool targetIsDark: luminance(backgroundTarget) < 0.5
+
+    readonly property var targetRoles: [
+        root.backgroundTarget,
+        root.liftAway(root.backgroundTarget, 0.045, root.targetIsDark),
+        root.structuralWith(root.backgroundTarget, root.primaryTarget, root.targetIsDark ? 0.32 : 0.72),
+        root.structuralWith(root.backgroundTarget, root.primaryTarget, root.targetIsDark ? 0.55 : 0.50),
+        root.primaryTarget,
+        root.secondaryTarget,
+        root.textTarget
+    ]
+
+    // ---- The palettes on offer ---------------------------------------------
+    //
+    // A manual palette is a data file, one per theme: drop one into
+    // `config/palettes/` and it appears in the theme cell's list without the
+    // shell changing. The name comes from inside the file rather than from its
+    // name on disk, because a theme has a name and the name is what is
+    // remembered.
+
+    readonly property string palettesDirectory:
+        Qt.resolvedUrl("../config/palettes").toString().replace("file://", "")
+
+    property var paletteNames: ({})
+
+    // [{ "file": "default", "name": "Bioma" }], in the folder's own order.
+    readonly property var palettes: {
+        const out = [];
+        for (let i = 0; i < paletteFiles.count; i++) {
+            const file = String(paletteFiles.get(i, "fileBaseName"));
+            out.push({ "file": file, "name": root.paletteNames[file] || file });
+        }
+        return out;
+    }
+
+    readonly property string paletteName: {
+        for (const palette of root.palettes)
+            if (palette.file === root.manualPalette)
+                return palette.name;
+        return root.manualPalette;
+    }
+
+    function noteName(file, text) {
+        if (!text)
+            return;
+        try {
+            const palette = JSON.parse(text);
+            const names = Object.assign({}, root.paletteNames);
+            names[file] = palette.name || file;
+            root.paletteNames = names;
+        } catch (error) {
+            console.warn(`Bioma: palette ${file}.json is not valid JSON — ${error.message}`);
+        }
+    }
+
+    FolderListModel {
+        id: paletteFiles
+        folder: `file://${root.palettesDirectory}`
+        nameFilters: ["*.json"]
+        showDirs: false
+        showHidden: false
+        sortField: FolderListModel.Name
+    }
+
+    // One reader per file, so that adding a palette is adding a file. They are
+    // read once, at their own size — four colours and a sentence — and then sit
+    // idle; nothing here watches or polls.
+    Instantiator {
+        model: paletteFiles
+
+        delegate: QtObject {
+            id: entry
+
+            required property string fileBaseName
+            required property string filePath
+
+            readonly property FileView view: FileView {
+                path: entry.filePath
+                blockLoading: true
+                printErrors: false
+                onLoaded: root.noteName(entry.fileBaseName, text())
+            }
         }
     }
 

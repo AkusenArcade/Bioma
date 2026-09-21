@@ -18,6 +18,12 @@ step; it is not worth a build step yet.
 Objects merge key by key. Arrays and scalars are replaced wholesale: an override
 that declares a tissue list means *that* list, not an append.
 
+A cell that changes a setting — the theme cell is the first — writes it into the
+override layer through `Config.set`, one key at a time. The base layer is never
+rewritten, and neither is anything in the override the shell did not touch: the
+file is rewritten from the override document, not from the merged values, so a
+membrane list or a hand-written `$comment` survives a setting being changed.
+
 ## Structural terms
 
 - **membrane** — one edge of one monitor. Tissues anchored to it share its
@@ -69,6 +75,11 @@ Six values, written once.
 
 Everything else — elevated surface, muted text, borders, shadows — is derived in
 code, and stays coherent by construction.
+
+`theme.matugen.scheme` is a user choice, not a constant: content and tonal spot
+from the same wallpaper give two different desktops. The theme cell offers it,
+and writes `source`, `palette` and `matugen.scheme` back into the override layer
+as they are chosen.
 
 ### `timing`
 
@@ -133,6 +144,8 @@ what a cell displays. A cell's own settings live in its `options`.
 | `capture.clipboard` | Whether a capture also takes the clipboard. §9.6 wants it; a window capture always does, because the compositor is what produces the image. |
 | `capture.ocr_language` | tesseract language code. |
 | `capture.fps` / `capture.codec` / `capture.bitrate` | H.264 at 60 fps by default, no audio. `fps` is a ceiling: the recorder copies a frame only when the screen changes, so a still screen records at far less. |
+| `wallpaper.folder` | Where the theme cell's carousel looks for images. A human writes this one, so `~` and `$HOME` are expanded. |
+| `wallpaper.thumbnails` | Whether a small copy of each image is cached under `~/.cache/bioma/thumbnails` and shown instead of the image. Off, the carousel reads the photographs themselves — slower on the first look at a large folder, and the same cell. Needs ImageMagick; without it the service falls back to the images by itself. |
 | `vitals.interval` | Sampling cadence, milliseconds. One cadence for load, memory, clock and GPU — they are read at the same instant so they can be compared. |
 | `vitals.clock_average` | How many samples the CPU clock is averaged over. **Not optional** (PRD §9.2): the raw clock swings hundreds of megahertz between samples and an unsmoothed beat is arrhythmic. At the default cadence, 5 samples is ten seconds. |
 | `vitals.gpu_card` | Which card to sample, matched against its sysfs path (`card1`). Empty picks the one with the most VRAM, which on a machine with an integrated and a discrete GPU is the discrete one. |

@@ -2,6 +2,7 @@ pragma Singleton
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import Qt.labs.folderlistmodel
 import Quickshell
 import Quickshell.Io
 import qs.core
@@ -181,5 +182,206 @@ Singleton {
         command: ["mkdir", "-p", root.stateDirectory]
         running: false
         onExited: code => { if (code === 0) root.save(); }
+    }
+
+    // ── The library ──────────────────────────────────────────────────────
+    //
+    // What the theme cell offers a choice among: the images in the folder, and
+    // a small copy of each to look at. The cache lives here rather than in the
+    // cell because it is the wallpaper's own domain — the settings page will
+    // want it too — and because a carousel that decodes fifty photographs every
+    // time it opens is not the same component as one that decodes fifty
+    // thumbnails.
+
+    readonly property bool thumbnails: Config.get("wallpaper.thumbnails", true)
+
+    readonly property string cacheDirectory:
+        `${Quickshell.env("XDG_CACHE_HOME") || Quickshell.env("HOME") + "/.cache"}/bioma/thumbnails`
+
+    // Absolute paths, in name order.
+    property var entries: []
+
+    readonly property int index: root.entries.indexOf(root.path)
+
+    // The carousel's whole interaction, and it wraps: a folder of wallpapers
+    // has no first and no last.
+    function step(delta) {
+        const count = root.entries.length;
+        if (count === 0)
+            return;
+        const from = root.index >= 0 ? root.index : 0;
+        root.path = root.entries[((from + delta) % count + count) % count];
+    }
+
+    // The image `offset` places along from the current one, for the neighbours
+    // the carousel shows dimmed at its sides.
+    function neighbour(offset) {
+        const count = root.entries.length;
+        if (count === 0)
+            return "";
+        if (count === 1)
+            return offset === 0 ? root.entries[0] : "";
+        const from = root.index >= 0 ? root.index : 0;
+        return root.entries[((from + offset) % count + count) % count];
+    }
+
+    FolderListModel {
+        id: library
+        folder: `file://${root.folder}`
+        nameFilters: ["*.jpg", "*.jpeg", "*.png", "*.webp", "*.bmp", "*.avif"]
+        caseSensitive: false
+        showDirs: false
+        showHidden: false
+        sortField: FolderListModel.Name
+        onCountChanged: root.readLibrary()
+        onStatusChanged: if (status === FolderListModel.Ready) root.readLibrary()
+    }
+
+    function readLibrary() {
+        const out = [];
+        for (let i = 0; i < library.count; i++)
+            out.push(String(library.get(i, "filePath")));
+        root.entries = out;
+    }
+
+    // ── Thumbnails ───────────────────────────────────────────────────────
+    //
+    // A name that is stable for the path and legal as a file name. FNV-1a is
+    // not a cryptographic choice and does not need to be: it only has to be
+    // stable and cheap, and the worst a collision costs is one wrong picture in
+    // a carousel. The fingerprint is of the path alone, so replacing a file
+    // with another of the same name keeps the old thumbnail — deleting the
+    // cache directory is the cure, and it costs nothing.
+    function fingerprint(text) {
+        let hash = 0x811c9dc5;
+        for (let i = 0; i < text.length; i++) {
+            hash ^= text.charCodeAt(i);
+            hash = Math.imul(hash, 0x01000193) >>> 0;
+        }
+        return hash.toString(36);
+    }
+
+    function thumbnailName(imagePath) {
+        return `${root.fingerprint(imagePath)}.jpg`;
+    }
+
+    property var cached: ({})
+
+    FolderListModel {
+        id: cache
+        folder: `file://${root.cacheDirectory}`
+        nameFilters: ["*.jpg"]
+        showDirs: false
+        sortField: FolderListModel.Name
+        onCountChanged: root.readCache()
+        onStatusChanged: if (status === FolderListModel.Ready) root.readCache()
+    }
+
+    // A converter creates its output file before it has finished writing it,
+    // and the directory model announces it at that moment: read the half-written
+    // file and Qt reports an unsupported format and gives up on it for good. The
+    // one being written is therefore left out of the set until the process that
+    // is writing it has exited.
+    function readCache() {
+        const writing = convert.running && convert.image.length > 0
+                        ? root.thumbnailName(convert.image) : "";
+        const out = {};
+        for (let i = 0; i < cache.count; i++) {
+            const name = String(cache.get(i, "fileName"));
+            if (name !== writing)
+                out[name] = true;
+        }
+        root.cached = out;
+    }
+
+    // The thumbnail where there is one, the image itself where there is not:
+    // the carousel never shows a hole, it shows a picture that costs more the
+    // first time it is seen and nothing every time after.
+    // A lookup and nothing else: a binding that started work would change the
+    // state it was reading, and Qt calls that a binding loop and stops
+    // evaluating it. Asking for the thumbnail and asking for it to be made are
+    // two calls — `prepare` is the second.
+    function thumbnail(imagePath) {
+        if (!imagePath || imagePath.length === 0 || !root.thumbnails || root.broken)
+            return imagePath;
+        const name = root.thumbnailName(imagePath);
+        return root.cached[name] ? `${root.cacheDirectory}/${name}` : imagePath;
+    }
+
+    function prepare(imagePath) {
+        if (!imagePath || imagePath.length === 0 || !root.thumbnails || root.broken)
+            return;
+        if (!root.cached[root.thumbnailName(imagePath)])
+            root.request(imagePath);
+    }
+
+    // One at a time. Fifty converters at once would take the machine away from
+    // whatever the user was actually doing, which is the opposite of the point.
+    property var queue: []
+    property bool directoryReady: false
+    property int failures: 0
+    readonly property bool broken: root.failures > 2
+
+    function request(imagePath) {
+        if (root.broken || convert.image === imagePath || root.queue.indexOf(imagePath) >= 0)
+            return;
+        root.queue = root.queue.concat([imagePath]);
+        root.pump();
+    }
+
+    function pump() {
+        if (convert.running || root.queue.length === 0 || root.broken)
+            return;
+        if (!root.directoryReady) {
+            if (!thumbnailDirectory.running)
+                thumbnailDirectory.running = true;
+            return;
+        }
+        const next = root.queue[0];
+        root.queue = root.queue.slice(1);
+        convert.image = next;
+        convert.command = [
+            "magick", next,
+            "-auto-orient", "-strip",
+            "-thumbnail", "640x640>",
+            "-quality", "82",
+            `${root.cacheDirectory}/${root.thumbnailName(next)}`
+        ];
+        convert.running = false;
+        convert.running = true;
+    }
+
+    Process {
+        id: thumbnailDirectory
+        command: ["mkdir", "-p", root.cacheDirectory]
+        running: false
+        onExited: code => {
+            root.directoryReady = code === 0;
+            if (code !== 0)
+                root.failures = 3;
+            root.pump();
+        }
+    }
+
+    // Without ImageMagick there are no thumbnails and the carousel reads the
+    // images themselves — slower, and still a working cell. A missing tool is
+    // not a reason for a surface to be empty.
+    Process {
+        id: convert
+        property string image: ""
+        running: false
+        onExited: code => {
+            if (code === 0) {
+                root.failures = 0;
+                // The file is whole now, so it may join the set.
+                root.readCache();
+            } else {
+                root.failures++;
+                if (root.broken)
+                    console.warn("Wallpaper: no thumbnails — `magick` failed on", convert.image);
+            }
+            convert.image = "";
+            root.pump();
+        }
     }
 }

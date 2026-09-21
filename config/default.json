@@ -52,7 +52,8 @@
   },
 
   "wallpaper": {
-    "folder": "$HOME/Pictures/Wallpapers"
+    "folder": "$HOME/Pictures/Wallpapers",
+    "thumbnails": true
   },
 
   "audio": {
@@ -141,6 +142,12 @@
               "visibility": { "type": "always", "invocable": true, "shortcut": "Mod+V" },
               "min_width": { "value": 90 },
               "options": { "gpu": true, "process_sort": "ram" }
+            },
+            {
+              "type": "theme",
+              "enabled": true,
+              "visibility": { "type": "always", "invocable": true, "shortcut": "Mod+T" },
+              "min_width": { "value": 120 }
             },
             {
               "type": "connectivity",
