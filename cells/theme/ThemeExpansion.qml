@@ -29,6 +29,13 @@ Item {
 
     readonly property real factor: metrics.factor
 
+    // Which way the cell opened. A composition is ordered from the cell
+    // outwards — the shape the cell's own thread lands on comes first — so on a
+    // membrane at the bottom of the screen the order is upside down: the
+    // carousel sits against the cell and the capsules go beyond it. Everything
+    // below is written once and reads this.
+    readonly property bool upward: root.cell ? !root.cell.opensDown : false
+
     readonly property real carouselWidth: 560 * factor
     readonly property real carouselHeight: 160 * factor
     readonly property real tileWidth: 320 * factor
@@ -50,7 +57,16 @@ Item {
     readonly property real stackSpacing: 12 * factor
     readonly property real dropdownHeight: 30 * factor
     readonly property real stackHeight: chipSize + stackSpacing + dropdownHeight
-    readonly property real dropdownBottom: (capsuleHeight + stackHeight) / 2
+    readonly property real stackTop: (capsuleHeight - stackHeight) / 2
+    readonly property real dropdownTop: stackTop + chipSize + stackSpacing
+    readonly property real dropdownBottom: dropdownTop + dropdownHeight
+
+    // Where each block sits in the composition. The near edge is the one facing
+    // the cell, and it is where the thread from the cell lands.
+    readonly property real carouselY: upward ? capsuleHeight + gap : 0
+    readonly property real capsuleY: upward ? 0 : carouselHeight + gap
+    readonly property real carouselNear: upward ? carouselY + carouselHeight : carouselY
+    readonly property real capsuleNear: upward ? capsuleY + capsuleHeight : capsuleY
 
     // Orbitron 12 for the dropdown is CELLS.md §07's own figure, and the
     // controls beside it are the same voice at the same size: a segmented
@@ -227,12 +243,12 @@ Item {
         growth: root.cell ? root.cell.panelGrowth : 0
         contentReady: root.cell ? root.cell.panelReady : false
 
-        // Born from the node of the cell's own thread, which lands on its top
-        // edge under the middle of the cell.
+        // Born from the node of the cell's own thread, which lands on the edge
+        // facing the cell, under the middle of it.
         anchorX: 0
-        anchorY: 0
+        anchorY: root.carouselY
         nodeX: root.width - (root.cell ? root.cell.width / 2 : 0)
-        nodeY: 0
+        nodeY: root.carouselNear
 
         WheelHandler {
             acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
@@ -291,7 +307,7 @@ Item {
         width: implicitWidth
         height: root.gap
         x: root.capsuleWidth / 2 - width / 2
-        y: root.carouselHeight
+        y: root.upward ? root.capsuleHeight : root.carouselHeight
     }
 
     Thread {
@@ -300,7 +316,7 @@ Item {
         width: root.gap
         height: implicitHeight
         x: root.capsuleWidth
-        y: root.carouselHeight + root.gap + root.capsuleHeight / 2 - height / 2
+        y: root.capsuleY + root.capsuleHeight / 2 - height / 2
     }
 
     // ---- Source -------------------------------------------------------------
@@ -318,9 +334,9 @@ Item {
 
         // Born from the node where the vertical thread meets its cap.
         anchorX: 0
-        anchorY: root.carouselHeight + root.gap
+        anchorY: root.capsuleY
         nodeX: root.capsuleWidth / 2
-        nodeY: root.carouselHeight + root.gap
+        nodeY: root.capsuleNear
 
         Column {
             anchors.centerIn: parent
@@ -370,9 +386,9 @@ Item {
 
         // Born from the far node of the horizontal thread.
         anchorX: root.capsuleWidth + root.gap
-        anchorY: root.carouselHeight + root.gap
+        anchorY: root.capsuleY
         nodeX: root.capsuleWidth + root.gap
-        nodeY: root.carouselHeight + root.gap + root.capsuleHeight / 2
+        nodeY: root.capsuleY + root.capsuleHeight / 2
 
         Column {
             anchors.centerIn: parent
@@ -496,14 +512,24 @@ Item {
         contentReady: root.listGrowth > 0.999
         visible: root.listGrowth > 0
 
-        // The dropdown's own bottom edge, computed rather than read off the
-        // item: the capsule's content is still growing when the list starts,
-        // and a shape born from a moving point is born from the wrong one.
+        // The dropdown's own edge, computed rather than read off the item: the
+        // capsule's content is still growing when the list starts, and a shape
+        // born from a moving point is born from the wrong one.
+        //
+        // It opens away from the composition, which on a membrane at the bottom
+        // of the screen means upwards: opening downwards there would lay the
+        // list over the carousel.
         readonly property real originX: root.capsuleWidth + root.gap + root.capsuleWidth / 2
-        readonly property real originY: root.carouselHeight + root.gap + root.dropdownBottom
+        readonly property real originY: root.capsuleY + (root.upward ? root.dropdownTop
+                                                                     : root.dropdownBottom)
 
+        // It is born from the dropdown's own edge and settles clear of the
+        // capsule: a list that stopped eight pixels from the dropdown would
+        // stand on the capsule's cap, and two glass surfaces over each other
+        // read as one misdrawn shape rather than as two.
         anchorX: list.originX - targetWidth / 2
-        anchorY: list.originY + 8 * root.factor
+        anchorY: root.upward ? root.capsuleY - 8 * root.factor - targetHeight
+                             : root.capsuleY + root.capsuleHeight + 8 * root.factor
         nodeX: list.originX
         nodeY: list.originY
 

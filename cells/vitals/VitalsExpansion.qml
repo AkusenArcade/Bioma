@@ -283,12 +283,13 @@ Item {
         growth: root.cell ? root.cell.panelGrowth : 0
         contentReady: root.cell ? root.cell.panelReady : false
 
-        // It grows out of the node of the cell's own thread, which lands on its
-        // top edge under the cell.
+        // It grows out of the node of the cell's own thread, which lands on the
+        // edge facing the cell — the top one on a membrane at the top of the
+        // screen, the bottom one on a membrane at the bottom of it.
         anchorX: root.podWidth + root.gap
         anchorY: 0
         nodeX: root.width - (root.cell ? root.cell.width / 2 : 0)
-        nodeY: 0
+        nodeY: root.cell && !root.cell.opensDown ? root.height : 0
 
         Column {
             anchors.top: parent.top

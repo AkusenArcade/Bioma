@@ -97,6 +97,14 @@ Expansion works, and the workspaces list is the first one drawn: the thread
 draws out of the cell, the panel grows from its far node, and the content
 arrives once the shape is at size. Closing reverses it, quicker.
 
+A membrane on the **bottom** edge is exercised too: DP-1 carries one in the test
+override, with every cell built so far on it. Expansions grow upward from the
+window line, and the two compositions are ordered from the cell outwards —
+which is where the bug was: both were built against a cell above them, so on a
+bottom membrane the theme cell's carousel ended up at the far end and the
+capsules against the cell, and the shapes grew away from the thread that ties
+them there instead of out of it.
+
 Not yet exercised: auto-hide, vertical tissues, floating tissues, several
 elastic cells in one tissue, and keyboard focus. Clicking outside to close is
 written and mapped — `niri msg layers` shows `bioma-input` appear on every
@@ -246,6 +254,16 @@ so the dismissal itself is verified by hand.
   stands while `wl-screenrec` runs and stays for the question afterwards,
   because the file it is asking about is the one it just made. When the answer
   arrives the condition lapses and the cell leaves on its own.
+
+- **A composition is ordered from the cell outwards, not top to bottom.** A
+  single panel already handled both edges — `structure/Cell.qml` computes its
+  anchor and its node from `opensDown` — but a composition places its own
+  shapes, and both of them had the cell's direction written into them as a
+  constant. The rule, now stated once per composition: the shape the cell's
+  thread lands on is the one nearest the cell, and everything the expansion
+  opens afterwards opens away from it. The theme cell's dropdown list is the
+  case that shows why — hung downwards on a bottom membrane it would lie over
+  the carousel.
 
 ## Phase 1 — Service porting
 
