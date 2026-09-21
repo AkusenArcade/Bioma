@@ -15,10 +15,13 @@ cell captures — with Bioma's own selection rectangle, not `slurp`.
 
 Three ways in, and they are independent:
 
-1. **The rest of phase 3**: sinestesia, and it is the one with real unknowns —
-   the band's behaviour is defined against the author's own Sinestesia code, and
-   capture and FFT have to be split from rendering into a headless process
-   before a cell draws anything.
+1. **The sinestesia cell**, which is now the only thing left in phase 3 that
+   draws. The unknowns are settled: the band's behaviour has been read out of
+   Sinestesia and lives in `tools/sinestesia-bands`, and the service that reads
+   it is verified against real audio. What remains is the cell — the contracted
+   band of fourteen capsules, the visualiser capsule, and the track panel with
+   cover, title, progress and transport hung under it, which is where the media
+   service finally gets a face.
 2. **Notifications**, which closes phase 1 and burns the bridge — the only work
    that cannot be done without switching the running shell off. See the
    pre-flight below.
@@ -406,6 +409,50 @@ so the dismissal itself is verified by hand.
   for its category because it is expected to grow other functions, and a title
   that has to be renamed when it does is the wrong title.
 
+### Sinestesia, read rather than guessed
+
+The author's own visualiser is at `~/Documents/Development/Sinestesia` — Rust,
+Relm4/GTK4, PipeWire capture, `rustfft`, and a renderer in OpenGL through
+`glow` and `GtkGLArea`. `IMPLEMENTATION.md` asks which of those two it is
+because they are two different work estimates; it is the portable one, and it
+turns out not to matter, because what Bioma needs from it is not the renderer.
+
+What it needs is `src/dsp.rs`, and that is 338 lines. The contract, copied
+figure by figure into `tools/sinestesia-bands` rather than reinvented:
+
+| | |
+|---|---|
+| window | Hann over `FFT_SIZE 2048`, 48 kHz |
+| bands | 64, logarithmic from 30 Hz to 16 kHz |
+| inside a band | the **peak** bin, never the mean |
+| normalisation | dB, −70 → 0 and 0 → 1, then gain, clamped |
+| smoothing | one pole, asymmetric: attack 0.45, decay 0.18 |
+| cadence | 60 Hz |
+
+There is no peak hold: the word "peak" in that code is the aggregation inside a
+band, not a mark that falls back. Sinestesia's stereo imaging analyser — ITD,
+ILD, the duplex crossover, the tangent law — is deliberately left behind: it is
+beautiful and it is about two channels, and Bioma's band is one spectrum of
+what leaves the machine, summed before the transform.
+
+- **The tool is a build step, and the first one this repository has.** `cargo
+  build --release` inside `tools/sinestesia-bands`, needing the PipeWire
+  headers. Without it the service says so and the cell does not appear; there is
+  no fallback, because half a visualiser is worse than none.
+- **It speaks in hexadecimal, not JSON.** One line per frame, two digits per
+  band. The reader is a QML string parser running sixty times a second: fixed
+  width, no allocation per value, and still readable in a terminal.
+- **It runs only while a cell is looking**, and it is stopped by closing its
+  stdout rather than by being told to stop. Whether the cell exists at all is a
+  separate question that `services/Audio.qml` already answers from the peak
+  monitor, without any of this running.
+- **The one test is the one that matters**: a 1 kHz tone has to land in the band
+  that holds 1 kHz, and silence has to empty the band. It needs no sound card
+  and nobody has to listen to anything.
+
+Verified end to end with real audio playing: 64 bands arriving, level 0.35, and
+the fold to fourteen showing the shape of the music rather than a flat line.
+
 ## Phase 1 — Service porting
 
 Nine of ten done, each verified headlessly through `probe.qml` before moving
@@ -424,6 +471,7 @@ therefore separate singletons.
 | `services/Bluetooth.qml` | Done. Adapter, devices, pairing, native. Nothing taken from Prisma's page. |
 | `services/SystemMonitor.qml` | Done. Load, memory, CPU clock, GPU, battery, processes. No process on the sampling path at all. |
 | `services/Capture.qml` | Done. Stills, window capture through niri, text recognition, video with save or discard. The selection rectangle is now Bioma's own — the service raises a flag and `structure/SelectionSurface.qml` answers with a region. |
+| `tools/sinestesia-bands` + `services/Sinestesia.qml` | Done. Capture and FFT in a process of their own, on Sinestesia's contract; the service reads the bands and folds them for whichever form the cell is in. |
 | Notifications | **Next, and last.** See below. |
 
 ### Verified, and not

@@ -61,6 +61,13 @@
     "monitor_signal": true
   },
 
+  "sinestesia": {
+    "bands": 64,
+    "fps": 60,
+    "gain": 1.0,
+    "source": "output"
+  },
+
   "brightness": {
     "backend": "auto",
     "display": ""

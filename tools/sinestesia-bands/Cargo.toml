@@ -1,0 +1,16 @@
+[package]
+name = "sinestesia-bands"
+version = "0.1.0"
+edition = "2021"
+description = "Headless spectrum bands for Bioma's sinestesia cell, on the Sinestesia contract"
+license = "MIT"
+
+[dependencies]
+pipewire = "0.10"
+rustfft = "6"
+anyhow = "1"
+
+[profile.release]
+opt-level = 3
+lto = true
+strip = true
