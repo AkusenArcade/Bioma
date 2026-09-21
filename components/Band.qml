@@ -2,12 +2,21 @@ import QtQuick
 import Qt5Compat.GraphicalEffects
 import qs.core
 
-// The audio band: small vertical capsules, symmetrical from the centre.
+// The audio band: small vertical capsules, mirrored from the centre.
 //
-// The mark's own shape, put in a row. They grow from the middle line rather
-// than from the floor because filling from the bottom already means something
-// else in this shell — it is how memory is drawn — and because sound has no
-// floor: it is a displacement either side of nothing.
+// The mark's own shape, put in a row. Two things are symmetrical here and they
+// are not the same symmetry.
+//
+// A bar grows from the middle **line**, up and down, rather than from the
+// floor: filling from the bottom already means something else in this shell —
+// it is how memory is drawn — and sound has no floor, it is a displacement
+// either side of nothing.
+//
+// And the row itself is mirrored about its **middle**: the left half is the
+// left channel and the right half the right one, with the low frequencies
+// meeting at the centre and the high ones at the outside. It is the shape
+// Sinestesia draws, and it means the picture is the stereo image — a sound that
+// sits on one side lights one wing.
 //
 // The gradient is defined over the height of the **band**, not of a single bar:
 // a short bar samples the middle of it, a tall one runs its whole length. That
@@ -17,11 +26,18 @@ import qs.core
 Item {
     id: root
 
-    // 0 to 1 per bar, lowest frequency first. Shorter than `count` is allowed:
-    // the rest rest.
-    property var values: []
+    // One spectrum per channel, 0 to 1, lowest frequency first. Shorter than
+    // half the count is allowed: the rest rest.
+    //
+    // Not `left` and `right`: an Item declares those final — they are its own
+    // anchor lines — and shadowing them costs the component.
+    property var leftChannel: []
+    property var rightChannel: []
 
+    // Bars in the whole row, both wings together. An odd one would have no
+    // middle to mirror about.
     property int count: 14
+    readonly property int half: Math.floor(count / 2)
     property real barWidth: 3
     property real pitch: 6
     property color base: Theme.primary
@@ -34,10 +50,18 @@ Item {
     implicitWidth: count * barWidth + (count - 1) * (pitch - barWidth)
     implicitHeight: 22
 
+    // Which band a bar is showing. Counting outwards from the middle in both
+    // directions: the bar against the centre is the lowest frequency of its
+    // channel, the one at the edge is the highest.
+    function valueAt(index) {
+        const mirrored = index < root.half;
+        const list = mirrored ? root.leftChannel : root.rightChannel;
+        const place = mirrored ? root.half - 1 - index : index - root.half;
+        return place < list.length ? list[place] : 0;
+    }
+
     function heightAt(index) {
-        const list = root.values;
-        const value = index < list.length ? list[index] : 0;
-        return Math.max(root.minimum, value * root.height);
+        return Math.max(root.minimum, root.valueAt(index) * root.height);
     }
 
     // The light: one gradient over the whole band, which the bars reveal.

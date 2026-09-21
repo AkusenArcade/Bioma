@@ -49,7 +49,8 @@ Item {
     width: implicitWidth
     height: implicitHeight
 
-    readonly property var band: Sinestesia.fold(root.bars)
+    readonly property var bandLeft: Sinestesia.fold(Sinestesia.left, root.bars / 2)
+    readonly property var bandRight: Sinestesia.fold(Sinestesia.right, root.bars / 2)
 
     // ---- The cascade --------------------------------------------------------
 
@@ -115,7 +116,8 @@ Item {
             count: root.bars
             barWidth: 4 * root.factor
             pitch: 8 * root.factor
-            values: root.band
+            leftChannel: root.bandLeft
+            rightChannel: root.bandRight
         }
     }
 

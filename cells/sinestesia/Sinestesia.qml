@@ -42,7 +42,10 @@ Cell {
     // already running for everything else.
     onPlacedChanged: Sinestesia.active = root.placed
 
-    readonly property var band: Sinestesia.fold(root.bars)
+    // Half the bars to a channel: the row is mirrored about its middle.
+    // Half the bars to a channel: the row is mirrored about its middle.
+    readonly property var bandLeft: Sinestesia.fold(Sinestesia.left, root.bars / 2)
+    readonly property var bandRight: Sinestesia.fold(Sinestesia.right, root.bars / 2)
 
     // What the cell says beside the band. A track only sometimes: without
     // metadata the band stands alone and the cell narrows to it.
@@ -137,7 +140,8 @@ Cell {
             count: root.bars
             barWidth: 3 * root.metrics.factor
             pitch: 6 * root.metrics.factor
-            values: root.band
+            leftChannel: root.bandLeft
+            rightChannel: root.bandRight
         }
 
         // The track's name is human language, so it takes the expressive face —

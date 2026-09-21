@@ -37,9 +37,13 @@ Singleton {
     readonly property string binary:
         `${Quickshell.shellDir}/tools/sinestesia-bands/target/release/sinestesia-bands`
 
-    // The bands as the shell draws them: `bandCount` values from 0 to 1, the
-    // lowest frequency first.
-    property var bands: []
+    // One spectrum per channel, `bandCount` values from 0 to 1 each, lowest
+    // frequency first. The band is mirrored from the middle — left channel on
+    // the left, right channel on the right, the low frequencies meeting at the
+    // centre — which is how Sinestesia draws it and why the tool keeps the two
+    // apart all the way from the capture.
+    property var left: []
+    property var right: []
 
     // The loudest band of the last frame, which is what a cell asks when it
     // wants one number rather than a shape.
@@ -70,7 +74,8 @@ Singleton {
         }
 
         onExited: code => {
-            root.bands = [];
+            root.left = [];
+            root.right = [];
             root.level = 0;
             if (code === 0)
                 return;
@@ -86,30 +91,34 @@ Singleton {
 
     function take(line) {
         const text = line.trim();
-        const count = Math.floor(text.length / 2);
-        if (count === 0)
+        const half = Math.floor(text.length / 4);
+        if (half === 0)
             return;
 
-        const out = new Array(count);
+        const one = new Array(half);
+        const other = new Array(half);
         let loudest = 0;
-        for (let i = 0; i < count; i++) {
-            const value = parseInt(text.substr(i * 2, 2), 16) / 255;
-            out[i] = value;
-            if (value > loudest)
-                loudest = value;
+
+        for (let i = 0; i < half; i++) {
+            const l = parseInt(text.substr(i * 2, 2), 16) / 255;
+            const r = parseInt(text.substr((half + i) * 2, 2), 16) / 255;
+            one[i] = l;
+            other[i] = r;
+            if (l > loudest) loudest = l;
+            if (r > loudest) loudest = r;
         }
 
-        root.bands = out;
+        root.left = one;
+        root.right = other;
         root.level = loudest;
     }
 
-    // The band the cell draws is coarser than the one that arrives: fourteen
-    // capsules contracted, thirty-four open, out of sixty-four. Folded by peak
-    // rather than by mean, for the same reason the tool takes the peak bin
+    // The band the cell draws is coarser than the one that arrives: seven
+    // capsules a side contracted, seventeen open, out of sixty-four. Folded by
+    // peak rather than by mean, for the same reason the tool takes the peak bin
     // inside a band — a mean turns a snare into a shrug.
-    function fold(into) {
-        const source = root.bands;
-        if (into <= 0 || source.length === 0)
+    function fold(source, into) {
+        if (into <= 0 || !source || source.length === 0)
             return [];
         if (into >= source.length)
             return source;

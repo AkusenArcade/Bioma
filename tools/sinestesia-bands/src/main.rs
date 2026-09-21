@@ -6,11 +6,17 @@
 //! shell draws what it is told.
 //!
 //! One line per frame on stdout, two hexadecimal digits per band, no
-//! separators, newline at the end:
+//! separators, newline at the end — the left channel's bands first, then the
+//! right channel's, so a line is twice `--bands` pairs long:
 //!
 //! ```text
-//! 00040b1f3a5c…
+//! 00040b1f3a5c…  ← left, low to high, then right, low to high
 //! ```
+//!
+//! Two channels because the band is mirrored from the middle: the left half of
+//! the drawing is the left channel and the right half the right one, low
+//! frequencies meeting at the centre. Which way round each half is drawn is the
+//! shell's business; this emits both in their natural order.
 //!
 //! Hexadecimal rather than JSON or decimals because the reader is a QML
 //! string parser running sixty times a second: two characters per band, a fixed
@@ -36,9 +42,9 @@ struct Options {
 impl Default for Options {
     fn default() -> Self {
         Self {
-            // The finest the shell asks for; it folds them down to the
-            // fourteen or thirty-four the cell draws. One process serves both
-            // the contracted band and the expanded one.
+            // Per channel, and the finest the shell asks for: it folds them
+            // down to the seven or seventeen a half of the cell draws. One
+            // process serves both the contracted band and the expanded one.
             bands: 64,
             fps: 60,
             gain: 1.0,
@@ -89,12 +95,13 @@ fn parse(args: impl Iterator<Item = String>) -> anyhow::Result<Options> {
                 println!(
                     "sinestesia-bands — spectrum bands for Bioma, on Sinestesia's contract\n\
                      \n\
-                     --bands N    bands per frame (default 64)\n\
+                     --bands N    bands per channel (default 64)\n\
                      --fps N      frames per second (default 60)\n\
                      --gain F     multiplier applied after the dB mapping (default 1.0)\n\
                      --source S   output (the sink's monitor) or input (default output)\n\
                      \n\
-                     One line per frame: two hex digits per band, 00 to ff."
+                     One line per frame: the left channel's bands then the\n\
+                     right channel's, two hex digits each, 00 to ff."
                 );
                 std::process::exit(0);
             }
@@ -113,28 +120,31 @@ fn main() -> anyhow::Result<()> {
     let ring = audio::Ring::new(dsp::FFT_SIZE * 2);
     let _capture = audio::start(ring.clone(), options.source);
 
-    let mut analyzer = dsp::Analyzer::new(options.bands, audio::SAMPLE_RATE, options.gain);
+    // One analyser per channel: each keeps its own smoothing, which is the
+    // point — a sound that moves across the image has to arrive on one side
+    // and leave the other, not average into the middle.
+    let mut left = dsp::Analyzer::new(options.bands, audio::SAMPLE_RATE, options.gain);
+    let mut right = dsp::Analyzer::new(options.bands, audio::SAMPLE_RATE, options.gain);
     let mut samples = vec![0.0f32; dsp::FFT_SIZE];
 
     // Written once and reused: at sixty frames a second, an allocation per
     // frame is an allocation sixty times a second for as long as the cell is
     // on screen.
-    let mut line = String::with_capacity(options.bands * 2 + 1);
+    let mut line = String::with_capacity(options.bands * 4 + 1);
 
     let frame = Duration::from_secs_f64(1.0 / options.fps as f64);
     let mut next = Instant::now();
     let stdout = std::io::stdout();
 
     loop {
-        ring.snapshot(&mut samples);
-        let bands = analyzer.analyze(&samples);
-
         line.clear();
-        for value in bands {
-            let byte = (value.clamp(0.0, 1.0) * 255.0).round() as u8;
-            line.push(nibble(byte >> 4));
-            line.push(nibble(byte & 0x0f));
-        }
+
+        ring.snapshot(audio::Channel::Left, &mut samples);
+        write_bands(&mut line, left.analyze(&samples));
+
+        ring.snapshot(audio::Channel::Right, &mut samples);
+        write_bands(&mut line, right.analyze(&samples));
+
         line.push('\n');
 
         // A closed pipe is how the shell says it has stopped looking.
@@ -154,6 +164,14 @@ fn main() -> anyhow::Result<()> {
             // nobody saw.
             next = now;
         }
+    }
+}
+
+fn write_bands(line: &mut String, bands: &[f32]) {
+    for value in bands {
+        let byte = (value.clamp(0.0, 1.0) * 255.0).round() as u8;
+        line.push(nibble(byte >> 4));
+        line.push(nibble(byte & 0x0f));
     }
 }
 

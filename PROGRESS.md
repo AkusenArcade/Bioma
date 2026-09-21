@@ -458,10 +458,15 @@ the fold to fourteen showing the shape of the music rather than a flat line.
   changes shape thirty times a second. So `components/Band.qml` draws the bars
   into a layer, draws the gradient into another, and shows the first through the
   second.
-- **The bars grow from the middle line**, not from the floor. Filling from the
-  bottom already means something else in this shell — it is how memory is drawn
-  — and sound has no floor: it is a displacement either side of nothing. A band
-  at zero is a row of dots rather than a row of gaps, because an instrument with
+- **Two symmetries, and they are not the same one.** A bar grows from the middle
+  *line*, up and down, because filling from the bottom already means memory in
+  this shell and sound has no floor. And the row is mirrored about its *middle*:
+  the left half is the left channel, the right half the right one, the low
+  frequencies meeting at the centre and the high ones at the outside — the shape
+  Sinestesia draws, which makes the picture the stereo image rather than a
+  spectrum twice. Akusen asked for it, 2026-09-22, and the tool keeps the two
+  channels apart from the capture onwards to give it.
+- **A band at zero is a row of dots**, not a row of gaps: an instrument with
   missing teeth reads as broken rather than as quiet.
 - **The track panel hangs from the visualiser, and does not exist without a
   track.** Sound is always there and a track only sometimes, so the thread says

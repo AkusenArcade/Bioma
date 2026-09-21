@@ -1,9 +1,10 @@
 //! PipeWire capture, adapted from Sinestesia's `src/audio.rs`.
 //!
 //! One stream on the default sink's monitor — what leaves the machine — or on
-//! the default source, negotiated as stereo f32 at 48 kHz and summed to one
-//! channel as it arrives. Bioma's band is a single spectrum, so there is no
-//! reason to carry two.
+//! the default source, negotiated as stereo f32 at 48 kHz and kept as two
+//! channels. The band is mirrored from the middle: the left half is the left
+//! channel and the right half the right one, which is what Sinestesia draws and
+//! the reason its own capture keeps the two apart.
 
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
@@ -20,16 +21,34 @@ pub enum Source {
     Input,
 }
 
-/// The samples the capture thread writes and the analyser reads.
+/// Which side of the image to read.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum Channel {
+    Left,
+    Right,
+}
+
+struct Stereo {
+    left: VecDeque<f32>,
+    right: VecDeque<f32>,
+}
+
+/// The samples the capture thread writes and the analysers read, one queue per
+/// channel. A source with one channel puts the same samples in both: a mono
+/// recording is the same on the left and on the right, and saying so is more
+/// honest than drawing half a band.
 pub struct Ring {
-    inner: Mutex<VecDeque<f32>>,
+    inner: Mutex<Stereo>,
     capacity: usize,
 }
 
 impl Ring {
     pub fn new(capacity: usize) -> Arc<Self> {
         Arc::new(Self {
-            inner: Mutex::new(VecDeque::with_capacity(capacity)),
+            inner: Mutex::new(Stereo {
+                left: VecDeque::with_capacity(capacity),
+                right: VecDeque::with_capacity(capacity),
+            }),
             capacity,
         })
     }
@@ -42,34 +61,36 @@ impl Ring {
         let mut buf = self.inner.lock().unwrap();
         for f in 0..frames {
             let base = f * channels;
-            // Summed to mono here rather than in the analyser: it is one add
-            // per frame at the edge instead of a second transform later.
-            let mut sum = 0.0;
-            for c in 0..channels {
-                sum += data[base + c];
-            }
-            buf.push_back(sum / channels as f32);
+            let left = data[base];
+            let right = if channels >= 2 { data[base + 1] } else { left };
+            buf.left.push_back(left);
+            buf.right.push_back(right);
         }
-        let overflow = buf.len().saturating_sub(self.capacity);
+        let overflow = buf.left.len().saturating_sub(self.capacity);
         if overflow > 0 {
-            buf.drain(0..overflow);
+            buf.left.drain(0..overflow);
+            buf.right.drain(0..overflow);
         }
     }
 
-    /// The last `out.len()` samples, zero-padded on the left when there are not
-    /// yet enough of them.
-    pub fn snapshot(&self, out: &mut [f32]) {
+    /// The last `out.len()` samples of one channel, zero-padded on the left
+    /// when there are not yet enough of them.
+    pub fn snapshot(&self, channel: Channel, out: &mut [f32]) {
         let buf = self.inner.lock().unwrap();
+        let src = match channel {
+            Channel::Left => &buf.left,
+            Channel::Right => &buf.right,
+        };
         let n = out.len();
-        let available = buf.len();
+        let available = src.len();
         if available >= n {
-            for (i, s) in buf.iter().skip(available - n).enumerate() {
+            for (i, s) in src.iter().skip(available - n).enumerate() {
                 out[i] = *s;
             }
         } else {
             let pad = n - available;
             out[..pad].iter_mut().for_each(|x| *x = 0.0);
-            for (i, s) in buf.iter().enumerate() {
+            for (i, s) in src.iter().enumerate() {
                 out[pad + i] = *s;
             }
         }

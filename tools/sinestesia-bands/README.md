@@ -35,11 +35,19 @@ bindings link against.
 ./target/release/sinestesia-bands --bands 64 --fps 60 --gain 1.0 --source output
 ```
 
-One line per frame, two hexadecimal digits per band, no separators:
+One line per frame, two hexadecimal digits per band, no separators — the left
+channel's bands first, then the right channel's, so a line is twice `--bands`
+pairs long:
 
 ```text
-00040b1f3a5c…
+00040b1f3a5c…   left, low to high, then right, low to high
 ```
+
+Two channels because the band is mirrored from the middle: the left half of the
+drawing is the left channel and the right half the right one, with the low
+frequencies meeting at the centre and the high ones at the outside. Which way
+round each half is drawn is the shell's business; this emits both in their
+natural order.
 
 Hexadecimal rather than JSON because the reader is a QML string parser running
 sixty times a second: fixed width, two characters per band, no allocation per
