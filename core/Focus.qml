@@ -66,15 +66,17 @@ Singleton {
         }
     }
 
-    // Every shape the shell claims on one monitor: the cells, and the panels of
-    // whichever is open.
+    // Every shape the shell claims on one monitor, as rectangles on that
+    // output: the cells, and the panels of whichever is open. Rectangles rather
+    // than items, because whoever asks is on a different surface — see
+    // `Membrane.inputRects`.
     function claimed(screenName) {
         const out = [];
         for (const membrane of root.membranes) {
             if (!membrane || !membrane.screenItem || membrane.screenItem.name !== screenName)
                 continue;
-            for (const shape of membrane.inputShapes())
-                out.push(shape);
+            for (const rect of membrane.inputRects())
+                out.push(rect);
         }
         return out;
     }

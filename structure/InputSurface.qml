@@ -82,11 +82,18 @@ PanelWindow {
             root.catchRegion = null;
             return;
         }
-        const shapes = Focus.claimed(root.screenItem ? root.screenItem.name : "");
-        root.catchRegion = Regions.rebindHoles(root, root.catchRegion, sheet, shapes);
+        const rects = Focus.claimed(root.screenItem ? root.screenItem.name : "");
+        root.catchRegion = Regions.rebindHoleRects(root, root.catchRegion, sheet, rects);
     }
 
     onVisibleChanged: rebuild()
+
+    // The sheet is 500 × 500 until the compositor has configured the surface,
+    // and a region bound to rectangles does not follow it afterwards the way a
+    // region bound to an item would.
+    onWidthChanged: rebuild()
+    onHeightChanged: rebuild()
+
     Component.onCompleted: rebuild()
 
     Connections {

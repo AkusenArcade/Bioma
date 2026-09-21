@@ -49,6 +49,38 @@ Singleton {
         return Qt.createQmlObject(`import Quickshell\nRegion {\n${children}\n}`, owner);
     }
 
+    // The same shapes as plain rectangles rather than as items. A region belongs
+    // to one surface and an item to another: asked where it is, an item answers
+    // in the coordinates of *its own* window, and two surfaces that do not share
+    // an origin — a membrane on the bottom edge and a catcher over the whole
+    // screen — do not mean the same point by the same numbers.
+    function bindRects(region, rects) {
+        if (!region || region.regions.length !== rects.length)
+            return false;
+        for (let i = 0; i < rects.length; i++) {
+            const leaf = region.regions[i];
+            leaf.item = null;
+            leaf.x = Math.round(rects[i].x);
+            leaf.y = Math.round(rects[i].y);
+            leaf.width = Math.round(rects[i].width);
+            leaf.height = Math.round(rects[i].height);
+            leaf.radius = Math.round(rects[i].radius);
+        }
+        return true;
+    }
+
+    function rebindHoleRects(owner, previous, base, rects) {
+        let region = previous;
+        if (!region || region.regions.length !== rects.length) {
+            if (region)
+                region.destroy();
+            region = root.hole(owner, rects.length);
+        }
+        region.item = base;
+        root.bindRects(region, rects);
+        return region;
+    }
+
     function rebindHoles(owner, previous, base, shapes) {
         let region = previous;
         if (!region || region.regions.length !== shapes.length) {

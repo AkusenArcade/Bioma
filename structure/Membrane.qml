@@ -324,10 +324,21 @@ PanelWindow {
     mask: maskRegion
     BackgroundEffect.blurRegion: blurRegion
 
-    // Everything on this membrane that takes input: the cells, and the panel
-    // of whichever is open. The full-screen surface subtracts these so that a
-    // press on a cell never reaches it.
-    function inputShapes() {
+    // Where this surface sits on its output. A layer surface has no position of
+    // its own as far as Qt is concerned — the compositor places it — so it is
+    // derived from the edge it is anchored to and the size it currently has.
+    // A membrane at the bottom of the screen in its resting strip is 1372 px
+    // down; expanded it covers the output and the offset is nothing.
+    readonly property real originX: edge === "right" ? (screen ? screen.width : 0) - width : 0
+    readonly property real originY: edge === "bottom" ? (screen ? screen.height : 0) - height : 0
+
+    // Everything on this membrane that takes input: the cells, and the panel of
+    // whichever is open — as rectangles on the output, not as items. The
+    // full-screen catcher subtracts these from its own region so that a press
+    // on a cell never reaches it, and it lives on another surface: handed items,
+    // it punched its holes wherever those items sat inside *this* window, which
+    // for a bottom membrane is a screen's height away from the truth.
+    function inputRects() {
         const out = [];
         for (const tissue of root.tissues) {
             if (!tissue || !tissue.visible)
@@ -335,12 +346,29 @@ PanelWindow {
             for (const cell of tissue.cells) {
                 if (!cell.placed)
                     continue;
-                for (const shape of cell.shapes())
-                    out.push(shape);
+                for (const shape of cell.shapes()) {
+                    const item = shape.item;
+                    if (!item)
+                        continue;
+                    const here = item.mapToItem(null, 0, 0);
+                    out.push({
+                        "x": here.x + root.originX,
+                        "y": here.y + root.originY,
+                        "width": item.width,
+                        "height": item.height,
+                        "radius": shape.radius
+                    });
+                }
             }
         }
         return out;
     }
+
+    // The offset above changes with the surface, so the catcher has to be told
+    // when the surface changes size — expanding for a panel moves every cell on
+    // a bottom membrane a screen's height in the catcher's coordinates.
+    onHeightChanged: root.refreshRegions()
+    onWidthChanged: root.refreshRegions()
 
     function refreshRegions() {
         const input = [];

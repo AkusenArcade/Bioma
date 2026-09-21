@@ -354,6 +354,18 @@ so the dismissal itself is verified by hand.
   the one thing in the shell allowed to scale: a shape that scales deforms its
   rim and its radii, and content that is on its way out has neither.
 
+- **A region belongs to one surface; an item answers for another.** The
+  full-screen catcher subtracted the cells from its own input region by handing
+  `Region.item` the cells themselves — and an item asked where it is answers in
+  the coordinates of *its own* window. For a membrane on the top edge those are
+  the screen's and nothing showed; for one on the bottom edge in its resting
+  strip they are a screen's height out, so the catcher covered every cell on it.
+  A press there closed whatever was open and never reached the cell under the
+  pointer, which is exactly what it looked like: clicking a second cell closed
+  the first and opened nothing. The membranes now hand over rectangles on the
+  output — they know their own edge and size, which is the only way a layer
+  surface can know where it is — and the catcher subtracts those.
+
 ## Phase 1 — Service porting
 
 Nine of ten done, each verified headlessly through `probe.qml` before moving
