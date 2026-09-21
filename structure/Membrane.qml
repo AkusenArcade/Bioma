@@ -176,6 +176,12 @@ PanelWindow {
 
                 onVisibleChanged: root.refreshRegions()
                 onRevisionChanged: root.refreshRegions()
+                // What the tissue could not fit takes no input and is not
+                // blurred, so the regions follow the placement as well as the
+                // revision — and they follow it from here rather than from a
+                // bump inside the tissue, which would be the tissue asking
+                // itself to recompute what it had just computed.
+                onPlacementChanged: root.refreshRegions()
             }
         }
     }
@@ -315,7 +321,7 @@ PanelWindow {
             if (!tissue || !tissue.visible)
                 continue;
             for (const cell of tissue.cells) {
-                if (!cell.shown)
+                if (!cell.placed)
                     continue;
                 for (const shape of cell.shapes())
                     out.push(shape);
@@ -332,7 +338,7 @@ PanelWindow {
             if (!tissue || !tissue.visible)
                 continue;
             for (const cell of tissue.cells) {
-                if (!cell.shown)
+                if (!cell.placed)
                     continue;
                 for (const shape of cell.shapes()) {
                     input.push(shape);

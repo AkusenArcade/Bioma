@@ -110,6 +110,13 @@ figure by tightening the cascade, not by shortening `grow`.
 Collision between tissues on one membrane is impossible by construction.
 Floating tissues may overlap; that is not prevented.
 
+A percentage is a **ceiling, not a reservation**, and the tissue holds to it: it
+hands out room in anchor order — the cells against the screen edge first, since
+that is the end a tissue grows inward from — and a cell it cannot fit is not
+drawn at all until there is room for it again. The shell says so once, naming
+the membrane and the cell. A cell drawn outside its band, or off the screen, is
+the one outcome a ceiling exists to prevent.
+
 ### cells
 
 | Key | Meaning |

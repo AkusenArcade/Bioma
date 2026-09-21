@@ -74,18 +74,42 @@ Item {
         root.revision++;
     }
 
-    readonly property real contentLength: {
+    // ---- What actually fits ------------------------------------------------
+    //
+    // The percentage is a ceiling, and a ceiling that is only respected by the
+    // band is not a ceiling at all: the cells were laid out in a row from the
+    // anchor whatever their total came to, so on a narrow monitor the last of
+    // them stood outside the band and, far enough over, outside the screen.
+    //
+    // So the tissue hands out room in anchor order — the cells against the
+    // screen edge are the settled ones, and a tissue grows inward from there —
+    // and a cell it cannot fit is not placed at all. It waits: the moment its
+    // neighbours need less, it takes its place back.
+    readonly property var placement: {
         revision;
-        let total = 0;
-        let visible = 0;
-        for (const cell of root.cells) {
+        const ceiling = root.slotLength > 0 ? root.slotLength - root.padding * 2
+                                            : Number.MAX_VALUE;
+
+        const order = root.anchorSide === "end" ? root.cells.slice().reverse()
+                                                : root.cells.slice();
+        const placed = [];
+        let used = 0;
+
+        for (const cell of order) {
             if (!cell.shown)
                 continue;
-            total += root.grantFor(cell);
-            visible++;
+            const grant = root.grantFor(cell);
+            const before = placed.length > 0 ? root.gap : 0;
+            if (used + before + grant > ceiling + 0.5)
+                continue;
+            used += before + grant;
+            placed.push(cell);
         }
-        return visible === 0 ? 0 : total + gap * (visible - 1);
+
+        return { "cells": placed, "length": used };
     }
+
+    readonly property real contentLength: root.placement.length
 
     readonly property real length: Math.min(slotLength > 0 ? slotLength : Number.MAX_VALUE,
                                             contentLength + padding * 2)
@@ -164,6 +188,13 @@ Item {
             // cell asks for. Listening to `width` alone deadlocks — the width
             // only changes once the layout runs, and the layout only runs once
             // the width changes — and the cell never grows to fit its content.
+            // What the tissue could not fit follows the placement rather than
+            // being assigned while laying out: the membrane rebuilds its mask
+            // and its blur region from the same signal, and an assignment made
+            // half-way through a layout pass reaches it in whatever order the
+            // handlers happen to run in.
+            cell.crowded = Qt.binding(() => cell.shown && root.placement.cells.indexOf(cell) < 0);
+
             cell.contractedWidthChanged.connect(root.bump);
             cell.shownChanged.connect(root.bump);
             // A panel coming or going changes what the membrane has to mask
@@ -228,9 +259,13 @@ Item {
     }
 
     function relayout() {
+        const crowded = [];
+
         let offset = padding;
         for (const cell of root.cells) {
-            if (!cell.shown)
+            if (cell.crowded)
+                crowded.push(cell.domain);
+            if (!cell.placed)
                 continue;
 
             const grant = root.grantFor(cell);
@@ -245,6 +280,24 @@ Item {
             }
             offset += grant + gap;
         }
+
+        root.reportCrowding(crowded);
+    }
+
+    // Said once per change rather than on every reflow: a cell missing from a
+    // membrane is a configuration that does not fit this monitor, and the only
+    // place that can be noticed is here.
+    property string lastCrowding: ""
+
+    function reportCrowding(crowded) {
+        const said = crowded.join(", ");
+        if (said === root.lastCrowding)
+            return;
+        root.lastCrowding = said;
+        if (said.length > 0)
+            console.info(`Bioma: the ${root.edge} membrane on ${root.output || "this monitor"} `
+                         + `grants less room than its cells ask for — ${said} `
+                         + `${crowded.length > 1 ? "are" : "is"} waiting for space`);
     }
 
     onRevisionChanged: relayout()
@@ -280,7 +333,7 @@ Item {
     function shapes() {
         const out = [];
         for (const cell of root.cells)
-            if (cell.shown)
+            if (cell.placed)
                 out.push(cell.shape());
         return out;
     }

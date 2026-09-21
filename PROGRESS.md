@@ -274,6 +274,16 @@ so the dismissal itself is verified by hand.
   leaving now re-evaluates the condition. This matters most for notifications,
   where the actions live in the hover state.
 
+- **A ceiling the band respects and the cells ignore is not a ceiling.** The
+  tissue clamped its own length to the declared percentage and then laid its
+  cells out in a row regardless, so on a narrow monitor the last of them stood
+  outside the band — and far enough over, outside the screen. Found on a 1920 px
+  monitor whose right tissue was 20%: the recording cell appearing pushed its
+  neighbours off the edge. The tissue now hands out room in anchor order and
+  leaves out what it cannot fit, saying so once; the cell comes back by itself
+  when its neighbours need less. The two monitors behaved differently only
+  because 30% of 3440 is room enough for anything.
+
 ## Phase 1 — Service porting
 
 Nine of ten done, each verified headlessly through `probe.qml` before moving

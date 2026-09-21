@@ -71,6 +71,15 @@ Item {
 
     readonly property bool shown: visibility.shown
 
+    // Set by the tissue when there is no room left for this cell inside the
+    // percentage its membrane granted. A cell has no position and no width of
+    // its own — it takes what the tissue grants — and what a tissue cannot
+    // grant it does not draw: a cell half outside its band, or off the screen
+    // altogether, is worse than a cell that waits its turn.
+    property bool crowded: false
+
+    readonly property bool placed: shown && !crowded
+
     property real cellOpacity: Config.get("cell.opacity", 0.72)
     property bool blur: Config.get("cell.blur", true)
 
@@ -143,8 +152,8 @@ Item {
     height: contractedHeight
 
     // A cell that is not shown occupies nothing; the tissue reflows around it.
-    visible: shown || appearance.running
-    opacity: shown ? 1 : 0
+    visible: placed || appearance.running
+    opacity: placed ? 1 : 0
 
     // A contracted cell resizes to fit its content, and that is a reflow: it
     // must move at the rate its tissue and its neighbours move at, or the row
