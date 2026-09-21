@@ -3,17 +3,18 @@
 Where the work stands. `services/INVENTORY.md` holds the detail and the
 reasoning; this is the short version and the list of what is *not* done.
 
-Last worked: 2026-09-20.
+Last worked: 2026-09-21.
 
 ## Where to pick up
 
 Phase 1 is nine services of ten, every one verified. Phase 0's engine draws and
-has been exercised by four cells; phase 2 is finished — window title,
-workspaces and vitals, the last of them opening into pods and a process list.
+has been exercised by five cells; phase 2 is finished — window title,
+workspaces and vitals, the last of them opening into pods and a process list —
+and phase 3 has started: the theme cell is drawn and retints the shell live.
 
 Three ways in, and they are independent:
 
-1. **Phase 3 cells**: sinestesia, theme, utility. Sinestesia is the one with
+1. **The rest of phase 3**: sinestesia and utility. Sinestesia is the one with
    real unknowns — the band's behaviour is defined against the author's own
    Sinestesia code, and capture and FFT have to be split from rendering into a
    headless process before a cell draws anything.
@@ -36,7 +37,12 @@ have never been confirmed by a real click:
 - **the scrollbar** in both lists, which appears while the list is moving;
 - **pressing the vitals search field**, which used to dismiss the cell and
   should not any more: the masks are rebound when an expansion finishes
-  growing, not only when it appears.
+  growing, not only when it appears;
+- **every control in the theme cell**: the carousel's wheel and its two
+  neighbours, the source switch, the dropdown and its rows. Each was driven from
+  a throwaway timer instead — the list opens, the switch slides, and the palette
+  written through `Config.set` retints the whole shell in a screenshot taken
+  three seconds later — but no press has ever reached any of them.
 
 The way to verify anything visual here is a temporary `Timer` that sets
 `open = true` a couple of seconds after start, then `grim` for a frame or a
@@ -72,7 +78,8 @@ Drawn, and verified on screen against the design handoff.
 | `structure/Visibility.qml` | **Exercised at last** — the window title appears and disappears with focus. |
 | `components/` | `Rim`, `Ring`, `DashedRing`, `Disc`, `Dial`, `Icon`, `LightGradient`, `Thread`, `Panel`, `Well`, `WorkspaceBars`, `Vital`. |
 | `structure/InputSurface.qml` + `core/Focus.qml` | The full-screen surface of PRD §8, and the register of what is open. Built; the press path still needs a human to click. |
-| `cells/clock`, `cells/window_title`, `cells/workspaces`, `cells/vitals` | Four cells. Vitals opens: pods, threads and the process list. |
+| `cells/clock`, `cells/window_title`, `cells/workspaces`, `cells/vitals`, `cells/theme` | Five cells. Vitals opens into pods, threads and the process list; theme into the wallpaper carousel and the two palette capsules. |
+| `core/Config.qml` write-back | `Config.set` writes one key into the override layer. Brought forward from phase 5 because the theme cell has to keep a choice. |
 
 Verified on HDMI-A-1: cells float with no band, the rim reads, the app icon
 resolves and the fallback glyph is tinted, the title elides and cross-fades, the
@@ -180,6 +187,39 @@ so the dismissal itself is verified by hand.
   start corner, last the end corner, anything else centred, `growth: symmetric`
   forces the centre and an explicit `anchor` overrides all of it. The
   configuration declared growth but never where the tissue sits.
+
+- **A setting the user changes is written one key at a time.** `Config.set`
+  rewrites the override document with that key changed, never the merged values:
+  a membrane list, a font, a hand-written `$comment` all survive a theme being
+  chosen. It also keeps the document in memory, because two settings changed in
+  the same breath — source and palette, when the switch moves — would otherwise
+  both read the file as it was before either had landed, and the first would be
+  lost. Brought forward from phase 5; the settings page will want exactly this.
+- **The palette has a destination as well as a journey.** Every visible role is
+  animated, which is what makes a theme change cross the whole shell at once —
+  and it is also what makes a chip bound to one arrive late: a delay restarted on
+  every frame of the transition never elapses. `Theme.targetRoles` is the seven
+  roles computed from the palette as loaded, and the theme cell's chips follow
+  that instead, sixteen milliseconds apart.
+- **The wallpaper's thumbnails belong to the wallpaper service.** Not to the
+  cell that shows them: the settings page will want the same small copies, and
+  the cache is the wallpaper's own business. `magick` makes them one at a time
+  into `~/.cache/bioma/thumbnails`, and without ImageMagick the carousel reads
+  the photographs themselves — slower on the first look, and the same cell.
+- **A converter creates its output before it finishes writing it.** The
+  directory model announces the file at that moment, Qt reads a fragment, and
+  reports "Unsupported image format" for good. The file being written is left
+  out of the cache set until the process writing it has exited.
+- **A binding must not start work.** `Wallpaper.thumbnail()` looks a path up and
+  nothing else; asking for one to be *made* is `prepare()`, called from a change
+  handler. The first version did both in one call and Qt stopped evaluating the
+  binding — a binding that changes what it reads is a loop, and the tile went
+  blank rather than wrong, which is the harder kind of failure to see.
+- **The theme cell does not carry the wallpaper's "how".** Fill, fit, span and
+  per-monitor are requirements, but CELLS.md §07 draws a carousel and two
+  capsules and no mode control, and there is no room inside 268 × 96 for one
+  that would not be a fourth thing to read. The mode stays in the wallpaper
+  service, where it already lives, and lands in the settings cell.
 
 ## Phase 1 — Service porting
 

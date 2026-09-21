@@ -15,7 +15,8 @@ Singleton {
         "clock": "clock/Clock.qml",
         "window_title": "window_title/WindowTitle.qml",
         "workspaces": "workspaces/Workspaces.qml",
-        "vitals": "vitals/Vitals.qml"
+        "vitals": "vitals/Vitals.qml",
+        "theme": "theme/ThemeCell.qml"
     })
 
     property var cache: ({})
