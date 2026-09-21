@@ -80,6 +80,19 @@ Item {
 
     readonly property bool placed: shown && !crowded
 
+    // Who keeps their place when the tissue runs short. A cell is here because
+    // it has something to say, and some of them have more: one that appeared
+    // because something is happening — a recording running, a device that just
+    // connected — outranks one that is simply always there, and an open cell
+    // outranks both, because it is the one being looked at.
+    //
+    // This is what stops the arithmetic from throwing away the cell that
+    // matters: the recording cell doubles in width to ask whether to save, and
+    // on a narrow membrane that question was the first thing to be dropped —
+    // the one cell in the shell that must be answerable.
+    readonly property int precedence: open ? 2
+                                     : visibility.type === "conditional" ? 1 : 0
+
     property real cellOpacity: Config.get("cell.opacity", 0.72)
     property bool blur: Config.get("cell.blur", true)
 

@@ -274,6 +274,13 @@ so the dismissal itself is verified by hand.
   leaving now re-evaluates the condition. This matters most for notifications,
   where the actions live in the hover state.
 
+- **Precedence before position, when the room runs out.** The first version of
+  the rule above handed out space in anchor order alone, and the first thing it
+  threw away was the recording cell asking whether to save — twice the width of
+  the counter, and the one cell in the shell that has to be answerable. A cell
+  that is there because something is happening now outranks one that is simply
+  always there, and an open cell outranks both: it is the one being looked at.
+  On a crowded membrane the theme chips wait and the question stands.
 - **A ceiling the band respects and the cells ignore is not a ceiling.** The
   tissue clamped its own length to the declared percentage and then laid its
   cells out in a row regardless, so on a narrow monitor the last of them stood

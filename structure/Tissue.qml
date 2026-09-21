@@ -81,10 +81,15 @@ Item {
     // anchor whatever their total came to, so on a narrow monitor the last of
     // them stood outside the band and, far enough over, outside the screen.
     //
-    // So the tissue hands out room in anchor order — the cells against the
-    // screen edge are the settled ones, and a tissue grows inward from there —
-    // and a cell it cannot fit is not placed at all. It waits: the moment its
-    // neighbours need less, it takes its place back.
+    // So the tissue hands out room by precedence first and anchor order second
+    // — the cells against the screen edge are the settled ones, and a tissue
+    // grows inward from there — and a cell it cannot fit is not placed at all.
+    // It waits: the moment its neighbours need less, it takes its place back.
+    //
+    // Precedence before position, because position is where a cell is and
+    // precedence is whether it has anything to say. A recording asking to be
+    // saved keeps its place and the theme chips wait; the reverse was tried
+    // first and it drops the one cell that has to be answerable.
     readonly property var placement: {
         revision;
         const ceiling = root.slotLength > 0 ? root.slotLength - root.padding * 2
@@ -95,15 +100,19 @@ Item {
         const placed = [];
         let used = 0;
 
-        for (const cell of order) {
-            if (!cell.shown)
-                continue;
-            const grant = root.grantFor(cell);
-            const before = placed.length > 0 ? root.gap : 0;
-            if (used + before + grant > ceiling + 0.5)
-                continue;
-            used += before + grant;
-            placed.push(cell);
+        // Taken in bands rather than by sorting: within one band the anchor
+        // order decides, and that order has to be exactly the declared one.
+        for (const level of [2, 1, 0]) {
+            for (const cell of order) {
+                if (!cell.shown || cell.precedence !== level)
+                    continue;
+                const grant = root.grantFor(cell);
+                const before = placed.length > 0 ? root.gap : 0;
+                if (used + before + grant > ceiling + 0.5)
+                    continue;
+                used += before + grant;
+                placed.push(cell);
+            }
         }
 
         return { "cells": placed, "length": used };
@@ -259,12 +268,8 @@ Item {
     }
 
     function relayout() {
-        const crowded = [];
-
         let offset = padding;
         for (const cell of root.cells) {
-            if (cell.crowded)
-                crowded.push(cell.domain);
             if (!cell.placed)
                 continue;
 
@@ -281,23 +286,34 @@ Item {
             offset += grant + gap;
         }
 
-        root.reportCrowding(crowded);
+        settled.restart();
     }
 
-    // Said once per change rather than on every reflow: a cell missing from a
-    // membrane is a configuration that does not fit this monitor, and the only
-    // place that can be noticed is here.
+    // A cell missing from a membrane is a configuration that does not fit this
+    // monitor, and the only place that can be noticed is here — but only once
+    // the reflow has finished. Cells cross each other's widths while they grow,
+    // and a message sent from inside that crossing names whichever cell was
+    // momentarily too wide, which is how the log starts crying wolf.
     property string lastCrowding: ""
 
-    function reportCrowding(crowded) {
-        const said = crowded.join(", ");
-        if (said === root.lastCrowding)
-            return;
-        root.lastCrowding = said;
-        if (said.length > 0)
-            console.info(`Bioma: the ${root.edge} membrane on ${root.output || "this monitor"} `
-                         + `grants less room than its cells ask for — ${said} `
-                         + `${crowded.length > 1 ? "are" : "is"} waiting for space`);
+    Timer {
+        id: settled
+        interval: Timing.reflow + 80
+        onTriggered: {
+            const crowded = [];
+            for (const cell of root.cells)
+                if (cell.crowded)
+                    crowded.push(cell.domain);
+
+            const said = crowded.join(", ");
+            if (said === root.lastCrowding)
+                return;
+            root.lastCrowding = said;
+            if (said.length > 0)
+                console.info(`Bioma: the ${root.edge} membrane on ${root.output || "this monitor"} `
+                             + `grants less room than its cells ask for — ${said} `
+                             + `${crowded.length > 1 ? "are" : "is"} waiting for space`);
+        }
     }
 
     onRevisionChanged: relayout()
