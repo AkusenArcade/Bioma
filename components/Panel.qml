@@ -72,15 +72,38 @@ Item {
     // The content sits inside the padding and is centred in what is left: a
     // pill with its content against the top edge reads as a mistake, and every
     // pod in the shell is a pill.
+    //
+    // Its size is the shape's **target** size, not the size the shape is at.
+    // Bound to the animated one, the slot narrows on every frame of a growth
+    // and whatever is centred in it re-centres with it: at rest nothing shows,
+    // and on the way out the content shoots sideways while the capsule retracts
+    // under it. At full size the two are the same figure, so this changes
+    // nothing that is ever still.
+    //
+    // Leaving is the one place in the shell where content scales. Shapes never
+    // do — a scaled shape deforms its rim and its radii — but the content of a
+    // shape that is going away has no rim to deform, and shrinking in place
+    // about its own centre is what reads as "put back" rather than "dropped".
+    // It also leaves before the capsule does, which is the order the style
+    // guide asks for: gone at `contentFade`, while the shape has `close`.
     Item {
         id: contentSlot
-        x: root.padding
-        y: root.padding + (root.contentReady ? 0 : 4)
-        width: Math.max(0, root.width - root.padding * 2)
-        height: Math.max(0, root.height - root.padding * 2)
+
+        readonly property real inner: Math.max(0, root.targetWidth - root.padding * 2)
+        readonly property real innerHeight: Math.max(0, root.targetHeight - root.padding * 2)
+
+        width: contentSlot.inner
+        height: contentSlot.innerHeight
+
+        x: (root.width - width) / 2
+        y: (root.height - height) / 2 + (root.contentReady ? 0 : 4)
+
         opacity: root.contentReady ? 1 : 0
+        scale: root.contentReady ? 1 : 0.88
+        transformOrigin: Item.Center
 
         Behavior on opacity { NumberAnimation { duration: Timing.contentFade } }
+        Behavior on scale { NumberAnimation { duration: Timing.contentFade; easing.type: Easing.OutQuad } }
         Behavior on y { NumberAnimation { duration: Timing.contentFade; easing.type: Easing.OutQuad } }
     }
 }

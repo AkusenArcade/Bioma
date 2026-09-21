@@ -337,6 +337,17 @@ so the dismissal itself is verified by hand.
   the way in — measured, the gap between them closes from 18.5 px to 0 while
   both travel towards the cell.
 
+- **A panel's content is laid out at the size the panel settles at, not the
+  size it is at.** The slot was bound to the animated width, so everything
+  centred in it re-centred on every frame: at rest nothing shows, and on the way
+  out the content shot sideways while the capsule retracted under it. Akusen
+  caught it and named the cure — the content should shrink in place about its
+  own centre and go before its container does. So the slot keeps the target
+  size, is centred on the shape, and leaves by fading and scaling to 0.88 over
+  `contentFade`, which is shorter than the `close` the shape takes. Content is
+  the one thing in the shell allowed to scale: a shape that scales deforms its
+  rim and its radii, and content that is on its way out has neither.
+
 ## Phase 1 — Service porting
 
 Nine of ten done, each verified headlessly through `probe.qml` before moving
