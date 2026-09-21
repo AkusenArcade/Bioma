@@ -366,6 +366,14 @@ so the dismissal itself is verified by hand.
   output — they know their own edge and size, which is the only way a layer
   surface can know where it is — and the catcher subtracts those.
 
+- **An image decodes at the size it can reach, not the size it has.** The
+  carousel's tiles bound `sourceSize` to their live width, so a step was a
+  different decode on every frame: nothing hit Qt's image cache, each frame
+  started an asynchronous load, and the pictures blinked through the whole
+  animation. Decoded once at the middle place's width, a step finds four of the
+  five tiles already `Ready` and only the one arriving loads — off the strip,
+  where it cannot be seen. Scaling a decoded image down is free; decoding it
+  again is not.
 - **The wallpaper carousel travels rather than swapping.** A step is a movement
   that answers a gesture — the class the style guide allows beside the segmented
   pill and the slider — so it takes the transition timing and is still again

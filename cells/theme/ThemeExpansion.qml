@@ -259,6 +259,9 @@ Item {
         // wallpaper being looked at, and it arrives with it.
         property real lit: 0
 
+        // The width to decode at, which is not the width to draw at.
+        property real decode: root.tileWidth
+
         visible: tile.image.length > 0
 
         // Asking for the picture and asking for a small copy of it to be made
@@ -273,10 +276,16 @@ Item {
             source: tile.image.length > 0 ? `file://${Wallpaper.thumbnail(tile.image)}` : ""
             fillMode: Image.PreserveAspectCrop
             asynchronous: true
+            cache: true
             smooth: true
-            // Decoded at the size it is actually shown at, so a 4000 px
-            // photograph in a 100 px pill costs what the pill costs.
-            sourceSize.width: Math.round(tile.width * Screen.devicePixelRatio)
+            // Decoded once, at the widest a place ever gets — not at the width
+            // it happens to have. Bound to the live width it is a different
+            // decode on every frame of a step: nothing hits the image cache,
+            // each frame starts an asynchronous load, and the picture blinks
+            // through every one of them. The cost of the fixed size is one
+            // decode per wallpaper at the middle place's size, and scaling a
+            // decoded image down is free.
+            sourceSize.width: Math.round(tile.decode * Screen.devicePixelRatio)
             // Qt 6 draws nothing for a mask to sample unless the source renders
             // itself: both halves carry their own layer.
             visible: false
