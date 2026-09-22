@@ -25,10 +25,9 @@ Three ways in, and they are independent:
 2. **Notifications**, which closes phase 1 and burns the bridge — the only work
    that cannot be done without switching the running shell off. See the
    pre-flight below.
-3. **The rest of the engine**: auto-hide, vertical tissues that stack cells of
-   different heights — the notification column is the one that needs it — and
-   the last user of the full-screen input surface, cells positioned at the
-   pointer. **Invocation and floating tissues are done**, see below; what is
+3. **The rest of the engine**: auto-hide, which is written and has never been
+   revealed by a pointer, and the last user of the full-screen input surface —
+   cells positioned at the pointer. **Vertical tissues stack**, see below. **Invocation and floating tissues are done**, see below; what is
    left of the audio cell's invoked form is what it *shows* there, because
    CELLS §05 draws the capsule alone with no thread and the cell currently
    arrives as itself and opens in the usual way.
@@ -945,6 +944,27 @@ Verified against the running shell, with the theme cell taken off this
 monitor's membrane: `ipc call cell toggle theme` built it in the middle of
 the screen — carousel, source switch and palette capsules, blurred and
 shadowed at the floating depth — and the same call again put it away.
+
+### A tissue runs the way it is pointed
+
+A column advanced by the *width* of its cells, because the length of a cell
+along a row is what it is granted and the same arithmetic was used both ways.
+It never showed, since nothing had asked for a vertical tissue yet — the
+notification column is the first, and it is a column of cells that are not
+all the same size.
+
+- **Along the tissue**: what it is granted on a row, its own height in a
+  column. A cell in a column is granted the width it asks for rather than a
+  share of anything: elasticity is about sharing a length, and the length of
+  a column is its height, which no cell stretches along yet.
+- **Across the tissue**: the height every cell shares on a row, and the widest
+  cell in a column — a notification is not the width of a clock. Cells are
+  centred across a column, because different widths against one edge read as
+  ragged.
+
+Verified with a floating column declared in the test layer: clock, audio and
+workspaces stacked downward, each centred, the column as wide as the widest
+of them.
 
 ## Phase 1 — Service porting
 

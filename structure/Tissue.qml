@@ -58,7 +58,30 @@ Item {
 
     // ---- Geometry ----------------------------------------------------------
 
-    readonly property real thickness: metrics.cellHeight + padding * 2
+    // Across the tissue: the height of a cell on a row, and the width of the
+    // widest one in a column. A vertical tissue is as wide as what it holds —
+    // a notification is not the width of a clock — where a horizontal one is
+    // the height every cell shares.
+    readonly property real thickness: (horizontal ? metrics.cellHeight : root.widest)
+                                    + padding * 2
+
+    readonly property real widest: {
+        revision;
+        let out = metrics.cellHeight;
+        for (const cell of root.cells)
+            if (cell.shown && cell.contractedWidth > out)
+                out = cell.contractedWidth;
+        return out;
+    }
+
+    // Along the tissue: what a cell takes of the direction the tissue runs in.
+    // On a row that is the width it is granted, in a column its own height,
+    // and a cell in a column is granted the width it asks for rather than a
+    // share of anything — there is nothing to share, the column is as wide as
+    // its widest.
+    function axisFor(cell) {
+        return root.horizontal ? root.grantFor(cell) : cell.height;
+    }
 
     // Concentric by construction: the cell radius is the tissue's minus the
     // padding, at every value of the user's radius percentage.
@@ -106,11 +129,11 @@ Item {
             for (const cell of order) {
                 if (!cell.shown || cell.precedence !== level)
                     continue;
-                const grant = root.grantFor(cell);
+                const along = root.axisFor(cell);
                 const before = placed.length > 0 ? root.gap : 0;
-                if (used + before + grant > ceiling + 0.5)
+                if (used + before + along > ceiling + 0.5)
                     continue;
-                used += before + grant;
+                used += before + along;
                 placed.push(cell);
             }
         }
@@ -233,7 +256,10 @@ Item {
     // leave, capped by its own limit — it does not fill space it has no content
     // for, or a title cell would sit in a pill the width of a monitor.
     function grantFor(cell) {
-        if (!cell.elastic)
+        // A column grants the width asked for: elasticity is about sharing a
+        // length, and in a column the length is the height, which no cell
+        // stretches along yet.
+        if (!cell.elastic || !root.horizontal)
             return cell.contractedWidth;
         const share = root.elasticShare;
         return Math.max(cell.minWidth, Math.min(cell.contractedWidth, share));
@@ -273,17 +299,18 @@ Item {
             if (!cell.placed)
                 continue;
 
-            const grant = root.grantFor(cell);
-            cell.grantedWidth = grant;
+            cell.grantedWidth = root.grantFor(cell);
 
             if (horizontal) {
                 cell.x = offset;
                 cell.y = padding;
             } else {
-                cell.x = padding;
+                // Centred across the column: cells of different widths in a
+                // row that runs downward read as ragged against one edge.
+                cell.x = padding + (root.widest - cell.width) / 2;
                 cell.y = offset;
             }
-            offset += grant + gap;
+            offset += root.axisFor(cell) + gap;
         }
 
         settled.restart();
