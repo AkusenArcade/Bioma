@@ -130,7 +130,27 @@ PanelWindow {
     // the surface bounds — a bug Prisma already hit and fixed, and it comes back
     // identical here.
     readonly property int revealZone: 2
+
+    // Not a binding, because it is assigned: the pointer reaching the edge
+    // reveals the membrane, and the first such assignment would end a binding
+    // on `autoHide` for good. That used to be hidden by the membrane being
+    // rebuilt whenever the configuration changed; now that a membrane outlives
+    // its configuration, switching auto-hide on has to be answered here or the
+    // edge simply stays where it is.
     property bool revealed: !autoHide
+
+    onAutoHideChanged: {
+        if (!root.autoHide) {
+            hideTimer.stop();
+            root.revealed = true;
+        } else if (membraneHover.hovered || root.anyOpen) {
+            // Under the hand, or holding something open: it goes when the
+            // hand leaves, not while it is being used.
+            hideTimer.restart();
+        } else {
+            root.revealed = false;
+        }
+    }
 
     Item {
         id: revealStrip

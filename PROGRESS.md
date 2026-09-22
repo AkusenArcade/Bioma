@@ -1307,6 +1307,26 @@ that would not fit before the cell exists, rather than let somebody build a
 membrane with cells missing from it. Conditional cells count — a band that fits
 only while the notification is away breaks when one arrives.
 
+### Two things a membrane that outlives its configuration exposed
+
+Keeping a membrane across a configuration change — which is what stopped the
+settings cell closing on every edit — brought out two things the rebuild had
+been hiding.
+
+- **Auto-hide stopped answering.** `revealed` starts as a binding on
+  `autoHide`, and the pointer reaching the edge *assigns* it, which ends that
+  binding for good. It used to be re-established every time the membrane was
+  rebuilt; now the membrane stays, so switching auto-hide on has to be
+  answered explicitly. It is, and it waits for the hand to leave rather than
+  vanishing under it.
+- **Pressing a control closed the cell instead.** The full-screen catcher
+  punches its holes as *rectangles*, read at the moment it builds them, and a
+  panel that changes size while it is open never said so: the settings cell is
+  440 wide on one category and 644 on another, so a press in the part of the
+  panel that grew reached the catcher and dismissed the cell. The tissue now
+  bumps on `reach` and `reachWidth` as well, which is exactly "what this cell
+  draws changed size".
+
 ### A hidden membrane blurs nothing
 
 Akusen put the dock on an auto-hiding edge: the membrane slid away and left its

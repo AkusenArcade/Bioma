@@ -299,6 +299,15 @@ Item {
             // treating the panel as though it were not there.
             cell.panelVisibleChanged.connect(root.bump);
             cell.panelReadyChanged.connect(root.bump);
+            // And whenever what it draws *changes size* while it is open. The
+            // full-screen catcher punches its holes as rectangles read at the
+            // moment it builds them, so a panel that grew — the settings cell
+            // is 440 wide on one category and 644 on another — left the hole
+            // at the old width, and a press in the new part of it reached the
+            // catcher instead: the cell closed under the finger rather than
+            // answering the control that was pressed.
+            cell.reachChanged.connect(root.bump);
+            cell.reachWidthChanged.connect(root.bump);
             built.push(cell);
         }
 
