@@ -72,7 +72,7 @@ Cell {
     headerMark: Component {
         Icon {
             anchors.fill: parent
-            name: "mark"
+            name: "sinestesia"
             gradient: true
         }
     }

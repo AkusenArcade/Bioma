@@ -184,8 +184,10 @@ Item {
 
                 // The artwork belongs to the record, not to the palette, so it
                 // is not tinted — like the application icons in the window
-                // title. Where there is none, the well stands and the mark goes
-                // in it, and that one does follow the palette.
+                // title. Where there is none, the well stands and the cell's own
+                // glyph goes in it, and that one does follow the palette. Not
+                // Bioma's mark: a missing cover is a record without a picture,
+                // not the shell introducing itself.
                 Image {
                     id: cover
                     anchors.fill: parent
@@ -217,7 +219,7 @@ Item {
                 Icon {
                     anchors.centerIn: parent
                     visible: !Media.hasArt
-                    name: "mark"
+                    name: "sinestesia"
                     width: parent.width * 0.4
                     height: width
                     colour: Theme.textMuted

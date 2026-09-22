@@ -45,6 +45,9 @@ something is, never **how hard** it is working.
 | `headphones.svg` `mouse.svg` | device type in the connectivity list |
 | `search.svg` | launcher field and task filter |
 | `mark.svg` | settings cell only |
+| `sinestesia.svg` | sinestesia cell: its header, and the well where a cover is missing |
+| `theme.svg` | theme cell header |
+| `loader.svg` | the one icon that moves — see `LOADER.md`. Beside whatever is waiting, never in place of it |
 | `app-fallback.svg` | unresolved application icon |
 | `play.svg` `pause.svg` `skip-previous.svg` `skip-next.svg` | transport controls |
 | `sound-on.svg` `sound-off.svg` | per-application mute; `sound-off` is also the muted volume dial |

@@ -519,6 +519,12 @@ the fold to fourteen showing the shape of the music rather than a flat line.
   from inside a function instead of binding it: the value is right and the
   dependency is missing.
 
+- **`mark.svg` is the settings cell's and nobody else's.** The icon handoff says
+  so in as many words, and the sinestesia cell was wearing it anyway until
+  Akusen drew the glyph that belongs to it — four bars, the band itself. It now
+  stands in the cover well too, where a record without a picture is a record
+  without a picture rather than the shell introducing itself.
+
 ## Phase 1 — Service porting
 
 Nine of ten done, each verified headlessly through `probe.qml` before moving
