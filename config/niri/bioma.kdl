@@ -1,0 +1,26 @@
+// Bioma — layer rules for niri.
+//
+// Blur itself needs no rule: niri turns it on by itself for a surface that
+// declares a blur region through `ext-background-effect`, which is how Bioma
+// asks for it — the exact shape of each cell and nothing else.
+//
+// What does need saying is `xray false`. niri defaults xray to true whenever a
+// background effect is visible, because it is cheaper — and xray blurs the
+// compositor's own backdrop instead of what is actually behind the surface.
+// Bioma draws its own wallpaper on a layer surface of its own, so that backdrop
+// is a flat colour, which is exactly what the cells showed: a slab you could
+// see nothing through.
+
+layer-rule {
+    match namespace="^bioma-membrane-top$"
+    background-effect {
+        xray false
+    }
+}
+
+layer-rule {
+    match namespace="^bioma-membrane-bottom$"
+    background-effect {
+        xray false
+    }
+}

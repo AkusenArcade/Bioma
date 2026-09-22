@@ -395,6 +395,13 @@ PanelWindow {
         root.maskRegion = Regions.rebind(root, root.maskRegion, input);
         root.blurRegion = Regions.rebind(root, root.blurRegion, blur);
 
+        // TEMPORARY — probe, remove before committing.
+        for (const shape of blur)
+            console.log("PROBE blur shape", shape.item,
+                        `${Math.round(shape.item.x)},${Math.round(shape.item.y)}`,
+                        `${Math.round(shape.item.width)}x${Math.round(shape.item.height)}`,
+                        "radius", Math.round(shape.radius));
+
         // The catcher builds its own region out of these.
         Focus.bump();
     }

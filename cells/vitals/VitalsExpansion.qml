@@ -589,9 +589,18 @@ Item {
         return list.slice().sort((a, b) => by === "cpu" ? b.cpu - a.cpu : b.memMb - a.memMb);
     }
 
-    // What the membrane has to mask and blur: the surfaces, never the threads.
+    // What the membrane has to mask and blur: every surface, never the threads.
+    //
+    // The pods belong in here as much as the panel does. Left out, they were
+    // drawn but not declared: no blur behind them, and no claim on the presses
+    // that sort the list by one of them either.
     function shapes() {
         const out = [{ "item": list, "radius": list.radius }];
+        for (let i = 0; i < podList.count; i++) {
+            const pod = podList.itemAt(i);
+            if (pod && pod.growth > 0)
+                out.push({ "item": pod, "radius": pod.radius });
+        }
         return out;
     }
 }

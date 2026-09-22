@@ -24,6 +24,27 @@ rewritten, and neither is anything in the override the shell did not touch: the
 file is rewritten from the override document, not from the merged values, so a
 membrane list or a hand-written `$comment` survives a setting being changed.
 
+## What niri has to be told
+
+One file, `config/niri/bioma.kdl`, included from the user's own niri
+configuration:
+
+```kdl
+include "/path/to/Bioma/config/niri/bioma.kdl"
+```
+
+Blur itself needs no rule. niri turns it on by itself for any surface that
+declares a blur region through `ext-background-effect`, which is exactly how
+Bioma asks for it — the shape of each cell and nothing else, never the whole
+membrane.
+
+What the file says is `xray false`, and it has to. niri defaults xray to true
+whenever a background effect is visible, because it is the cheaper of the two:
+xray blurs the compositor's *backdrop* rather than what is actually behind the
+surface. Bioma draws its own wallpaper on a layer surface of its own, so that
+backdrop is a flat colour — and the cells come out as slabs you can see nothing
+through, which is exactly how this was found.
+
 ## Structural terms
 
 - **membrane** — one edge of one monitor. Tissues anchored to it share its

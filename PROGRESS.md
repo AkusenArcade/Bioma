@@ -486,6 +486,22 @@ the fold to fourteen showing the shape of the music rather than a flat line.
   is absent, with a long identity it elides, and below sixty pixels of room it
   stands down rather than overlapping the buttons.
 
+- **The blur was arriving and niri was blurring the wrong thing.** The protocol
+  was negotiated, `set_blur_region` was sent, and the region was right — the
+  rounded pill decomposed into scanlines. niri's own source says why nothing
+  showed: with a background effect visible and xray unset, it defaults xray to
+  **true** because it is cheaper, and xray blurs the compositor's backdrop
+  rather than what is behind the surface. Bioma draws its own wallpaper on its
+  own layer surface, so that backdrop is a flat colour — which is what the cells
+  showed. `config/niri/bioma.kdl` says `xray false` and nothing else: the region
+  still comes from the protocol, and the rule only settles which thing gets
+  blurred.
+- **A shape a cell draws and does not declare is not blurred and takes no
+  presses.** The vitals pods were missing from `shapes()`, so the wallpaper
+  behind them stayed sharp while the panel beside them was glass — and the taps
+  that sort the list by a domain were never claimed either. Akusen saw the first
+  and the second came with it.
+
 ## Phase 1 — Service porting
 
 Nine of ten done, each verified headlessly through `probe.qml` before moving
