@@ -3,7 +3,10 @@
 
   "appearance": {
     "radius": 100,
-    "xray": false
+    "xray": false,
+    "edge": 12,
+    "tissue": 2,
+    "gap": 24
   },
 
   "cell": {
@@ -207,6 +210,12 @@
               "type": "audio",
               "enabled": true,
               "visibility": { "type": "always", "invocable": true, "shortcut": "Mod+A" },
+              "min_width": { "value": 40 }
+            },
+            {
+              "type": "settings",
+              "enabled": true,
+              "visibility": { "type": "always", "invocable": true, "shortcut": "Mod+Comma" },
               "min_width": { "value": 40 }
             },
             {

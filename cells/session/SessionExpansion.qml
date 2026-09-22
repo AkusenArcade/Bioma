@@ -65,9 +65,7 @@ Item {
     property real cascade: 0
 
     function stage(index) {
-        const span = Timing.grow + Timing.stagger * 2;
-        const started = root.cascade * span - index * Timing.stagger;
-        return Math.max(0, Math.min(1, started / Timing.grow));
+        return Timing.stage(root.cascade, index, 2);
     }
 
     readonly property real linkProgress: stage(0)

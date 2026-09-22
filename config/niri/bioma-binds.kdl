@@ -48,6 +48,10 @@ binds {
         spawn "qs" "-p" "/home/akusen/Documents/Development/Bioma/shell.qml" "ipc" "call" "cell" "toggle" "audio"
     }
 
+    Mod+Alt+S hotkey-overlay-title="Bioma: settings" {
+        spawn "qs" "-p" "/home/akusen/Documents/Development/Bioma/shell.qml" "ipc" "call" "cell" "toggle" "settings"
+    }
+
     Mod+Alt+Escape hotkey-overlay-title="Bioma: session" {
         spawn "qs" "-p" "/home/akusen/Documents/Development/Bioma/shell.qml" "ipc" "call" "cell" "toggle" "session"
     }

@@ -66,6 +66,24 @@ Singleton {
     // change of scene.
     readonly property int wallpaper: scaled(Config.get("timing.wallpaper", 600))
 
+    // ---- The cascade -----------------------------------------------------
+    //
+    // A staggered entrance as a fraction per shape: `cascade` runs 0 to 1 over
+    // the whole opening, each shape starts one `stagger` after the one before
+    // it, and each grows over `grow`.
+    //
+    // The span has to hold every phase, so it depends on **how many shapes
+    // there are**. Three of them make it `grow + 2 stagger`, which is the
+    // figure every expansion was carrying by hand — and a panel with seven
+    // shapes that kept that figure left its last two half-grown for as long as
+    // it stayed open. Whoever draws a cascade knows its length; the arithmetic
+    // belongs here, once.
+    function stage(cascade, index, count) {
+        const span = root.grow + root.stagger * Math.max(0, count - 1);
+        const started = cascade * span - index * root.stagger;
+        return Math.max(0, Math.min(1, started / root.grow));
+    }
+
     // ---- Curves ----------------------------------------------------------
     //
     // In the form QML wants for `easing.bezierCurve`: the two control points

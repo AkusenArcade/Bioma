@@ -106,7 +106,7 @@ Drawn, and verified on screen against the design handoff.
 | `structure/Visibility.qml` | **Exercised at last** — the window title appears and disappears with focus. |
 | `components/` | `Rim`, `Ring`, `DashedRing`, `Disc`, `Dial`, `Gauge`, `Slider`, `Switch`, `Strength`, `Portrait`, `Icon`, `LightGradient`, `Thread`, `Panel`, `Well`, `Band`, `Sweep`, `Segmented`, `WorkspaceBars`, `Vital`. |
 | `structure/InputSurface.qml` + `core/Focus.qml` | The full-screen surface of PRD §8, and the register of what is open. Built; the press path still needs a human to click. |
-| `cells/clock`, `cells/window_title`, `cells/workspaces`, `cells/vitals`, `cells/theme`, `cells/utility`, `cells/recording`, `cells/sinestesia`, `cells/audio`, `cells/connectivity`, `cells/session`, `cells/dock`, `cells/notifications`, `cells/launcher` | Fourteen cells. Vitals opens into pods, threads and the process list; theme into the wallpaper carousel and the two palette capsules; utility into the capture panel, and generates the recording cell. |
+| `cells/clock`, `cells/window_title`, `cells/workspaces`, `cells/vitals`, `cells/theme`, `cells/utility`, `cells/recording`, `cells/sinestesia`, `cells/audio`, `cells/connectivity`, `cells/session`, `cells/dock`, `cells/notifications`, `cells/launcher`, `cells/settings` | Fifteen cells. Vitals opens into pods, threads and the process list; theme into the wallpaper carousel and the two palette capsules; utility into the capture panel, and generates the recording cell. |
 | `structure/SelectionSurface.qml` | Bioma's own selection rectangle, over the whole desktop, in place of `slurp`. Up only while a region is being asked for, and it holds the keyboard for that long so Escape means cancel. |
 | `components/Segmented.qml` | The segmented control, shared: the theme cell's source switch and the utility cell's three kinds are the same object. |
 | `core/Config.qml` write-back | `Config.set` writes one key into the override layer. Brought forward from phase 5 because the theme cell has to keep a choice. |
@@ -1167,6 +1167,50 @@ body hangs off it as an ordinary expansion. What changes is where it is born.
     floating models still. `Config.get` answers with a fresh array every
     time, and a `Variants` model that changes identity is a model that
     changed, so the delegates were rebuilt on every read.
+
+### Settings, two pages of five
+
+The mark, and the only place it appears. Five category capsules with the thread
+leaving the chosen one and feeding the panel — **the selection *is* the
+thread**, which is CELLS §12's decision and applies to every two-level case
+after it. The panel is as wide as its category asks and always the same height.
+
+Written: **Appearance**, which is the five numbers the whole shell is drawn
+from — cell opacity, radius, and the screen edge, tissue and gap margins — plus
+blur, the density step and the timing set. Every row writes into the override
+layer and every surface is bound to it, so a slider moved here is the desktop
+changing under the hand; there is no apply button because there is nothing to
+apply. **Cells**, one row per cell in the catalogue with its visibility as a
+small segmented control, and the options a cell cannot wear left in the track
+and dimmed.
+
+Structure, Monitors and Keybinds say "Not built yet" rather than showing an
+empty panel. The last two write niri's own configuration, which is why they are
+last.
+
+- **The cascade's span depends on how many shapes are in it.** Every expansion
+  carried the same line — `grow + stagger * 2` — which is right for three
+  shapes and wrong for seven: the settings panel's last two capsules never
+  finished growing, so they sat half-size and textless for as long as the cell
+  was open, and the page with them. The arithmetic moved to `Timing.stage`,
+  which is told the count; the four expansions that had a copy now call it.
+- **`Registry` learned to speak about cells, not only build them**: a name for
+  each domain and which visibilities it can wear. A settings page that knew
+  those itself would be a second catalogue to keep in step.
+- **One row per cell means every declaration of it changes.** The same cell on
+  two monitors is two blocks in the configuration, and a clock always visible
+  on one edge and invoked on the other is not a setting anybody asked for.
+- **What is written is the list, not the key.** A membrane list is one value to
+  the merge — arrays replace, they never append — so the whole array goes into
+  the override with one word changed. Verified with a throwaway timer that
+  wrote `clock` to `invoked` and back: the other keys of the override, the
+  `$comment` included, came through untouched.
+- No heading inside the panel: the capsule the thread leaves from already says
+  which category it is, twenty-four pixels away.
+
+Verified on screen, both pages, on the bottom membrane of DP-1. Nothing here
+has been pressed by hand — the capsules, the sliders and the segmented controls
+are drawn and bound, and the writing path was checked without a pointer.
 
 ## Phase 1 — Service porting
 

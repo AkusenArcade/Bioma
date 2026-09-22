@@ -16,6 +16,11 @@ Item {
     property var metrics: Metrics.step("normal")
 
     // [{ "key": "image", "label": "Image" }, …]
+    //
+    // An option may carry `"dimmed": true`: it stays in the track, at faint
+    // weight, and does not answer a press. A choice a thing cannot make is
+    // shown rather than removed — seeing that the window title is only ever
+    // conditional teaches how the shell is built (CELLS §12).
     property var options: []
     property string current: ""
 
@@ -113,6 +118,7 @@ Item {
                     required property var modelData
 
                     readonly property bool chosen: button.modelData.key === root.current
+                    readonly property bool dimmed: button.modelData.dimmed === true
 
                     width: label.implicitWidth + root.buttonPadding * 2
                     height: root.buttonHeight
@@ -121,11 +127,15 @@ Item {
                         id: label
                         anchors.centerIn: parent
                         text: button.modelData.label
-                        color: button.chosen ? Theme.background : Theme.textMuted
+                        color: button.chosen ? Theme.background
+                             : button.dimmed ? Theme.textFaint : Theme.textMuted
                         font: root.buttonFont
                     }
 
-                    TapHandler { onTapped: root.chose(button.modelData.key) }
+                    TapHandler {
+                        enabled: !button.dimmed
+                        onTapped: root.chose(button.modelData.key)
+                    }
                 }
             }
         }

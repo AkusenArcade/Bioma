@@ -22,15 +22,20 @@ Singleton {
     readonly property real rowHeight: 30       // list rows: icon 20, name, value
     readonly property real fieldHeight: 40     // search and text fields
 
-    readonly property real marginEdge: 12      // screen edge: a frame, not a surface
-    readonly property real marginTissue: 2     // tissue to cell: the tissue stays a line
-    readonly property real gapShape: 24        // between the shapes of an open cell
+    // The three margins the settings cell offers, and the only geometry in the
+    // token set a person is meant to move: the frame around the screen, the
+    // line a tissue keeps around its cells, and the distance between the
+    // shapes of one open cell. The figures below are the handoff's, and they
+    // are what the shell uses until somebody says otherwise.
+    readonly property real marginEdge: Config.get("appearance.edge", 12)
+    readonly property real marginTissue: Config.get("appearance.tissue", 2)
+    readonly property real gapShape: Config.get("appearance.gap", 24)
 
     readonly property real radiusPanel: 20     // fixed, for rectangular content
     readonly property real radiusWell: 10      // concentric inside a panel
     readonly property real pillCeiling: 110    // above this, radius 20 rather than 100%
 
-    readonly property real blurRadius: 20      // glass
+    readonly property real blurRadius: 20      // glass; niri owns the real one
 
     // ---- Critical dimensions ----------------------------------------------
     //
