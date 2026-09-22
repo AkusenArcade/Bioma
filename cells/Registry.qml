@@ -24,7 +24,8 @@ Singleton {
         "connectivity": "connectivity/Connectivity.qml",
         "session": "session/SessionCell.qml",
         "dock": "dock/Dock.qml",
-        "notifications": "notifications/NotificationCell.qml"
+        "notifications": "notifications/NotificationCell.qml",
+        "launcher": "launcher/Launcher.qml"
     })
 
     property var cache: ({})

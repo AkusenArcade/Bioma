@@ -106,7 +106,7 @@ Drawn, and verified on screen against the design handoff.
 | `structure/Visibility.qml` | **Exercised at last** — the window title appears and disappears with focus. |
 | `components/` | `Rim`, `Ring`, `DashedRing`, `Disc`, `Dial`, `Gauge`, `Slider`, `Switch`, `Strength`, `Portrait`, `Icon`, `LightGradient`, `Thread`, `Panel`, `Well`, `Band`, `Sweep`, `Segmented`, `WorkspaceBars`, `Vital`. |
 | `structure/InputSurface.qml` + `core/Focus.qml` | The full-screen surface of PRD §8, and the register of what is open. Built; the press path still needs a human to click. |
-| `cells/clock`, `cells/window_title`, `cells/workspaces`, `cells/vitals`, `cells/theme`, `cells/utility`, `cells/recording`, `cells/sinestesia`, `cells/audio`, `cells/connectivity`, `cells/session`, `cells/dock` | Twelve cells. Vitals opens into pods, threads and the process list; theme into the wallpaper carousel and the two palette capsules; utility into the capture panel, and generates the recording cell. |
+| `cells/clock`, `cells/window_title`, `cells/workspaces`, `cells/vitals`, `cells/theme`, `cells/utility`, `cells/recording`, `cells/sinestesia`, `cells/audio`, `cells/connectivity`, `cells/session`, `cells/dock`, `cells/notifications`, `cells/launcher` | Fourteen cells. Vitals opens into pods, threads and the process list; theme into the wallpaper carousel and the two palette capsules; utility into the capture panel, and generates the recording cell. |
 | `structure/SelectionSurface.qml` | Bioma's own selection rectangle, over the whole desktop, in place of `slurp`. Up only while a region is being asked for, and it holds the keyboard for that long so Escape means cancel. |
 | `components/Segmented.qml` | The segmented control, shared: the theme cell's source switch and the utility cell's three kinds are the same object. |
 | `core/Config.qml` write-back | `Config.set` writes one key into the override layer. Brought forward from phase 5 because the theme cell has to keep a choice. |
@@ -1065,6 +1065,37 @@ daemon is gone. Bioma's own services had answered for all of them since phase
 
 Verified on the machine: volume down and up either side of 40%, mute and
 back, brightness 50 → 55 → 50 over DDC on the real monitors.
+
+### The launcher, which is the mechanism and nothing else
+
+The last of the catalogue, and built last on purpose: by the time a launcher
+exists, everything it needs has to work already — a cell asked for by name,
+given somewhere to be, holding the keyboard and giving it back. There is
+almost nothing in the file that is not one of those.
+
+- **It is the first cell that is not a pill.** Every other one is a shape of
+  one height because a membrane is a row of them; this is a field and six
+  rows. `Cell.bodyHeight` is how a cell says how tall it is, and a tissue now
+  makes room for the tallest it holds and centres what is shorter — the same
+  rule a column already had for the widest.
+- **It needs no configuration at all.** Nothing declares it anywhere: it is a
+  cell with no place of its own, so asking for it by name is what builds it,
+  in the middle of the screen the keyboard is pointed at.
+- **A floating tissue asks for the keyboard the way a membrane does**, from
+  the cell that needs it — a launcher that cannot be typed into is not a
+  launcher.
+- **The matched letters are lit.** It is the one place in this shell where
+  colour enters a word, and it earns it: it shows the search's reasoning, so
+  a wrong answer is visibly wrong rather than broken. Built as markup,
+  because a `Text` can colour a run of characters and still elide.
+- **`escape` is not a name QML will take for a method** — it is a JavaScript
+  global, and the compiler calls it an illegal method name rather than a
+  clash.
+
+Verified on screen: `ipc call cell toggle launcher` builds it centred, the
+field takes the caret, six rows of applications with their icons, the first
+one selected with the primary fill and its icon ringed. Typing, the arrows
+and Enter have never been pressed.
 
 ## Phase 1 — Service porting
 

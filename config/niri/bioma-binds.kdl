@@ -101,6 +101,12 @@ binds {
         spawn "/home/akusen/Documents/Development/Bioma/scripts/key" "media-stop"
     }
 
+    // The launcher has no place of its own: asked for, it is built in the
+    // middle of the screen the keyboard is pointed at.
+    Mod+Space hotkey-overlay-title="Bioma: launcher" {
+        spawn "qs" "-p" "/home/akusen/Documents/Development/Bioma/shell.qml" "ipc" "call" "cell" "toggle" "launcher"
+    }
+
     // Not a cell: the shell itself. One of the two runs at a time, because
     // one program per session may own the notification bus — and going back
     // to the other one is a thing to do often while this one is being built.

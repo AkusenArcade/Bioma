@@ -233,7 +233,14 @@ Item {
     // as whatever it shows at rest.
     readonly property real askedWidth: showsHeader ? headerWidth : contentWidth
 
-    readonly property real contractedHeight: metrics.cellHeight
+    // Nearly every cell is a pill of one height, because a membrane is a row
+    // of them. A cell that is born from a shortcut and never sits on a
+    // membrane is not: the launcher is a field and six rows, and it has no
+    // pill at all. So a cell may say how tall it is, and the tissue makes
+    // room for the tallest it holds.
+    property real bodyHeight: metrics.cellHeight
+
+    readonly property real contractedHeight: bodyHeight
     readonly property real contractedWidth: {
         const natural = Math.max(minWidth, askedWidth + leadingInset + trailingInset);
         return maxWidth > 0 ? Math.min(natural, maxWidth) : natural;

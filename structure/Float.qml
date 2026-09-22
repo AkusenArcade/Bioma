@@ -105,6 +105,19 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.namespace: "bioma-float"
 
+    // The same rule the membranes keep: the keyboard is asked for by the cell
+    // that needs it and by no other, because a focusable surface is one the
+    // compositor moves the focus to. Here it is not a nicety — a launcher
+    // that cannot be typed into is not a launcher.
+    readonly property bool anyKeyboard: {
+        for (const cell of tissue.cells)
+            if (cell.open && cell.wantsKeyboard)
+                return true;
+        return false;
+    }
+
+    focusable: anyKeyboard
+
     readonly property var metrics: Metrics.step(config.scale || "normal")
 
     // ---- Where it sits -------------------------------------------------------

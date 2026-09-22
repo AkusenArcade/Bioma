@@ -62,8 +62,17 @@ Item {
     // widest one in a column. A vertical tissue is as wide as what it holds —
     // a notification is not the width of a clock — where a horizontal one is
     // the height every cell shares.
-    readonly property real thickness: (horizontal ? metrics.cellHeight : root.widest)
+    readonly property real thickness: (horizontal ? root.tallest : root.widest)
                                     + padding * 2
+
+    readonly property real tallest: {
+        revision;
+        let out = metrics.cellHeight;
+        for (const cell of root.cells)
+            if (cell.shown && cell.contractedHeight > out)
+                out = cell.contractedHeight;
+        return out;
+    }
 
     readonly property real widest: {
         revision;
@@ -303,7 +312,7 @@ Item {
 
             if (horizontal) {
                 cell.x = offset;
-                cell.y = padding;
+                cell.y = padding + (root.tallest - cell.height) / 2;
             } else {
                 // Centred across the column: cells of different widths in a
                 // row that runs downward read as ragged against one edge.
