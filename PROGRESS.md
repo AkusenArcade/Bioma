@@ -32,7 +32,8 @@ What is left, in the order it is worth taking:
 3. **The last piece of the engine**: cells positioned at the pointer, which is
    the remaining user of the full-screen input surface.
 
-Still undecided, from the PRD: whether there is a tray cell at all.
+The PRD's open question — whether there is a tray cell at all — was answered
+yes on 2026-09-22, and it is built; see below.
 
 ### Confirmed by a real hand, at last
 
@@ -1306,6 +1307,35 @@ which is what the settings cell needs: the Structure page has to refuse a cell
 that would not fit before the cell exists, rather than let somebody build a
 membrane with cells missing from it. Conditional cells count — a band that fits
 only while the notification is away breaks when one arrives.
+
+### The tray, which the PRD left open
+
+Sixteen cells now. `Quickshell.Services.SystemTray` is a StatusNotifierItem
+host, and the protocol allows several hosts on one watcher — unlike the
+notification bus, which has one owner — so this was safe to build with another
+shell still startable.
+
+Verified through `probe.qml` before the cell existed, as every service is:
+three items live on this machine (a package updater, Steam, Telegram), each
+with an icon URL, a category, a status and a menu.
+
+- **The content is not ours.** An application hands over an icon drawn in its
+  own style — PRD §6.4 says they stay that way whatever we do — so the row
+  adds one thing only, which is the shell's to say: a ring on the item asking
+  for attention, in the alert colour, and the same ring in the primary on the
+  one whose menu is open.
+- **The gestures are the protocol's.** A press activates, the middle button is
+  the secondary action, the wheel scrolls, and an item that declares
+  `onlyMenu` gets its menu rather than an activation it says it does not have.
+  The right button always asks for the menu.
+- **The menu is drawn in the shell's hand**, from `QsMenuOpener` — the same
+  well, rows, separators and marks as everything else the shell lists. A
+  submenu replaces the list with a way back rather than opening a second
+  capsule: a menu is already a digression.
+- **A name the icon theme does not have** is a chequerboard from the image
+  provider rather than a failure — the notification cell's lesson — so a name
+  is asked of `Quickshell.iconPath` first and the glyph stands in when it
+  answers nothing. A URL that carries its own `path=` is trusted as it stands.
 
 ### What a condition means depends on the domain
 

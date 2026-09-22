@@ -27,7 +27,8 @@ Singleton {
         "dock": "dock/Dock.qml",
         "notifications": "notifications/NotificationCell.qml",
         "launcher": "launcher/Launcher.qml",
-        "settings": "settings/SettingsCell.qml"
+        "settings": "settings/SettingsCell.qml",
+        "tray": "tray/TrayCell.qml"
     })
 
     // What a cell is called when it is spoken about rather than drawn — the
@@ -47,7 +48,8 @@ Singleton {
         "connectivity": "Connectivity",
         "recording": "Recording",
         "launcher": "Launcher",
-        "settings": "Settings"
+        "settings": "Settings",
+        "tray": "Tray"
     })
 
     function nameOf(type) {
@@ -77,7 +79,8 @@ Singleton {
         "connectivity": ["always", "conditional"],
         "recording": ["conditional"],
         "launcher": ["always", "invoked"],
-        "settings": ["always", "invoked"]
+        "settings": ["always", "invoked"],
+        "tray": ["conditional", "always"]
     })
 
     // The narrowest a cell can be and still be itself, in logical units at
@@ -104,7 +107,8 @@ Singleton {
         "connectivity": 64,
         "recording": 40,
         "launcher": 40,
-        "settings": 40
+        "settings": 40,
+        "tray": 40
     })
 
     function minimumOf(type) {
@@ -142,7 +146,11 @@ Singleton {
         "recording": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 0 },
         "connectivity": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 1000 },
         "dock": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 400 },
-        "notifications": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 400 }
+        "notifications": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 400 },
+        // A tray item registers and unregisters as applications come and go;
+        // a second of grace stops a restart from taking the row out and
+        // putting it back.
+        "tray": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 1000 }
     })
 
     // Boolean, appearing promptly and leaving slowly, for a domain with

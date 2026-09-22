@@ -37,5 +37,11 @@ Phase 5 — `settings`, which is five pages and is built page by page:
 not, and those two write niri's own configuration rather than Bioma's.
 Phase 6 — `launcher`, alone.
 
+Outside the phases: `tray`, which the PRD left as an open question and Akusen
+answered on 2026-09-22. It is the one cell whose content belongs to somebody
+else — a StatusNotifierItem's icon, drawn in the application's own style — so
+the shell carries it and adds only what is its to say: which one is asking for
+attention, and the drawing of the menu.
+
 Each cell's behaviour is specified in PRD §9. Read that section before starting
 one; the open questions it flags are open on purpose.

@@ -68,6 +68,8 @@ ShellRoot {
     readonly property real gpuClock: SystemMonitor.gpuClock
     readonly property var vitalProcesses: SystemMonitor.processes
     readonly property bool hasBattery: SystemMonitor.hasBattery
+    readonly property var trayItems: Tray.items
+    readonly property bool trayAttention: Tray.attention
     readonly property string captureFolder: Capture.folder
     readonly property bool capturing: Capture.busy
     readonly property bool capturingVideo: Capture.recording
@@ -307,6 +309,24 @@ ShellRoot {
                         + (entry.detail.length > 0 ? `  ${entry.detail}` : ""));
     }
 
+    function probeTray() {
+        console.log("── Tray ──────────────────────────────────────────");
+        line("items", root.trayItems.length);
+        line("attention", root.trayAttention);
+
+        for (const item of root.trayItems) {
+            line("· " + Tray.nameOf(item),
+                 `${item.id}  ${item.status}  ${item.category}`
+                 + `${item.hasMenu ? "  menu" : ""}${item.onlyMenu ? " only" : ""}`);
+            if (item.icon)
+                line("   icon", item.icon);
+            line("   resolved", Tray.iconFor(item) || "NONE — falls back to a glyph");
+            const tip = Tray.tooltipOf(item);
+            if (tip.length > 0)
+                line("   tooltip", tip);
+        }
+    }
+
     function probeBluetooth() {
         console.log("── Bluetooth ─────────────────────────────────────");
         if (!Bluetooth.available) {
@@ -437,6 +457,7 @@ ShellRoot {
             probeNetwork();
             probeBluetooth();
             probeVitals();
+            probeTray();
             probeCapture();
             console.log("──────────────────────────────────────────────────");
             Qt.exit(0);

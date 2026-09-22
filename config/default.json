@@ -206,6 +206,12 @@
               "min_width": { "value": 64 }
             },
             {
+              "type": "tray",
+              "enabled": true,
+              "visibility": { "type": "conditional", "enter": 1, "exit": 1, "confirm": 0, "dwell": 1000 },
+              "min_width": { "value": 40 }
+            },
+            {
               "type": "audio",
               "enabled": true,
               "visibility": { "type": "always", "invocable": true, "shortcut": "Mod+A" },
