@@ -63,8 +63,14 @@ Item {
         value: root.condition
         type: rule.type || "always"
         invocable: rule.invocable === true || (rule.type === "invoked")
-        enterThreshold: rule.enter !== undefined ? rule.enter : 0
-        exitThreshold: rule.exit !== undefined ? rule.exit : 0
+        // One, not nothing. Most conditions are boolean — a window has the
+        // focus, a device is connected — and a threshold of zero is met by a
+        // condition of zero, so a conditional block that named no thresholds
+        // meant "always", silently. The window title stayed on the membrane
+        // with no window to name, showing the fallback icon and an empty
+        // string. A continuous condition declares its own figures.
+        enterThreshold: rule.enter !== undefined ? rule.enter : 1
+        exitThreshold: rule.exit !== undefined ? rule.exit : 1
         confirmDelay: rule.confirm !== undefined ? rule.confirm : 300
         dwellTime: rule.dwell !== undefined ? rule.dwell : 2000
     }

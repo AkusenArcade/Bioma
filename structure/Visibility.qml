@@ -24,8 +24,11 @@ QtObject {
     // Distinct enter and exit values apply to every boundary, not only the
     // critical one, so the state cannot flicker around it.
     property real value: 0
-    property real enterThreshold: 0
-    property real exitThreshold: 0
+    // Boolean by default: a threshold of zero is met by a condition of zero,
+    // which makes a conditional cell an always-visible one that says nothing
+    // about it.
+    property real enterThreshold: 1
+    property real exitThreshold: 1
 
     // How long the condition must hold before the cell appears.
     property int confirmDelay: 300

@@ -176,7 +176,7 @@ the cell exists.
 | `type` | Which cell |
 | `enabled` | |
 | `visibility.type` | `always` \| `conditional` \| `invoked`. They combine — a cell may be conditional *and* invocable. |
-| `visibility.enter` / `exit` | Dual threshold. Distinct values on **every** boundary, so the state cannot flicker around one. |
+| `visibility.enter` / `exit` | Dual threshold, **1 by default**. Distinct values on every boundary, so the state cannot flicker around one. Most conditions are boolean — a window has the focus, a device is connected — and zero would be met by a condition of zero, which is a conditional cell that is always there. A continuous condition (sinestesia's signal level) states its own. |
 | `visibility.confirm` | How long the condition must hold before appearing. |
 | `visibility.dwell` | How long the cell remains after the condition lapses. |
 | `visibility.shortcut` | For `invoked`. |

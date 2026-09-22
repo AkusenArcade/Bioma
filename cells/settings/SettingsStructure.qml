@@ -268,10 +268,13 @@ Item {
             const tissue = block ? root.tissueIn(block, place) : null;
             if (!tissue)
                 return false;
+            const kind = Registry.allows(type, "always") ? "always" : "conditional";
             tissue.cells = (tissue.cells || []).concat([{
                 "type": type,
                 "enabled": true,
-                "visibility": { "type": Registry.allows(type, "always") ? "always" : "conditional" }
+                // Through `ruled`, so a conditional cell arrives with the
+                // thresholds that make it conditional rather than with none.
+                "visibility": root.ruled(null, kind)
             }]);
             return true;
         });
