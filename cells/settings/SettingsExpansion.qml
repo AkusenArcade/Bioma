@@ -38,7 +38,7 @@ Item {
 
     readonly property var categories: [
         { "key": "appearance", "label": "APPEARANCE", "width": 440 },
-        { "key": "structure", "label": "STRUCTURE", "width": 720 },
+        { "key": "structure", "label": "STRUCTURE", "width": 644 },
         { "key": "cells", "label": "CELLS", "width": 560 },
         { "key": "monitors", "label": "MONITORS", "width": 720 },
         { "key": "keybinds", "label": "KEYBINDS", "width": 560 }

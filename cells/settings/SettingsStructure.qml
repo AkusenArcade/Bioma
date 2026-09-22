@@ -33,6 +33,10 @@ Item {
     readonly property real slotWidth: 196 * factor
     readonly property real slotHeight: 26 * factor
     readonly property real slotGap: 14 * factor
+
+    // Three slots and two gaps: the page is drawn to this, so the membrane's
+    // own control lines up with the end of its last band.
+    readonly property real slotsWidth: 3 * slotWidth + 2 * slotGap
     readonly property real chipHeight: 26 * factor
     readonly property real rowHeight: 36 * factor
     readonly property real pickerWidth: 220 * factor
@@ -144,6 +148,7 @@ Item {
     property bool picking: false
 
     onChosenChanged: if (!root.chosen) root.picking = false;
+
 
 
 
@@ -378,7 +383,7 @@ Item {
                 spacing: 6 * root.factor
 
                 Item {
-                    width: parent.width
+                    width: root.slotsWidth
                     height: 22 * root.factor
 
                     Text {
