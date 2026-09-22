@@ -32,6 +32,10 @@ Singleton {
     // pair of phone numbers nobody has filled in since 1979.
     property string fullName: ""
 
+    // AccountsService names its user objects by uid, and the passwd line that
+    // carries the name carries that too.
+    property int uid: -1
+
     // `/etc/passwd` is the one place this is readable without a bus call, and
     // it is read once: a user's own name does not change while they are logged
     // in. NSS users — LDAP, systemd-homed — are not in the file, and there the
@@ -47,6 +51,7 @@ Singleton {
                     continue;
                 const gecos = (parts[4] ?? "").split(",")[0].trim();
                 root.fullName = gecos.length > 0 ? gecos : root.login;
+                root.uid = parseInt(parts[2] ?? "-1", 10);
                 return;
             }
             root.fullName = root.login;
@@ -73,16 +78,81 @@ Singleton {
     property int avatarIndex: 0
 
     readonly property bool hasAvatar: root.avatarIndex < root.avatarCandidates.length
+
+    // A new picture lands at the same path as the old one, so the URL has to
+    // change for anything to notice: the fragment does that and is dropped
+    // when the path is resolved.
+    property int avatarRevision: 0
+
     readonly property string avatar: root.hasAvatar
-        ? `file://${root.avatarCandidates[root.avatarIndex]}` : ""
+        ? `file://${root.avatarCandidates[root.avatarIndex]}`
+          + (root.avatarRevision > 0 ? `#${root.avatarRevision}` : "")
+        : ""
 
     function avatarFailed() {
         if (root.avatarIndex < root.avatarCandidates.length)
             root.avatarIndex = root.avatarIndex + 1;
     }
 
-    // Writing a new one is an AccountsService call over DBus and not a file
-    // copy, which the PRD marks optional (§9.8). Reading is all this does.
+    // ── Changing it ──────────────────────────────────────────────────────
+    //
+    // The picture is AccountsService's, so it is written over DBus and never
+    // by copying a file into place: the daemon takes a path, copies the image
+    // itself and tells the login screen. `gdbus` is the whole client — one
+    // call, the same shape as every other process this shell runs.
+    //
+    // Polkit decides whether it is allowed. On a local, active session
+    // changing one's own user data usually is; where it is not, the call
+    // fails and the service says so rather than leaving the avatar as it was
+    // with no explanation.
+
+    property string lastError: ""
+
+    function setAvatar(path) {
+        const file = String(path).replace(/^file:\/\//, "");
+        if (file.length === 0 || root.uid < 0)
+            return;
+        root.lastError = "";
+        writeAvatar.errorLines = [];
+        writeAvatar.path = file;
+        writeAvatar.running = false;
+        writeAvatar.running = true;
+    }
+
+    Process {
+        id: writeAvatar
+
+        property string path: ""
+        property var errorLines: []
+
+        running: false
+        command: ["gdbus", "call", "--system",
+                  "--dest", "org.freedesktop.Accounts",
+                  "--object-path", `/org/freedesktop/Accounts/User${root.uid}`,
+                  "--method", "org.freedesktop.Accounts.User.SetIconFile",
+                  writeAvatar.path]
+
+        stderr: SplitParser {
+            splitMarker: "\n"
+            onRead: line => {
+                const message = line.trim();
+                if (message.length > 0)
+                    writeAvatar.errorLines.push(message);
+            }
+        }
+
+        onExited: code => {
+            if (code === 0) {
+                // Back to the first candidate: the picture that was missing a
+                // moment ago is the one that has just been written.
+                root.avatarIndex = 0;
+                root.avatarRevision = root.avatarRevision + 1;
+                return;
+            }
+            root.lastError = writeAvatar.errorLines.join(" ");
+            console.warn(`Bioma: the avatar was not changed — ${root.lastError}`);
+        }
+    }
 
     // ── The five ─────────────────────────────────────────────────────────
     //

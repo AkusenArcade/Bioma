@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Dialogs
 import Quickshell
 import qs.core
 import qs.components
@@ -168,6 +169,53 @@ Item {
                 source: Session.avatar
                 available: Session.hasAvatar
                 onFailed: Session.avatarFailed()
+
+                // The one action in this cell that is not about the session
+                // but about identity, which is why it sits on the face rather
+                // than in the list of commands. It opens the system's own file
+                // picker; the daemon does the rest.
+                Item {
+                    id: change
+
+                    width: 26 * root.factor
+                    height: width
+                    x: face.width - width
+                    y: face.height - height
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: width / 2
+                        antialiasing: true
+
+                        gradient: Gradient {
+                            GradientStop { position: 0; color: Theme.gradientTop(Theme.primary) }
+                            GradientStop { position: 1; color: Theme.gradientBottom(Theme.primary) }
+                        }
+                    }
+
+                    Icon {
+                        anchors.centerIn: parent
+                        width: 12 * root.factor
+                        height: width
+                        name: "plus"
+                        colour: Theme.background
+                    }
+
+                    TapHandler {
+                        onTapped: picker.open()
+                    }
+                }
+            }
+
+            // Qt's own dialog, which on this desktop is the portal's. It is a
+            // window of its own, so the cell is dismissed under it the moment
+            // it takes the pointer — the write does not need the cell to still
+            // be open.
+            FileDialog {
+                id: picker
+                title: "Choose a picture"
+                nameFilters: ["Images (*.png *.jpg *.jpeg *.webp *.bmp)"]
+                onAccepted: Session.setAvatar(picker.selectedFile)
             }
 
             // The person's name is human language; the login is the machine's

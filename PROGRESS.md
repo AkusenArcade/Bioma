@@ -768,12 +768,22 @@ of gravity, each with its number.
   whoever opens this cell is often already on the keyboard — and five rows and
   a question are a short moment. While it lasts the window title says which
   cell has the focus rather than going out, which is what that rule is for.
-- **Two things are deliberately not here.** Changing the avatar, which is an
-  AccountsService call over DBus and which PRD §9.8 marks optional — the edit
-  mark comes with it, because a control that does nothing is worse than no
-  control. And the silhouette for a user with no picture: the icon set has no
-  person glyph, and the empty well is the honest shape until `user.svg` is
-  drawn. An initial in a coloured circle is what the design forbids by name.
+- **Changing the avatar is in after all.** PRD §9.8 marks it optional because
+  the picture has to be written over DBus rather than copied into place, and
+  measured on this machine that is one `gdbus` call: `accounts-daemon` is
+  running, `SetIconFile` is on `/org/freedesktop/Accounts/User<uid>`, the
+  daemon copies the image itself, and `QtQuick.Dialogs.FileDialog` works in
+  this build, so the picker is declarative. Verified end to end from the shell
+  by writing the current picture back as an identical copy: polkit allowed it
+  with no password, exit 0, and the file came out byte for byte the same.
+  Akusen asked for it, 2026-09-22.
+- **A new picture lands at the old path**, so the URL has to change or nothing
+  reloads: the service bumps a revision into the fragment, which is dropped
+  when the path is resolved.
+- **One thing is still not here.** The silhouette for a user with no picture:
+  the icon set has no person glyph, and the empty well is the honest shape
+  until `user.svg` is drawn. An initial in a coloured circle is what the
+  design forbids by name.
 
 Verified on screen: the avatar loads, the name reads in Spectral over the
 login in Orbitron, the five rows carry their glyphs and their key boxes, and
