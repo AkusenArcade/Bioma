@@ -25,9 +25,10 @@ Three ways in, and they are independent:
 2. **Notifications**, which closes phase 1 and burns the bridge — the only work
    that cannot be done without switching the running shell off. See the
    pre-flight below.
-3. **The rest of the engine**: auto-hide, which is written and has never been
-   revealed by a pointer, and the last user of the full-screen input surface —
-   cells positioned at the pointer. **Vertical tissues stack**, see below. **Invocation and floating tissues are done**, see below; what is
+3. **The rest of the engine**: the last user of the full-screen input surface,
+   cells positioned at the pointer. **Vertical tissues stack** and **auto-hide
+   hides**, see below; what auto-hide has never done is come back, because
+   only a pointer at the edge can ask it to. **Invocation and floating tissues are done**, see below; what is
    left of the audio cell's invoked form is what it *shows* there, because
    CELLS §05 draws the capsule alone with no thread and the cell currently
    arrives as itself and opens in the usual way.
@@ -126,8 +127,11 @@ bottom membrane the theme cell's carousel ended up at the far end and the
 capsules against the cell, and the shapes grew away from the thread that ties
 them there instead of out of it.
 
-Not yet exercised: auto-hide, vertical tissues, floating tissues, several
-elastic cells in one tissue, and keyboard focus. Clicking outside to close is
+Exercised since: floating tissues, vertical tissues, keyboard focus, and
+auto-hide as far as hiding goes — a membrane declared `auto_hide` slides its
+content out, stops reserving its strip, and leaves the two-pixel band that
+catches the pointer. Coming back is the half a pointer has to ask for, and no
+test here can. Not yet exercised: several elastic cells in one tissue. Clicking outside to close is
 written and mapped — `niri msg layers` shows `bioma-input` appear on every
 monitor the moment a cell opens — but no test here can press a mouse button,
 so the dismissal itself is verified by hand.
