@@ -73,6 +73,14 @@ ShellRoot {
                 }
             }
 
+            // Where a cell with no place of its own appears when it is asked
+            // for: the middle of this screen, empty until then.
+            Float {
+                screenItem: perScreen.modelData
+                host: true
+                config: ({ "anchor": "centre", "orientation": "horizontal" })
+            }
+
             // The tissues with no edge: anchored to a corner or centred, over
             // the windows, ceding nothing. A floating block declares which
             // monitors it appears on the same way a membrane does.

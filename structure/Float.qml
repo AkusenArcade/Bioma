@@ -29,6 +29,66 @@ PanelWindow {
     required property var screenItem
     property var config: ({})
 
+    // A host is a floating surface with nothing in it: it exists so that a
+    // cell nobody has given a place to has somewhere to be. Ask for one by
+    // name and it appears here, in the middle of the screen the keyboard is
+    // pointed at — Akusen's rule, 2026-09-22: a cell that is on a membrane is
+    // opened where it lives, and a cell that is nowhere floats.
+    property bool host: false
+    property string summoned: ""
+
+    readonly property var declaredCells: root.host
+        ? (root.summoned.length > 0
+           ? [{ "type": root.summoned, "enabled": true,
+                "visibility": { "type": "invoked" } }]
+           : [])
+        : (root.config.cells || [])
+
+    function summon(domain) {
+        if (!root.host)
+            return false;
+        root.summoned = domain;
+        return true;
+    }
+
+    function dismiss() {
+        root.summoned = "";
+    }
+
+    // The cell arrives a moment after it is asked for — it is built from the
+    // configuration the way every other cell is — so it is opened when it
+    // appears rather than when it is asked for.
+    Connections {
+        target: tissue
+        function onCellsChanged() {
+            if (!root.host || root.summoned.length === 0)
+                return;
+            for (const cell of tissue.cells) {
+                if (cell.domain !== root.summoned)
+                    continue;
+                cell.visibility.invoked = true;
+                cell.open = cell.hasPanel;
+            }
+        }
+    }
+
+    // And it is let go once it has finished leaving: a cell cleared at the
+    // moment it closes takes its own closing animation with it.
+    Connections {
+        target: tissue.cells.length > 0 ? tissue.cells[0] : null
+        enabled: root.host && root.summoned.length > 0
+        function onExpandedChanged() {
+            const cell = tissue.cells[0];
+            if (cell && !cell.open && !cell.expanded && !cell.visibility.invoked)
+                root.dismiss();
+        }
+        function onShownChanged() {
+            const cell = tissue.cells[0];
+            if (cell && !cell.shown && !cell.expanded)
+                root.dismiss();
+        }
+    }
+
     screen: screenItem
     color: "transparent"
 
@@ -98,7 +158,7 @@ PanelWindow {
         id: tissue
 
         metrics: root.metrics
-        cellsConfig: root.config.cells || []
+        cellsConfig: root.declaredCells
         output: root.screenItem ? root.screenItem.name : ""
 
         floating: true
@@ -196,8 +256,13 @@ PanelWindow {
 
     Component.onCompleted: {
         Focus.register(root);
+        if (root.host)
+            Focus.offerHost(root);
         refreshRegions();
     }
 
-    Component.onDestruction: Focus.unregister(root)
+    Component.onDestruction: {
+        Focus.unregister(root);
+        Focus.withdrawHost(root);
+    }
 }

@@ -912,14 +912,33 @@ from but the one it works out for itself.
   subtracts its cells from the sheet that closes an open cell. Nothing in
   `Focus` needed changing: it asks a surface for its screen and its rectangles
   and does not care which kind it is.
-- **A shortcut prefers the invoked form.** The same domain can answer twice on
-  one monitor — the audio cell is on the membrane *and* centred on the screen
-  — so a cell whose visibility is `invoked` wins over one that is merely
-  invocable, and the output the keyboard is on wins over any other.
+- **A cell with no place of its own is summoned into one.** Akusen's rule,
+  2026-09-22, and it is the one that makes the floating form free: a cell that
+  is somewhere on this screen already — on a membrane, or in a floating tissue
+  the configuration declares — is opened where it lives, and the invocation is
+  the ordinary anchored opening. A cell that is nowhere has no place to be
+  opened *in*, so it appears in the middle of the screen the keyboard is
+  pointed at. Nothing has to be declared twice, and the `floating` block stays
+  for the cells that want a corner of their own rather than the middle.
+  - **One host surface per monitor**, empty until something is asked for, and
+    the cell is built from a configuration of one line the way every other
+    cell is built. It is opened when it arrives rather than when it is asked
+    for, because it arrives a moment later; it is let go once it has finished
+    leaving, because a cell cleared at the moment it closes takes its own
+    closing animation with it.
+  - **Only this monitor answers.** A cell of the same domain on the other
+    screen is not the one meant: something opening where you are not looking
+    is worse than nothing opening, and now there is somewhere for it to appear
+    here.
+  - **Asked for is asked for, whatever the visibility says.** A conditional
+    cell that is not currently on the membrane still answers a shortcut: the
+    person pressing it wants to see the thing, not to be told its condition is
+    false.
 
-Verified with a floating block declared in the test layer: `ipc call cell
-toggle audio` brought the audio cell up in the middle of the screen, blurred,
-shadowed at the floating depth, and closed it again.
+Verified against the running shell, with the theme cell taken off this
+monitor's membrane: `ipc call cell toggle theme` built it in the middle of
+the screen — carousel, source switch and palette capsules, blurred and
+shadowed at the floating depth — and the same call again put it away.
 
 ## Phase 1 — Service porting
 

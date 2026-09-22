@@ -85,6 +85,11 @@ Singleton {
     // the other is already on screen and needs no asking — so a cell whose
     // visibility is `invoked` wins over one that is merely invocable, and the
     // output the keyboard is on wins over any other.
+    // Only this monitor answers. A cell of the same domain on the other screen
+    // is not the one meant: pressing a key and having something open where you
+    // are not looking is worse than it not opening at all — and there is
+    // somewhere for it to appear here, which is the whole point of the host.
+    // With no focused output to go by, any of them will do.
     function cellFor(domain, output) {
         let best = null;
         let rank = -1;
@@ -92,14 +97,13 @@ Singleton {
         for (const cell of root.invocable) {
             if (!cell || cell.domain !== domain)
                 continue;
+            if (output && cell.output !== output)
+                continue;
 
-            const here = output && cell.output === output;
-            const asked = cell.visibility.type === "invoked";
-            const score = (here ? 2 : 0) + (asked ? 1 : 0);
-
-            if (score > rank) {
+            const asked = cell.visibility.type === "invoked" ? 1 : 0;
+            if (asked > rank) {
                 best = cell;
-                rank = score;
+                rank = asked;
             }
         }
         return best;
@@ -113,32 +117,86 @@ Singleton {
         return out.sort();
     }
 
-    // What a shortcut does. A cell that is only ever there when asked for
-    // arrives and opens in one gesture; one that is always on the membrane is
-    // already there, so the gesture is the opening.
+    // Where a cell with no place of its own appears. One host per monitor,
+    // empty until something is asked for.
+    property var hosts: []
+
+    function offerHost(surface) {
+        if (root.hosts.indexOf(surface) < 0)
+            root.hosts = root.hosts.concat([surface]);
+    }
+
+    function withdrawHost(surface) {
+        const index = root.hosts.indexOf(surface);
+        if (index >= 0) {
+            const next = root.hosts.slice();
+            next.splice(index, 1);
+            root.hosts = next;
+        }
+    }
+
+    function hostFor(output) {
+        let fallback = null;
+        for (const surface of root.hosts) {
+            if (!surface)
+                continue;
+            const name = surface.screenItem ? surface.screenItem.name : "";
+            if (output && name === output)
+                return surface;
+            if (!fallback)
+                fallback = surface;
+        }
+        return fallback;
+    }
+
+    // What a shortcut does, and it depends on where the cell lives.
+    //
+    // A cell that is somewhere on the screen already — on a membrane, or in a
+    // floating tissue the configuration declares — is opened where it is: the
+    // invocation is the ordinary anchored opening, and nothing moves. A cell
+    // that is nowhere has no place to be opened *in*, so it is summoned into
+    // the middle of the screen the keyboard is pointed at. Akusen's rule,
+    // 2026-09-22, and it is the one that makes the floating form free: nothing
+    // has to be declared twice.
     function invoke(domain, output) {
         const cell = root.cellFor(domain, output);
-        if (!cell)
-            return false;
-
-        if (cell.visibility.type === "invoked") {
-            cell.visibility.toggle();
-            cell.open = cell.visibility.invoked && cell.hasPanel;
+        if (cell) {
+            if (cell.visibility.type === "invoked") {
+                cell.visibility.toggle();
+                cell.open = cell.visibility.invoked && cell.hasPanel;
+            } else {
+                cell.open = !cell.open;
+            }
             return true;
         }
 
-        cell.open = !cell.open;
-        return true;
+        const host = root.hostFor(output);
+        if (!host)
+            return false;
+
+        // Asking twice puts it away, the way a shortcut does everywhere else.
+        if (host.summoned === domain) {
+            host.dismiss();
+            return true;
+        }
+        return host.summon(domain);
     }
 
     function retire(domain, output) {
         const cell = root.cellFor(domain, output);
-        if (!cell)
-            return false;
-        cell.open = false;
-        if (cell.visibility.type === "invoked")
-            cell.visibility.invoked = false;
-        return true;
+        if (cell) {
+            cell.open = false;
+            if (cell.visibility.type === "invoked")
+                cell.visibility.invoked = false;
+            return true;
+        }
+
+        const host = root.hostFor(output);
+        if (host && host.summoned === domain) {
+            host.dismiss();
+            return true;
+        }
+        return false;
     }
 
     // ---- The register ------------------------------------------------------

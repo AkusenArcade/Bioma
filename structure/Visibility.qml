@@ -38,7 +38,11 @@ QtObject {
 
     property bool invoked: false
     property bool conditionMet: false
-    property bool shown: type === "always" || (type === "invoked" && invoked) || conditionMet
+    // Asked for is asked for, whatever the type says. A conditional cell that
+    // is not currently on the membrane — connectivity with nothing connected —
+    // still answers a shortcut, because the person pressing it is asking to
+    // see the thing, not to be told that its condition is false.
+    property bool shown: type === "always" || (invoked && invocable) || conditionMet
 
     onValueChanged: root.evaluate()
 
