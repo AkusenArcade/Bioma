@@ -1001,10 +1001,31 @@ do in the warning it prints while another shell holds it.
   while the notification is merely hovered and true when its history is
   pressed open.
 
-Verified on the live bus: `notify-send` put the cell in the corner of the
-floating tissue with its glyph and its line, and it left by itself when the
-dwell ran out. The hover body, the actions and the history are drawn and have
-never been pressed.
+Two things the first parade of real notifications found:
+
+- **Quickshell hands the sender's icon over as `image://icon/<name>`, and its
+  provider answers a name it cannot find with a chequerboard** rather than
+  with nothing. `dialog-warning`, which this icon theme does not carry, was
+  drawn as a missing texture on the membrane. A named icon is checked before
+  it is believed now, and the cell's own glyph takes over when it is not
+  there — never another application's logo, which is what resolving a free
+  text app name would have given.
+- **A critical notification has no clock, so on the head of one queue it
+  stopped every other notification** for as long as it went unanswered —
+  the one thing §10 says must not happen. Urgency wins the cell and the
+  ordinary ones do not queue behind it: they are kept and they are in the
+  history. Going past it *visibly* needs this cell to be a column of cells,
+  which is the vertical tissue's next job.
+- **And it needed a way to be answered.** A notification with no clock and no
+  gesture to close it is a trap: the middle button dismisses, as it does
+  everywhere else in the shell — the gesture that acts without opening
+  anything.
+
+Verified on the live bus: an ordinary notification arrives with the sender's
+own icon and leaves when its dwell runs out; a critical one arrives with the
+alert outline and stays; an ordinary one sent while it is up goes to the
+history instead of queueing behind it. The hover body, the actions, the
+history and the middle button are drawn and have never been pressed.
 
 ## Phase 1 — Service porting
 

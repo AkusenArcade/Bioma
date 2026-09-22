@@ -111,13 +111,25 @@ Singleton {
 
     // ── What is on screen ────────────────────────────────────────────────
 
-    // The queue, oldest first. The cell shows the head of it and the rest
-    // wait; a critical one waits with the others rather than jumping, and
-    // then stays until it is answered.
+    // Two queues, because one of them has no clock.
+    //
+    // A critical notification does not leave by itself, and one cell can show
+    // one thing — so held on the head of the ordinary queue it would stop
+    // every other notification for as long as it went unanswered, which is
+    // the one thing CELLS §10 says must not happen: the others keep going
+    // past it. They cannot go past it *visibly* until this cell can be a
+    // column of cells, which is the vertical tissue's next job; until then
+    // they go to the history rather than into a queue that is not moving.
+    //
+    // Urgency wins the cell: what is critical is what is on screen.
     property var queue: []
+    property var urgent: []
 
-    readonly property var current: root.queue.length > 0 ? root.queue[0] : null
-    readonly property int waiting: Math.max(0, root.queue.length - 1)
+    readonly property var current: root.urgent.length > 0 ? root.urgent[0]
+                                 : (root.queue.length > 0 ? root.queue[0] : null)
+    readonly property int waiting: Math.max(0, root.queue.length - 1) + root.urgent.length
+
+    readonly property bool held: root.urgent.length > 0
 
     readonly property bool present: root.current !== null || root.flooding
 
@@ -135,13 +147,25 @@ Singleton {
 
         root.remember(notification);
 
-        if (root.quiet && !root.isCritical(notification))
+        if (root.isCritical(notification)) {
+            root.urgent = root.urgent.concat([notification]);
+            life.stop();
+            return;
+        }
+
+        if (root.quiet)
             return;
 
-        if (root.crowding() && !root.isCritical(notification)) {
+        if (root.crowding()) {
             root.collapsed = root.collapsed + 1;
             return;
         }
+
+        // While something urgent is on the cell the ordinary ones do not
+        // queue behind it: they are kept and they are in the history, and
+        // what is in front of somebody is the thing that matters.
+        if (root.held)
+            return;
 
         root.queue = root.queue.concat([notification]);
         if (root.queue.length === 1)
@@ -161,8 +185,12 @@ Singleton {
 
     function advance() {
         life.stop();
-        root.queue = root.queue.slice(1);
-        if (root.queue.length > 0)
+        if (root.urgent.length > 0)
+            root.urgent = root.urgent.slice(1);
+        else
+            root.queue = root.queue.slice(1);
+
+        if (root.current !== null)
             root.begin();
         else
             root.collapsed = 0;
@@ -276,13 +304,40 @@ Singleton {
 
     // ── Where it is drawn ────────────────────────────────────────────────
 
+    // In the order the sender gave them, and **never a guess**. A notification
+    // carries a free-form application name, and resolving that name the way
+    // the window title resolves a window's would put somebody else's logo on
+    // somebody else's message — `systemd` matched something with a broken
+    // icon, and what was drawn was a missing-texture chequerboard. Where
+    // nothing resolves, the cell draws its own glyph, which is honest.
     function iconFor(entry) {
         if (!entry)
             return "";
-        if (entry.image && entry.image.length > 0)
-            return entry.image;
-        if (entry.appIcon && entry.appIcon.length > 0)
-            return Quickshell.iconPath(entry.appIcon, true);
-        return Apps.iconFor(entry.desktopEntry || entry.appName || "");
+
+        const image = entry.image ?? "";
+
+        // Quickshell hands the sender's icon over as `image://icon/<name>`,
+        // and its provider answers a name it cannot find with a chequerboard
+        // rather than with nothing — which is how `dialog-warning`, a name
+        // this icon theme does not carry, ended up drawn as a missing
+        // texture on the membrane. So a named icon is checked before it is
+        // believed, and the cell's own glyph takes over when it is not there.
+        if (image.startsWith("image://icon/")) {
+            const named = Quickshell.iconPath(image.slice("image://icon/".length), true);
+            if (named.length > 0)
+                return named;
+        } else if (image.length > 0) {
+            return image;
+        }
+
+        if (entry.appIcon && entry.appIcon.length > 0) {
+            const named = Quickshell.iconPath(entry.appIcon, true);
+            if (named.length > 0)
+                return named;
+        }
+        // A desktop entry is an identifier and not a name, so this one is a
+        // lookup rather than a search.
+        const declared = entry.desktopEntry ? DesktopEntries.byId(entry.desktopEntry) : null;
+        return declared && declared.icon ? Quickshell.iconPath(declared.icon, true) : "";
     }
 }

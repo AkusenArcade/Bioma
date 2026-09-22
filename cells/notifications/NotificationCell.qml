@@ -91,6 +91,13 @@ Cell {
         onTapped: root.history = !root.history
     }
 
+    // A critical notification has no clock, so there has to be a way to say
+    // "read". The middle button is that way here, as it is everywhere else in
+    // the shell: the gesture that acts without opening anything. It is the
+    // whole pill, which is why it is the cell's and not the content's.
+    acceptsMiddle: true
+    onMiddleTapped: Notifications.dismiss()
+
     expansion: Component {
         Loader {
             id: expansionLoader
@@ -129,12 +136,21 @@ Cell {
             width: root.iconSize
             height: width
 
-            readonly property string source: root.flooding ? "" : Notifications.iconFor(root.shout)
+            readonly property string wanted: root.flooding ? "" : Notifications.iconFor(root.shout)
+
+            // An icon that resolves to a path and then fails to load is worse
+            // than none: what is drawn is the loader's own missing-texture
+            // square. The glyph takes over the moment the image gives up.
+            property bool broken: false
+            readonly property string source: badge.broken ? "" : badge.wanted
+
+            onWantedChanged: badge.broken = false
 
             Image {
                 anchors.fill: parent
                 visible: badge.source !== ""
                 source: badge.source
+                onStatusChanged: if (status === Image.Error) badge.broken = true
                 sourceSize.width: Math.round(parent.width * Screen.devicePixelRatio)
                 sourceSize.height: Math.round(parent.height * Screen.devicePixelRatio)
                 fillMode: Image.PreserveAspectFit
