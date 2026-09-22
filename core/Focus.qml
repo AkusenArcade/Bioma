@@ -2,6 +2,7 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
+import qs.cells
 
 // Which cell has the user's attention, and who else is on screen.
 //
@@ -109,8 +110,15 @@ Singleton {
         return best;
     }
 
+    // What a keybind file can be written against: every cell the shell knows
+    // how to build, not only the ones placed somewhere. A domain with no place
+    // of its own is precisely the one a shortcut is for — it has nowhere else
+    // to be reached from — so leaving it out of the list would hide the cells
+    // that need the list most.
     readonly property var domains: {
         const out = [];
+        for (const domain in Registry.files)
+            out.push(domain);
         for (const cell of root.invocable)
             if (cell && out.indexOf(cell.domain) < 0)
                 out.push(cell.domain);
