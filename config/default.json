@@ -86,6 +86,15 @@
     "bitrate": "5 MB"
   },
 
+  "session": {
+    "$comment": "Each command is a list: the program and its arguments. None of these is universal — a lock screen is a choice, systemd is not the only init, and leaving the session is a different sentence on every compositor.",
+    "lock": ["loginctl", "lock-session"],
+    "suspend": ["systemctl", "suspend"],
+    "restart": ["systemctl", "reboot"],
+    "shutdown": ["systemctl", "poweroff"],
+    "logout": ["niri", "msg", "action", "quit", "-s"]
+  },
+
   "vitals": {
     "interval": 2000,
     "clock_average": 5,
@@ -188,8 +197,8 @@
             {
               "type": "session",
               "enabled": true,
-              "visibility": { "type": "always" },
-              "min_width": { "value": 24 }
+              "visibility": { "type": "always", "invocable": true, "shortcut": "Mod+Escape" },
+              "min_width": { "value": 40 }
             }
           ]
         }

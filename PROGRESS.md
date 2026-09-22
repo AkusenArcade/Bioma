@@ -16,7 +16,7 @@ sinestesia draws the sound. Phase 4 has started with the audio cell.
 
 Three ways in, and they are independent:
 
-1. **The rest of phase 4**: session and dock. Audio and connectivity are done —
+1. **The rest of phase 4**: the dock. Audio, connectivity and session are done —
    the dial, the capsule and the three wells against the real PipeWire graph,
    and one glyph per live connection with the two family wells under it. What
    is left of the cells already drawn is what CELLS left open: sinestesia on a
@@ -102,9 +102,9 @@ Drawn, and verified on screen against the design handoff.
 | `structure/Tissue.qml` | Real. Ceiling-not-reservation widths, elastic share, reflow, the punched band. |
 | `structure/Cell.qml` | Real, contracted. Glass, rim, config-driven width and visibility, growth mechanics written. |
 | `structure/Visibility.qml` | **Exercised at last** — the window title appears and disappears with focus. |
-| `components/` | `Rim`, `Ring`, `DashedRing`, `Disc`, `Dial`, `Gauge`, `Slider`, `Switch`, `Strength`, `Icon`, `LightGradient`, `Thread`, `Panel`, `Well`, `Band`, `Sweep`, `Segmented`, `WorkspaceBars`, `Vital`. |
+| `components/` | `Rim`, `Ring`, `DashedRing`, `Disc`, `Dial`, `Gauge`, `Slider`, `Switch`, `Strength`, `Portrait`, `Icon`, `LightGradient`, `Thread`, `Panel`, `Well`, `Band`, `Sweep`, `Segmented`, `WorkspaceBars`, `Vital`. |
 | `structure/InputSurface.qml` + `core/Focus.qml` | The full-screen surface of PRD §8, and the register of what is open. Built; the press path still needs a human to click. |
-| `cells/clock`, `cells/window_title`, `cells/workspaces`, `cells/vitals`, `cells/theme`, `cells/utility`, `cells/recording`, `cells/sinestesia`, `cells/audio`, `cells/connectivity` | Ten cells. Vitals opens into pods, threads and the process list; theme into the wallpaper carousel and the two palette capsules; utility into the capture panel, and generates the recording cell. |
+| `cells/clock`, `cells/window_title`, `cells/workspaces`, `cells/vitals`, `cells/theme`, `cells/utility`, `cells/recording`, `cells/sinestesia`, `cells/audio`, `cells/connectivity`, `cells/session` | Eleven cells. Vitals opens into pods, threads and the process list; theme into the wallpaper carousel and the two palette capsules; utility into the capture panel, and generates the recording cell. |
 | `structure/SelectionSurface.qml` | Bioma's own selection rectangle, over the whole desktop, in place of `slurp`. Up only while a region is being asked for, and it holds the keyboard for that long so Escape means cancel. |
 | `components/Segmented.qml` | The segmented control, shared: the theme cell's source switch and the utility cell's three kinds are the same object. |
 | `core/Config.qml` write-back | `Config.set` writes one key into the override layer. Brought forward from phase 5 because the theme cell has to keep a choice. |
@@ -730,6 +730,47 @@ the wire connected and nothing else on, the panel draws both wells and their
 empty states, and with the radio briefly switched on — and put back
 soft-blocked, as it was — the list fills with real networks, locks and strength
 bars. The password field, the taps and the switches have never been pressed.
+
+### Session, the five ways to leave
+
+The smallest cell and the one with the sharpest edges. At rest it is the
+avatar alone; open, the person above and the five commands below in the order
+of gravity, each with its number.
+
+- **`services/Session.qml` is new, and every command is a configuration key.**
+  None of them is universal: a lock screen is a choice the machine's owner has
+  already made, systemd is not the only init, and leaving the session is a
+  different sentence on every compositor. The defaults are what this machine
+  runs. Verified headlessly before the cell was drawn — login, full name from
+  the GECOS field, the avatar found at
+  `/var/lib/AccountsService/icons/<user>`, the five commands and which of them
+  ask.
+- **Nothing here opens the avatar file to see whether it is there.** The one
+  thing that can say whether an image is readable is the thing that reads
+  images, so the service publishes the candidates in order and whoever draws
+  it reports a failure — AccountsService first, then `~/.face`.
+- **Only the three that close programs ask**, and the question *is* the row:
+  no dialog arrives from outside, nothing is covered, and the alert colour
+  appears there and nowhere else. Colouring `SHUT DOWN` red at all times would
+  make it invisible exactly when it matters. It is the same grammar as killing
+  a process in vitals and keeping a recording — three cells, one way of asking
+  "are you sure?".
+- **This cell holds the keyboard for as long as it is open**, unlike vitals,
+  which asks only over its own panel. One to five are part of the design —
+  whoever opens this cell is often already on the keyboard — and five rows and
+  a question are a short moment. While it lasts the window title says which
+  cell has the focus rather than going out, which is what that rule is for.
+- **Two things are deliberately not here.** Changing the avatar, which is an
+  AccountsService call over DBus and which PRD §9.8 marks optional — the edit
+  mark comes with it, because a control that does nothing is worse than no
+  control. And the silhouette for a user with no picture: the icon set has no
+  person glyph, and the empty well is the honest shape until `user.svg` is
+  drawn. An initial in a coloured circle is what the design forbids by name.
+
+Verified on screen: the avatar loads, the name reads in Spectral over the
+login in Orbitron, the five rows carry their glyphs and their key boxes, and
+the shutdown row becomes the question with the alert outline and the one
+filled surface in the shell that is not primary.
 
 ## Phase 1 — Service porting
 
