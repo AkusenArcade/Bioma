@@ -118,6 +118,11 @@ Cell {
     // Urgency is an outline, and the cell draws it on its own shape.
     outline: root.critical ? Theme.alert : "transparent"
 
+    // With nothing left to say, the pointer stops protecting it: dismissing
+    // the last notification with the pointer still on the cell used to leave
+    // an empty pill sitting there until the hand moved.
+    engaging: root.shout !== null || root.flooding
+
     // ---- Contracted ---------------------------------------------------------
 
     Row {

@@ -626,10 +626,23 @@ Item {
         id: hover
         // Interaction suspends disappearance (PRD §5.2). Mandatory for
         // notifications, where the actions live in the hover state.
-        onHoveredChanged: root.visibility.interacting = hovered
+        onHoveredChanged: root.engage()
     }
 
     readonly property bool hovered: hover.hovered
+
+    // Whether there is anything to interact with. The rule protects what
+    // somebody is reading; a cell whose content has just gone has nothing to
+    // protect, and holding it there leaves an empty pill under the pointer
+    // until the pointer moves — which is what dismissing a notification with
+    // the pointer still on it looked like. A cell that empties says so.
+    property bool engaging: true
+
+    function engage() {
+        root.visibility.interacting = root.hovered && root.engaging;
+    }
+
+    onEngagingChanged: root.engage()
 
     // What the membrane needs to declare the blur region and the input mask:
     // every shape this cell actually occupies. The thread is not one of them —

@@ -1016,6 +1016,12 @@ Two things the first parade of real notifications found:
   ordinary ones do not queue behind it: they are kept and they are in the
   history. Going past it *visibly* needs this cell to be a column of cells,
   which is the vertical tissue's next job.
+- **Interaction suspends disappearance, but only while there is something to
+  interact with.** Dismissing the last notification with the pointer still on
+  the cell left an empty pill sitting there until the hand moved: the rule
+  protects what somebody is reading, and there was nothing left to read.
+  `Cell.engaging` is how a cell says it has emptied, and the hover stops
+  holding it. Akusen saw the empty pill, 2026-09-22.
 - **An outline that belongs to the cell is drawn by the cell.** The urgent
   ring was declared in the notification cell, so it landed in the content
   slot — which is inset by the cell's own padding — and what appeared was a
