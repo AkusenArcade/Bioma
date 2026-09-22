@@ -207,10 +207,15 @@ Singleton {
     }
 
     function dismiss() {
+        // A count is dismissed too: the flood is what the cell is saying, so
+        // closing the cell has to be able to close that.
+        if (!root.current) {
+            root.collapsed = 0;
+            return;
+        }
         const notification = root.current;
         root.advance();
-        if (notification)
-            notification.dismiss();
+        notification.dismiss();
     }
 
     function invoke(action) {

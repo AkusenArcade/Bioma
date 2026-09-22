@@ -24,6 +24,7 @@ Cell {
 
     readonly property real iconSize: 20 * metrics.factor
     readonly property real spacing: 10 * metrics.factor
+    readonly property real closeSize: 14 * metrics.factor
 
     paddingLeading: 10 * metrics.factor
     paddingTrailing: 14 * metrics.factor
@@ -47,10 +48,11 @@ Cell {
         ? `${Notifications.collapsed} notifications`
         : (root.shout ? (root.shout.summary || root.shout.appName || "") : "")
 
-    contentWidth: iconSize + spacing + label.implicitWidth
+    contentWidth: iconSize + spacing + label.implicitWidth + spacing + closeSize
 
     readonly property real available: Math.max(0, width - paddingLeading - paddingTrailing
-                                                 - iconSize - spacing)
+                                                 - iconSize - spacing
+                                                 - spacing - closeSize)
 
     // ---- Time ---------------------------------------------------------------
     //
@@ -165,6 +167,7 @@ Cell {
             id: label
             anchors.verticalCenter: parent.verticalCenter
             width: root.available
+
             elide: Text.ElideRight
             maximumLineCount: 1
             text: root.line
@@ -173,6 +176,37 @@ Cell {
             // voices never swap.
             font.family: root.flooding ? Typography.technical : Typography.expressive
             font.pixelSize: root.metrics.fontTitle
+        }
+    }
+
+    // The way out, always there. A notification that can only be answered by
+    // a gesture nobody told you about is a notification you cannot put down —
+    // the middle button does the same thing, and this is the one you can see.
+    // Akusen's call, 2026-09-22.
+    Item {
+        id: close
+
+        anchors.right: parent.right
+        anchors.verticalCenter: parent.verticalCenter
+        width: root.closeSize
+        height: width
+
+        Icon {
+            anchors.fill: parent
+            name: "close"
+            colour: shut.containsMouse ? Theme.text : Theme.textFaint
+        }
+
+        // A mouse area rather than a handler, because this one has to *take*
+        // the press: a tap handler here would dismiss the notification and
+        // let the press through to the cell underneath, which would open the
+        // history of a notification that had just gone.
+        MouseArea {
+            id: shut
+            anchors.fill: parent
+            anchors.margins: -4 * root.metrics.factor
+            hoverEnabled: true
+            onClicked: Notifications.dismiss()
         }
     }
 }

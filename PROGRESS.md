@@ -1025,7 +1025,11 @@ Two things the first parade of real notifications found:
 - **And it needed a way to be answered.** A notification with no clock and no
   gesture to close it is a trap: the middle button dismisses, as it does
   everywhere else in the shell — the gesture that acts without opening
-  anything.
+  anything. Akusen asked for the visible half of it too, so the cell carries a
+  close mark on its right, always: a way out nobody has to be told about. It
+  takes the press with a mouse area rather than a handler, because a handler
+  would dismiss the notification *and* let the press reach the cell, which
+  would open the history of something that had just gone.
 
 Verified on the live bus: an ordinary notification arrives with the sender's
 own icon and leaves when its dwell runs out; a critical one arrives with the
