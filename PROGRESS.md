@@ -1151,12 +1151,22 @@ body hangs off it as an ordinary expansion. What changes is where it is born.
   hand the cell over at construction, and it built the panel form's body
   inside the button form as well — twenty pixels wide, its rows hanging down
   the screen under the button. A plain `source` binding does not.
-- **And one of the things Akusen saw was not ours at all.** The app icons and
-  the word "Search" showing near the button are the window behind, seen
-  through the parts of the membrane that are transparent — proved by changing
-  the launcher's own placeholder to something else and watching "Search" stay
-  where it was. A membrane is a surface with holes in it, and what is under
-  the holes is the desktop.
+- **The doubled glyph and the stray text were one mistake, and it was mine.**
+  When the body moved into its own file the new file was written and
+  `Launcher.qml` was **not** rewritten without it: the cell carried two
+  bodies, the new one in a loader and the old one inline in the contracted
+  slot, twenty pixels wide. That drew a second lens over the cell's glyph —
+  the "doubled icon" — and hung a field and six rows down the screen beside
+  the button. Removing the leftover fixed both at once.
+  - It took three wrong explanations first: a blur artefact, the window
+    behind, a leaked cell. The one that settled it was changing the
+    placeholder text to a nonsense word and seeing "Search" stay — which
+    ruled out the file I was editing and pointed at the *other* copy. Grep
+    for the literal, not for the theory.
+  - On the way, one real improvement: `shell.qml` holds the membrane and
+    floating models still. `Config.get` answers with a fresh array every
+    time, and a `Variants` model that changes identity is a model that
+    changed, so the delegates were rebuilt on every read.
 
 ## Phase 1 — Service porting
 

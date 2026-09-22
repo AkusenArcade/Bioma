@@ -17,6 +17,39 @@ import qs.structure
 ShellRoot {
     id: root
 
+    // The layout, held still.
+    //
+    // `Config.get` answers with a fresh array every time it is asked, and a
+    // `Variants` model that changes identity is a model that changed: the
+    // delegates are rebuilt, and a rebuild that races the last one leaves the
+    // cells of the previous pass on the screen. That is where the second
+    // launcher came from — two of the same cell, a pixel apart, one pale and
+    // one lit, which is what a doubled glyph is.
+    //
+    // So the models are properties, and they are replaced only when the
+    // configuration actually says something different.
+    property var membraneConfig: []
+    property var floatingConfig: []
+
+    function refreshLayout() {
+        if (!Config.ready)
+            return;
+
+        const membranes = Config.get("membranes", []);
+        if (JSON.stringify(membranes) !== JSON.stringify(root.membraneConfig))
+            root.membraneConfig = membranes;
+
+        const floating = Config.get("floating", []);
+        if (JSON.stringify(floating) !== JSON.stringify(root.floatingConfig))
+            root.floatingConfig = floating;
+    }
+
+    Connections {
+        target: Config
+        function onReloaded() { root.refreshLayout(); }
+        function onReadyChanged() { root.refreshLayout(); }
+    }
+
     // Which monitor a membrane belongs to. `primary` is the first screen the
     // compositor reports — niri has no notion of a primary output — and `all`
     // puts the same membrane on every one of them.
@@ -55,11 +88,7 @@ ShellRoot {
             }
 
             Variants {
-                model: {
-                    if (!Config.ready)
-                        return [];
-                    return Config.get("membranes", []).filter(entry => root.membraneMatches(entry, perScreen.modelData));
-                }
+                model: root.membraneConfig.filter(entry => root.membraneMatches(entry, perScreen.modelData))
 
                 delegate: Membrane {
                     required property var modelData
@@ -85,11 +114,7 @@ ShellRoot {
             // the windows, ceding nothing. A floating block declares which
             // monitors it appears on the same way a membrane does.
             Variants {
-                model: {
-                    if (!Config.ready)
-                        return [];
-                    return Config.get("floating", []).filter(entry => root.membraneMatches(entry, perScreen.modelData));
-                }
+                model: root.floatingConfig.filter(entry => root.membraneMatches(entry, perScreen.modelData))
 
                 delegate: Float {
                     required property var modelData
@@ -219,5 +244,8 @@ ShellRoot {
     // TODO Phase 3: the last user of the input surface — cells positioned at
     // the pointer, which need the pointer position it is the only way to learn.
 
-    Component.onCompleted: console.log("Bioma: configuration", Config.ready ? "loaded" : "pending")
+    Component.onCompleted: {
+        root.refreshLayout();
+        console.log("Bioma: configuration", Config.ready ? "loaded" : "pending");
+    }
 }
