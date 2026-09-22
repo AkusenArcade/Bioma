@@ -51,4 +51,11 @@ binds {
     Mod+Alt+Escape hotkey-overlay-title="Bioma: session" {
         spawn "qs" "-p" "/home/akusen/Documents/Development/Bioma/shell.qml" "ipc" "call" "cell" "toggle" "session"
     }
+
+    // Not a cell: the shell itself. One of the two runs at a time, because
+    // one program per session may own the notification bus — and going back
+    // to the other one is a thing to do often while this one is being built.
+    Mod+Alt+B hotkey-overlay-title="Bioma: switch shell" {
+        spawn "/home/akusen/Documents/Development/Bioma/scripts/shell" "toggle"
+    }
 }

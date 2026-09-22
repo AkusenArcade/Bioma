@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+# Which shell runs this session, and how to change your mind.
+#
+# There is one of several things a desktop shell owns that only one program
+# may own at a time — `org.freedesktop.Notifications` is the loud one — so
+# running two is not a thing to do, and going back to the other one is a thing
+# to do often while this one is still being built.
+#
+#     shell                 what is running, and what will run at login
+#     shell bioma           stop the other, start Bioma, remember it
+#     shell noctalia        stop Bioma, start Noctalia, remember it
+#     shell toggle          the other one from whatever is running now
+#     shell start           start whichever is remembered — this is the line
+#                           niri spawns at login
+#
+# The choice is remembered in ~/.config/bioma/shell, outside the repository,
+# because it is a fact about this machine's session and not about the project.
+set -eu
+
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+state_dir="${XDG_CONFIG_HOME:-$HOME/.config}/bioma"
+state="$state_dir/shell"
+
+bioma_pattern="qs -p $here/shell.qml"
+
+bioma_running() { pgrep -f -- "$bioma_pattern" >/dev/null 2>&1; }
+noctalia_running() { pgrep -x noctalia >/dev/null 2>&1; }
+
+stop_bioma() {
+    bioma_running || return 0
+    pkill -f -- "$bioma_pattern" || true
+    # The bus name is handed over on exit, and the next shell registers on the
+    # release — so the wait is not politeness, it is the handover.
+    for _ in $(seq 1 40); do
+        bioma_running || return 0
+        sleep 0.1
+    done
+}
+
+stop_noctalia() {
+    noctalia_running || return 0
+    pkill -x noctalia || true
+    for _ in $(seq 1 40); do
+        noctalia_running || return 0
+        sleep 0.1
+    done
+}
+
+start_bioma() {
+    bioma_running && return 0
+    setsid "$here/scripts/bioma" >/dev/null 2>&1 < /dev/null &
+    disown || true
+}
+
+start_noctalia() {
+    noctalia_running && return 0
+    setsid noctalia -d >/dev/null 2>&1 < /dev/null &
+    disown || true
+}
+
+remember() {
+    mkdir -p "$state_dir"
+    printf '%s\n' "$1" > "$state"
+}
+
+remembered() {
+    [ -r "$state" ] && cat "$state" || printf 'bioma\n'
+}
+
+to_bioma() {
+    stop_noctalia
+    start_bioma
+    remember bioma
+    echo "bioma"
+}
+
+to_noctalia() {
+    stop_bioma
+    start_noctalia
+    remember noctalia
+    echo "noctalia"
+}
+
+case "${1-status}" in
+    bioma)    to_bioma ;;
+    noctalia) to_noctalia ;;
+    toggle)
+        if bioma_running; then to_noctalia; else to_bioma; fi
+        ;;
+    start)
+        case "$(remembered)" in
+            noctalia) start_noctalia ;;
+            *)        start_bioma ;;
+        esac
+        ;;
+    status|"")
+        running="none"
+        bioma_running && running="bioma"
+        noctalia_running && running="${running/none/}noctalia"
+        echo "running:    ${running:-none}"
+        echo "at login:   $(remembered)"
+        ;;
+    *)
+        echo "usage: shell [bioma|noctalia|toggle|start|status]" >&2
+        exit 2
+        ;;
+esac

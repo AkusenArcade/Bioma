@@ -43,6 +43,23 @@ choice for everything else on a machine, provides none. Started any other way
 the shell still works and the picker is Qt's, which looks like nothing else on
 the screen. Set `BIOMA_PLATFORMTHEME` to override it.
 
+## Two shells, one session
+
+One program per session may own `org.freedesktop.Notifications`, so Bioma and
+whatever was there before cannot both run. `scripts/shell` is the switch:
+
+```sh
+scripts/shell            # what is running, and what will run at login
+scripts/shell bioma      # stop the other, start Bioma, remember it
+scripts/shell noctalia   # the other way
+scripts/shell toggle     # whichever is not running now
+scripts/shell start      # start what was remembered — the line niri spawns
+```
+
+The choice lives in `~/.config/bioma/shell`, outside the repository: it is a
+fact about a machine's session, not about the project. `Mod+Alt+B` is the same
+toggle on a key.
+
 ## Verifying a service without a UI
 
 ```sh
