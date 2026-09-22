@@ -510,6 +510,45 @@ Item {
         return body > 0 ? gap + body : 0;
     }
 
+    // ---- When the shapes have stopped moving --------------------------------
+    //
+    // The membrane masks and blurs this cell's shapes, and the full-screen
+    // catcher punches its holes, from **rectangles read at one moment**. Every
+    // shape here animates — a panel grows out of its thread, a page of settings
+    // widens from one category to the next — so the moment has to be after the
+    // movement, and nothing in the engine knew when that was: an expansion
+    // grows inside itself, through a cascade the cell cannot see.
+    //
+    // So the cell says "my shapes have settled" once, a beat after anything
+    // that moves them. A bump too many costs a rebind of a region tree that is
+    // already the right size; a bump too few leaves a press in the part of a
+    // panel that grew landing on the catcher, which closes the cell under the
+    // finger.
+    property int shapeRevision: 0
+
+    Timer {
+        id: settled
+        interval: Timing.reflow + 80
+        onTriggered: root.shapeRevision++
+    }
+
+    function shapesSettling() {
+        settled.restart();
+    }
+
+    onReachChanged: root.shapesSettling()
+    onReachWidthChanged: root.shapesSettling()
+    onPanelGrowthChanged: root.shapesSettling()
+    onExpandedChanged: root.shapesSettling()
+
+    // An expansion's own cascade: the one movement the cell has no other way
+    // of hearing about.
+    Connections {
+        target: expansionSlot.item
+        ignoreUnknownSignals: true
+        function onCascadeChanged() { root.shapesSettling(); }
+    }
+
     readonly property real reachWidth: {
         if (!expanded)
             return width;

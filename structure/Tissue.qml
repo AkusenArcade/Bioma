@@ -308,6 +308,10 @@ Item {
             // answering the control that was pressed.
             cell.reachChanged.connect(root.bump);
             cell.reachWidthChanged.connect(root.bump);
+            // And once more when everything it draws has stopped moving: the
+            // regions are rectangles read at one moment, and the moment that
+            // matters is the last one.
+            cell.shapeRevisionChanged.connect(root.bump);
             built.push(cell);
         }
 

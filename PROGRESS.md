@@ -1307,6 +1307,31 @@ that would not fit before the cell exists, rather than let somebody build a
 membrane with cells missing from it. Conditional cells count — a band that fits
 only while the notification is away breaks when one arrives.
 
+### Regions are rectangles read at one moment, and the moment has to be the last
+
+Akusen kept losing the settings cell: the first presses on a control near the
+right of the panel closed it instead. The catcher punches its holes as
+rectangles read when it builds them, and **everything the shell draws
+animates** — so the hole was the panel mid-growth, 567 px wide where the panel
+finished at 644, and a press in the seventy-seven pixels that arrived last
+reached the catcher.
+
+Bumping on `reach` was not enough: an expansion grows *inside itself*, through
+a cascade the cell cannot see, and a page that widens from one category to the
+next animates a `fixedWidth` no property of the cell follows. So a cell now
+says once, a beat after anything that moves its shapes, that they have settled
+— `Cell.shapeRevision`, on a timer of `reflow + 80`. Measured: the hole for the
+settings panel is now 440 × 420 on Appearance and 644 × 420 on Structure, which
+is what is drawn.
+
+The same read explains the reveal that never came back. An auto-hidden membrane
+claimed two pixels at the screen edge; the moment the pointer called it out,
+the mask became the cells — which sit a frame margin above that edge — so the
+membrane stopped being hovered the instant it appeared and began hiding again
+under the hand. Revealed, it claims the whole band it occupies, and the strip
+sits above the sliding content rather than under it, where the pointer could
+not reach it at all.
+
 ### Two things a membrane that outlives its configuration exposed
 
 Keeping a membrane across a configuration change — which is what stopped the

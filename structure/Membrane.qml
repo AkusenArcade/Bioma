@@ -154,6 +154,11 @@ PanelWindow {
 
     Item {
         id: revealStrip
+
+        // Above the sliding content, or the pointer never reaches it: the
+        // content fills the surface and is declared after this.
+        z: 10
+
         width: root.horizontal ? root.width : root.revealZone
         height: root.horizontal ? root.revealZone : root.height
         x: root.edge === "right" ? root.width - root.revealZone : 0
@@ -162,6 +167,20 @@ PanelWindow {
         HoverHandler {
             onHoveredChanged: if (hovered) root.revealed = true
         }
+    }
+
+    // And once it is out, the whole band it occupies is claimed rather than
+    // the two pixels that called it. The cells sit a frame margin above the
+    // edge, so a pointer travelling from the edge up to them crosses ground
+    // that belongs to nobody: the membrane stopped being hovered the instant
+    // it appeared, and started hiding again under the hand that asked for it.
+    Item {
+        id: revealBand
+
+        width: root.horizontal ? root.width : root.strip
+        height: root.horizontal ? root.strip : root.height
+        x: root.edge === "right" ? root.width - root.strip : 0
+        y: root.edge === "bottom" ? root.height - root.strip : 0
     }
 
     HoverHandler {
@@ -497,6 +516,8 @@ PanelWindow {
         if (root.autoHide && !root.revealed) {
             input.splice(0, input.length, { "item": revealStrip, "radius": 0 });
             blur.length = 0;
+        } else if (root.autoHide) {
+            input.push({ "item": revealBand, "radius": 0 });
         }
 
         root.maskRegion = Regions.rebind(root, root.maskRegion, input);
