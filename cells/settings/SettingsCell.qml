@@ -49,6 +49,13 @@ Cell {
     // place — somebody adjusting a margin closes this to look at the result.
     property string category: "appearance"
 
+    // Which monitor and which slot the structure page is looking at. Same
+    // reason as the category: somebody widening a band closes this to look at
+    // the result, and comes back to the band they were widening.
+    property string monitor: ""
+    property string slotEdge: "top"
+    property int slot: -1
+
     // The keyboard, for the one page that has a field in it. Same rule as
     // everywhere: asked for over the panel, not because something is open.
     property bool panelHovered: false

@@ -1307,6 +1307,37 @@ that would not fit before the cell exists, rather than let somebody build a
 membrane with cells missing from it. Conditional cells count — a band that fits
 only while the notification is away breaks when one arrives.
 
+### Settings: Structure, the third page of five
+
+Six slots drawn where the bands will be — three on the top membrane, three on
+the bottom — with the monitor chosen above them. An unlit slot is dashed;
+pressing it lights a tissue there and choosing it opens, on a thread, what is
+in it: the width as a percentage, and the cells as chips with a cross. The
+dashed chip opens the picker on a second thread, listing only the cells that
+are not in that band already.
+
+- **The page refuses rather than breaks.** A cell that would not fit stays on
+  the list, dimmed and saying "no room", and the width slider stops at the
+  percentage its own cells need, with that figure written beside it. Both come
+  from `Registry.roomFor`, so the page and the membrane's own warning are the
+  same arithmetic.
+- **Slots are positional, so anchors are written out.** The engine derives an
+  anchor from a tissue's place in the list; a page that draws three slots
+  cannot, or lighting the middle one alone would make it the last and therefore
+  the end. Every tissue the page writes carries `anchor`.
+- **Emptying a slot switches it off**, and a membrane with no tissues left goes
+  with it: a surface with nothing on it is not a membrane.
+- **`Config.set` now says so out loud.** Most of the shell reads the
+  configuration through bindings and follows `values` by itself, but what is
+  *built* from it — the membranes and floating tissues in `shell.qml` — waits
+  for `reloaded()`, and the file watcher does not report our own atomic write.
+  A membrane added from the settings cell stayed unbuilt until the next start;
+  now the surface appears as the slot lights.
+
+Verified by driving the page from throwaway timers: lighting the centre slot of
+DP-1's top edge, adding the clock and vitals to it, and watching the membrane
+appear on screen with both cells in it. Then taken back out.
+
 ## Phase 1 — Service porting
 
 Nine of ten done, each verified headlessly through `probe.qml` before moving

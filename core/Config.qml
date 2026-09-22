@@ -109,6 +109,16 @@ Singleton {
         root.overrideValues = next;
         root.values = root.merge(root.values, root.expandPath(path, value));
 
+        // And said out loud. Most of the shell reads `Config.get` through a
+        // binding and follows `values` on its own, but what is built *from*
+        // the configuration rather than bound to it — the membranes and the
+        // floating tissues in `shell.qml` — waits for this signal. The file
+        // watcher cannot be relied on to give it: the write is ours and
+        // atomic, and a watcher that does not report our own replacement left
+        // a membrane added from the settings cell unbuilt until the next
+        // start.
+        root.reloaded();
+
         // Kept for the retry, in case the config directory has to be made
         // first: the write that failed is the one to redo, not a fresh one.
         mkdir.pending = JSON.stringify(next, null, 2) + "\n";

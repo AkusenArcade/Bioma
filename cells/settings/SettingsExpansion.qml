@@ -226,10 +226,18 @@ Item {
                         return Qt.resolvedUrl("SettingsAppearance.qml");
                     if (root.chosen === "cells")
                         return Qt.resolvedUrl("SettingsCells.qml");
+                    if (root.chosen === "structure")
+                        return Qt.resolvedUrl("SettingsStructure.qml");
                     return "";
                 }
 
-                onLoaded: item.metrics = Qt.binding(() => root.metrics)
+                onLoaded: {
+                    item.metrics = Qt.binding(() => root.metrics);
+                    // A page that keeps state across a close asks the cell for
+                    // it; the ones that do not declare no such property.
+                    if (item.cell !== undefined)
+                        item.cell = root.cell;
+                }
 
                 // The categories that are not written yet say so rather than
                 // showing an empty panel: a page with nothing in it reads as

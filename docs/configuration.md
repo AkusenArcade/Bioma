@@ -137,6 +137,11 @@ figure by tightening the cascade, not by shortening `grow`.
 `growth` (`inward` for a corner, `symmetric` for the centre), `padding`,
 `opacity`, and the ordered `cells`.
 
+`anchor` — `start`, `centre` or `end` — overrides the position a tissue would
+take from its place in the list. The settings cell always writes it, because
+six slots drawn on screen are positional: an empty middle one must not move the
+two beside it.
+
 Collision between tissues on one membrane is impossible by construction.
 Floating tissues may overlap; that is not prevented.
 
