@@ -1338,6 +1338,32 @@ Verified by driving the page from throwaway timers: lighting the centre slot of
 DP-1's top edge, adding the clock and vitals to it, and watching the membrane
 appear on screen with both cells in it. Then taken back out.
 
+Akusen used it and found two things, 2026-09-22. A band could be lit and never
+put out, so the chosen slot carries the cross that switches it off — on the
+chosen one only, or a press meant for the slot beside it would take a band with
+it. (Not "emptying switches it off", as CELLS §12 puts it: a band emptied while
+its cells are being swapped should not vanish under the fingers.)
+
+The second was the interesting one: **every add and every remove closed the
+settings cell**, because everything built from the configuration was being
+built again.
+
+- `Variants` in `shell.qml` was keyed on the membrane's own block, and the
+  configuration hands out a fresh object on every change — so adding a cell
+  to a band destroyed the whole membrane it was on. It is keyed on the
+  **edge** now, which is a string and compares by value, and the membrane
+  reads its block out of the configuration.
+- The tissue `Repeater` had the same shape: a new array means every delegate
+  rebuilt, and a tissue rebuilt is every cell in it rebuilt. It runs over the
+  **count** now, and each delegate reads its own entry.
+- `Tissue.build()` destroyed every cell and built them again. It keeps what is
+  still declared: a cell of that domain keeps its instance and is handed the
+  new block — everything a cell reads from its block is a binding — and only
+  what arrived is built, only what left is destroyed.
+
+So a cell added from the settings page now appears on the membrane while the
+page stays open, which is what makes the page usable at all.
+
 ## Phase 1 — Service porting
 
 Nine of ten done, each verified headlessly through `probe.qml` before moving

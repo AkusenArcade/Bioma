@@ -87,18 +87,36 @@ ShellRoot {
                 screenItem: perScreen.modelData
             }
 
+            // One membrane per edge of this screen, keyed by the **edge** and
+            // not by the block: `Variants` keeps an instance for a value it
+            // still sees, and the configuration hands out a fresh object on
+            // every change — so adding a cell to a band destroyed the whole
+            // membrane it was in, and everything open on it. The edge is a
+            // string, it compares by value, and the membrane reads its own
+            // block out of the configuration.
             Variants {
-                model: root.membraneConfig.filter(entry => root.membraneMatches(entry, perScreen.modelData))
+                model: root.membraneConfig
+                    .filter(entry => root.membraneMatches(entry, perScreen.modelData))
+                    .map(entry => entry.edge || "top")
 
                 delegate: Membrane {
+                    id: membrane
                     required property var modelData
 
+                    readonly property var block: {
+                        for (const entry of root.membraneConfig)
+                            if (root.membraneMatches(entry, perScreen.modelData)
+                                && (entry.edge || "top") === membrane.modelData)
+                                return entry;
+                        return ({});
+                    }
+
                     screenItem: perScreen.modelData
-                    edge: modelData.edge || "top"
-                    reserveSpace: modelData.reserve_space === true
-                    autoHide: modelData.auto_hide === true
-                    scaleStep: modelData.scale || "normal"
-                    tissuesConfig: modelData.tissues || []
+                    edge: membrane.modelData
+                    reserveSpace: membrane.block.reserve_space === true
+                    autoHide: membrane.block.auto_hide === true
+                    scaleStep: membrane.block.scale || "normal"
+                    tissuesConfig: membrane.block.tissues || []
                 }
             }
 

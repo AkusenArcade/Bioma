@@ -175,14 +175,20 @@ PanelWindow {
             Behavior on y { NumberAnimation { duration: Timing.open; easing.type: Easing.InOutQuad } }
         }
 
+        // Over the **count**, not over the list: a Repeater given a new array
+        // rebuilds every delegate, and a tissue rebuilt is every cell in it
+        // rebuilt. The configuration hands out a fresh array on every change,
+        // so the delegates read their own entry out of it instead and only a
+        // band appearing or disappearing costs a rebuild.
         Repeater {
             id: tissueRepeater
-            model: root.tissuesConfig
+            model: root.tissuesConfig.length
 
             delegate: Tissue {
                 id: tissue
-                required property var modelData
                 required property int index
+
+                readonly property var modelData: root.tissuesConfig[tissue.index] || ({})
 
                 metrics: root.metrics
                 cellsConfig: modelData.cells || []

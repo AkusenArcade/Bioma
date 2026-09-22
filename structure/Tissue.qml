@@ -221,15 +221,43 @@ Item {
         anchors.fill: parent
     }
 
+    // Rebuilt in place rather than from scratch.
+    //
+    // The list is not a new list because one thing in it changed: adding a
+    // cell to a band used to destroy every cell in it and build them again,
+    // which closed whatever was open — and the settings cell, which is what
+    // adds cells, was closing itself on every press. A cell whose block is
+    // still there keeps its instance and is handed the new block; only what
+    // arrived is built, and only what left is destroyed.
     function build() {
-        for (const existing of root.cells)
-            existing.destroy();
-        root.cells = [];
-
+        const spare = root.cells.slice();
         const built = [];
+
         for (const entry of root.cellsConfig) {
             if (entry.enabled === false)
                 continue;
+
+            // The first cell of that domain still standing. Identity follows
+            // the domain rather than the position, so a cell that keeps its
+            // place while its neighbour goes keeps its instance too.
+            let kept = null;
+            for (let i = 0; i < spare.length; i++) {
+                if (spare[i].domain === entry.type) {
+                    kept = spare[i];
+                    spare.splice(i, 1);
+                    break;
+                }
+            }
+
+            if (kept) {
+                // The block may have changed — a visibility, a width, an
+                // option. Everything a cell reads from it is a binding, so
+                // handing it the new one is the whole of the update.
+                if (JSON.stringify(kept.config) !== JSON.stringify(entry))
+                    kept.config = entry;
+                built.push(kept);
+                continue;
+            }
 
             const component = Registry.component(entry.type);
             if (!component)
@@ -273,6 +301,9 @@ Item {
             cell.panelReadyChanged.connect(root.bump);
             built.push(cell);
         }
+
+        for (const gone of spare)
+            gone.destroy();
 
         root.cells = built;
         root.bump();

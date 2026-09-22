@@ -474,6 +474,35 @@ Item {
                                 colour: Theme.textFaint
                             }
 
+                            // The chosen band carries the cross that switches
+                            // it off, the way a cell chip does — and it is on
+                            // the chosen one only, so a press meant for a
+                            // neighbouring slot cannot take a band with it.
+                            Item {
+                                id: douse
+
+                                anchors.right: parent.right
+                                anchors.rightMargin: 4 * root.factor
+                                anchors.verticalCenter: parent.verticalCenter
+                                visible: slot.lit && slot.chosen
+                                width: 18 * root.factor
+                                height: parent.height
+
+                                Icon {
+                                    anchors.centerIn: parent
+                                    width: 9 * root.factor
+                                    height: width
+                                    name: "close"
+                                    colour: douseHover.hovered ? Theme.text : Theme.textMuted
+                                }
+
+                                HoverHandler { id: douseHover }
+
+                                TapHandler {
+                                    onTapped: root.clear(edgeGroup.modelData, slot.modelData)
+                                }
+                            }
+
                             TapHandler {
                                 onTapped: {
                                     if (!slot.lit)
