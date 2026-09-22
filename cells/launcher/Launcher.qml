@@ -35,12 +35,18 @@ Cell {
 
     // A cell that is a panel rather than a pill: its own height, and the
     // tissue makes room for it.
+    //
+    // The height is **fixed**, and that is the whole of it. A panel that grew
+    // and shrank with the number of results re-centred its tissue on every
+    // letter typed, and the blur region chased a shape that had already
+    // moved: the field jumped under the fingers and the glass tore. The
+    // design says it in as many words — with nothing found, the field stays
+    // where it is and the panel does not collapse under your fingers — and
+    // six rows is what it always holds, full or not.
+    readonly property real listGap: 6 * metrics.factor
+
     contentWidth: panelWidth - inset * 2
-    bodyHeight: inset * 2 + fieldHeight
-                + (root.results.length > 0
-                   ? 6 * metrics.factor
-                     + Math.min(root.results.length, root.shownRows) * resultHeight
-                   : (root.query.length > 0 ? 6 * metrics.factor + resultHeight : 0))
+    bodyHeight: inset * 2 + fieldHeight + listGap + shownRows * resultHeight
 
     // It is only ever there because it was asked for, and it takes the
     // keyboard for as long as it is.
@@ -226,7 +232,7 @@ Cell {
     // Nothing found is one line, and the field does not move: a panel that
     // collapsed under the fingers would take the field with it.
     Text {
-        y: search.height + 6 * root.metrics.factor
+        y: search.height + root.listGap
         width: root.contentWidth
         height: root.resultHeight
         verticalAlignment: Text.AlignVCenter
@@ -241,9 +247,9 @@ Cell {
     ListView {
         id: list
 
-        y: search.height + 6 * root.metrics.factor
+        y: search.height + root.listGap
         width: root.contentWidth
-        height: Math.min(root.results.length, root.shownRows) * root.resultHeight
+        height: root.shownRows * root.resultHeight
         visible: root.results.length > 0
 
         model: root.results

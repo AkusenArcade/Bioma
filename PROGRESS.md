@@ -1093,6 +1093,13 @@ almost nothing in the file that is not one of those.
   also means it claims the shell's attention directly when it is summoned, or
   the sheet that closes an open cell would not know it was there and a press
   outside would leave it standing.
+- **Its height is fixed, and that is the whole of it.** A panel that grew and
+  shrank with the number of results re-centred its tissue on every letter
+  typed, and the blur region chased a shape that had already moved: the field
+  jumped under the fingers and the glass tore. The design says it plainly —
+  with nothing found the field stays where it is and the panel does not
+  collapse under your fingers — so six rows is what it always holds, full or
+  not. Akusen saw the jumping, 2026-09-22.
 - **The matched letters are lit.** It is the one place in this shell where
   colour enters a word, and it earns it: it shows the search's reasoning, so
   a wrong answer is visibly wrong rather than broken. Built as markup,
