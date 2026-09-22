@@ -468,9 +468,16 @@ PanelWindow {
             }
         }
 
-        // Hidden, the only thing that may catch the pointer is the reveal zone.
-        if (root.autoHide && !root.revealed)
+        // Hidden, the only thing that may catch the pointer is the reveal
+        // zone — and **nothing at all is blurred**. The cells are still there,
+        // slid out of view by a transform on their container, and a region
+        // bound to an item does not follow that transform: what stayed behind
+        // was the silhouette of a membrane that had gone, blurring the window
+        // underneath it.
+        if (root.autoHide && !root.revealed) {
             input.splice(0, input.length, { "item": revealStrip, "radius": 0 });
+            blur.length = 0;
+        }
 
         root.maskRegion = Regions.rebind(root, root.maskRegion, input);
         root.blurRegion = Regions.rebind(root, root.blurRegion, blur);

@@ -1307,6 +1307,15 @@ that would not fit before the cell exists, rather than let somebody build a
 membrane with cells missing from it. Conditional cells count — a band that fits
 only while the notification is away breaks when one arrives.
 
+### A hidden membrane blurs nothing
+
+Akusen put the dock on an auto-hiding edge: the membrane slid away and left its
+silhouette behind, blurring the window underneath it. The cells are still there
+when a membrane hides — a transform on their container takes them out of view —
+and a `Region` bound to an item does not follow that transform, so the blur
+region went on describing where the cells would have been. Hidden, the membrane
+now blurs nothing at all; the input mask already kept only the reveal strip.
+
 ### Settings: Structure, the third page of five
 
 Six slots drawn where the bands will be — three on the top membrane, three on
