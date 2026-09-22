@@ -68,22 +68,30 @@ Singleton {
     // true in code (PRD §5) — there is no second model for invoked surfaces,
     // only cells that happen to be invocable.
     //
+    // **Every cell is in it**, not only the ones whose block says invocable.
+    // A cell already on the membrane is the answer to somebody asking for it
+    // by name — it held only the declared ones before, so asking for the
+    // workspaces cell, which is always visible and says nothing about being
+    // invocable, summoned a second copy of it into the middle of the screen
+    // while the first sat on the membrane. What `invocable` decides is the
+    // *ranking* below, not who may answer.
+    //
     // The same cell exists once per monitor, so a domain answers with several
     // and the one on the output the keyboard is pointed at is the one meant.
 
-    property var invocable: []
+    property var known: []
 
     function offer(cell) {
-        if (root.invocable.indexOf(cell) < 0)
-            root.invocable = root.invocable.concat([cell]);
+        if (root.known.indexOf(cell) < 0)
+            root.known = root.known.concat([cell]);
     }
 
     function withdraw(cell) {
-        const index = root.invocable.indexOf(cell);
+        const index = root.known.indexOf(cell);
         if (index >= 0) {
-            const next = root.invocable.slice();
+            const next = root.known.slice();
             next.splice(index, 1);
-            root.invocable = next;
+            root.known = next;
         }
     }
 
@@ -102,13 +110,23 @@ Singleton {
         let best = null;
         let rank = -1;
 
-        for (const cell of root.invocable) {
+        for (const cell of root.known) {
             if (!cell || cell.domain !== domain)
                 continue;
             if (output && cell.output !== output)
                 continue;
 
-            const asked = cell.visibility.type === "invoked" ? 1 : 0;
+            // Three ranks, in the order of how much the asking is *for* them:
+            // a cell that exists only when it is asked for, then one that says
+            // it answers, then one that is simply on screen already. A cell
+            // that is neither declared nor currently shown is not an answer at
+            // all — a conditional cell with nothing to report has nothing to
+            // open — and the summoned copy is what that asking gets.
+            const asked = cell.visibility.type === "invoked" ? 3
+                        : cell.visibility.invocable ? 2
+                        : cell.shown ? 1 : 0;
+            if (asked === 0)
+                continue;
             if (asked > rank) {
                 best = cell;
                 rank = asked;
@@ -126,7 +144,7 @@ Singleton {
         const out = [];
         for (const domain in Registry.files)
             out.push(domain);
-        for (const cell of root.invocable)
+        for (const cell of root.known)
             if (cell && out.indexOf(cell.domain) < 0)
                 out.push(cell.domain);
         return out.sort();

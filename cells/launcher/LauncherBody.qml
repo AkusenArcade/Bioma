@@ -23,6 +23,19 @@ Item {
 
     readonly property real factor: metrics.factor
 
+    // The cell arrives a moment after the body does: a Loader builds its item
+    // first and hands it the cell in `onLoaded`, so every measurement taken
+    // from the cell is read through one of these. Without them the first frame
+    // is a page of "cannot read property of null" — harmless, and exactly the
+    // kind of noise a real error hides in.
+    readonly property real fieldHeight: root.cell ? root.cell.fieldHeight : 0
+    readonly property real resultHeight: root.cell ? root.cell.resultHeight : 0
+    readonly property real listGap: root.cell ? root.cell.listGap : 0
+    readonly property int shownRows: root.cell ? root.cell.shownRows : 0
+    readonly property string query: root.cell ? root.cell.query : ""
+    readonly property var results: root.cell ? root.cell.results : []
+    readonly property int chosen: root.cell ? root.cell.chosen : 0
+
     // It measures itself from what it was given rather than from the cell:
     // the cell is a panel in one form and a twenty-pixel button in the other,
     // and its content width is the button's.
@@ -43,7 +56,7 @@ Item {
         id: search
 
         width: root.width
-        height: cell.fieldHeight
+        height: root.fieldHeight
         y: 0
 
         Icon {
@@ -66,8 +79,8 @@ Item {
             anchors.rightMargin: 6 * root.metrics.factor
             anchors.verticalCenter: parent.verticalCenter
 
-            text: cell.query
-            onTextChanged: cell.query = text
+            text: root.query
+            onTextChanged: if (root.cell) root.cell.query = text
 
             color: Theme.text
             font.family: Typography.expressive
@@ -98,12 +111,12 @@ Item {
     // Nothing found is one line, and the field does not move: a panel that
     // collapsed under the fingers would take the field with it.
     Text {
-        y: search.height + cell.listGap
+        y: search.height + root.listGap
         width: root.width
-        height: cell.resultHeight
+        height: root.resultHeight
         verticalAlignment: Text.AlignVCenter
         horizontalAlignment: Text.AlignHCenter
-        visible: cell.query.length > 0 && cell.results.length === 0
+        visible: root.query.length > 0 && root.results.length === 0
         text: "Nothing answers to that"
         color: Theme.textMuted
         font.family: Typography.expressive
@@ -119,12 +132,12 @@ Item {
     ListView {
         id: list
 
-        y: search.height + cell.listGap
+        y: search.height + root.listGap
         width: root.width - 8 * root.metrics.factor
-        height: cell.shownRows * cell.resultHeight
-        visible: cell.results.length > 0
+        height: root.shownRows * root.resultHeight
+        visible: root.results.length > 0
 
-        model: cell.results
+        model: root.results
         boundsBehavior: Flickable.StopAtBounds
         clip: true
 
@@ -134,10 +147,10 @@ Item {
             required property var modelData
             required property int index
 
-            readonly property bool picked: cell.chosen === result.index
+            readonly property bool picked: root.chosen === result.index
 
             width: ListView.view.width
-            height: cell.resultHeight
+            height: root.resultHeight
 
             // Selection is a fill and never an outline: the lit outline means
             // "surface" in this shell, and a row wearing one would read as a
@@ -206,7 +219,7 @@ Item {
                 anchors.bottom: parent.verticalCenter
                 anchors.bottomMargin: category.text.length > 0 ? 0 : -name.height / 2
 
-                text: cell.lit(result.modelData.name, result.modelData.at)
+                text: root.cell.lit(result.modelData.name, result.modelData.at)
                 textFormat: Text.StyledText
                 elide: Text.ElideRight
                 maximumLineCount: 1

@@ -31,6 +31,15 @@ Item {
     property bool opensAway: true
 
     readonly property real originGap: {
+        // A floating tissue hangs from nothing. There is no window line to
+        // reach, so the distance between a cell and what it opens is simply
+        // the gap between the shapes of one open cell — and deriving a line
+        // from the tissue's own position, which is what this used to do, is a
+        // circle: a centred tissue is placed by how far its open cell reaches,
+        // and how far it reaches is measured from this.
+        if (root.floating)
+            return metrics.gap;
+
         const outer = opensAway ? y + padding + metrics.cellHeight : y + padding;
         return Math.max(0, opensAway ? windowLine - outer : outer - windowLine);
     }

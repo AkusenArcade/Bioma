@@ -55,10 +55,6 @@ this machine — so these are written, look right in a screenshot, and have neve
 been confirmed by a real press:
 
 - **a press outside an open cell dismisses it**, through `structure/InputSurface.qml`;
-- **the workspaces cell opening its list** — `ipc call cell toggle workspaces`
-  answers and nothing appears, with a binding loop on `reach` logged from
-  `Workspaces.qml`. It predates the settings cell (checked against a clean
-  tree, 2026-09-22) and is the next defect to take;
 - **the scrollbar** in both lists, which appears while the list is moving;
 - **pressing the vitals search field**, which used to dismiss the cell and
   should not any more: the masks are rebound when an expansion finishes
@@ -1244,6 +1240,31 @@ that are longer than their room say so. The scrollbar was written out by hand
 in four cells, twice as a file-local `component Scroller` and twice as a bare
 `Rectangle`; it is `components/Scroller.qml` now, and the settings catalogue
 and the launcher's results have one too.
+
+### Asking for a cell that is already on the membrane
+
+`ipc call cell toggle workspaces` looked like it did nothing. It did: it built
+a **second** workspaces cell in the middle of the screen, where I was not
+looking, and left the one on the membrane shut. Two engine faults under it,
+both about a cell that is somewhere already.
+
+- **The register held only the cells whose block said `invocable`.** Everything
+  else was, as far as a shortcut could tell, nowhere — so asking for it summoned
+  a copy into the floating host. Every cell is in the register now, and
+  `Focus.cellFor` ranks the answers instead: a cell that exists only when asked
+  for, then one that says it answers, then one that is merely on screen. A cell
+  that is neither declared nor currently shown is not an answer at all, and that
+  asking still gets the summoned copy — which is what the host is for.
+- **A floating tissue was deriving a window line from its own position.** There
+  is no line to hang from on a floating surface, and `Float` invented one from
+  `tissue.y`; the tissue's `originGap` came out of it, the cell's `gap` out of
+  that, `Cell.reach` out of that, and `Float` places a centred tissue by
+  `reach` — a circle, logged twice on every open as a binding loop on `reach`.
+  A floating tissue uses `metrics.gap` now and is given no window line.
+
+Also quieted: `LauncherBody` read its measurements straight off the cell, which
+a Loader hands over only after the body exists, so every summon logged a page
+of "cannot read property of null". They come through guarded properties now.
 
 ## Phase 1 — Service porting
 

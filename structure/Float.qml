@@ -245,12 +245,11 @@ PanelWindow {
         fillOpacity: root.config.opacity !== undefined
                      ? root.config.opacity : Config.get("tissue.opacity", 0.5)
 
-        // Which way its cells open, and the line they open onto. Away from the
-        // edge it hangs from, at the same gap a membrane leaves.
+        // Which way its cells open. There is no line here for them to open
+        // onto — nothing reserves space against a floating surface — so the
+        // tissue uses the shape gap and no window line is given.
         edge: root.atBottom ? "bottom" : "top"
         opensAway: root.opensDown
-        windowLine: root.opensDown ? tissue.y + tissue.height + root.metrics.gap
-                                   : tissue.y - root.metrics.gap
 
         x: root.placedX
         y: root.placedY

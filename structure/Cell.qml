@@ -77,9 +77,11 @@ Item {
     // whole of it.
     onShownChanged: if (!shown) Focus.released(root)
 
-    // A cell that can be asked for by name says so, and stops saying it when
-    // it goes. The register is what a shortcut reaches; see `core/Focus.qml`.
-    Component.onCompleted: if (visibility.invocable) Focus.offer(root)
+    // Every cell can be asked for by name, and stops being reachable when it
+    // goes. The register is what a shortcut reaches; see `core/Focus.qml`,
+    // which decides which of the cells answering to one domain is the one
+    // meant.
+    Component.onCompleted: Focus.offer(root)
     Component.onDestruction: Focus.withdraw(root)
 
     // Set by the tissue when there is no room left for this cell inside the
