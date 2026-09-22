@@ -672,6 +672,8 @@ Item {
             active: root.open || root.panelGrowth > 0
             sourceComponent: root.panel
         }
+
+        HoverHandler { id: panelHover }
     }
 
     // A composition places itself: it is given the anchor — the line the
@@ -681,6 +683,8 @@ Item {
         id: expansionSlot
         active: root.expansion !== null && (root.open || root.panelGrowth > 0)
         sourceComponent: root.expansion
+
+        HoverHandler { id: bodyHover }
 
         y: root.opensDown ? root.height + root.gap : -root.gap - height
         x: root.origin === "end" ? root.width - width
@@ -822,6 +826,19 @@ Item {
 
     readonly property bool hovered: hover.hovered
 
+    // And whether it is on what the cell **drew**. An expansion and a panel
+    // hang outside the cell's own item, so the cell's own hover ends at the
+    // edge of the pill — which for a cell that lives in the hover state is
+    // fatal: the notification's actions went away the moment the pointer left
+    // the pill to reach them.
+    readonly property bool bodyHovered: bodyHover.hovered || panelHover.hovered
+                                     || bridgeHover.hovered
+
+    // What "the pointer is on this cell" means everywhere it matters.
+    readonly property bool touched: root.hovered || root.bodyHovered
+
+    onTouchedChanged: root.engage()
+
     // Whether there is anything to interact with. The rule protects what
     // somebody is reading; a cell whose content has just gone has nothing to
     // protect, and holding it there leaves an empty pill under the pointer
@@ -830,7 +847,7 @@ Item {
     property bool engaging: true
 
     function engage() {
-        root.visibility.interacting = root.hovered && root.engaging;
+        root.visibility.interacting = root.touched && root.engaging;
     }
 
     onEngagingChanged: root.engage()
@@ -846,6 +863,31 @@ Item {
             for (const shape of expansionSlot.item.shapes())
                 out.push(shape);
         return out;
+    }
+
+    // What it claims for the **pointer**, which is not the same as what it
+    // draws. Between a pill and what hangs off it there is the thread's gap:
+    // nothing is drawn there, and blurring it would be a rectangle of glass
+    // with no shape — but the pointer has to cross it to reach the body. A
+    // surface only receives what its mask claims, so a cell that did not claim
+    // the gap lost the pointer halfway down and closed under it.
+    function claims() {
+        const out = root.shapes();
+        if (root.expanded)
+            out.push({ "item": bridge, "radius": 0 });
+        return out;
+    }
+
+    Item {
+        id: bridge
+
+        width: root.width
+        height: root.gap
+        x: 0
+        y: root.opensDown ? root.height : -root.gap
+        visible: root.expanded
+
+        HoverHandler { id: bridgeHover }
     }
 
     // TODO Phase 0: `appearance.xray` — blur a static copy of the wallpaper

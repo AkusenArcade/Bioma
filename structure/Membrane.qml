@@ -464,7 +464,7 @@ PanelWindow {
             for (const cell of tissue.cells) {
                 if (!cell.placed)
                     continue;
-                for (const shape of cell.shapes()) {
+                for (const shape of cell.claims()) {
                     const item = shape.item;
                     if (!item)
                         continue;
@@ -499,11 +499,12 @@ PanelWindow {
             for (const cell of tissue.cells) {
                 if (!cell.placed)
                     continue;
-                for (const shape of cell.shapes()) {
+                for (const shape of cell.claims())
                     input.push(shape);
-                    if (cell.blur)
-                        blur.push(shape);
-                }
+                if (!cell.blur)
+                    continue;
+                for (const shape of cell.shapes())
+                    blur.push(shape);
             }
         }
 

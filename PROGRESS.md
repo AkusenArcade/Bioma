@@ -1307,6 +1307,29 @@ that would not fit before the cell exists, rather than let somebody build a
 membrane with cells missing from it. Conditional cells count — a band that fits
 only while the notification is away breaks when one arrives.
 
+### What a cell claims is not what it draws
+
+The notification's actions could not be reached: the pointer left the pill to
+go to them, and the cell — which lives in its hover state — closed under it.
+Two reasons, and the second is a rule the engine was missing.
+
+- **A cell's hover ended at its own edge.** An expansion and a panel hang
+  outside the cell's item, so the pointer standing on the body was, as far as
+  the cell knew, nowhere. `Cell.touched` is the pill, the panel, the expansion
+  and the gap between them, and it is what suspends disappearance now.
+- **A surface only receives what its mask claims, and the gap is not drawn.**
+  Between the pill and what hangs off it there is the thread's gap: claiming
+  it would blur a rectangle of glass with no shape in it, so it was claimed by
+  nobody and the pointer fell through halfway down. `Cell.claims()` is the
+  input side of `shapes()` — the same list plus the gap — and the membrane and
+  the floating host now mask what is claimed and blur what is drawn.
+
+The history panel also counted only its rows: the well and the list have
+margins of their own and the rows carry an application label every few, so a
+panel that promised seven rows held five and had nothing left to scroll in. It
+counts all of it now, from the same figures the well and the list are drawn
+with.
+
 ### A cell that is closing is still on screen
 
 Akusen: only the launcher closes properly. It is the one summoned cell with no

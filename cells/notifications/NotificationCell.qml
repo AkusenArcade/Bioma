@@ -76,11 +76,14 @@ Cell {
     // assigning to it, and an assignment onto a binding destroys the binding —
     // the cell would open once and never again.
     function settle() {
-        root.open = root.history || (root.hovered && root.shout !== null);
+        root.open = root.history || (root.touched && root.shout !== null);
     }
 
-    onHoveredChanged: {
-        Notifications.holding = root.hovered;
+    // `touched`, not `hovered`: the body and the actions hang *below* the
+    // pill, and reaching them means leaving it. Closing on that is closing
+    // the thing the pointer was on its way to.
+    onTouchedChanged: {
+        Notifications.holding = root.touched;
         root.settle();
     }
 

@@ -58,12 +58,24 @@ Item {
 
     // ---- What the history needs ----------------------------------------------
 
-    readonly property int shownRows: 6
+    readonly property int shownRows: 7
     readonly property real headerHeight: 34 * factor
 
+    // The well and the list inside it have margins of their own, and the rows
+    // are grouped by application — a label every few rows. Counting the rows
+    // alone gave a panel that held five of the seven it promised, with nothing
+    // left to scroll in. All of it is counted here, and the same figures are
+    // what the well and the list are drawn with.
+    readonly property real wellInset: 10 * factor
+    readonly property real listMargin: 8 * factor
+    readonly property real sectionHeight: 20 * factor
+    readonly property int shownSections: 2
+
     readonly property real historyHeight: padding * 2 + headerHeight + 8 * factor
+                                        + wellInset * 2 + listMargin * 2
                                         + Math.max(1, Math.min(Notifications.history.length,
                                                                root.shownRows)) * rowHeight
+                                        + root.shownSections * root.sectionHeight
                                         + 8 * factor
 
     readonly property real panelHeight: root.history ? root.historyHeight : root.notifyHeight
@@ -259,7 +271,7 @@ Item {
                 id: well
 
                 metrics: root.metrics
-                inset: 10 * root.factor
+                inset: root.wellInset
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.top: quiet.bottom
@@ -279,7 +291,7 @@ Item {
                     id: past
 
                     anchors.fill: parent
-                    anchors.margins: 8 * root.factor
+                    anchors.margins: root.listMargin
                     model: Notifications.history
                     boundsBehavior: Flickable.StopAtBounds
                     clip: true
@@ -293,7 +305,7 @@ Item {
                         required property string section
 
                         width: ListView.view.width
-                        height: 20 * root.factor
+                        height: root.sectionHeight
                         verticalAlignment: Text.AlignVCenter
                         text: section
                         color: Theme.textFaint
