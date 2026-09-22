@@ -180,7 +180,7 @@
               "min_width": { "value": 24 }
             },
             {
-              "type": "volume",
+              "type": "audio",
               "enabled": true,
               "visibility": { "type": "always", "invocable": true, "shortcut": "Mod+A" },
               "min_width": { "value": 40 }

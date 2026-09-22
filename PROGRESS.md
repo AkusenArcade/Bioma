@@ -12,11 +12,11 @@ has been exercised by nine cells; phase 2 is finished — window title,
 workspaces and vitals, the last of them opening into pods and a process list;
 phase 3 is finished — the theme cell retints the shell live, the utility cell
 captures with Bioma's own selection rectangle rather than `slurp`, and
-sinestesia draws the sound. Phase 4 has started with the volume cell.
+sinestesia draws the sound. Phase 4 has started with the audio cell.
 
 Three ways in, and they are independent:
 
-1. **The rest of phase 4**: connectivity, session, dock. Volume is done — the
+1. **The rest of phase 4**: connectivity, session, dock. Audio is done — the
    dial, the capsule and the three wells, against the real PipeWire graph. What
    is left of the two cells already drawn is what CELLS left open: sinestesia
    on a narrow screen and whether a long title scrolls on hover, and reduced
@@ -27,7 +27,7 @@ Three ways in, and they are independent:
 3. **The rest of the engine**: auto-hide, vertical and floating tissues,
    keyboard focus for invoked cells, and the last user of the full-screen input
    surface — cells positioned at the pointer, which need the pointer position it
-   is the only way to learn. The volume cell wants the floating tissue for its
+   is the only way to learn. The audio cell wants the floating tissue for its
    invoked form: CELLS §05 asks for the *same* cell centred on the screen, born
    in a tissue of its own rather than on a membrane.
 
@@ -61,7 +61,7 @@ been confirmed by a real press:
   throwaway timer instead — the list opens, the switch slides, and a palette
   written through `Config.set` retints the whole shell in a screenshot taken
   three seconds later — but no press has ever reached any of them.
-- **every gesture of the volume cell**: the wheel on the pill, the middle
+- **every gesture of the audio cell**: the wheel on the pill, the middle
   button, the main slider, the per-application sliders and their mute rings,
   and picking an output or an input. What they *show* is confirmed against the
   live graph — the volume was moved with `wpctl` and the dial followed, three
@@ -103,7 +103,7 @@ Drawn, and verified on screen against the design handoff.
 | `structure/Visibility.qml` | **Exercised at last** — the window title appears and disappears with focus. |
 | `components/` | `Rim`, `Ring`, `DashedRing`, `Disc`, `Dial`, `Gauge`, `Slider`, `Icon`, `LightGradient`, `Thread`, `Panel`, `Well`, `Band`, `Sweep`, `Segmented`, `WorkspaceBars`, `Vital`. |
 | `structure/InputSurface.qml` + `core/Focus.qml` | The full-screen surface of PRD §8, and the register of what is open. Built; the press path still needs a human to click. |
-| `cells/clock`, `cells/window_title`, `cells/workspaces`, `cells/vitals`, `cells/theme`, `cells/utility`, `cells/recording`, `cells/sinestesia`, `cells/volume` | Nine cells. Vitals opens into pods, threads and the process list; theme into the wallpaper carousel and the two palette capsules; utility into the capture panel, and generates the recording cell. |
+| `cells/clock`, `cells/window_title`, `cells/workspaces`, `cells/vitals`, `cells/theme`, `cells/utility`, `cells/recording`, `cells/sinestesia`, `cells/audio` | Nine cells. Vitals opens into pods, threads and the process list; theme into the wallpaper carousel and the two palette capsules; utility into the capture panel, and generates the recording cell. |
 | `structure/SelectionSurface.qml` | Bioma's own selection rectangle, over the whole desktop, in place of `slurp`. Up only while a region is being asked for, and it holds the keyboard for that long so Escape means cancel. |
 | `components/Segmented.qml` | The segmented control, shared: the theme cell's source switch and the utility cell's three kinds are the same object. |
 | `core/Config.qml` write-back | `Config.set` writes one key into the override layer. Brought forward from phase 5 because the theme cell has to keep a choice. |
@@ -535,7 +535,7 @@ the fold to fourteen showing the shape of the music rather than a flat line.
   stands in the cover well too, where a record without a picture is a record
   without a picture rather than the shell introducing itself.
 
-### Volume, the first control
+### Audio, the first control
 
 The catalogue's first cell that is not an indicator. Everything else in the
 shell is coloured by something the machine measured on its own; this one is
@@ -585,6 +585,13 @@ colour.
   from `device.form-factor` where it is published and `device.bus` otherwise.
   Verified against the graph before the row was drawn: the property is on the
   node, which is not something to find out from an empty column.
+- **It is the audio cell, not the volume cell.** The dial is what it shows at
+  rest, and naming it after that would be naming it after a tenth of itself:
+  it already chooses the output and the input and holds a volume per
+  application. `VOLUME` is a title that would have to be renamed the first
+  time the cell grows, which is the same reason the utility cell is not called
+  `CAPTURE`. Akusen's call, 2026-09-22 — the design handoff still numbers the
+  section `05 · Volume`, and the type in the configuration is `audio`.
 - **Per-application mute is the cell's own sign at a smaller size.** Silencing
   Spotify and silencing everything are said the same way, and the slider stays
   where it was and only dims, because muting is not zeroing. Confirmed with

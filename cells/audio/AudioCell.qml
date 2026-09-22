@@ -5,7 +5,14 @@ import qs.components
 import qs.structure
 import qs.services
 
-// The level of the sound, and who is making it.
+// The sound: its level, where it goes, where it comes from and who is making
+// it.
+//
+// Named for its domain rather than for the dial it shows at rest. `VOLUME`
+// would be the truer word for a cell that only carried a level, and the wrong
+// one for a cell that already chooses the output and the input and holds a
+// volume per application — the same reason the utility cell is not called
+// `CAPTURE`. Akusen's call, 2026-09-22.
 //
 // The first **control** in the catalogue rather than an indicator: the wheel
 // moves it, so it keeps the primary for its whole run — at a hundred per cent
@@ -21,7 +28,7 @@ import qs.services
 Cell {
     id: root
 
-    domain: "volume"
+    domain: "audio"
 
     // The dial is the whole content, so the padding is what makes the cell
     // square: 26 between two sevens. Open, the cell carries its name as well,
@@ -45,7 +52,7 @@ Cell {
     // with one — and its glyph is the dial itself, still live, because the
     // wheel keeps working while the panel is open and the mark is where the
     // eye already is.
-    headerTitle: "VOLUME"
+    headerTitle: "AUDIO"
     headerMarkSize: 20 * metrics.factor
     headerMark: Component {
         Gauge {
@@ -61,7 +68,7 @@ Cell {
     expansion: Component {
         Loader {
             id: expansionLoader
-            source: Qt.resolvedUrl("VolumeExpansion.qml")
+            source: Qt.resolvedUrl("AudioExpansion.qml")
             onLoaded: {
                 item.cell = root;
                 item.metrics = Qt.binding(() => root.metrics);

@@ -20,7 +20,7 @@ Singleton {
         "utility": "utility/Utility.qml",
         "recording": "recording/Recording.qml",
         "sinestesia": "sinestesia/Sinestesia.qml",
-        "volume": "volume/Volume.qml"
+        "audio": "audio/AudioCell.qml"
     })
 
     property var cache: ({})

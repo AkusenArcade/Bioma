@@ -4,7 +4,7 @@ import qs.core
 import qs.components
 import qs.services
 
-// Volume, opened: the capsule that carries the level, and under it the three
+// Audio, opened: the capsule that carries the level, and under it the three
 // wells — where the sound goes, where it comes from, and who is making it.
 //
 // Three wells and not three tabs. Output, input and applications are looked at

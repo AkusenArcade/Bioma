@@ -29,8 +29,9 @@ Phase 2 — the three that validate the system:
 | `vitals` | animated indicators, expansion, click-to-sort, kill confirmation |
 
 Phase 3 — identity: `sinestesia`, `theme`, `utility`.
-Phase 4 — replacement: `volume`, `connectivity`, `session`, `dock`, then
-`notifications` last.
+Phase 4 — replacement: `audio` — the cell PRD §9.5 and CELLS §05 call volume,
+named for its domain because it holds the devices and the per-application
+volumes too — then `connectivity`, `session`, `dock`, and `notifications` last.
 Phase 5 — `settings`. Phase 6 — `launcher`, alone.
 
 Each cell's behaviour is specified in PRD §9. Read that section before starting
