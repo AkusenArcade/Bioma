@@ -16,7 +16,7 @@ sinestesia draws the sound. Phase 4 has started with the audio cell.
 
 Three ways in, and they are independent:
 
-1. **The rest of phase 4**: the dock. Audio, connectivity and session are done —
+1. **Phase 4 is done but for notifications.** Audio, connectivity, session and the dock are drawn —
    the dial, the capsule and the three wells against the real PipeWire graph,
    and one glyph per live connection with the two family wells under it. What
    is left of the cells already drawn is what CELLS left open: sinestesia on a
@@ -104,7 +104,7 @@ Drawn, and verified on screen against the design handoff.
 | `structure/Visibility.qml` | **Exercised at last** — the window title appears and disappears with focus. |
 | `components/` | `Rim`, `Ring`, `DashedRing`, `Disc`, `Dial`, `Gauge`, `Slider`, `Switch`, `Strength`, `Portrait`, `Icon`, `LightGradient`, `Thread`, `Panel`, `Well`, `Band`, `Sweep`, `Segmented`, `WorkspaceBars`, `Vital`. |
 | `structure/InputSurface.qml` + `core/Focus.qml` | The full-screen surface of PRD §8, and the register of what is open. Built; the press path still needs a human to click. |
-| `cells/clock`, `cells/window_title`, `cells/workspaces`, `cells/vitals`, `cells/theme`, `cells/utility`, `cells/recording`, `cells/sinestesia`, `cells/audio`, `cells/connectivity`, `cells/session` | Eleven cells. Vitals opens into pods, threads and the process list; theme into the wallpaper carousel and the two palette capsules; utility into the capture panel, and generates the recording cell. |
+| `cells/clock`, `cells/window_title`, `cells/workspaces`, `cells/vitals`, `cells/theme`, `cells/utility`, `cells/recording`, `cells/sinestesia`, `cells/audio`, `cells/connectivity`, `cells/session`, `cells/dock` | Twelve cells. Vitals opens into pods, threads and the process list; theme into the wallpaper carousel and the two palette capsules; utility into the capture panel, and generates the recording cell. |
 | `structure/SelectionSurface.qml` | Bioma's own selection rectangle, over the whole desktop, in place of `slurp`. Up only while a region is being asked for, and it holds the keyboard for that long so Escape means cancel. |
 | `components/Segmented.qml` | The segmented control, shared: the theme cell's source switch and the utility cell's three kinds are the same object. |
 | `core/Config.qml` write-back | `Config.set` writes one key into the override layer. Brought forward from phase 5 because the theme cell has to keep a choice. |
@@ -806,6 +806,41 @@ Verified on screen: the avatar loads, the name reads in Spectral over the
 login in Orbitron, the five rows carry their glyphs and their key boxes, and
 the shutdown row becomes the question with the alert outline and the one
 filled surface in the shell that is not primary.
+
+### The dock, one cell and not a tissue
+
+The row of icons is its content the way digits are the clock's. If every
+application were a cell the membrane would be ten glowing outlines in a row
+and would have stopped being a membrane.
+
+- **Kept on the left, running on the right, and never both.** A kept
+  application that is running says so on its own icon with the ring rather
+  than appearing twice, and the divider is absent when there is nothing on
+  one side of it — a line that does not separate two groups is decoration.
+- **The ring is flat primary, not the gradient**, and it sits inside the
+  footprint: it is a thin state line and not a surface, and nothing moves when
+  it appears. One ring however many windows there are.
+- **A press raises, and raises the next one after that.** Two windows of an
+  application are one icon, so the press cycles; the middle button starts
+  another instance, which is the only way to ask for a second window of
+  something that would otherwise just raise the first.
+- **The name arrives above the icon**, in the pill the design gives the dock
+  (§09) — and it is affordable here only because a membrane's surface is now
+  the size of its output: the hover label that flickered on the cells was the
+  surface resizing to hold it, and there is nothing to resize any more.
+- **`left` is not a signal name.** An Item declares it final — it is one of
+  its own anchor lines — and the compiler refuses it, which is the same trap
+  `components/Band.qml` hit with `left` and `right`.
+- **Not done: dragging the kept applications into a different order.** CELLS
+  §09 asks for it. It is the one interaction here that writes to the
+  configuration, nothing on this machine can drag, and a reorder that goes
+  wrong rewrites the list — so it waits for hands rather than being written
+  blind.
+
+Verified on screen against the real graph: three kept applications resolve
+their own icons, the two running ones that are not kept sit past the divider
+with their rings, and the kept application that *is* running wears the ring
+in place rather than appearing a second time.
 
 ## Phase 1 — Service porting
 

@@ -22,7 +22,8 @@ Singleton {
         "sinestesia": "sinestesia/Sinestesia.qml",
         "audio": "audio/AudioCell.qml",
         "connectivity": "connectivity/Connectivity.qml",
-        "session": "session/SessionCell.qml"
+        "session": "session/SessionCell.qml",
+        "dock": "dock/Dock.qml"
     })
 
     property var cache: ({})
