@@ -1307,6 +1307,29 @@ that would not fit before the cell exists, rather than let somebody build a
 membrane with cells missing from it. Conditional cells count — a band that fits
 only while the notification is away breaks when one arrives.
 
+### A summoned cell leaves the way it arrived
+
+There was no closing animation on the floating cells at all: they were there,
+and then they were not. Three things, each of which was enough on its own to
+delete the movement.
+
+- **The cell had no departure.** The arrival is an animation of its own —
+  Behaviors do not run on a first value — and nothing was its mirror.
+  `Cell.depart()` shrinks it about its own centre and fades it over the
+  closing time, and says `gone` when it has.
+- **Whoever summoned it dropped it on the spot.** `Float` cleared `summoned`
+  the moment the cell was dismissed, which destroys it; it asks the cell to
+  leave now and clears when the cell says it has. `Focus.invoke` and
+  `Focus.retire` ask the host to retire rather than to dismiss.
+- **The tissue went before the cell did.** A tissue is invisible when it holds
+  nothing placed, and a dismissed cell stops being placed immediately — so the
+  container vanished and took the leaving with it. It stays while anything in
+  it is on its way out.
+
+Measured with the timing set to a quarter speed: three hundred milliseconds
+after the shortcut the launcher is still there, smaller and half faded; two
+seconds later it is gone.
+
 ### The order of a band is dragged, not retyped
 
 The cells in a band sit in the order they are declared, from the anchor inward,

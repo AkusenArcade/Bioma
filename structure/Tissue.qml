@@ -205,8 +205,19 @@ Item {
         }
     }
 
-    // A tissue with nothing to show is not an empty tray.
-    visible: contentLength > 0
+    // A tissue with nothing to show is not an empty tray — unless what it
+    // holds is still on its way out. A cell stops being *placed* the moment it
+    // is dismissed, so a tissue that went with the placement took the leaving
+    // with it, and a summoned cell vanished rather than closing.
+    readonly property bool departing: {
+        revision;
+        for (const cell of root.cells)
+            if (cell && cell.leaving)
+                return true;
+        return false;
+    }
+
+    visible: contentLength > 0 || root.departing
 
     // ---- Cells -------------------------------------------------------------
     //
@@ -312,6 +323,7 @@ Item {
             // regions are rectangles read at one moment, and the moment that
             // matters is the last one.
             cell.shapeRevisionChanged.connect(root.bump);
+            cell.leavingChanged.connect(root.bump);
             built.push(cell);
         }
 

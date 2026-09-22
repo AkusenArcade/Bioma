@@ -309,8 +309,49 @@ Item {
 
     onGrowsOnArrivalChanged: if (growsOnArrival) arrival.restart()
 
+    // And the way back out. A cell summoned into the middle of the screen has
+    // nowhere to retract *to* either, so it leaves the way it came: it shrinks
+    // about its own centre and fades, over the closing time rather than the
+    // opening one — it opens calmly and closes quickly.
+    //
+    // Whoever summoned it waits for `gone` before taking it away. Cleared at
+    // the moment it is dismissed, a cell takes its own leaving with it, and
+    // what the eye sees is a panel that vanished rather than one that closed.
+    property bool leaving: false
+
+    signal gone()
+
+    function depart() {
+        if (root.leaving)
+            return;
+        root.leaving = true;
+        departure.restart();
+    }
+
+    ParallelAnimation {
+        id: departure
+
+        NumberAnimation {
+            target: root
+            property: "emergence"
+            to: 0.82
+            duration: Timing.close
+            easing.type: Easing.Bezier
+            easing.bezierCurve: Timing.easeClose
+        }
+
+        NumberAnimation {
+            target: root
+            property: "opacity"
+            to: 0
+            duration: Timing.close
+        }
+
+        onFinished: root.gone()
+    }
+
     // A cell that is not shown occupies nothing; the tissue reflows around it.
-    visible: placed || appearance.running
+    visible: placed || appearance.running || leaving
     opacity: placed ? 1 : 0
 
     // A contracted cell resizes to fit its content, and that is a reflow: it

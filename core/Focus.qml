@@ -207,9 +207,11 @@ Singleton {
         if (!host)
             return false;
 
-        // Asking twice puts it away, the way a shortcut does everywhere else.
+        // Asking twice puts it away, the way a shortcut does everywhere else
+        // — and it leaves the way it arrived, so the host is asked to retire
+        // it rather than to drop it.
         if (host.summoned === domain) {
-            host.dismiss();
+            host.retire();
             return true;
         }
         return host.summon(domain);
@@ -226,7 +228,7 @@ Singleton {
 
         const host = root.hostFor(output);
         if (host && host.summoned === domain) {
-            host.dismiss();
+            host.retire();
             return true;
         }
         return false;

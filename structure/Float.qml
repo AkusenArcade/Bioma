@@ -55,6 +55,18 @@ PanelWindow {
         root.summoned = "";
     }
 
+    // A summoned cell leaves the way it arrived — shrinking about its own
+    // centre — and only then is it let go. Nothing else on this surface has
+    // anywhere to retract to, so the leaving is the cell's own.
+    function retire() {
+        const cell = tissue.cells.length > 0 ? tissue.cells[0] : null;
+        if (!cell) {
+            root.dismiss();
+            return;
+        }
+        cell.depart();
+    }
+
     // The cell arrives a moment after it is asked for — it is built from the
     // configuration the way every other cell is — so it is opened when it
     // appears rather than when it is asked for.
@@ -85,19 +97,21 @@ PanelWindow {
     }
 
     // And it is let go once it has finished leaving: a cell cleared at the
-    // moment it closes takes its own closing animation with it.
+    // moment it closes takes its own closing animation with it. So it is asked
+    // to leave, and cleared when it says it has — `retire` below.
     Connections {
         target: tissue.cells.length > 0 ? tissue.cells[0] : null
         enabled: root.host && root.summoned.length > 0
+        function onGone() { root.dismiss(); }
         function onExpandedChanged() {
             const cell = tissue.cells[0];
             if (cell && !cell.open && !cell.expanded && !cell.visibility.invoked)
-                root.dismiss();
+                root.retire();
         }
         function onShownChanged() {
             const cell = tissue.cells[0];
             if (cell && !cell.shown && !cell.expanded)
-                root.dismiss();
+                root.retire();
         }
     }
 
