@@ -21,10 +21,13 @@ Cell {
 
     domain: "vitals"
 
-    // The one cell so far with a field to type in: the process filter. Nothing
-    // else in the shell asks for the keyboard, and asking for it costs the
-    // membrane its indifference to the pointer under `focus-follows-mouse`.
-    wantsKeyboard: true
+    // The one cell so far with a field to type in: the process filter. It asks
+    // for the keyboard when the field is touched and not a moment earlier —
+    // a membrane that declares itself focusable is one niri moves the focus to
+    // as soon as the pointer crosses it, so a cell that asked merely by being
+    // open made the focused window, and the title cell with it, blink on every
+    // hover. The expansion raises this; closing the cell always puts it down.
+    wantsKeyboard: false
 
     paddingLeading: 14
     paddingTrailing: 14
@@ -122,8 +125,13 @@ Cell {
     replacesContent: true
 
     // The process list is the one sample that costs something, so the service
-    // takes it only while it is being looked at.
-    onOpenChanged: SystemMonitor.listProcesses = root.open
+    // takes it only while it is being looked at — and a closed cell holds
+    // nothing, the keyboard included.
+    onOpenChanged: {
+        SystemMonitor.listProcesses = root.open;
+        if (!root.open)
+            root.wantsKeyboard = false;
+    }
 
     // The expansion is a composition — pods, threads and a panel — so it lives
     // in its own file beside this one and arrives through a Loader: a cell's

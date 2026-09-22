@@ -612,12 +612,23 @@ focusable only while one of those is open. Verified through `niri msg layers`:
 with the audio cell open both membranes report `none`, with vitals open the
 membrane carrying it reports `on-demand` and the other still reports `none`.
 
-What is left of it: vitals is that cell, and while it is open hovering the
-membrane still moves the focus, because the search field cannot be typed into
-otherwise. Two ways out when it matters — the field asking for the keyboard
-only from the moment it is pressed, or the window title keeping its last window
-while the shell itself is holding the focus. The second one can lie: it cannot
-tell a focus Bioma took from a workspace that genuinely has no window.
+And vitals asks only from the moment the field is pressed, which is Akusen's
+choice of the two that were open — the other was the window title keeping its
+last window while the shell holds the focus, and that one can lie: it cannot
+tell a focus Bioma took from a workspace that genuinely has no window. So an
+open vitals is as quiet as any other cell until somebody types in it, and the
+cell puts the keyboard down when it closes or on Escape.
+
+Verified the same way: vitals open with the field untouched leaves both
+membranes at `none`, and raising `wantsKeyboard` from a throwaway timer turns
+the membrane carrying it to `on-demand`. The press that raises it in earnest is
+in `VitalsExpansion.qml` and is waiting for a pair of hands like every other
+press here.
+
+One thing to know on a machine without `focus-follows-mouse`: niri hands an
+on-demand layer surface the keys on a press, and the press that makes the
+surface focusable is the same one — so the field may want a second press there.
+This session has the option on, where the compositor gives the keys at once.
 
 ## Phase 1 — Service porting
 
