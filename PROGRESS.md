@@ -16,11 +16,12 @@ sinestesia draws the sound. Phase 4 has started with the audio cell.
 
 Three ways in, and they are independent:
 
-1. **The rest of phase 4**: connectivity, session, dock. Audio is done — the
-   dial, the capsule and the three wells, against the real PipeWire graph. What
-   is left of the two cells already drawn is what CELLS left open: sinestesia
-   on a narrow screen and whether a long title scrolls on hover, and reduced
-   motion, which asks for the band to become a single bar rather than stop.
+1. **The rest of phase 4**: session and dock. Audio and connectivity are done —
+   the dial, the capsule and the three wells against the real PipeWire graph,
+   and one glyph per live connection with the two family wells under it. What
+   is left of the cells already drawn is what CELLS left open: sinestesia on a
+   narrow screen and whether a long title scrolls on hover, and reduced motion,
+   which asks for the band to become a single bar rather than stop.
 2. **Notifications**, which closes phase 1 and burns the bridge — the only work
    that cannot be done without switching the running shell off. See the
    pre-flight below.
@@ -101,9 +102,9 @@ Drawn, and verified on screen against the design handoff.
 | `structure/Tissue.qml` | Real. Ceiling-not-reservation widths, elastic share, reflow, the punched band. |
 | `structure/Cell.qml` | Real, contracted. Glass, rim, config-driven width and visibility, growth mechanics written. |
 | `structure/Visibility.qml` | **Exercised at last** — the window title appears and disappears with focus. |
-| `components/` | `Rim`, `Ring`, `DashedRing`, `Disc`, `Dial`, `Gauge`, `Slider`, `Icon`, `LightGradient`, `Thread`, `Panel`, `Well`, `Band`, `Sweep`, `Segmented`, `WorkspaceBars`, `Vital`. |
+| `components/` | `Rim`, `Ring`, `DashedRing`, `Disc`, `Dial`, `Gauge`, `Slider`, `Switch`, `Strength`, `Icon`, `LightGradient`, `Thread`, `Panel`, `Well`, `Band`, `Sweep`, `Segmented`, `WorkspaceBars`, `Vital`. |
 | `structure/InputSurface.qml` + `core/Focus.qml` | The full-screen surface of PRD §8, and the register of what is open. Built; the press path still needs a human to click. |
-| `cells/clock`, `cells/window_title`, `cells/workspaces`, `cells/vitals`, `cells/theme`, `cells/utility`, `cells/recording`, `cells/sinestesia`, `cells/audio` | Nine cells. Vitals opens into pods, threads and the process list; theme into the wallpaper carousel and the two palette capsules; utility into the capture panel, and generates the recording cell. |
+| `cells/clock`, `cells/window_title`, `cells/workspaces`, `cells/vitals`, `cells/theme`, `cells/utility`, `cells/recording`, `cells/sinestesia`, `cells/audio`, `cells/connectivity` | Ten cells. Vitals opens into pods, threads and the process list; theme into the wallpaper carousel and the two palette capsules; utility into the capture panel, and generates the recording cell. |
 | `structure/SelectionSurface.qml` | Bioma's own selection rectangle, over the whole desktop, in place of `slurp`. Up only while a region is being asked for, and it holds the keyboard for that long so Escape means cancel. |
 | `components/Segmented.qml` | The segmented control, shared: the theme cell's source switch and the utility cell's three kinds are the same object. |
 | `core/Config.qml` write-back | `Config.set` writes one key into the override layer. Brought forward from phase 5 because the theme cell has to keep a choice. |
@@ -663,6 +664,44 @@ rebuilding:
   thread, no panel. The gesture is right and the cost is the tissue: the row
   reflows on every pass, and vitals, whose header is `MACHINE VITALS & TASKS`,
   shifts its neighbours by a third of the membrane.
+
+### Connectivity, the cell that composes itself
+
+One glyph per live connection — the wire first, then Wi-Fi, then the wireless
+devices — so the width says how many there are without writing a number. With
+none it goes: a struck-through icon would claim a fault, and being offline is
+a condition.
+
+- **The header composes itself too.** The mark is whichever connection leads
+  the row, so the glyph that was on the membrane a moment ago is the glyph the
+  cell wears when it opens.
+- **Two wells, two truths about choice.** The radio dot is on the Wi-Fi rows,
+  where you are on one network at a time and the dot tells the truth; the
+  devices have none, because several can be connected at once. A device says
+  what it is with its glyph — headset, mouse, or the shell's own wireless mark
+  for everything else — lit when connected and dim when only paired.
+- **The switch turns the family off, not the well.** With the radio off the
+  well stays, says so, and is still there to turn back on.
+- **`components/Switch.qml` follows the value, never the press.** A radio takes
+  a moment to answer; for that moment the knob stays where it is and the pill
+  dims. A switch that snapped over and back would be lying twice.
+- **`components/Strength.qml` is never state-coloured.** A weak signal is not
+  past a threshold — nothing is wrong with a network that is far away — so the
+  four bars are primary and the ones not reached are the same colour, faded.
+- **The password is a field in the row, not a dialog.** The network being
+  joined stays visible above what is typed, the list behind it is not covered,
+  and a wrong password turns the outline to the alert colour and says why under
+  it without taking away what was typed. The keyboard is asked for the way
+  vitals asks: over the panel, and while a password is actually being asked
+  for, because the pointer may leave while it is being typed.
+- **The scanner belongs to the open panel.** It wakes the radio and costs
+  power, so it starts when the panel is built and stops when it is destroyed.
+
+Verified against the live machine: the cell shows the ethernet glyph alone with
+the wire connected and nothing else on, the panel draws both wells and their
+empty states, and with the radio briefly switched on — and put back
+soft-blocked, as it was — the list fills with real networks, locks and strength
+bars. The password field, the taps and the switches have never been pressed.
 
 ## Phase 1 — Service porting
 

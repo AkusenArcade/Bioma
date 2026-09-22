@@ -176,8 +176,8 @@
             {
               "type": "connectivity",
               "enabled": true,
-              "visibility": { "type": "conditional", "confirm": 0, "dwell": 1000 },
-              "min_width": { "value": 24 }
+              "visibility": { "type": "conditional", "enter": 1, "exit": 1, "confirm": 0, "dwell": 1000 },
+              "min_width": { "value": 64 }
             },
             {
               "type": "audio",
