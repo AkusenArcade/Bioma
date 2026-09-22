@@ -104,8 +104,24 @@ PanelWindow {
     implicitHeight: horizontal ? (anyExpanded ? (screen ? screen.height : strip) : strip) : 0
     implicitWidth: horizontal ? 0 : (anyExpanded ? (screen ? screen.width : strip) : strip)
 
-    // Invoked cells acquire keyboard focus and release it on close.
-    focusable: anyOpen
+    // Keyboard focus is asked for by the cell that needs it, and by no other.
+    //
+    // A layer surface that declares on-demand keyboard interactivity is one a
+    // compositor may focus, and under `focus-follows-mouse` niri focuses it the
+    // moment the pointer crosses it — which takes the focus off the window. So
+    // a membrane that asked for the keyboard because *something* was open made
+    // the focused window flicker away and back as the pointer travelled over
+    // its cells, and the window title cell, which exists on that focus, went
+    // with it. Akusen saw the title; the rule is the focus.
+    readonly property bool anyKeyboard: {
+        for (const tissue of root.tissues)
+            for (const cell of tissue.cells)
+                if (cell.open && cell.wantsKeyboard)
+                    return true;
+        return false;
+    }
+
+    focusable: anyKeyboard
 
     // ---- Auto-hide ---------------------------------------------------------
 

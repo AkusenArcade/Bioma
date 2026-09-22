@@ -597,6 +597,28 @@ colour.
   where it was and only dims, because muting is not zeroing. Confirmed with
   three players at three volumes, one of them muted from `wpctl`.
 
+### Keyboard focus is asked for by the cell, not by the membrane
+
+`focus-follows-mouse` is on in this session's niri, and a layer surface that
+declares on-demand keyboard interactivity is one the compositor focuses the
+moment the pointer crosses it. The membrane declared it whenever *any* cell was
+open, so with a cell open the focused window was dropped and picked up again as
+the pointer travelled over the other cells — and the window title cell, which
+exists on that focus, blinked with it. Akusen saw the title; the fault was the
+focus.
+
+`Cell.wantsKeyboard` now says which cells need keys, and a membrane is
+focusable only while one of those is open. Verified through `niri msg layers`:
+with the audio cell open both membranes report `none`, with vitals open the
+membrane carrying it reports `on-demand` and the other still reports `none`.
+
+What is left of it: vitals is that cell, and while it is open hovering the
+membrane still moves the focus, because the search field cannot be typed into
+otherwise. Two ways out when it matters — the field asking for the keyboard
+only from the moment it is pressed, or the window title keeping its last window
+while the shell itself is holding the focus. The second one can lie: it cannot
+tell a focus Bioma took from a workspace that genuinely has no window.
+
 ## Phase 1 — Service porting
 
 Nine of ten done, each verified headlessly through `probe.qml` before moving

@@ -143,6 +143,13 @@ Item {
     // Or it can simply stop speaking, with nothing in its place.
     property bool replacesContent: false
 
+    // Whether the expansion needs the keyboard — a field to type in, a list to
+    // drive with the arrows. It costs more than it looks: the membrane can only
+    // ask for keys by declaring itself focusable, and a focusable surface is
+    // one the compositor may move the focus to on hover. A cell that only
+    // wants presses leaves this alone.
+    property bool wantsKeyboard: false
+
     readonly property bool showsHeader: open && (headerMark !== null || headerTitle.length > 0)
 
     TextMetrics {

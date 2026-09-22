@@ -21,6 +21,11 @@ Cell {
 
     domain: "vitals"
 
+    // The one cell so far with a field to type in: the process filter. Nothing
+    // else in the shell asks for the keyboard, and asking for it costs the
+    // membrane its indifference to the pointer under `focus-follows-mouse`.
+    wantsKeyboard: true
+
     paddingLeading: 14
     paddingTrailing: 14
 
