@@ -242,7 +242,8 @@ Item {
                 })
             }
 
-            // Do not disturb, where it is looked for.
+            // Do not disturb, where it is looked for, and said in a word:
+            // beside a bare "Clear" the switch read as the control *for* it.
             Switch {
                 id: quiet
                 anchors.right: parent.right
@@ -253,14 +254,62 @@ Item {
             }
 
             Text {
+                id: quietLabel
+
                 anchors.right: quiet.left
-                anchors.rightMargin: 12 * root.factor
+                anchors.rightMargin: 8 * root.factor
+                anchors.verticalCenter: quiet.verticalCenter
+                text: "QUIET"
+                color: Theme.textMuted
+                font: Qt.font({
+                    "family": Typography.technical,
+                    "pixelSize": root.metrics.fontMeta,
+                    "letterSpacing": Typography.tracking(root.metrics.fontMeta,
+                                                         Typography.labelTracking)
+                })
+            }
+
+            // Emptying the history is an **action**, so it wears the shape of
+            // one. As a bare word beside a switch it was taken for the
+            // switch's label — Akusen, 2026-09-22.
+            Item {
+                id: clear
+
+                readonly property real inset: 9 * root.factor
+                // Orbitron paints a little wider than it measures at this
+                // size; the trailing margin carries the difference.
+                readonly property real tail: 5 * root.factor
+
+                anchors.right: quietLabel.left
+                anchors.rightMargin: 14 * root.factor
                 anchors.verticalCenter: quiet.verticalCenter
                 visible: Notifications.history.length > 0
-                text: "Clear"
-                color: Theme.textMuted
-                font.family: Typography.expressive
-                font.pixelSize: root.metrics.fontSecondary
+                width: clear.inset * 2 + clearLabel.implicitWidth + clear.tail
+                height: 22 * root.factor
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: Metrics.radiusFor(height, root.metrics)
+                    antialiasing: true
+                    color: clearHover.hovered ? Qt.alpha(Theme.text, 0.08) : "transparent"
+                    border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+                    border.color: clearHover.hovered ? Theme.text : Theme.line
+                }
+
+                Text {
+                    id: clearLabel
+                    anchors.centerIn: parent
+                    text: "CLEAR"
+                    color: clearHover.hovered ? Theme.text : Theme.textMuted
+                    font: Qt.font({
+                        "family": Typography.technical,
+                        "pixelSize": root.metrics.fontMeta,
+                        "letterSpacing": Typography.tracking(root.metrics.fontMeta,
+                                                             Typography.labelTracking)
+                    })
+                }
+
+                HoverHandler { id: clearHover }
 
                 TapHandler {
                     onTapped: Notifications.forget()
