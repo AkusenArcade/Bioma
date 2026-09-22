@@ -122,6 +122,26 @@ Cell {
         Niri.focusWindow(windows[next].id);
     }
 
+    // Keeping one, and letting one go. The design gives the dock no gesture
+    // for this and the settings cell is phases away, so it lives on the
+    // right button: one press, one effect, and the sign that it worked is the
+    // icon moving to the other side of the divider.
+    //
+    // What is written is the desktop entry's own id where one resolves, so the
+    // list stays in the vocabulary the configuration is read in rather than in
+    // whatever a compositor happened to call the window.
+    function keep(appId) {
+        const entry = Apps.entryFor(appId);
+        const id = entry && entry.id ? entry.id : appId;
+        if (root.isPinned(id))
+            return;
+        Config.set("dock.pinned", root.pinned.concat([id]));
+    }
+
+    function unkeep(appId) {
+        Config.set("dock.pinned", root.pinned.filter(id => !root.sameApp(id, appId)));
+    }
+
     function launch(appId) {
         const entry = Apps.entryFor(appId);
         if (!entry) {
@@ -173,6 +193,7 @@ Cell {
                 onExited: label => root.unname(label)
                 onActivated: root.activate(kept.modelData)
                 onLaunched: root.launch(kept.modelData)
+                onToggled: root.unkeep(kept.modelData)
             }
         }
 
@@ -208,6 +229,7 @@ Cell {
                 onExited: label => root.unname(label)
                 onActivated: root.activate(live.modelData.appId)
                 onLaunched: root.launch(live.modelData.appId)
+                onToggled: root.keep(live.modelData.appId)
             }
         }
     }
@@ -285,6 +307,7 @@ Cell {
         signal exited(string label)
         signal activated
         signal launched
+        signal toggled
 
         HoverHandler {
             onHoveredChanged: {
@@ -306,6 +329,12 @@ Cell {
         TapHandler {
             acceptedButtons: Qt.MiddleButton
             onTapped: icon.launched()
+        }
+
+        // The right button keeps it, or lets it go.
+        TapHandler {
+            acceptedButtons: Qt.RightButton
+            onTapped: icon.toggled()
         }
     }
 

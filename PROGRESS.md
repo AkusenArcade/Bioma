@@ -831,6 +831,16 @@ and would have stopped being a membrane.
 - **`left` is not a signal name.** An Item declares it final — it is one of
   its own anchor lines — and the compiler refuses it, which is the same trap
   `components/Band.qml` hit with `left` and `right`.
+- **The right button keeps an application, or lets it go.** Neither CELLS §09
+  nor the PRD gives the dock a gesture for pinning, and the settings cell is
+  phases away, so it lives on the right button: one press, one effect, and the
+  sign that it worked is the icon moving to the other side of the divider. It
+  writes the desktop entry's own id where one resolves, so the list stays in
+  the vocabulary the configuration is read in. Akusen asked how to pin one,
+  2026-09-22, which was a fair question with no answer but a text editor.
+  Verified by calling both functions from a throwaway timer: the override file
+  gained `steam` and lost OBS, and the cell recomposed from the file without a
+  restart.
 - **Not done: dragging the kept applications into a different order.** CELLS
   §09 asks for it. It is the one interaction here that writes to the
   configuration, nothing on this machine can drag, and a reorder that goes
