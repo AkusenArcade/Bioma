@@ -125,7 +125,7 @@ Item {
                 required property int index
 
                 metrics: root.metrics
-                radius: root.capsuleHeight / 2
+                radius: Metrics.radiusFor(root.capsuleHeight, root.metrics)
                 padding: 0
                 fixedWidth: root.capsuleWidth
                 fixedHeight: root.capsuleHeight

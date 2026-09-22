@@ -162,7 +162,7 @@ PanelWindow {
 
                 Rectangle {
                     anchors.fill: parent
-                    radius: height / 2
+                    radius: Metrics.radiusFor(height, root.metrics)
                     color: Qt.alpha(Theme.cell, Config.get("cell.opacity", 0.72))
                     antialiasing: true
                 }

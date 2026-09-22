@@ -45,7 +45,7 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         width: parent.width
         height: root.trackHeight
-        radius: height / 2
+        radius: Metrics.shaped(height / 2)
         color: Qt.alpha(Theme.line, 0.55)
         antialiasing: true
     }
@@ -54,7 +54,7 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         width: root.width * root.travel
         height: root.trackHeight
-        radius: height / 2
+        radius: Metrics.shaped(height / 2)
         antialiasing: true
 
         gradient: Gradient {
@@ -67,7 +67,7 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         width: root.handleSize
         height: width
-        radius: width / 2
+        radius: Metrics.shaped(width / 2)
         x: root.width * root.travel - width / 2
         antialiasing: true
 

@@ -58,7 +58,7 @@ through, which is exactly how this was found.
 
 | Key | Meaning |
 |---|---|
-| `radius` | One value as a percentage: 0 is a rectangle, 100 a pill. A cell's radius is its tissue's minus the padding, so concentric corners are automatic at every value. |
+| `radius` | One value as a percentage of the drawn shapes: 100 is the design as it stands, 0 a rectangle. It reaches every surface — cells, tissues, panels, wells, capsules, rows, controls — not only the cells on the membrane, because a shell with square cells and round capsules inside them is two shells. What it does not reach is what is round because of what it is: an avatar, a dial, a radio mark, a thread's node. A cell's radius is its tissue's minus the padding, so concentric corners are automatic at every value. |
 | `xray` | On: blur a static copy of the wallpaper — cheap, but it blurs the wallpaper even when windows are underneath. Off: blur the actual underlying content — correct, more expensive, still experimental. |
 | `edge` | Margin between the screen edge and a tissue, in logical units. |
 | `gap` | Distance between the shapes of one open cell — a capsule and the panel beside it, the pods and the list. |

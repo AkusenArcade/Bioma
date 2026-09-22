@@ -183,7 +183,7 @@ Item {
 
                         Rectangle {
                             anchors.fill: parent
-                            radius: height / 2
+                            radius: Metrics.radiusFor(height, root.metrics)
                             color: "transparent"
                             border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
                             border.color: Theme.line

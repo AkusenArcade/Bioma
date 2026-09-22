@@ -42,7 +42,7 @@ Item {
     readonly property real tileHeight: 140 * factor
     readonly property real neighbourWidth: 100 * factor
     readonly property real tilePitch: 10 * factor
-    readonly property real tileRadius: 10 * factor
+    readonly property real tileRadius: Metrics.shaped(10 * factor)
 
     readonly property real capsuleWidth: 268 * factor
     readonly property real capsuleHeight: 96 * factor
@@ -439,7 +439,7 @@ Item {
         id: source
 
         metrics: root.metrics
-        radius: root.capsuleHeight / 2
+        radius: Metrics.radiusFor(root.capsuleHeight, root.metrics)
         padding: 14 * root.factor
         targetWidth: root.capsuleWidth
         targetHeight: root.capsuleHeight
@@ -492,7 +492,7 @@ Item {
         id: palette
 
         metrics: root.metrics
-        radius: root.capsuleHeight / 2
+        radius: Metrics.radiusFor(root.capsuleHeight, root.metrics)
         padding: 14 * root.factor
         targetWidth: root.capsuleWidth
         targetHeight: root.capsuleHeight
@@ -526,7 +526,7 @@ Item {
 
                         width: root.chipSize
                         height: width
-                        radius: 5 * root.factor
+                        radius: Metrics.shaped(5 * root.factor)
                         antialiasing: true
                         color: chip.modelData
 
@@ -553,7 +553,7 @@ Item {
 
                 Rectangle {
                     anchors.fill: parent
-                    radius: height / 2
+                    radius: Metrics.radiusFor(height, root.metrics)
                     color: "transparent"
                     border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
                     border.color: Theme.line

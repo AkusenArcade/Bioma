@@ -167,7 +167,7 @@ Item {
             // shape that dictates the content, so a pod is a full pill — and
             // its content is held off the cap by rather more than a panel's
             // padding, or the indicator sits in the curve.
-            radius: root.podHeight / 2
+            radius: Metrics.radiusFor(root.podHeight, root.metrics)
             padding: 23 * root.factor
             targetWidth: root.podWidth
             targetHeight: root.podHeight
@@ -520,7 +520,7 @@ Item {
 
                 Rectangle {
                     anchors.fill: parent
-                    radius: height / 2
+                    radius: Metrics.radiusFor(height, root.metrics)
                     color: "transparent"
                     border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
                     border.color: Theme.alert
@@ -565,7 +565,7 @@ Item {
 
                         Rectangle {
                             anchors.fill: parent
-                            radius: height / 2
+                            radius: Metrics.radiusFor(height, root.metrics)
                             antialiasing: true
                             gradient: Gradient {
                                 GradientStop { position: 0; color: Theme.gradientTop(Theme.alert) }

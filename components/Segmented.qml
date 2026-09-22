@@ -52,7 +52,7 @@ Item {
 
         width: buttons.width + root.trackPadding * 2
         height: root.buttonHeight + root.trackPadding * 2
-        radius: height / 2
+        radius: Metrics.radiusFor(height, root.metrics)
         antialiasing: true
 
         color: Qt.alpha(Theme.lift(Theme.background, -0.01), 0.8)
@@ -76,7 +76,7 @@ Item {
             y: root.trackPadding
             width: selection.chosenItem ? selection.chosenItem.width : 0
             height: root.buttonHeight
-            radius: height / 2
+            radius: Metrics.radiusFor(height, root.metrics)
             antialiasing: true
             visible: width > 0
 

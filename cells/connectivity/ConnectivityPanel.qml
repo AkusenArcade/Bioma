@@ -331,7 +331,7 @@ Item {
 
                         Rectangle {
                             anchors.fill: parent
-                            radius: height / 2
+                            radius: Metrics.radiusFor(height, root.metrics)
                             color: "transparent"
                             border.width: Metrics.crisp(1.5, Screen.devicePixelRatio)
                             border.color: root.failed ? Theme.alert : Theme.primary
@@ -360,7 +360,7 @@ Item {
                                 anchors.centerIn: parent
                                 width: parent.width + connect.pad * 2
                                 height: root.fieldHeight - 10 * root.factor
-                                radius: height / 2
+                                radius: Metrics.radiusFor(height, root.metrics)
                                 z: -1
                                 color: "transparent"
                                 border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)

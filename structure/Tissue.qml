@@ -104,8 +104,7 @@ Item {
 
     // Concentric by construction: the cell radius is the tissue's minus the
     // padding, at every value of the user's radius percentage.
-    readonly property real radiusPercent: Config.get("appearance.radius", 100)
-    readonly property real radius: (radiusPercent / 100) * Metrics.radiusFor(thickness, metrics)
+    readonly property real radius: Metrics.radiusFor(thickness, metrics)
     readonly property real cellRadius: Metrics.innerRadius(radius, padding)
 
     // Recomputed whenever a cell appears, disappears or changes width. Reading

@@ -35,7 +35,7 @@ Cell {
     readonly property real chipWidth: 10 * metrics.factor
     readonly property real chipHeight: 22 * metrics.factor
     readonly property real chipGap: 3 * metrics.factor
-    readonly property real chipRadius: 5 * metrics.factor
+    readonly property real chipRadius: Metrics.shaped(5 * metrics.factor)
 
     // Seven, always — even when two of them are nearly the same colour. The
     // number of roles is fixed, and it is part of what the cell says.
@@ -71,7 +71,6 @@ Cell {
                 required property var modelData
                 required property int index
 
-                anchors.verticalCenter: parent.verticalCenter
                 width: root.chipWidth
                 height: root.chipHeight
                 radius: root.chipRadius

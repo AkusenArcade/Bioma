@@ -35,7 +35,7 @@ Item {
     // a gradient and the other a border.
     Rectangle {
         anchors.fill: parent
-        radius: height / 2
+        radius: Metrics.shaped(height / 2)
         antialiasing: true
         opacity: root.on ? 0 : 1
         color: Qt.alpha(Theme.lift(Theme.background, -0.01), 0.9)
@@ -47,7 +47,7 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        radius: height / 2
+        radius: Metrics.shaped(height / 2)
         antialiasing: true
         opacity: root.on ? 1 : 0
 
@@ -63,7 +63,7 @@ Item {
     Rectangle {
         width: root.knobSize
         height: width
-        radius: width / 2
+        radius: Metrics.shaped(width / 2)
         antialiasing: true
         y: (root.height - height) / 2
         x: root.on ? root.width - width - root.inset : root.inset

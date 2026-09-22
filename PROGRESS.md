@@ -1266,6 +1266,27 @@ Also quieted: `LauncherBody` read its measurements straight off the cell, which
 a Loader hands over only after the body exists, so every summon logged a page
 of "cannot read property of null". They come through guarded properties now.
 
+### One radius for the whole shell
+
+`appearance.radius` moved the cells on the membrane and nothing else: every
+panel, capsule, well, row and control carried its own `height / 2` or its own
+literal, so at 40 % the shell had square cells with round capsules inside them.
+
+The percentage lives in `Metrics` now — `radiusPercent` and `shaped()` — and
+`radiusFor()` and the `radiusPanel` / `radiusWell` steps pass through it, which
+carries most of the shell on its own. The rest was a sweep: every container
+radius written by hand now asks `Metrics.radiusFor` for a pill or
+`Metrics.shaped` for a literal. Verified at 100 (identical), 40 and 0.
+
+What deliberately does **not** follow it is what is round because of what it
+is: the avatar, the dial and the gauge, the radio marks, the workspace rings,
+the thread's nodes, the sound bars. Those are drawings, not surfaces, and an
+oval avatar is a defect at any setting.
+
+Also taken out on the way: `ThemeCell`'s chips anchored to a parent a `Row`
+gives them and takes away, which logged "cannot read property verticalCenter of
+null" on every rebuild.
+
 ## Phase 1 — Service porting
 
 Nine of ten done, each verified headlessly through `probe.qml` before moving

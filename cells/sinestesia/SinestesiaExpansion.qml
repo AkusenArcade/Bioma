@@ -96,7 +96,7 @@ Item {
         id: visualiser
 
         metrics: root.metrics
-        radius: root.capsuleHeight / 2
+        radius: Metrics.radiusFor(root.capsuleHeight, root.metrics)
         targetWidth: root.capsuleWidth
         targetHeight: root.capsuleHeight
         growth: root.cell ? root.cell.panelGrowth : 0
@@ -270,7 +270,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     width: parent.width
                     height: 3 * root.factor
-                    radius: height / 2
+                    radius: Metrics.shaped(height / 2)
                     color: Qt.alpha(Theme.line, 0.55)
                     antialiasing: true
                 }
@@ -280,7 +280,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     width: parent.width * Math.max(0, Math.min(1, Media.progress))
                     height: 3 * root.factor
-                    radius: height / 2
+                    radius: Metrics.shaped(height / 2)
                     antialiasing: true
 
                     gradient: Gradient {
@@ -448,7 +448,7 @@ Item {
 
                 Rectangle {
                     anchors.fill: parent
-                    radius: height / 2
+                    radius: Metrics.radiusFor(height, root.metrics)
                     color: "transparent"
                     border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
                     border.color: Theme.line

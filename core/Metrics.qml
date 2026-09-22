@@ -41,6 +41,22 @@ Singleton {
     readonly property real radiusWell: 10      // concentric inside a panel
     readonly property real pillCeiling: 110    // above this, radius 20 rather than 100%
 
+    // How round the shell is, as a percentage of the figures above and of
+    // every pill's own half-height: 100 is the shape as it is drawn in the
+    // design, 0 a rectangle. It reaches **every** surface — the cells on the
+    // membrane, the panels they open, the capsules inside them, the wells, the
+    // rows and the controls — because a shell with square cells and round
+    // capsules inside them is not a shell with a setting, it is two shells.
+    //
+    // It does not reach what is round because of what it *is*: an avatar, a
+    // dial, a radio mark, the node at the end of a thread. Those are drawings,
+    // not surfaces, and an oval avatar is a defect however the shell is set.
+    readonly property real radiusPercent: Math.max(0, Math.min(100, Config.get("appearance.radius", 100)))
+
+    function shaped(radius) {
+        return radius * root.radiusPercent / 100;
+    }
+
     readonly property real blurRadius: 20      // glass; niri owns the real one
 
     // ---- Critical dimensions ----------------------------------------------
@@ -82,8 +98,8 @@ Singleton {
             "tissuePadding": root.marginTissue * f,
             "gap": root.gapShape * f,
 
-            "radiusPanel": root.radiusPanel * f,
-            "radiusWell": root.radiusWell * f,
+            "radiusPanel": root.shaped(root.radiusPanel * f),
+            "radiusWell": root.shaped(root.radiusWell * f),
             "pillCeiling": root.pillCeiling * f,
 
             "thread": root.thread,
@@ -110,7 +126,7 @@ Singleton {
     // the content — eating the corners of images and lists.
     function radiusFor(height, metrics) {
         const m = metrics || root.step("normal");
-        return height <= m.pillCeiling ? height / 2 : m.radiusPanel;
+        return height <= m.pillCeiling ? root.shaped(height / 2) : m.radiusPanel;
     }
 
     // Concentric by construction: a well inset by `inset` inside a shape of

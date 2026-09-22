@@ -526,7 +526,7 @@ Cell {
 
         Rectangle {
             anchors.fill: parent
-            radius: height / 2
+            radius: Metrics.radiusFor(height, root.metrics)
             color: Qt.alpha(Theme.lift(Theme.background, -0.01), 0.92)
             antialiasing: true
         }

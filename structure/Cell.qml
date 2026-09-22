@@ -110,7 +110,7 @@ Item {
     property bool blur: Config.get("cell.blur", true)
 
     // Set by the tissue, so corners stay concentric with it at every radius.
-    property real radius: metrics.cellHeight / 2
+    property real radius: Metrics.radiusFor(metrics.cellHeight, metrics)
 
     // The side the cell was born from: an expansion grows away from it, and the
     // node of its first thread sits on it. Inherited from the parent tissue.

@@ -178,7 +178,7 @@ Cell {
         Rectangle {
             anchors.fill: parent
             visible: !choice.primary
-            radius: height / 2
+            radius: Metrics.radiusFor(height, root.metrics)
             color: "transparent"
             border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
             border.color: Theme.line
@@ -188,7 +188,7 @@ Cell {
         Rectangle {
             anchors.fill: parent
             visible: choice.primary
-            radius: height / 2
+            radius: Metrics.radiusFor(height, root.metrics)
             antialiasing: true
 
             gradient: Gradient {

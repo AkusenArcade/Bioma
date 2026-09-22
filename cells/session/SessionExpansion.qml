@@ -349,7 +349,7 @@ Item {
 
                             Rectangle {
                                 anchors.fill: parent
-                                radius: 6 * root.factor
+                                radius: Metrics.shaped(6 * root.factor)
                                 color: "transparent"
                                 border.width: Metrics.crisp(Metrics.rimWidth,
                                                             Screen.devicePixelRatio)
@@ -390,7 +390,7 @@ Item {
 
                         Rectangle {
                             anchors.fill: parent
-                            radius: height / 2
+                            radius: Metrics.radiusFor(height, root.metrics)
                             color: "transparent"
                             border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
                             border.color: Theme.alert
@@ -421,7 +421,7 @@ Item {
 
                                 Rectangle {
                                     anchors.fill: parent
-                                    radius: height / 2
+                                    radius: Metrics.radiusFor(height, root.metrics)
                                     color: "transparent"
                                     border.width: Metrics.crisp(Metrics.rimWidth,
                                                                 Screen.devicePixelRatio)
@@ -453,7 +453,7 @@ Item {
 
                                 Rectangle {
                                     anchors.fill: parent
-                                    radius: height / 2
+                                    radius: Metrics.radiusFor(height, root.metrics)
                                     antialiasing: true
 
                                     gradient: Gradient {

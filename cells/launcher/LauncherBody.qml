@@ -158,7 +158,7 @@ Item {
             Rectangle {
                 anchors.fill: parent
                 anchors.rightMargin: 2 * root.metrics.factor
-                radius: 14 * root.metrics.factor
+                radius: Metrics.shaped(14 * root.metrics.factor)
                 color: Qt.alpha(Theme.primary, 0.12)
                 visible: result.picked
                 antialiasing: true
