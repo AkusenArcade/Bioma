@@ -136,6 +136,15 @@ so the dismissal itself is verified by hand.
 
 - **`Scale` → `Metrics`.** Name collision with `QtQuick.Scale`, which wins in
   every file that imports QtQuick.
+- **A region tree is grown and never shrunk.** Rebuilding one is the single
+  frame a surface has no region at all — the old object is destroyed, the new
+  one assigned, and in between the compositor is told to blur nothing. Every
+  cell on the membrane loses its glass and gets it back, and closing a cell
+  whose expansion is a composition did it twice in a row, because the shapes
+  leave the list one after the other. `core/Regions.qml` now allocates leaves
+  in steps of eight, parks the ones a shape list does not use, and rebuilds
+  only to grow: an open and a close cost four trees at startup and none after
+  that. Akusen saw it as the whole bar flickering on close, 2026-09-22.
 - **Dynamic `Region` children do not work.** An object created with
   `Qt.createQmlObject` or `Component.createObject` and given a Region as parent
   never joins its `regions` list. The tree is built from a QML string that

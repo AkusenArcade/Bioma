@@ -18,24 +18,57 @@ import Quickshell
 Singleton {
     id: root
 
+    // How many leaves a tree is built with, for a list of `count` shapes.
+    //
+    // Rebuilding a tree is the one moment a surface has no region at all: the
+    // old object is destroyed, the new one is assigned, and for that frame the
+    // compositor is told to blur nothing — every cell on the membrane loses its
+    // glass and gets it back, which is exactly the flicker seen when a cell
+    // closes and its panel's shapes leave the list.
+    //
+    // So a tree is grown in steps and never shrunk: the leaves a shape list
+    // does not use are parked empty, and closing a cell only rebinds. Eight is
+    // one membrane's worth of cells, and the step keeps a busy membrane from
+    // rebuilding on every second shape.
+    readonly property int step: 8
+
+    function fit(count) {
+        return Math.max(root.step, Math.ceil(count / root.step) * root.step);
+    }
+
     // A Region with `count` empty children, owned by `owner`. The caller keeps
-    // the result and destroys the previous one when the count changes.
+    // the result and destroys the previous one when the tree has to grow.
     function tree(owner, count) {
         const children = new Array(Math.max(0, count)).fill("  Region {}").join("\n");
         return Qt.createQmlObject(`import Quickshell\nRegion {\n${children}\n}`, owner);
     }
 
-    // `shapes` is a list of { item, radius }. Returns true when the tree
-    // matched the shape list and was bound.
+    // `shapes` is a list of { item, radius }. Returns true when the tree was
+    // large enough to hold the list and was bound; the leaves beyond it are
+    // parked, which costs a rectangle of nothing and saves a rebuild.
     function bind(region, shapes) {
-        if (!region || region.regions.length !== shapes.length)
+        if (!region || region.regions.length < shapes.length)
             return false;
-        for (let i = 0; i < shapes.length; i++) {
+        for (let i = 0; i < region.regions.length; i++) {
             const leaf = region.regions[i];
-            leaf.item = shapes[i].item;
-            leaf.radius = Math.round(shapes[i].radius);
+            if (i < shapes.length) {
+                leaf.item = shapes[i].item;
+                leaf.radius = Math.round(shapes[i].radius);
+            } else {
+                root.park(leaf);
+            }
         }
         return true;
+    }
+
+    // An unused leaf: no item, no size, nothing contributed to the union.
+    function park(leaf) {
+        leaf.item = null;
+        leaf.x = 0;
+        leaf.y = 0;
+        leaf.width = 0;
+        leaf.height = 0;
+        leaf.radius = 0;
     }
 
     // The same, inverted: everything of `base` except the shapes. This is what
@@ -55,10 +88,14 @@ Singleton {
     // an origin — a membrane on the bottom edge and a catcher over the whole
     // screen — do not mean the same point by the same numbers.
     function bindRects(region, rects) {
-        if (!region || region.regions.length !== rects.length)
+        if (!region || region.regions.length < rects.length)
             return false;
-        for (let i = 0; i < rects.length; i++) {
+        for (let i = 0; i < region.regions.length; i++) {
             const leaf = region.regions[i];
+            if (i >= rects.length) {
+                root.park(leaf);
+                continue;
+            }
             leaf.item = null;
             leaf.x = Math.round(rects[i].x);
             leaf.y = Math.round(rects[i].y);
@@ -71,10 +108,11 @@ Singleton {
 
     function rebindHoleRects(owner, previous, base, rects) {
         let region = previous;
-        if (!region || region.regions.length !== rects.length) {
+        if (!region || region.regions.length < rects.length) {
+            const grown = root.hole(owner, root.fit(rects.length));
             if (region)
                 region.destroy();
-            region = root.hole(owner, rects.length);
+            region = grown;
         }
         region.item = base;
         root.bindRects(region, rects);
@@ -83,24 +121,28 @@ Singleton {
 
     function rebindHoles(owner, previous, base, shapes) {
         let region = previous;
-        if (!region || region.regions.length !== shapes.length) {
+        if (!region || region.regions.length < shapes.length) {
+            const grown = root.hole(owner, root.fit(shapes.length));
             if (region)
                 region.destroy();
-            region = root.hole(owner, shapes.length);
+            region = grown;
         }
         region.item = base;
         root.bind(region, shapes);
         return region;
     }
 
-    // Rebuilds only when the count changed, binds either way. `previous` is
-    // destroyed when it is replaced.
+    // Rebuilds only when the tree is too small, binds either way. The new tree
+    // is built before the old one is destroyed, and a tree is never shrunk:
+    // the surface is never left without a region, which is what the eye sees
+    // as every cell losing its glass for a frame.
     function rebind(owner, previous, shapes) {
         let region = previous;
-        if (!region || region.regions.length !== shapes.length) {
+        if (!region || region.regions.length < shapes.length) {
+            const grown = root.tree(owner, root.fit(shapes.length));
             if (region)
                 region.destroy();
-            region = root.tree(owner, shapes.length);
+            region = grown;
         }
         root.bind(region, shapes);
         return region;
