@@ -45,47 +45,18 @@ Cell {
     // opened, like every other cell with an expansion: the glyph of its domain
     // and its name, in the technical voice. The palette is still on screen —
     // the second capsule holds the same seven roles, larger.
-    readonly property string title: "THEME"
-
-    readonly property real headerMark: 20 * metrics.factor
-    readonly property real headerGap: 12 * metrics.factor
-
-    TextMetrics {
-        id: titleMetrics
-        text: root.title
-        font: Qt.font({
-            "family": Typography.technical,
-            "pixelSize": root.metrics.fontLabel,
-            "weight": Typography.weightLabel,
-            "letterSpacing": Typography.tracking(root.metrics.fontLabel, Typography.labelTracking)
-        })
-    }
-
-    contentWidth: open ? headerMark + headerGap + titleMetrics.width
-                       : roles.length * chipWidth + (roles.length - 1) * chipGap
-
-    replacesContent: true
-
-    header: Component {
-        Row {
-            spacing: root.headerGap
-
-            Icon {
-                anchors.verticalCenter: parent.verticalCenter
-                name: "theme"
-                width: root.headerMark
-                height: width
-                gradient: true
-            }
-
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: root.title
-                color: Theme.text
-                font: titleMetrics.font
-            }
+    headerTitle: "THEME"
+    headerMark: Component {
+        Icon {
+            anchors.fill: parent
+            name: "theme"
+            gradient: true
         }
     }
+
+    contentWidth: roles.length * chipWidth + (roles.length - 1) * chipGap
+
+    replacesContent: true
 
     Row {
         anchors.verticalCenter: parent.verticalCenter

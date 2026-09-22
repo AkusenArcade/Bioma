@@ -29,31 +29,25 @@ Cell {
 
     // Open, the capsule names itself rather than the machine's parts, and a
     // label is machine language: the technical face, like the workspaces cell.
-    readonly property string title: "MACHINE VITALS & TASKS"
-
-    TextMetrics {
-        id: titleMetrics
-        text: root.title
-        font: Qt.font({
-            "family": Typography.technical,
-            "pixelSize": root.metrics.fontLabel,
-            "weight": Typography.weightLabel,
-            "letterSpacing": Typography.tracking(root.metrics.fontLabel, Typography.labelTracking)
-        })
+    headerTitle: "MACHINE VITALS & TASKS"
+    headerMarkSize: 22 * metrics.factor
+    headerMark: Component {
+        Vital {
+            anchors.fill: parent
+            kind: "cpu"
+            load: SystemMonitor.cpuPercent / 100
+            rate: SystemMonitor.cpuClockFraction
+        }
     }
-
-    readonly property real headerMark: 22 * metrics.factor
-    readonly property real headerGap: 12 * metrics.factor
 
     readonly property bool showsGpu: option("gpu", true) && SystemMonitor.gpuPresent
     readonly property bool showsBattery: SystemMonitor.hasBattery
     readonly property int count: 2 + (showsGpu ? 1 : 0) + (showsBattery ? 1 : 0)
 
-    // Open, it is as wide as its title; contracted, as wide as its indicators.
+    // As wide as its indicators; open, `Cell` makes it as wide as its own name.
     // Either way the tissue is anchored to the end of the membrane, so the cell
     // keeps its right edge and grows leftwards.
-    contentWidth: open ? headerMark + headerGap + titleMetrics.width
-                       : count * indicator + (count - 1) * pitch
+    contentWidth: count * indicator + (count - 1) * pitch
 
     // Conditional visibility, when it is configured that way, watches the worst
     // of the vitals rather than any one of them: the cell appears because the
@@ -125,28 +119,6 @@ Cell {
     // The process list is the one sample that costs something, so the service
     // takes it only while it is being looked at.
     onOpenChanged: SystemMonitor.listProcesses = root.open
-
-    header: Component {
-        Row {
-            spacing: root.headerGap
-
-            Vital {
-                anchors.verticalCenter: parent.verticalCenter
-                width: root.headerMark
-                height: width
-                kind: "cpu"
-                load: SystemMonitor.cpuPercent / 100
-                rate: SystemMonitor.cpuClockFraction
-            }
-
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: root.title
-                color: Theme.text
-                font: titleMetrics.font
-            }
-        }
-    }
 
     // The expansion is a composition — pods, threads and a panel — so it lives
     // in its own file beside this one and arrives through a Loader: a cell's

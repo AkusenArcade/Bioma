@@ -502,6 +502,23 @@ the fold to fourteen showing the shape of the music rather than a flat line.
   that sort the list by a domain were never claimed either. Akusen saw the first
   and the second came with it.
 
+- **The face a cell wears when it opens is built once, in `structure/Cell.qml`.**
+  Every cell with an expansion wears the same one — the glyph of its domain and
+  its name in the technical voice — so each of them was carrying its own copy of
+  the same `TextMetrics`, the same Row and the same `open ? … : …` width. Now a
+  cell says `headerMark` and `headerTitle` and nothing else, and the rule that
+  needed a home lives there too: when the tissue grants less than the name
+  needs, the cell shows the glyph alone, centred in what it was given. Found on
+  the 1920 px membrane, where the name ran out of its own pill — measured at the
+  moment it happens, 135 px granted against 143 asked. Akusen's rule,
+  2026-09-22.
+- **`Repeater.itemAt` notifies nothing.** A binding that reads it without
+  reading `count` first is evaluated once, while the Repeater is still empty,
+  and keeps the null for ever — which for the vitals threads meant a length of
+  zero and no threads at all. The same shape of mistake as reading a service
+  from inside a function instead of binding it: the value is right and the
+  dependency is missing.
+
 ## Phase 1 — Service porting
 
 Nine of ten done, each verified headlessly through `probe.qml` before moving

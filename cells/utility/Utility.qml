@@ -38,45 +38,19 @@ Cell {
     // word for a cell that only captures, and the wrong one for a cell expected
     // to grow other functions — a title that has to be renamed when it does is
     // the wrong title. Akusen's call, 2026-09-22.
-    readonly property string title: "UTILITY"
-
-    readonly property real headerGap: 12 * metrics.factor
-
-    TextMetrics {
-        id: titleMetrics
-        text: root.title
-        font: Qt.font({
-            "family": Typography.technical,
-            "pixelSize": root.metrics.fontLabel,
-            "weight": Typography.weightLabel,
-            "letterSpacing": Typography.tracking(root.metrics.fontLabel, Typography.labelTracking)
-        })
-    }
-
-    contentWidth: open ? iconSize + headerGap + titleMetrics.width : iconSize
-
-    replacesContent: true
-
-    header: Component {
-        Row {
-            spacing: root.headerGap
-
-            Icon {
-                anchors.verticalCenter: parent.verticalCenter
-                name: "capture"
-                width: root.iconSize
-                height: width
-                gradient: true
-            }
-
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: root.title
-                color: Theme.text
-                font: titleMetrics.font
-            }
+    headerTitle: "UTILITY"
+    headerMarkSize: iconSize
+    headerMark: Component {
+        Icon {
+            anchors.fill: parent
+            name: "capture"
+            gradient: true
         }
     }
+
+    contentWidth: iconSize
+
+    replacesContent: true
 
     // Two independent choices — what is captured, and where from. They are two
     // rows rather than six buttons, and the last pair used stays selected,

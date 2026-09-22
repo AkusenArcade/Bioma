@@ -125,14 +125,45 @@ Item {
     property bool open: false
 
     // What the cell shows while it is open, if that is not what it shows at
-    // rest. A cell with a header becomes the title of its own expansion: the
-    // contracted content goes and the header arrives in its place.
-    property Component header: null
+    // rest. A cell with an expansion becomes the title of it: the contracted
+    // content goes and the glyph of the domain arrives with the cell's name, in
+    // the technical voice.
+    //
+    // Built here rather than by each cell, because every one of them wears the
+    // same face — and because the rule for what happens when there is no room
+    // for the name has to be the same everywhere. On a narrow membrane a tissue
+    // can grant less than the name needs, and a name that runs out of its own
+    // pill is worse than no name at all: below that width the cell shows the
+    // glyph alone, centred in what it was given.
+    property Component headerMark: null
+    property string headerTitle: ""
+    property real headerMarkSize: 20 * metrics.factor
+    readonly property real headerGap: 12 * metrics.factor
 
     // Or it can simply stop speaking, with nothing in its place.
     property bool replacesContent: false
 
-    readonly property bool showsHeader: open && header !== null
+    readonly property bool showsHeader: open && (headerMark !== null || headerTitle.length > 0)
+
+    TextMetrics {
+        id: headerMetrics
+        text: root.headerTitle
+        font: Qt.font({
+            "family": Typography.technical,
+            "pixelSize": root.metrics.fontLabel,
+            "weight": Typography.weightLabel,
+            "letterSpacing": Typography.tracking(root.metrics.fontLabel, Typography.labelTracking)
+        })
+    }
+
+    readonly property real headerMarkRoom: headerMark !== null ? headerMarkSize + headerGap : 0
+    readonly property real headerWidth: headerMarkRoom + headerMetrics.width
+
+    // What the cell was actually given for its content, against what the header
+    // would like. The ask always includes the name — a cell that asked for less
+    // would never be granted more — and only the drawing gives it up.
+    readonly property real contentRoom: width - paddingLeading - paddingTrailing
+    readonly property bool headerNamed: root.contentRoom >= root.headerWidth - 0.5
 
     // ---- Size --------------------------------------------------------------
 
@@ -148,9 +179,13 @@ Item {
     // chase each other and the cell settles at its minimum.
     property real contentWidth: contractedSlot.implicitWidth
 
+    // Open with a header, the cell is as wide as that header; otherwise as wide
+    // as whatever it shows at rest.
+    readonly property real askedWidth: showsHeader ? headerWidth : contentWidth
+
     readonly property real contractedHeight: metrics.cellHeight
     readonly property real contractedWidth: {
-        const natural = Math.max(minWidth, contentWidth + paddingLeading + paddingTrailing);
+        const natural = Math.max(minWidth, askedWidth + paddingLeading + paddingTrailing);
         return maxWidth > 0 ? Math.min(natural, maxWidth) : natural;
     }
 
@@ -236,19 +271,41 @@ Item {
 
     // The outgoing and the incoming are staggered rather than crossfaded: two
     // strings dissolving through each other read as overlap, not as a change.
-    Loader {
+    Item {
         id: headerSlot
-        active: root.header !== null && (root.open || opacity > 0)
-        sourceComponent: root.header
-        anchors.verticalCenter: parent.verticalCenter
-        x: root.paddingLeading
+
+        anchors.fill: parent
         opacity: root.showsHeader ? 1 : 0
+        visible: opacity > 0
 
         Behavior on opacity {
             SequentialAnimation {
                 PauseAnimation { duration: Timing.stagger * 2 }
                 NumberAnimation { duration: Timing.contentFade }
             }
+        }
+
+        Loader {
+            active: root.headerMark !== null && headerSlot.visible
+            sourceComponent: root.headerMark
+
+            anchors.verticalCenter: parent.verticalCenter
+            width: root.headerMarkSize
+            height: root.headerMarkSize
+
+            // Against the leading cap when the name is beside it, and in the
+            // middle of the cell when it is alone.
+            x: root.headerNamed ? root.paddingLeading
+                                : Math.max(0, (root.width - width) / 2)
+        }
+
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            x: root.paddingLeading + root.headerMarkRoom
+            visible: root.headerNamed
+            text: root.headerTitle
+            color: Theme.text
+            font: headerMetrics.font
         }
     }
 

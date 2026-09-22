@@ -61,51 +61,23 @@ Cell {
     readonly property real leastName: 60 * metrics.factor
     readonly property bool showsName: root.named && root.available >= root.leastName
 
-    contentWidth: open ? headerMark + headerGap + titleMetrics.width
-                       : bandWidth + (named ? spacing + label.implicitWidth : 0)
+    contentWidth: bandWidth + (named ? spacing + label.implicitWidth : 0)
 
     readonly property real available: Math.max(0, width - paddingLeading - paddingTrailing
                                                  - bandWidth - spacing)
 
     // ---- Open ---------------------------------------------------------------
 
-    readonly property string title: "SINESTESIA"
-    readonly property real headerMark: 20 * metrics.factor
-    readonly property real headerGap: 12 * metrics.factor
-
-    TextMetrics {
-        id: titleMetrics
-        text: root.title
-        font: Qt.font({
-            "family": Typography.technical,
-            "pixelSize": root.metrics.fontLabel,
-            "weight": Typography.weightLabel,
-            "letterSpacing": Typography.tracking(root.metrics.fontLabel, Typography.labelTracking)
-        })
+    headerTitle: "SINESTESIA"
+    headerMark: Component {
+        Icon {
+            anchors.fill: parent
+            name: "mark"
+            gradient: true
+        }
     }
 
     replacesContent: true
-
-    header: Component {
-        Row {
-            spacing: root.headerGap
-
-            Icon {
-                anchors.verticalCenter: parent.verticalCenter
-                name: "mark"
-                width: root.headerMark
-                height: width
-                gradient: true
-            }
-
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: root.title
-                color: Theme.text
-                font: titleMetrics.font
-            }
-        }
-    }
 
     // A press opens the track panel. The wheel does nothing on purpose: volume
     // is another cell, and confusing the two here would be easy to do and

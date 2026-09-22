@@ -273,7 +273,12 @@ Item {
 
             required property int index
 
-            readonly property Item pod: podList.itemAt(link.index)
+            // `count` is read first on purpose: `itemAt` notifies nothing, so a
+            // binding that does not depend on the count is evaluated once, while
+            // the Repeater is still empty, and stays null for ever — which is a
+            // thread of length zero.
+            readonly property Item pod: link.index < podList.count
+                                        ? podList.itemAt(link.index) : null
             readonly property real from: link.pod ? link.pod.x + link.pod.width : list.x
 
             vertical: false
