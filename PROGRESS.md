@@ -926,6 +926,12 @@ from but the one it works out for itself.
     for, because it arrives a moment later; it is let go once it has finished
     leaving, because a cell cleared at the moment it closes takes its own
     closing animation with it.
+  - **What is centred is the whole cell**, not the shape it grew from. A
+    tissue knows where its pills are and nothing else, so a composition
+    hanging off one of them left the pill in the middle of the screen and the
+    panel somewhere below it. `Cell.reach` says how far a cell draws past
+    itself on the side it opens, and a centred floating tissue is placed by
+    the pill plus that. Akusen's correction, 2026-09-22.
   - **Only this monitor answers.** A cell of the same domain on the other
     screen is not the one meant: something opening where you are not looking
     is worse than nothing opening, and now there is somewhere for it to appear

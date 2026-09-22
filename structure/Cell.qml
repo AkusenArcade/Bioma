@@ -381,6 +381,30 @@ Item {
     // that vanished rather than one that closed.
     readonly property bool expanded: open || panelGrowth > 0 || threadProgress > 0
 
+    // How far the open composition reaches past the cell, on the side it opens
+    // — the thread's gap plus whatever hangs off the end of it. A tissue that
+    // has to place the *whole* of a cell rather than its pill needs this: a
+    // floating cell in the middle of the screen is centred on everything it
+    // draws, not on the shape it grew from. Zero while it is shut, so a
+    // contracted cell is placed by its pill as always.
+    readonly property real reach: {
+        if (!expanded)
+            return 0;
+        const body = expansion !== null
+            ? (expansionSlot.item ? expansionSlot.item.height : 0)
+            : (panel !== null ? panelShape.targetHeight : 0);
+        return body > 0 ? gap + body : 0;
+    }
+
+    readonly property real reachWidth: {
+        if (!expanded)
+            return width;
+        const body = expansion !== null
+            ? (expansionSlot.item ? expansionSlot.item.width : 0)
+            : (panel !== null ? panelShape.targetWidth : 0);
+        return Math.max(width, body);
+    }
+
     // How far the panel hangs below the cell: the distance from the cell's
     // outer edge to the line where the compositor begins drawing windows. Set
     // by the tissue, which knows where both are. Every open cell therefore

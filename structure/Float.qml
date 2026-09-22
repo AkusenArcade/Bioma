@@ -124,13 +124,41 @@ PanelWindow {
     readonly property bool atLeft: anchorName.indexOf("left") >= 0
     readonly property bool atRight: anchorName.indexOf("right") >= 0
 
+    // What the tissue's cells draw beyond the tissue itself, which for an open
+    // cell is the thread and everything hanging off it. Centring the tissue
+    // alone would centre the shape a composition *grew from* and leave the
+    // composition itself hanging off the bottom of the screen — Akusen's
+    // correction, 2026-09-22: the whole cell is what goes in the middle.
+    readonly property real reach: {
+        let out = 0;
+        for (const cell of tissue.cells)
+            if (cell.placed && cell.reach > out)
+                out = cell.reach;
+        return out;
+    }
+
+    readonly property real spread: {
+        let out = tissue.width;
+        for (const cell of tissue.cells)
+            if (cell.placed && cell.reachWidth > out)
+                out = cell.reachWidth;
+        return out;
+    }
+
     readonly property real placedX: atLeft ? root.margin("left")
                                    : atRight ? root.width - tissue.width - root.margin("right")
                                    : (root.width - tissue.width) / 2
 
-    readonly property real placedY: atTop ? root.margin("top")
-                                   : atBottom ? root.height - tissue.height - root.margin("bottom")
-                                   : (root.height - tissue.height) / 2
+    // Anchored to an edge the tissue keeps its margin and the composition
+    // hangs where it hangs; centred, the whole of it is centred, which moves
+    // the tissue up by half of what hangs below it.
+    readonly property real placedY: {
+        if (atTop)
+            return root.margin("top");
+        if (atBottom)
+            return root.height - tissue.height - root.margin("bottom");
+        return (root.height - tissue.height - root.reach) / 2;
+    }
 
     // An expansion grows away from whatever the tissue is nearest to, and a
     // centred one grows downward: there is more screen below the middle than
@@ -163,7 +191,8 @@ PanelWindow {
 
         floating: true
         orientation: root.config.orientation || "vertical"
-        anchorSide: root.config.anchor_side || "start"
+        anchorSide: root.config.anchor_side
+                    || (root.atLeft ? "start" : root.atRight ? "end" : "centre")
 
         // No ceiling: nothing shares this surface, so the tissue is as long as
         // its cells need. A membrane's percentage is about neighbours, and a
