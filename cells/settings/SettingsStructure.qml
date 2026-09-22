@@ -149,9 +149,6 @@ Item {
 
     onChosenChanged: if (!root.chosen) root.picking = false;
 
-
-
-
     // ---- Writing it back ----------------------------------------------------
     //
     // Every change rewrites the whole list: an array is one value to the merge,
@@ -322,6 +319,138 @@ Item {
         if (usable <= 0)
             return 0;
         return Math.ceil(root.roomFor(edge, tissue, "") / usable * 100);
+    }
+
+    // ---- The chips, and their order ----------------------------------------
+    //
+    // The order of the cells in a band **is** the order they sit in on the
+    // membrane, from the anchor inward, so changing it is changing the layout
+    // — and it is changed by dragging one, the way the dock's icons are.
+    //
+    // The chips are uniform and laid out by hand rather than by a Flow: a row
+    // that positions its own children cannot have one of them follow the
+    // pointer, and equal widths make "which slot is the hand over" the same
+    // arithmetic the dock uses rather than a search through varying widths.
+
+    readonly property var cellsHere: root.chosen ? (root.chosen.cells || []) : []
+
+    readonly property string longestName: {
+        let out = "";
+        for (const entry of root.cellsHere) {
+            const name = Registry.nameOf(entry.type);
+            if (name.length > out.length)
+                out = name;
+        }
+        return out;
+    }
+
+    TextMetrics {
+        id: chipText
+        text: root.longestName
+        font: Qt.font({
+            "family": Typography.technical,
+            "pixelSize": root.metrics.fontMeta,
+            "letterSpacing": Typography.tracking(root.metrics.fontMeta, Typography.labelTracking)
+        })
+    }
+
+    readonly property real chipSpacing: 8 * factor
+    readonly property real chipWidth: Math.max(62 * factor, chipText.width + 40 * factor)
+    readonly property real chipPitchX: chipWidth + chipSpacing
+    readonly property real chipPitchY: chipHeight + chipSpacing
+
+    property real chipRoom: 0
+    readonly property int perRow: Math.max(1, Math.floor((chipRoom + chipSpacing) / chipPitchX))
+    readonly property int chipRows: Math.max(1, Math.ceil((cellsHere.length + 1) / perRow))
+
+    function slotX(index) {
+        return (index % root.perRow) * root.chipPitchX;
+    }
+
+    function slotY(index) {
+        return Math.floor(index / root.perRow) * root.chipPitchY;
+    }
+
+    // ---- Carrying one -------------------------------------------------------
+
+    property int held: -1
+    property int gap: -1
+    property real gripX: 0
+    property real gripY: 0
+    property real grabX: 0
+    property real grabY: 0
+
+    readonly property bool carrying: root.held >= 0
+
+    // Where a chip sits while another is being carried: the ones between the
+    // hole it left and the slot it is over move by one, and the rest do not
+    // move at all.
+    function restingIndex(index) {
+        if (!root.carrying || index === root.held)
+            return index;
+        if (root.held < root.gap && index > root.held && index <= root.gap)
+            return index - 1;
+        if (root.held > root.gap && index >= root.gap && index < root.held)
+            return index + 1;
+        return index;
+    }
+
+    function take(index, x, y) {
+        root.held = index;
+        root.gap = index;
+        root.gripX = x;
+        root.gripY = y;
+        root.grabX = x - root.slotX(index);
+        root.grabY = y - root.slotY(index);
+    }
+
+    // The slot follows the pointer and may cross as many as the hand does: it
+    // is the position divided by the pitch, not a step taken one neighbour at
+    // a time.
+    function carry(x, y) {
+        if (!root.carrying)
+            return;
+        root.gripX = x;
+        root.gripY = y;
+        const column = Math.round((x - root.grabX) / root.chipPitchX);
+        const row = Math.round((y - root.grabY) / root.chipPitchY);
+        root.gap = Math.max(0, Math.min(root.cellsHere.length - 1,
+                                        row * root.perRow + column));
+    }
+
+    // The one write, and it is refused unless the result is the same cells in
+    // a different order: a reorder that has gained or lost one is a bug, and a
+    // band's contents are not worth losing to it.
+    function drop() {
+        const from = root.held;
+        const to = root.gap;
+        root.held = -1;
+        root.gap = -1;
+
+        if (from < 0 || to < 0 || from === to)
+            return;
+
+        root.edit(copy => {
+            const block = root.blockIn(copy, root.chosenEdge, false);
+            const tissue = block ? root.tissueIn(block, root.chosenPlace) : null;
+            if (!tissue)
+                return false;
+
+            const next = (tissue.cells || []).slice();
+            if (from >= next.length || to >= next.length)
+                return false;
+            next.splice(to, 0, next.splice(from, 1)[0]);
+
+            const before = (tissue.cells || []).map(entry => entry.type).sort().join("\u0000");
+            if (next.length !== (tissue.cells || []).length
+                || before !== next.map(entry => entry.type).sort().join("\u0000")) {
+                console.warn("Bioma: the settings cell refused a reorder that changed the band");
+                return false;
+            }
+
+            tissue.cells = next;
+            return true;
+        });
     }
 
     readonly property var absent: {
@@ -672,19 +801,23 @@ Item {
                 }
             }
 
-            // The cells in the band, in the order they are declared — which is
-            // the order they sit in, from the anchor inward.
-            Flow {
+            // The cells in the band, in the order they are declared — which
+            // is the order they sit in on the membrane, from the anchor
+            // inward. Dragging one changes that order, the same gesture the
+            // dock's icons answer to.
+            Item {
                 id: chips
 
                 anchors.top: width_.bottom
                 anchors.topMargin: 12 * root.factor
                 anchors.left: parent.left
                 width: parent.width - root.pickerWidth - root.threadLength - 12 * root.factor
-                spacing: 8 * root.factor
+                height: root.chipRows * root.chipPitchY
+
+                Component.onCompleted: root.chipRoom = Qt.binding(() => chips.width)
 
                 Repeater {
-                    model: root.chosen ? (root.chosen.cells || []) : []
+                    model: root.cellsHere
 
                     delegate: Item {
                         id: chip
@@ -692,25 +825,56 @@ Item {
                         required property var modelData
                         required property int index
 
-                        width: chipName.implicitWidth + 10 * root.factor + cross.width
-                             + 8 * root.factor
+                        readonly property bool carried: root.held === chip.index
+
+                        width: root.chipWidth
                         height: root.chipHeight
+
+                        // The one in the hand is above the others and follows
+                        // the pointer; the rest travel to the slot the gap has
+                        // left them.
+                        z: chip.carried ? 2 : 1
+                        x: chip.carried ? root.gripX - root.grabX
+                                        : root.slotX(root.restingIndex(chip.index))
+                        y: chip.carried ? root.gripY - root.grabY
+                                        : root.slotY(root.restingIndex(chip.index))
+
+                        Behavior on x {
+                            enabled: !chip.carried
+                            NumberAnimation {
+                                duration: Timing.transition
+                                easing.type: Easing.Bezier
+                                easing.bezierCurve: Timing.easeOpenFlat
+                            }
+                        }
+
+                        Behavior on y {
+                            enabled: !chip.carried
+                            NumberAnimation {
+                                duration: Timing.transition
+                                easing.type: Easing.Bezier
+                                easing.bezierCurve: Timing.easeOpenFlat
+                            }
+                        }
 
                         Rectangle {
                             anchors.fill: parent
                             radius: Metrics.radiusFor(height, root.metrics)
                             antialiasing: true
-                            color: Qt.alpha(Theme.lift(Theme.background, 0.02), 0.9)
+                            color: Qt.alpha(Theme.lift(Theme.background,
+                                                       chip.carried ? 0.05 : 0.02), 0.9)
                             border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
-                            border.color: Theme.line
+                            border.color: chip.carried ? Theme.primary : Theme.line
                         }
 
                         Text {
                             id: chipName
                             anchors.left: parent.left
                             anchors.leftMargin: 10 * root.factor
+                            anchors.right: cross.left
                             anchors.verticalCenter: parent.verticalCenter
                             text: Registry.nameOf(chip.modelData.type)
+                            elide: Text.ElideRight
                             color: Theme.text
                             font: Qt.font({
                                 "family": Typography.technical,
@@ -744,16 +908,50 @@ Item {
                                                           chip.index)
                             }
                         }
+
+                        // Carried from where it was touched, not by its middle,
+                        // and it may cross several slots in one movement.
+                        DragHandler {
+                            target: null
+
+                            onActiveChanged: {
+                                const here = chips.mapFromItem(null, centroid.scenePosition.x,
+                                                               centroid.scenePosition.y);
+                                if (active)
+                                    root.take(chip.index, here.x, here.y);
+                                else
+                                    root.drop();
+                            }
+
+                            onCentroidChanged: {
+                                if (!active)
+                                    return;
+                                const here = chips.mapFromItem(null, centroid.scenePosition.x,
+                                                               centroid.scenePosition.y);
+                                root.carry(here.x, here.y);
+                            }
+                        }
                     }
                 }
 
                 // The dashed chip adds one, and it is a place rather than a
-                // content, exactly like the empty slot above.
+                // content, exactly like the empty slot above. It keeps the
+                // slot after the last cell, wherever the row happens to end.
                 Item {
                     id: adder
 
                     width: 44 * root.factor
                     height: root.chipHeight
+                    x: root.slotX(root.cellsHere.length)
+                    y: root.slotY(root.cellsHere.length)
+
+                    Behavior on x {
+                        NumberAnimation {
+                            duration: Timing.transition
+                            easing.type: Easing.Bezier
+                            easing.bezierCurve: Timing.easeOpenFlat
+                        }
+                    }
 
                     DashedSlot {
                         anchors.fill: parent

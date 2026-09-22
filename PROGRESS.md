@@ -1307,6 +1307,25 @@ that would not fit before the cell exists, rather than let somebody build a
 membrane with cells missing from it. Conditional cells count — a band that fits
 only while the notification is away breaks when one arrives.
 
+### The order of a band is dragged, not retyped
+
+The cells in a band sit in the order they are declared, from the anchor inward,
+so changing that order is changing the layout — and it is changed the way the
+dock's icons are: pick a chip up and carry it. The gap follows the pointer and
+crosses as many slots as the hand does; the others travel to where it leaves
+them; the list is written once, on release, and refused if the result is not
+the same cells in another order.
+
+The chips are uniform and laid out by hand rather than by a `Flow`, for the
+reason the dock found first: a row that positions its own children cannot have
+one of them follow the pointer. Equal widths also make "which slot is the hand
+over" one division rather than a search, wrapping included — the grid is
+`perRow` wide and the dashed add-chip keeps the slot after the last cell.
+
+Verified without a pointer, by calling the same three functions a drag calls:
+`[vitals, settings, utility]` carried from slot 2 to slot 0 came out
+`[utility, vitals, settings]` in the override, and nowhere else changed.
+
 ### Regions are rectangles read at one moment, and the moment has to be the last
 
 Akusen kept losing the settings cell: the first presses on a control near the
