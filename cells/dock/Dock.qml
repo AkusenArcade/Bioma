@@ -37,6 +37,61 @@ Cell {
     // legitimate way to use it.
     readonly property var pinned: Config.get("dock.pinned", [])
 
+    // ---- Holding one ---------------------------------------------------------
+    //
+    // While a kept icon is being dragged the row follows a working copy of the
+    // list, so the neighbours move out of the way as it crosses them and what
+    // is on screen is the order that will be written. Nothing is written until
+    // it is let go: a drag that is abandoned halfway leaves the file alone.
+
+    property var order: null
+    property int held: -1
+
+    readonly property var arrangement: root.order !== null ? root.order : root.pinned
+
+    function take(index) {
+        root.order = root.pinned.slice();
+        root.held = index;
+    }
+
+    // Where the pointer is, in slots. The row is laid out on a fixed pitch, so
+    // the slot a position falls in is arithmetic and not a hit test.
+    function slotAt(x) {
+        const step = root.iconSize + root.pitch;
+        return Math.max(0, Math.min(root.arrangement.length - 1,
+                                    Math.round((x - row.x - root.iconSize / 2) / step)));
+    }
+
+    function dragTo(index) {
+        if (root.order === null || index === root.held || index < 0)
+            return;
+        const next = root.order.slice();
+        next.splice(index, 0, next.splice(root.held, 1)[0]);
+        root.order = next;
+        root.held = index;
+    }
+
+    // The one write, and it is refused unless the result is the same set of
+    // applications in a different order: a reorder that has gained or lost one
+    // is a bug, and this list is the user's own and is not worth losing to it.
+    function release() {
+        const next = root.order;
+        root.order = null;
+        root.held = -1;
+
+        if (!next)
+            return;
+
+        const before = root.pinned.slice().sort().join("\u0000");
+        if (next.length !== root.pinned.length
+            || before !== next.slice().sort().join("\u0000")) {
+            console.warn("Bioma: the dock refused a reorder that changed the list");
+            return;
+        }
+        if (before.length > 0 && next.join("\u0000") !== root.pinned.join("\u0000"))
+            Config.set("dock.pinned", next);
+    }
+
     // One entry per application, not per window. Two windows of the same
     // application are one icon, and the click cycles through them.
     readonly property var running: {
@@ -176,24 +231,42 @@ Cell {
         anchors.verticalCenter: parent.verticalCenter
         spacing: root.pitch
 
+        // The neighbours step aside rather than jumping: the same reflow the
+        // tissue moves at, because it is the same kind of movement.
+        move: Transition {
+            NumberAnimation {
+                properties: "x,y"
+                duration: Timing.reflow
+                easing.type: Easing.Bezier
+                easing.bezierCurve: Timing.easeOpenFlat
+            }
+        }
+
         Repeater {
-            model: root.pinned
+            model: root.arrangement
 
             delegate: DockIcon {
                 id: kept
 
                 required property string modelData
+                required property int index
 
                 size: root.iconSize
                 factor: root.metrics.factor
                 appId: kept.modelData
                 running: root.windowsOf(kept.modelData).length > 0
+                holdable: true
+                held: root.held === kept.index
 
                 onEntered: (label, centre) => root.name(label, kept, centre)
                 onExited: label => root.unname(label)
                 onActivated: root.activate(kept.modelData)
                 onLaunched: root.launch(kept.modelData)
                 onToggled: root.unkeep(kept.modelData)
+
+                onTaken: root.take(kept.index)
+                onDragged: x => root.dragTo(root.slotAt(x))
+                onReleased: root.release()
             }
         }
 
@@ -303,11 +376,29 @@ Cell {
         // Not `left`: an Item declares that final — it is one of its own
         // anchor lines — and a signal of that name does not compile. The same
         // trap `components/Band.qml` hit with `left` and `right`.
+        // Only the kept ones can be reordered: the running group is in the
+        // order the compositor has them in, and moving one there would be a
+        // gesture with nowhere to be remembered.
+        property bool holdable: false
+        property bool held: false
+
         signal entered(string label, real centre)
         signal exited(string label)
         signal activated
         signal launched
         signal toggled
+        signal taken
+        signal dragged(real x)
+        signal released
+
+        // Held, an icon lifts: it is the one thing on the row that is no
+        // longer where the row put it.
+        scale: icon.held ? 1.12 : 1
+        z: icon.held ? 1 : 0
+
+        Behavior on scale {
+            NumberAnimation { duration: Timing.transition; easing.type: Easing.OutQuad }
+        }
 
         HoverHandler {
             onHoveredChanged: {
@@ -335,6 +426,27 @@ Cell {
         TapHandler {
             acceptedButtons: Qt.RightButton
             onTapped: icon.toggled()
+        }
+
+        // Dragging reorders. The handler moves nothing itself — it reports
+        // where the pointer is and the row rearranges, so what is on screen
+        // during the drag is the order that will be written.
+        DragHandler {
+            enabled: icon.holdable
+            target: null
+            yAxis.enabled: false
+
+            onActiveChanged: {
+                if (active)
+                    icon.taken();
+                else
+                    icon.released();
+            }
+
+            onCentroidChanged: {
+                if (active)
+                    icon.dragged(icon.mapToItem(icon.parent.parent, centroid.position.x, 0).x);
+            }
         }
     }
 

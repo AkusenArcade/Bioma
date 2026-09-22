@@ -841,11 +841,19 @@ and would have stopped being a membrane.
   Verified by calling both functions from a throwaway timer: the override file
   gained `steam` and lost OBS, and the cell recomposed from the file without a
   restart.
-- **Not done: dragging the kept applications into a different order.** CELLS
-  §09 asks for it. It is the one interaction here that writes to the
-  configuration, nothing on this machine can drag, and a reorder that goes
-  wrong rewrites the list — so it waits for hands rather than being written
-  blind.
+- **Dragging a kept application reorders the row**, and the row rearranges
+  under the pointer rather than at the end: the working copy is what the
+  Repeater follows while a drag is live, so what is on screen during it is the
+  order that will be written. The handler moves nothing itself — it reports
+  where the pointer is and the slot is arithmetic, because the row is laid out
+  on a fixed pitch.
+  - **Nothing is written until it is let go**, so a drag abandoned halfway
+    leaves the file alone, and the write is refused unless the result is the
+    same set of applications in a different order. This list is the user's own
+    and is not worth losing to a bug in a gesture nothing here can perform.
+    Both paths verified from throwaway timers: a reorder reached the file and
+    the cell recomposed from it, and a deliberately mangled list was refused
+    with the file untouched.
 
 Verified on screen against the real graph: three kept applications resolve
 their own icons, the two running ones that are not kept sit past the divider
