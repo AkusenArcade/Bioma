@@ -48,6 +48,9 @@ Cell {
     // two it is. A boolean condition against a threshold of one.
     condition: (Niri.focusedWindow || root.onCell) ? 1 : 0
 
+    // It has no expansion and it still answers: a press centres the window.
+    interactive: true
+
     readonly property real iconSize: 30 * metrics.factor
     readonly property real spacing: 10 * metrics.factor
     readonly property real titleSize: metrics.fontTitle

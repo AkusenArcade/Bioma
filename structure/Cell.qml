@@ -143,6 +143,25 @@ Item {
     // Or it can simply stop speaking, with nothing in its place.
     property bool replacesContent: false
 
+    // ---- Hover -------------------------------------------------------------
+    //
+    // A cell that answers the pointer says so before it is pressed, and says it
+    // in the shell's own vocabulary — the light. The glass lifts a step and the
+    // rim catches more of it.
+    //
+    // Nothing moves, and nothing is said. Two louder answers were built and
+    // taken out again on 2026-09-22: the dock's hover label, a pill with the
+    // name beside the row — which needed the surface to keep room for it and
+    // was still a second thing to read — and the cell opening its own header
+    // under the pointer, which reflowed the whole tissue on the way past. The
+    // light is what a cell can do without moving anything.
+    //
+    // A cell that does nothing when pressed does not light up: the light is a
+    // promise, and a cell with no expansion and no action has nothing to
+    // promise. One that acts without opening anything says so itself.
+    property bool interactive: hasPanel
+    readonly property bool lit: interactive && hovered && !open
+
     // Whether the expansion needs the keyboard — a field to type in, a list to
     // drive with the arrows. It costs more than it looks: the membrane can only
     // ask for keys by declaring itself focusable, and a focusable surface is
@@ -252,13 +271,20 @@ Item {
         id: glass
         anchors.fill: parent
         radius: root.radius
-        color: Qt.alpha(Theme.cell, root.cellOpacity)
+        color: Qt.alpha(root.lit ? Theme.lift(Theme.cell, 0.05) : Theme.cell, root.cellOpacity)
         antialiasing: true
+
+        Behavior on color { ColorAnimation { duration: Timing.transition } }
     }
 
     Rim {
         anchors.fill: parent
         radius: root.radius
+        topColour: root.lit ? Theme.lift(Theme.rim, 0.10) : Theme.rim
+        bottomColour: root.lit ? Theme.lift(Theme.line, 0.06) : Theme.line
+
+        Behavior on topColour { ColorAnimation { duration: Timing.transition } }
+        Behavior on bottomColour { ColorAnimation { duration: Timing.transition } }
     }
 
     // ---- Content -----------------------------------------------------------

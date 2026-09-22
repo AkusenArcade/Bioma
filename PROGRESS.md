@@ -640,6 +640,30 @@ focus to the membrane: the title shows the vitals indicator and
 `MACHINE VITALS & T…`, elided at its cap like any long name. The real path
 needs a hand, because only a pointer can make the compositor move the focus.
 
+### Hover is the light, and only the light
+
+A closed cell that answers the pointer says so before it is pressed: the glass
+lifts a step, the rim catches more of the light, `Timing.transition`. Nothing
+moves. A cell with no expansion and no action does not light up — the light is
+a promise — so the window title declares itself interactive by hand, because a
+press on it centres the window.
+
+Two louder answers were built first and taken out the same day, both worth not
+rebuilding:
+
+- **The dock's hover label** (CELLS §09), a pill with the name beside the row.
+  It needs the membrane surface to hold something outside the strip, and
+  growing the surface when the label appears **cannot work**: the surface
+  reconfigures, its input mask is rebuilt, the pointer comes off the cell for
+  those frames, the hover that asked for the label lapses, and the two states
+  chase each other — the whole interface flickering, and a stray bar at the
+  top of the other monitor, which is that surface mid-resize. Keeping the room
+  permanently does fix it, and the label is still a second thing to read.
+- **The cell opening its own header under the pointer** — the origin alone, no
+  thread, no panel. The gesture is right and the cost is the tissue: the row
+  reflows on every pass, and vitals, whose header is `MACHINE VITALS & TASKS`,
+  shifts its neighbours by a third of the membrane.
+
 ## Phase 1 — Service porting
 
 Nine of ten done, each verified headlessly through `probe.qml` before moving
