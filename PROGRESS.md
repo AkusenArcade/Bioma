@@ -158,6 +158,16 @@ so the dismissal itself is verified by hand.
   in steps of eight, parks the ones a shape list does not use, and rebuilds
   only to grow: an open and a close cost four trees at startup and none after
   that. Akusen saw it as the whole bar flickering on close, 2026-09-22.
+- **A lookup that misses before the list exists must not be remembered.**
+  `core/Apps.qml` caches its answers, misses included, because the process
+  list asks the same sixty questions every few seconds — and Quickshell's
+  models fill on their first property binding, not on first access. So every
+  icon asked for before `DesktopEntries` had filled was recorded as "no such
+  application" for the life of the session: the dock's kept applications drew
+  the neutral glyph while the running ones, asked for later, drew their own.
+  The list is now bound in `Apps` itself, where the lookups are, and the cache
+  is emptied whenever it changes — which is also what happens when an
+  application is installed.
 - **Dynamic `Region` children do not work.** An object created with
   `Qt.createQmlObject` or `Component.createObject` and given a Region as parent
   never joins its `regions` list. The tree is built from a QML string that

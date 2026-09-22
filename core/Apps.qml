@@ -18,6 +18,20 @@ import Quickshell
 Singleton {
     id: root
 
+    // Quickshell's models fill on their **first property binding**, not on
+    // first access, and this is the file that reads them — so the list is
+    // bound here rather than left to whichever cell happens to ask first.
+    //
+    // It also settles what to do when it fills late. Answers are cached,
+    // misses included, because the process list asks the same sixty questions
+    // every few seconds; but a miss recorded while the list was still empty is
+    // not an answer, it is the absence of one. So the cache is emptied
+    // whenever the set of applications changes — which is also what happens
+    // when one is installed.
+    readonly property var entries: DesktopEntries.applications?.values ?? []
+
+    onEntriesChanged: root.cache = ({})
+
     property var cache: ({})
 
     function normalise(name) {
@@ -40,8 +54,7 @@ Singleton {
         // A truncated executable is a prefix of the real thing, so the match
         // has to go both ways — but never on a fragment so short that it would
         // match half the menu.
-        const entries = DesktopEntries.applications.values;
-        for (const entry of entries) {
+        for (const entry of root.entries) {
             const id = (entry.id || "").toLowerCase();
             const label = (entry.name || "").toLowerCase();
             const startup = (entry.startupClass || "").toLowerCase();
