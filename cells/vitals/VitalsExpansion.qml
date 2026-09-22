@@ -316,27 +316,8 @@ Item {
             // The search field is the launcher's: a lens in the primary, no
             // well of its own, and the sort said in words on the other side.
             Item {
-                id: field
-
                 width: root.panelWidth - 20 * root.factor
                 height: root.metrics.fieldHeight
-
-                // Touching the field is what asks for the keyboard. It is the
-                // whole strip rather than the glyphs in it, and the cell holds
-                // the request until it closes or Escape gives it back.
-                //
-                // Under `focus-follows-mouse` the compositor hands the surface
-                // the keys at once, the pointer already being on it. Without
-                // it, niri gives an on-demand layer surface the focus on a
-                // press — and this press is the one that made the surface
-                // focusable, so the field may need a second one.
-                TapHandler {
-                    onTapped: {
-                        if (root.cell)
-                            root.cell.wantsKeyboard = true;
-                        filter.forceActiveFocus();
-                    }
-                }
 
                 Row {
                     anchors.left: parent.left
@@ -359,14 +340,6 @@ Item {
                         font.family: Typography.expressive
                         font.pixelSize: root.metrics.fontTitle
                         selectByMouse: true
-
-                        // Escape hands the keyboard back without closing the
-                        // cell: the list is still worth looking at.
-                        Keys.onEscapePressed: {
-                            filter.focus = false;
-                            if (root.cell)
-                                root.cell.wantsKeyboard = false;
-                        }
 
                         Text {
                             anchors.fill: parent

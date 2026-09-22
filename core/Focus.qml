@@ -20,6 +20,13 @@ Singleton {
     property Item cell: null
     readonly property bool anyOpen: cell !== null
 
+    // Whether the shell is holding the keyboard. A cell that has a field to
+    // type in makes its membrane focusable, and a focusable layer surface is
+    // one the compositor moves the focus to — which means no window has it.
+    // The window title cell reads this: the focus did not go nowhere, it came
+    // here, and a cell that says which window has the focus can say that too.
+    readonly property bool holdsKeyboard: cell !== null && cell.wantsKeyboard === true
+
     // Bumped whenever the set of shapes on screen changes, so a surface holding
     // a region built from them knows to rebuild it.
     property int revision: 0

@@ -612,23 +612,25 @@ focusable only while one of those is open. Verified through `niri msg layers`:
 with the audio cell open both membranes report `none`, with vitals open the
 membrane carrying it reports `on-demand` and the other still reports `none`.
 
-And vitals asks only from the moment the field is pressed, which is Akusen's
-choice of the two that were open — the other was the window title keeping its
-last window while the shell holds the focus, and that one can lie: it cannot
-tell a focus Bioma took from a workspace that genuinely has no window. So an
-open vitals is as quiet as any other cell until somebody types in it, and the
-cell puts the keyboard down when it closes or on Escape.
+Vitals is that cell, and it holds the keyboard for as long as it is open.
+Asking for it only when the field is pressed was tried first and does not
+work here: the press that makes the surface focusable is the press that
+should have reached the field, and nothing can be typed. Reverted the same
+session it was written.
 
-Verified the same way: vitals open with the field untouched leaves both
-membranes at `none`, and raising `wantsKeyboard` from a throwaway timer turns
-the membrane carrying it to `on-demand`. The press that raises it in earnest is
-in `VitalsExpansion.qml` and is waiting for a pair of hands like every other
-press here.
+So the window title cell answers for it instead, which is the better answer
+and Akusen's: **the title says what has the focus, and sometimes that is a
+cell.** With the keyboard on a cell the title takes the cell's own glyph — the
+live one, built from the cell's `headerMark`, so the audio dial keeps moving
+in there — and its name in the machine's voice, and hands the window back the
+moment the window has it back. The cell no longer goes out and comes back as
+the pointer crosses the membrane; it says who is speaking.
 
-One thing to know on a machine without `focus-follows-mouse`: niri hands an
-on-demand layer surface the keys on a press, and the press that makes the
-surface focusable is the same one — so the field may want a second press there.
-This session has the option on, where the compositor gives the keys at once.
+Verified in a screenshot with vitals open and `focusedWindowId` forced to −1
+from a throwaway timer, which is exactly what niri reports when it moves the
+focus to the membrane: the title shows the vitals indicator and
+`MACHINE VITALS & T…`, elided at its cap like any long name. The real path
+needs a hand, because only a pointer can make the compositor move the focus.
 
 ## Phase 1 — Service porting
 

@@ -5,8 +5,16 @@ import qs.components
 import qs.structure
 import qs.services
 
-// Which window has focus. The second of the two exceptions to the silence rule:
+// What has the focus. The second of the two exceptions to the silence rule:
 // without a name a window cannot be recognised, so the text is always there.
+//
+// Usually that is a window. Sometimes it is one of Bioma's own cells: a cell
+// with a field to type in takes the keyboard, and the compositor takes it off
+// the window to give it. The focus did not go nowhere, so neither does this
+// cell — it names the cell instead, in the machine's voice with the cell's own
+// glyph, and hands the window back the moment the window has it back. Akusen's
+// call, 2026-09-22: before it, the title went out and came back as the pointer
+// crossed the membrane, which is the shell blinking at its own doing.
 //
 // It exists only while something has focus, it is elastic between a minimum
 // that stops a title change from making the tissue dance and a cap past which
@@ -23,9 +31,22 @@ Cell {
     paddingLeading: 5
     paddingTrailing: 16
 
-    // Conditional: it exists only while a window has focus. A boolean condition
-    // against a threshold of one.
-    condition: Niri.focusedWindow ? 1 : 0
+    // The shell has the focus, and a cell is what has it. Both halves matter:
+    // a cell holding the keyboard while the window keeps the focus — which is
+    // what happens until the compositor actually moves it — is still a window
+    // with the focus, and this cell says so.
+    readonly property bool onCell: Focus.holdsKeyboard && !Niri.focusedWindow
+    readonly property Item subject: root.onCell ? Focus.cell : null
+
+    readonly property string cellName: root.subject
+        ? (root.subject.headerTitle.length > 0
+           ? root.subject.headerTitle
+           : root.subject.domain.toUpperCase())
+        : ""
+
+    // Conditional: it exists while something has the focus, whichever of the
+    // two it is. A boolean condition against a threshold of one.
+    condition: (Niri.focusedWindow || root.onCell) ? 1 : 0
 
     readonly property real iconSize: 30 * metrics.factor
     readonly property real spacing: 10 * metrics.factor
@@ -87,13 +108,14 @@ Cell {
     }
 
     readonly property var reading: root.settled(Niri.focusedTitle)
-    readonly property string incoming: root.reading.text
+    readonly property string incoming: root.onCell ? root.cellName : root.reading.text
 
     // Late in, immediate out. A wait under a moment must show nothing — a
     // loader that flashes is worse than a moment of stillness — but the moment
     // the work finishes the loader is wrong, and waiting for a cycle to end
     // would be the shell lying about the state of the machine.
-    readonly property bool spinning: root.reading.waiting
+    // Only a window works at something; a cell is never waiting.
+    readonly property bool spinning: !root.onCell && root.reading.waiting
     property bool waiting: false
 
     onSpinningChanged: {
@@ -115,10 +137,12 @@ Cell {
     // title that never settles — a terminal with a spinner in it rewrites faster
     // than the debounce — would otherwise leave the cell permanently empty.
     onIncomingChanged: {
-        if (label.text === "")
+        if (label.text === "") {
             label.text = root.incoming;
-        else
+            root.technical = root.onCell;
+        } else {
             debounce.restart();
+        }
     }
 
     Timer {
@@ -130,17 +154,34 @@ Cell {
         }
     }
 
+    // A window's name is human language and a cell's name is the machine's own
+    // word, and the two voices never swap. The switch travels with the text
+    // through the cross-fade rather than on the focus change, or the outgoing
+    // string spends the fade in the wrong face.
+    property bool technical: false
+
     SequentialAnimation {
         id: crossfade
         NumberAnimation { target: label; property: "opacity"; to: 0; duration: Timing.contentFade }
-        ScriptAction { script: label.text = root.incoming }
+        ScriptAction {
+            script: {
+                label.text = root.incoming;
+                root.technical = root.onCell;
+            }
+        }
         NumberAnimation { target: label; property: "opacity"; to: 1; duration: Timing.contentFade }
     }
 
-    Component.onCompleted: label.text = root.incoming
+    Component.onCompleted: {
+        label.text = root.incoming;
+        root.technical = root.onCell;
+    }
 
-    // Click centres the window on screen, through niri's own action.
+    // Click centres the window on screen, through niri's own action. With a
+    // cell in the title there is no window to centre, and the press does
+    // nothing rather than acting on whichever window used to be there.
     TapHandler {
+        enabled: !root.onCell
         onTapped: Niri.centerFocusedWindow()
     }
 
@@ -158,12 +199,23 @@ Cell {
             border.color: Qt.alpha(Theme.text, 0.5)
             antialiasing: true
 
+            // The cell's own mark, built by the cell that holds the focus —
+            // the audio dial is still live in here, which is the point of
+            // taking the mark rather than drawing a second one.
+            Loader {
+                anchors.centerIn: parent
+                width: parent.width * 0.62
+                height: width
+                active: root.onCell
+                sourceComponent: root.subject ? root.subject.headerMark : null
+            }
+
             Image {
                 id: appIcon
                 anchors.centerIn: parent
                 width: parent.width * 0.62
                 height: width
-                visible: root.iconSource !== ""
+                visible: !root.onCell && root.iconSource !== ""
                 source: root.iconSource
                 sourceSize.width: width * Screen.devicePixelRatio
                 sourceSize.height: height * Screen.devicePixelRatio
@@ -177,7 +229,7 @@ Cell {
                 anchors.centerIn: parent
                 width: parent.width * 0.62
                 height: width
-                visible: root.iconSource === ""
+                visible: !root.onCell && root.iconSource === ""
                 name: "app-fallback"
                 colour: Theme.textMuted
             }
@@ -204,8 +256,11 @@ Cell {
             elide: Text.ElideRight
             maximumLineCount: 1
             color: Theme.text
-            font.family: Typography.expressive
+            font.family: root.technical ? Typography.technical : Typography.expressive
             font.pixelSize: root.titleSize
+            font.weight: root.technical ? Typography.weightLabel : Font.Normal
+            font.letterSpacing: root.technical
+                ? Typography.tracking(root.titleSize, Typography.labelTracking) : 0
         }
     }
 }

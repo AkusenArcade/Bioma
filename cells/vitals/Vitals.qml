@@ -21,13 +21,13 @@ Cell {
 
     domain: "vitals"
 
-    // The one cell so far with a field to type in: the process filter. It asks
-    // for the keyboard when the field is touched and not a moment earlier —
-    // a membrane that declares itself focusable is one niri moves the focus to
-    // as soon as the pointer crosses it, so a cell that asked merely by being
-    // open made the focused window, and the title cell with it, blink on every
-    // hover. The expansion raises this; closing the cell always puts it down.
-    wantsKeyboard: false
+    // The one cell so far with a field to type in: the process filter. It holds
+    // the keyboard for as long as it is open, because a field that has to be
+    // asked for first cannot be typed into on this compositor — tried, and it
+    // does not work. What that costs is the window focus while the pointer is
+    // over the membrane, and the title cell answers for it by saying which
+    // cell has the focus instead of going out. Akusen's call, 2026-09-22.
+    wantsKeyboard: true
 
     paddingLeading: 14
     paddingTrailing: 14
@@ -125,13 +125,8 @@ Cell {
     replacesContent: true
 
     // The process list is the one sample that costs something, so the service
-    // takes it only while it is being looked at — and a closed cell holds
-    // nothing, the keyboard included.
-    onOpenChanged: {
-        SystemMonitor.listProcesses = root.open;
-        if (!root.open)
-            root.wantsKeyboard = false;
-    }
+    // takes it only while it is being looked at.
+    onOpenChanged: SystemMonitor.listProcesses = root.open
 
     // The expansion is a composition — pods, threads and a panel — so it lives
     // in its own file beside this one and arrives through a Loader: a cell's
