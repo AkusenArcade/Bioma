@@ -146,6 +146,7 @@ Item {
     onChosenChanged: if (!root.chosen) root.picking = false;
 
 
+
     // ---- Writing it back ----------------------------------------------------
     //
     // Every change rewrites the whole list: an array is one value to the merge,
@@ -216,6 +217,7 @@ Item {
     // not a membrane: it goes, rather than staying as a surface with nothing
     // on it.
     function clear(edge, place) {
+        console.info(`Bioma: removing the ${place} band of the ${edge} membrane on ${root.monitor}`);
         root.edit(copy => {
             const block = root.blockIn(copy, edge, false);
             if (!block)
@@ -475,45 +477,8 @@ Item {
                                 colour: Theme.textFaint
                             }
 
-                            // The chosen band carries the cross that switches
-                            // it off, the way a cell chip does — and it is on
-                            // the chosen one only, so a press meant for a
-                            // neighbouring slot cannot take a band with it.
-                            Item {
-                                id: douse
-
-                                anchors.right: parent.right
-                                anchors.rightMargin: 4 * root.factor
-                                anchors.verticalCenter: parent.verticalCenter
-                                visible: slot.lit && slot.chosen
-                                width: 18 * root.factor
-                                height: parent.height
-
-                                Icon {
-                                    anchors.centerIn: parent
-                                    width: 9 * root.factor
-                                    height: width
-                                    name: "close"
-                                    colour: douseHover.hovered ? Theme.text : Theme.textMuted
-                                }
-
-                                HoverHandler { id: douseHover }
-
-                                TapHandler {
-                                    onTapped: root.clear(edgeGroup.modelData, slot.modelData)
-                                }
-                            }
-
                             TapHandler {
                                 onTapped: {
-                                    // Both handlers are offered the same tap.
-                                    // Without this the slot answered the press
-                                    // meant for its cross and lit the band
-                                    // again in the same frame it was removed,
-                                    // which looked exactly like nothing
-                                    // happening.
-                                    if (douse.visible && douseHover.hovered)
-                                        return;
                                     if (!slot.lit)
                                         root.light(edgeGroup.modelData, slot.modelData);
                                     root.choose(edgeGroup.modelData, slot.index);
@@ -630,7 +595,8 @@ Item {
                 // The floor, said rather than only enforced: a slider that
                 // stops with no reason given reads as a slider that is broken.
                 Text {
-                    anchors.right: parent.right
+                    anchors.right: douser.left
+                    anchors.rightMargin: 14 * root.factor
                     anchors.verticalCenter: parent.verticalCenter
                     visible: width_.floor > 0
                     text: `${width_.floor}% needed`
@@ -641,6 +607,63 @@ Item {
                         "letterSpacing": Typography.tracking(root.metrics.fontMeta,
                                                              Typography.labelTracking)
                     })
+                }
+
+                // Switching the band off. It sits here rather than on the slot
+                // itself: a cross drawn inside the slot puts two tap handlers
+                // under one press — the slot's own answered it as well and lit
+                // the band again in the same frame, which read as the cross
+                // doing nothing at all. Here there is nothing above it.
+                Item {
+                    id: douser
+
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: douserLabel.implicitWidth + 16 * root.factor + cross.width
+                    height: 22 * root.factor
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: Metrics.radiusFor(height, root.metrics)
+                        antialiasing: true
+                        color: douserHover.hovered ? Qt.alpha(Theme.alert, 0.16) : "transparent"
+                        border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+                        border.color: douserHover.hovered ? Theme.alert : Theme.line
+                    }
+
+                    Icon {
+                        id: cross
+
+                        anchors.left: parent.left
+                        anchors.leftMargin: 8 * root.factor
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 9 * root.factor
+                        height: width
+                        colour: douserHover.hovered ? Theme.alert : Theme.textMuted
+                        name: "close"
+                    }
+
+                    Text {
+                        id: douserLabel
+
+                        anchors.left: cross.right
+                        anchors.leftMargin: 7 * root.factor
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "REMOVE BAND"
+                        color: douserHover.hovered ? Theme.alert : Theme.textMuted
+                        font: Qt.font({
+                            "family": Typography.technical,
+                            "pixelSize": root.metrics.fontMeta,
+                            "letterSpacing": Typography.tracking(root.metrics.fontMeta,
+                                                                 Typography.labelTracking)
+                        })
+                    }
+
+                    HoverHandler { id: douserHover }
+
+                    TapHandler {
+                        onTapped: root.clear(root.chosenEdge, root.chosenPlace)
+                    }
                 }
             }
 
