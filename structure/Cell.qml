@@ -123,6 +123,12 @@ Item {
     // way is away from the screen edge.
     property string edge: "top"
 
+    // Whether the tissue holding it is floating rather than on a membrane. A
+    // cell that can be both — the launcher is a button on an edge and the
+    // whole panel in the middle of the screen — needs to know which of the
+    // two it is being asked to be.
+    property bool floating: false
+
     // Contracted content, and the panel an expansion hangs below it. The cell
     // itself keeps its contracted shape: what grows is the panel, out of the
     // node of the thread that ties it back here.
@@ -134,6 +140,14 @@ Item {
     property Component panel: null
     property Component expansion: null
     property bool open: false
+
+    // A panel is as wide as its job, and usually the content is what knows
+    // that job: `Panel` measures what it was given. A cell may say it instead,
+    // and one whose content arrives through a Loader has to — a loader has no
+    // size until it has loaded, and a shape measured in that moment is a
+    // shape that stays too small.
+    property real panelWidth: -1
+    property real panelHeight: -1
 
     // What the cell shows while it is open, if that is not what it shows at
     // rest. A cell with an expansion becomes the title of it: the contracted
@@ -535,6 +549,9 @@ Item {
         visible: root.panel !== null && root.panelGrowth > 0
         growth: root.panelGrowth
         contentReady: root.panelReady
+
+        fixedWidth: root.panelWidth
+        fixedHeight: root.panelHeight
 
         // The node the shape is born from: the far end of the thread.
         nodeX: root.width / 2

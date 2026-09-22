@@ -39,8 +39,18 @@ Item {
     // A panel is as wide as its job: the content declares the size, the panel
     // adds its padding. Symmetry is not a reason to narrow one.
     default property alias content: contentSlot.data
-    property real targetWidth: contentSlot.childrenRect.width + padding * 2
-    property real targetHeight: contentSlot.childrenRect.height + padding * 2
+
+    // A panel is as wide as its job, and usually its content knows that job.
+    // Content that arrives through a Loader does not know it yet at the
+    // moment it is measured — a loader has no size until it has loaded — so
+    // whoever owns the panel may state the measure instead.
+    property real fixedWidth: -1
+    property real fixedHeight: -1
+
+    property real targetWidth: fixedWidth > 0 ? fixedWidth
+                                              : contentSlot.childrenRect.width + padding * 2
+    property real targetHeight: fixedHeight > 0 ? fixedHeight
+                                                : contentSlot.childrenRect.height + padding * 2
 
     x: nodeX + (anchorX - nodeX) * growth
     y: nodeY + (anchorY - nodeY) * growth

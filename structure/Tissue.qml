@@ -225,6 +225,7 @@ Item {
                 "originGap": Qt.binding(() => root.originGap),
                 "output": Qt.binding(() => root.output),
                 "edge": Qt.binding(() => root.edge),
+                "floating": Qt.binding(() => root.floating),
                 "config": entry
             });
 

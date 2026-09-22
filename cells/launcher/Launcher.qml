@@ -23,34 +23,51 @@ Cell {
 
     domain: "launcher"
 
-    readonly property real panelWidth: 480 * metrics.factor
+    // The panel's own measures, stated rather than measured: its content
+    // arrives through a loader, and a shape measured while that loader was
+    // still empty stayed too small for what came.
+    panelWidth: 480 * metrics.factor
+    panelHeight: root.asPanel ? -1 : root.bodyExtent
     readonly property real fieldHeight: 44 * metrics.factor
     readonly property real resultHeight: 52 * metrics.factor
     readonly property int shownRows: 6
 
     readonly property real inset: 10 * metrics.factor
 
-    paddingLeading: inset
-    paddingTrailing: inset
-
-    // A cell that is a panel rather than a pill: its own height, and the
-    // tissue makes room for it.
+    // Two forms, one cell.
     //
-    // The height is **fixed**, and that is the whole of it. A panel that grew
-    // and shrank with the number of results re-centred its tissue on every
-    // letter typed, and the blur region chased a shape that had already
-    // moved: the field jumped under the fingers and the glass tore. The
-    // design says it in as many words — with nothing found, the field stays
-    // where it is and the panel does not collapse under your fingers — and
-    // six rows is what it always holds, full or not.
+    // Asked for by name it has no place of its own, so it *is* the panel: it
+    // arrives in the middle of the screen already itself, which is the form
+    // CELLS §13 describes. Put on a membrane by somebody who would rather
+    // have a button to aim at, it is a button, and the same body hangs off it
+    // the way every other expansion hangs off its cell. What changes is where
+    // it is born; what it is does not. Akusen asked for the anchored one and
+    // drew its glyph, 2026-09-22.
+    readonly property bool asPanel: root.floating
+
     readonly property real listGap: 6 * metrics.factor
+    readonly property real glyphSize: 20 * metrics.factor
 
-    contentWidth: panelWidth - inset * 2
-    bodyHeight: inset * 2 + fieldHeight + listGap + shownRows * resultHeight
+    // The height is **fixed** in both forms. A panel that grew and shrank
+    // with the number of results re-centred its tissue on every letter typed,
+    // and the blur region chased a shape that had already moved: the field
+    // jumped under the fingers and the glass tore. The design says it in as
+    // many words — with nothing found, the field stays where it is and the
+    // panel does not collapse under your fingers — so six rows is what it
+    // always holds, full or not.
+    readonly property real bodyExtent: inset * 2 + fieldHeight + listGap
+                                     + shownRows * resultHeight
 
-    // It is only ever there because it was asked for, and it takes the
-    // keyboard for as long as it is.
-    wantsKeyboard: true
+    contentWidth: root.asPanel ? panelWidth - inset * 2 : glyphSize
+    bodyHeight: root.asPanel ? bodyExtent : metrics.cellHeight
+
+    paddingLeading: root.asPanel ? inset : (metrics.cellHeight - glyphSize) / 2
+    paddingTrailing: root.asPanel ? inset : paddingLeading
+
+    // The panel form is only ever there because it was asked for and holds
+    // the keyboard throughout; the button form holds it while it is open,
+    // which is when there is a field to type into.
+    wantsKeyboard: root.asPanel ? true : root.open
 
     // ---- What it knows -------------------------------------------------------
 
@@ -146,30 +163,43 @@ Cell {
 
     function dismiss() {
         root.query = "";
-        root.visibility.invoked = false;
+        if (root.asPanel)
+            root.visibility.invoked = false;
+        else
+            root.open = false;
     }
 
     function move(delta) {
         if (root.results.length === 0)
             return;
         root.chosen = (root.chosen + delta + root.results.length) % root.results.length;
-        list.positionViewAtIndex(root.chosen, ListView.Contain);
     }
 
-    // The field takes the caret the moment the cell is there, because nobody
-    // asks for a launcher in order to click on it first.
+    // The field takes the caret the moment there is one, because nobody asks
+    // for a launcher in order to click on it first.
     //
-    // On `placed` and not on `open`: this cell never opens. Everything else
-    // in the shell has a pill and grows a panel out of it; here the panel is
-    // the cell, so being on screen at all is the whole of its arriving.
+    // As a panel that is when the cell is *placed*, not when it opens: that
+    // form never opens, it is the panel. As a button it is when the panel is.
     onPlacedChanged: {
-        if (root.placed)
-            field.forceActiveFocus();
-        else
+        if (root.asPanel && root.placed)
+            root.caret();
+        else if (!root.placed)
             root.query = "";
     }
 
-    Component.onCompleted: if (root.placed) field.forceActiveFocus()
+    onOpenChanged: {
+        if (!root.asPanel && root.open)
+            root.caret();
+        else if (!root.open)
+            root.query = "";
+    }
+
+    function caret() {
+        if (panelLoader.item)
+            panelLoader.item.takeCaret();
+    }
+
+    Component.onCompleted: if (root.asPanel && root.placed) root.caret()
 
     // ---- The field -----------------------------------------------------------
     //
@@ -389,6 +419,67 @@ Cell {
         }
     }
 
+    }
+
+    // ---- The two wrappers ----------------------------------------------------
+
+    // As a panel: the body is the cell's own content, and it waits for the
+    // shape the way a panel's content does.
+    Loader {
+        id: panelLoader
+
+        active: root.asPanel
+        visible: root.asPanel
+
+        width: root.contentWidth
+        height: root.bodyExtent - root.inset * 2
+        opacity: root.grown ? 1 : 0
+
+        // The source is a binding and nothing else. `setSource` was tried and
+        // it loads the file whether the loader is active or not — which built
+        // the panel form's body inside the button form too, twenty pixels
+        // wide, hanging its rows down the screen under the button.
+        source: root.asPanel ? Qt.resolvedUrl("LauncherBody.qml") : ""
+
+        onLoaded: {
+            item.cell = root;
+            item.metrics = Qt.binding(() => root.metrics);
+            if (root.placed)
+                item.takeCaret();
+        }
+
+        Behavior on opacity { NumberAnimation { duration: Timing.contentFade } }
+    }
+
+    // As a button: the glyph, and the body hanging off it.
+    Icon {
+        anchors.centerIn: parent
+        visible: !root.asPanel
+        width: root.glyphSize
+        height: width
+        name: "launcher"
+        gradient: true
+    }
+
+    panel: root.asPanel ? null : hung
+
+    Component {
+        id: hung
+
+        Loader {
+            id: hungLoader
+
+            width: root.panelWidth - root.inset * 2
+            height: root.bodyExtent - root.inset * 2
+
+            source: Qt.resolvedUrl("LauncherBody.qml")
+
+            onLoaded: {
+                item.cell = root;
+                item.metrics = Qt.binding(() => root.metrics);
+                item.takeCaret();
+            }
+        }
     }
 
     // The matched letters, in the primary. Built as markup because a Text can

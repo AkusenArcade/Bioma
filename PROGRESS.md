@@ -1133,6 +1133,31 @@ field takes the caret, six rows of applications with their icons, the first
 one selected with the primary fill and its icon ringed. Typing, the arrows
 and Enter have never been pressed.
 
+### The launcher, anchored as well
+
+Akusen asked for the button form — some people would rather have something to
+aim at than a shortcut to remember — and drew its glyph. The body moved into
+`cells/launcher/LauncherBody.qml` and both forms wear it: summoned, the cell
+*is* the panel; on a membrane, the cell is a forty-pixel button and the same
+body hangs off it as an ordinary expansion. What changes is where it is born.
+
+- **`Cell.floating` is how a cell knows which of the two it is being asked to
+  be**, passed down by the tissue that holds it.
+- **A panel may be told its size.** `Panel` measures its content, and content
+  that arrives through a loader has no size at the moment it is measured — so
+  the shape stayed too small for what came. `Cell.panelWidth` and
+  `panelHeight` state it instead.
+- **`setSource` loads whether the loader is active or not.** It was used to
+  hand the cell over at construction, and it built the panel form's body
+  inside the button form as well — twenty pixels wide, its rows hanging down
+  the screen under the button. A plain `source` binding does not.
+- **And one of the things Akusen saw was not ours at all.** The app icons and
+  the word "Search" showing near the button are the window behind, seen
+  through the parts of the membrane that are transparent — proved by changing
+  the launcher's own placeholder to something else and watching "Search" stay
+  where it was. A membrane is a surface with holes in it, and what is under
+  the holes is the desktop.
+
 ## Phase 1 — Service porting
 
 Nine of ten done, each verified headlessly through `probe.qml` before moving
