@@ -39,48 +39,82 @@ Cell {
 
     // ---- Holding one ---------------------------------------------------------
     //
-    // While a kept icon is being dragged the row follows a working copy of the
-    // list, so the neighbours move out of the way as it crosses them and what
-    // is on screen is the order that will be written. Nothing is written until
-    // it is let go: a drag that is abandoned halfway leaves the file alone.
+    // The icon being dragged is held by the pointer and goes exactly where the
+    // pointer goes: it leaves the row's arithmetic for as long as it is held,
+    // which is what says it is in the hand and not on the shelf. The others
+    // keep their places and step aside one slot when the gap passes them —
+    // animated, because that movement is the answer to the gesture.
+    //
+    // The order is **not** rearranged while the drag is live. Rearranging it
+    // moves the held icon too, which moves the frame the pointer is measured
+    // in, and the two chase each other: the icon crawls one slot at a time and
+    // the gesture stops reading as a drag at all. So the list stays as it is,
+    // the gap is a number, and the list is rebuilt once, on release.
 
-    property var order: null
+    readonly property real step: iconSize + pitch
+
+    // Which icon is in the hand, and which slot the gap has opened at.
     property int held: -1
+    property int gap: -1
 
-    readonly property var arrangement: root.order !== null ? root.order : root.pinned
+    // Where the pointer is inside the kept row, in that row's own coordinates,
+    // and how far into the icon it was when it was picked up — an icon is
+    // carried from where it was touched, not by its middle.
+    property real grip: 0
+    property real grabOffset: 0
 
-    function take(index) {
-        root.order = root.pinned.slice();
+    readonly property bool dragging: root.held >= 0
+    readonly property real heldX: root.grip - root.grabOffset
+
+    function slotX(index) {
+        return index * root.step;
+    }
+
+    // Where an icon sits while another is being carried: the ones between the
+    // hole it left and the gap it is over move by one slot, and the rest do
+    // not move at all.
+    function restingX(index) {
+        if (!root.dragging || index === root.held)
+            return root.slotX(index);
+        if (root.held < root.gap && index > root.held && index <= root.gap)
+            return root.slotX(index - 1);
+        if (root.held > root.gap && index >= root.gap && index < root.held)
+            return root.slotX(index + 1);
+        return root.slotX(index);
+    }
+
+    function take(index, x) {
         root.held = index;
+        root.gap = index;
+        root.grip = x;
+        root.grabOffset = x - root.slotX(index);
     }
 
-    // Where the pointer is, in slots. The row is laid out on a fixed pitch, so
-    // the slot a position falls in is arithmetic and not a hit test.
-    function slotAt(x) {
-        const step = root.iconSize + root.pitch;
-        return Math.max(0, Math.min(root.arrangement.length - 1,
-                                    Math.round((x - row.x - root.iconSize / 2) / step)));
-    }
-
-    function dragTo(index) {
-        if (root.order === null || index === root.held || index < 0)
+    // The gap follows the pointer, and it can cross as many slots as the hand
+    // does: it is the pointer's position divided by the pitch, not a step
+    // taken one neighbour at a time.
+    function drag(x) {
+        if (!root.dragging)
             return;
-        const next = root.order.slice();
-        next.splice(index, 0, next.splice(root.held, 1)[0]);
-        root.order = next;
-        root.held = index;
+        root.grip = x;
+        root.gap = Math.max(0, Math.min(root.pinned.length - 1,
+                                        Math.round(root.heldX / root.step)));
     }
 
     // The one write, and it is refused unless the result is the same set of
     // applications in a different order: a reorder that has gained or lost one
     // is a bug, and this list is the user's own and is not worth losing to it.
     function release() {
-        const next = root.order;
-        root.order = null;
+        const from = root.held;
+        const to = root.gap;
         root.held = -1;
+        root.gap = -1;
 
-        if (!next)
+        if (from < 0 || to < 0 || from === to)
             return;
+
+        const next = root.pinned.slice();
+        next.splice(to, 0, next.splice(from, 1)[0]);
 
         const before = root.pinned.slice().sort().join("\u0000");
         if (next.length !== root.pinned.length
@@ -88,8 +122,7 @@ Cell {
             console.warn("Bioma: the dock refused a reorder that changed the list");
             return;
         }
-        if (before.length > 0 && next.join("\u0000") !== root.pinned.join("\u0000"))
-            Config.set("dock.pinned", next);
+        Config.set("dock.pinned", next);
     }
 
     // One entry per application, not per window. Two windows of the same
@@ -231,42 +264,58 @@ Cell {
         anchors.verticalCenter: parent.verticalCenter
         spacing: root.pitch
 
-        // The neighbours step aside rather than jumping: the same reflow the
-        // tissue moves at, because it is the same kind of movement.
-        move: Transition {
-            NumberAnimation {
-                properties: "x,y"
-                duration: Timing.reflow
-                easing.type: Easing.Bezier
-                easing.bezierCurve: Timing.easeOpenFlat
-            }
-        }
+        // The kept group places its own icons rather than being laid out: one
+        // of them has to be able to leave the row and follow the pointer.
+        Item {
+            id: keptRow
 
-        Repeater {
-            model: root.arrangement
+            width: Math.max(0, root.pinned.length * root.step - root.pitch)
+            height: root.iconSize
 
-            delegate: DockIcon {
-                id: kept
+            Repeater {
+                model: root.pinned
 
-                required property string modelData
-                required property int index
+                delegate: DockIcon {
+                    id: kept
 
-                size: root.iconSize
-                factor: root.metrics.factor
-                appId: kept.modelData
-                running: root.windowsOf(kept.modelData).length > 0
-                holdable: true
-                held: root.held === kept.index
+                    required property string modelData
+                    required property int index
 
-                onEntered: (label, centre) => root.name(label, kept, centre)
-                onExited: label => root.unname(label)
-                onActivated: root.activate(kept.modelData)
-                onLaunched: root.launch(kept.modelData)
-                onToggled: root.unkeep(kept.modelData)
+                    size: root.iconSize
+                    factor: root.metrics.factor
+                    appId: kept.modelData
+                    running: root.windowsOf(kept.modelData).length > 0
+                    holdable: true
+                    held: root.held === kept.index
 
-                onTaken: root.take(kept.index)
-                onDragged: x => root.dragTo(root.slotAt(x))
-                onReleased: root.release()
+                    // Held, it is where the hand is. Let go, it travels to the
+                    // place the row has kept for it, which is the movement
+                    // that says the gesture landed.
+                    x: kept.held ? root.heldX : root.restingX(kept.index)
+
+                    Behavior on x {
+                        enabled: !kept.held
+                        NumberAnimation {
+                            duration: Timing.reflow
+                            easing.type: Easing.Bezier
+                            easing.bezierCurve: Timing.easeOpenFlat
+                        }
+                    }
+
+                    onEntered: (label, centre) => root.name(label, kept, centre)
+                    onExited: label => root.unname(label)
+                    onActivated: root.activate(kept.modelData)
+                    onLaunched: root.launch(kept.modelData)
+                    onToggled: root.unkeep(kept.modelData)
+
+                    // The pointer is measured in the kept row, which does not
+                    // move while a drag is live — measured on the icon it
+                    // would move with the icon, and the two would chase each
+                    // other.
+                    onTaken: x => root.take(kept.index, x)
+                    onDragged: x => root.drag(x)
+                    onReleased: root.release()
+                }
             }
         }
 
@@ -387,7 +436,7 @@ Cell {
         signal activated
         signal launched
         signal toggled
-        signal taken
+        signal taken(real x)
         signal dragged(real x)
         signal released
 
@@ -438,14 +487,17 @@ Cell {
 
             onActiveChanged: {
                 if (active)
-                    icon.taken();
+                    icon.taken(icon.parent.mapFromItem(null, centroid.scenePosition.x,
+                                                       centroid.scenePosition.y).x);
                 else
                     icon.released();
             }
 
             onCentroidChanged: {
-                if (active)
-                    icon.dragged(icon.mapToItem(icon.parent.parent, centroid.position.x, 0).x);
+                if (!active)
+                    return;
+                icon.dragged(icon.parent.mapFromItem(null, centroid.scenePosition.x,
+                                                     centroid.scenePosition.y).x);
             }
         }
     }

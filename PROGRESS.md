@@ -841,12 +841,21 @@ and would have stopped being a membrane.
   Verified by calling both functions from a throwaway timer: the override file
   gained `steam` and lost OBS, and the cell recomposed from the file without a
   restart.
-- **Dragging a kept application reorders the row**, and the row rearranges
-  under the pointer rather than at the end: the working copy is what the
-  Repeater follows while a drag is live, so what is on screen during it is the
-  order that will be written. The handler moves nothing itself — it reports
-  where the pointer is and the slot is arithmetic, because the row is laid out
-  on a fixed pitch.
+- **Dragging a kept application reorders the row**, and the icon in the hand
+  goes exactly where the hand goes. The first attempt rearranged the *list*
+  while the drag was live and it read as nothing at all: rearranging moves the
+  held icon too, which moves the frame the pointer is measured in, so the two
+  chase each other and the icon crawls one neighbour at a time. Akusen said it
+  was unclear and that it should cross more than one slot, and both were the
+  same fault.
+  - The list is left alone during the drag. The held icon leaves the row's
+    arithmetic and follows the pointer — carried from where it was touched,
+    not by its middle — the gap is a number the pointer's position divides
+    out, so it can cross the whole row at once, and the others step aside by
+    one slot, animated at the reflow. The list is rebuilt once, on release.
+  - The pointer is measured **in the row, from the scene**. Measured through
+    the icon it would stand still, because a pointer that carries an item
+    keeps the same position inside it.
   - **Nothing is written until it is let go**, so a drag abandoned halfway
     leaves the file alone, and the write is refused unless the result is the
     same set of applications in a different order. This list is the user's own
