@@ -280,6 +280,27 @@ Item {
         }
     }
 
+    // Height moves for one kind of cell only — the ones that are a panel
+    // rather than a pill — but when it moves it has to move *with* the width.
+    // A shape that grew sideways while its height snapped looked like it was
+    // arriving from somewhere off to the right, because a centred floating
+    // tissue is placed by the size of what it holds: one dimension settled
+    // instantly and the other travelled. Akusen saw the launcher coming in
+    // from the bottom right, 2026-09-22.
+    Behavior on height {
+        NumberAnimation {
+            duration: Timing.reflow
+            easing.type: Easing.Bezier
+            easing.bezierCurve: Timing.easeOpenFlat
+        }
+    }
+
+    // At size, within a pixel. Content that draws itself into a shape still
+    // growing is content drawn at the wrong size, so whatever needs the final
+    // measure waits for this.
+    readonly property bool grown: Math.abs(width - contractedWidth) < 1
+                               && Math.abs(height - contractedHeight) < 1
+
     Behavior on opacity {
         NumberAnimation {
             id: appearance

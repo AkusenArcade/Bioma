@@ -1093,6 +1093,15 @@ almost nothing in the file that is not one of those.
   also means it claims the shell's attention directly when it is summoned, or
   the sheet that closes an open cell would not know it was there and a press
   outside would leave it standing.
+- **It grows from its own centre, in both measures at once.** Width animated
+  and height snapped, and a centred floating tissue is placed by the size of
+  what it holds — so one dimension settled instantly while the other
+  travelled, and the panel looked like it was flying in from the bottom
+  right. `Cell` animates height the way it animates width now, and the
+  content waits for `Cell.grown` rather than drawing itself into a shape that
+  is still growing. No scaling anywhere: the project's rule is to grow by
+  animating width and height, and that is what makes a centred tissue grow
+  from its middle for free.
 - **Its height is fixed, and that is the whole of it.** A panel that grew and
   shrank with the number of results re-centred its tissue on every letter
   typed, and the blur region chased a shape that had already moved: the field

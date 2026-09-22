@@ -172,6 +172,18 @@ Cell {
     Component.onCompleted: if (root.placed) field.forceActiveFocus()
 
     // ---- The field -----------------------------------------------------------
+    //
+    // Everything below is inside one item that waits for the shape: a field
+    // drawn into a panel that is still growing is a field at the wrong width,
+    // and it arrives the way a panel's content arrives everywhere else.
+
+    Item {
+        id: body
+
+        anchors.fill: parent
+        opacity: root.grown ? 1 : 0
+
+        Behavior on opacity { NumberAnimation { duration: Timing.contentFade } }
 
     Item {
         id: search
@@ -375,6 +387,8 @@ Cell {
                 onTapped: root.launch(result.index)
             }
         }
+    }
+
     }
 
     // The matched letters, in the primary. Built as markup because a Text can
