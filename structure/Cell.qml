@@ -140,6 +140,11 @@ Item {
     // can grant less than the name needs, and a name that runs out of its own
     // pill is worse than no name at all: below that width the cell shows the
     // glyph alone, centred in what it was given.
+    // Whether opening this cell means it has the user's attention. One cell
+    // is open at a time, and that rule is about attention rather than about
+    // surfaces — a body that appears under the pointer is not attention.
+    property bool claimsFocus: true
+
     property Component headerMark: null
     property string headerTitle: ""
     property real headerMarkSize: 20 * metrics.factor
@@ -474,9 +479,15 @@ Item {
         // One cell at a time: opening this one closes whatever was open, and a
         // press anywhere the shell does not claim closes this one.
         if (open) {
-            Focus.opened(root);
+            // A cell that opened because the pointer brushed it has not been
+            // asked for: the notification's body arrives on hover, and it
+            // must not close the panel somebody is actually using. Only a
+            // deliberate opening claims the shell's attention.
+            if (claimsFocus)
+                Focus.opened(root);
         } else {
             Focus.released(root);
+
             // A cell that exists only while it is asked for goes when it is
             // closed, however it was closed — the press outside that shut it
             // is also the answer to "do you still want this?".

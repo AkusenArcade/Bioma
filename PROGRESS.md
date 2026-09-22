@@ -22,9 +22,10 @@ Three ways in, and they are independent:
    is left of the cells already drawn is what CELLS left open: sinestesia on a
    narrow screen and whether a long title scrolls on hover, and reduced motion,
    which asks for the band to become a single bar rather than stop.
-2. **Notifications**, which closes phase 1 and burns the bridge — the only work
-   that cannot be done without switching the running shell off. See the
-   pre-flight below.
+2. **Notifications are in and the bridge is burnt.** Noctalia is off, Bioma
+   owns `org.freedesktop.Notifications`, and a notification arrives, waits its
+   dwell and leaves. What has never been touched is the half that needs a
+   pointer: the body and the actions on hover, and the history on a press.
 3. **The rest of the engine**: the last user of the full-screen input surface,
    cells positioned at the pointer. **Vertical tissues stack** and **auto-hide
    hides**, see below; what auto-hide has never done is come back, because
@@ -970,6 +971,41 @@ Verified with a floating column declared in the test layer: clock, audio and
 workspaces stacked downward, each centred, the column as wide as the widest
 of them.
 
+### The cutover, and the notification cell
+
+2026-09-22. `spawn-at-startup "noctalia" "-d"` is commented out in
+`~/.config/niri/config.kdl`, the process is stopped, and Bioma took
+`org.freedesktop.Notifications` **without being restarted**: Quickshell's
+server retries registration when the name is released, which it says it will
+do in the warning it prints while another shell holds it.
+
+- **`noctalia-binds.kdl` is still included, deliberately.** Nineteen of its
+  binds call `noctalia msg …` and now do nothing; four of them are the
+  terminal, the file manager, the browser and Sinestesia, and those are not
+  Noctalia's to take away. They stay until each is moved somewhere of its own.
+- **What went with it**: the tray, because `org.kde.StatusNotifierWatcher` was
+  Noctalia's and Bioma has no tray cell; its clipboard panel; its OSDs. None
+  of them is in the catalogue, and the tray is the one worth deciding about.
+- **`services/Notifications.qml` is the server plus everything Prisma never
+  had**: urgency read and obeyed — four seconds for low, eight for ordinary,
+  and a critical one does not leave by itself, which is the convention Prisma
+  broke by dismissing everything after four — a queue with a cap of twenty in
+  ten seconds that collapses into a count past it, a clock the pointer stops
+  and that resumes where it stopped, and a history that groups by
+  application. Do not disturb lives with the history, against the PRD and with
+  CELLS §10: it is looked for when notifications are bothering somebody, which
+  is when they are looking at this cell.
+- **A cell can open without claiming attention.** One cell is open at a time,
+  and that rule is about attention rather than surfaces — a body that appears
+  under the pointer has not been asked for, so `Cell.claimsFocus` is false
+  while the notification is merely hovered and true when its history is
+  pressed open.
+
+Verified on the live bus: `notify-send` put the cell in the corner of the
+floating tissue with its glyph and its line, and it left by itself when the
+dwell ran out. The hover body, the actions and the history are drawn and have
+never been pressed.
+
 ## Phase 1 — Service porting
 
 Nine of ten done, each verified headlessly through `probe.qml` before moving
@@ -1023,7 +1059,7 @@ is set, and the shell says nothing at all. That is the notification cell's job
 consumer of it: image, text and video each end with something worth announcing,
 and the video's announcement is the one that carries a path.
 
-### Before notifications can be touched
+### Before notifications could be touched — done, 2026-09-22
 
 `org.freedesktop.Notifications` has one owner per session, and on this machine
 that owner is **Noctalia**, which is the running shell. It also holds

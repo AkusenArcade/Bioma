@@ -86,6 +86,16 @@
     "bitrate": "5 MB"
   },
 
+  "notifications": {
+    "$comment": "The temporal grammar of what other programs have to say. Dwell is by urgency and critical never expires, as the freedesktop convention requires. Past the cap a burst stops queueing and becomes a count.",
+    "quiet": false,
+    "dwell_low": 4000,
+    "dwell_normal": 8000,
+    "queue_cap": 20,
+    "burst_window": 10000,
+    "history": 100
+  },
+
   "dock": {
     "$comment": "Applications kept on the dock, by desktop entry id, in the order they are shown. With none the dock is a window list, which is a legitimate way to use it.",
     "pinned": []
@@ -242,9 +252,9 @@
         {
           "type": "notifications",
           "enabled": true,
-          "visibility": { "type": "conditional", "confirm": 0, "dwell": 5000 },
-          "min_width": { "value": 280 },
-          "options": { "queue_cap": 5 }
+          "visibility": { "type": "conditional", "enter": 1, "exit": 1, "confirm": 0, "dwell": 400 },
+          "min_width": { "value": 220 },
+          "width": { "max": 300 }
         }
       ]
     },

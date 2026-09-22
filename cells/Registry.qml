@@ -23,7 +23,8 @@ Singleton {
         "audio": "audio/AudioCell.qml",
         "connectivity": "connectivity/Connectivity.qml",
         "session": "session/SessionCell.qml",
-        "dock": "dock/Dock.qml"
+        "dock": "dock/Dock.qml",
+        "notifications": "notifications/NotificationCell.qml"
     })
 
     property var cache: ({})
