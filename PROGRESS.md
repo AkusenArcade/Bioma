@@ -1307,6 +1307,31 @@ that would not fit before the cell exists, rather than let somebody build a
 membrane with cells missing from it. Conditional cells count — a band that fits
 only while the notification is away breaks when one arrives.
 
+### A cell that is closing is still on screen
+
+Akusen: only the launcher closes properly. It is the one summoned cell with no
+expansion — which is what pointed at the rule the others were breaking.
+
+`shown` goes false the instant a cell is dismissed, and everything that places
+or measures a cell was reading exactly that, while the composition hanging off
+it takes the whole closing time to retract. Measured on a summoned vitals at an
+eighth speed, at the frame of the dismissal:
+
+- the tissue's width fell from 314 to 4, because the cell no longer counted;
+- `Float.reach` fell from 396 to 0, and the tissue's y went from 500 to 698 in
+  one frame — carrying the retracting composition two hundred pixels down the
+  screen, which is the "something appears in the middle and goes away";
+- the pill itself faded out from under its own expansion, and its header went,
+  which narrowed the tissue again and moved it sideways.
+
+So: a cell counts for its tissue while it is `shown`, **expanded or leaving**;
+`Float` measures its reach the same way and holds the last figure while the
+cell is leaving, because the expansion unloads a frame before the departure
+starts; the pill keeps its opacity and its header until the last of the
+composition has gone. Measured again afterwards: the tissue stays at 1563, 500
+and the reach at 396 from the open through the retraction and the shrink, and
+nothing moves but what is meant to.
+
 ### And the cell has to wait for what hangs off it
 
 With the curve fixed, the closing still read wrong: the pill snapped back to

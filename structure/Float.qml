@@ -53,6 +53,7 @@ PanelWindow {
 
     function dismiss() {
         root.summoned = "";
+        root.heldReach = 0;
     }
 
     // A summoned cell leaves the way it arrived — shrinking about its own
@@ -179,18 +180,43 @@ PanelWindow {
     // alone would centre the shape a composition *grew from* and leave the
     // composition itself hanging off the bottom of the screen — Akusen's
     // correction, 2026-09-22: the whole cell is what goes in the middle.
-    readonly property real reach: {
+    // A cell counts while it is still on screen, not only while it is placed:
+    // dismissing one stops it being placed at once, and a tissue re-centred
+    // on the instant carried the whole composition — still retracting —
+    // two hundred pixels down the screen. Measured, 2026-09-22: reach 396 to 0
+    // in one frame, the tissue from y 500 to y 698.
+    readonly property real liveReach: {
         let out = 0;
         for (const cell of tissue.cells)
-            if (cell.placed && cell.reach > out)
+            if ((cell.placed || cell.expanded) && cell.reach > out)
                 out = cell.reach;
         return out;
     }
 
+    // And once the last of it is leaving there is nothing left to measure, so
+    // the figure is held: the pill shrinks where it stands rather than being
+    // moved while it does.
+    readonly property bool departing: {
+        for (const cell of tissue.cells)
+            if (cell.leaving)
+                return true;
+        return false;
+    }
+
+    property real heldReach: 0
+
+    // Whatever it last measured while there was something to measure. The
+    // expansion unloads a frame *before* the cell starts leaving, so a figure
+    // kept only while nothing was leaving was already zero by the time it was
+    // needed.
+    onLiveReachChanged: if (root.liveReach > 0) root.heldReach = root.liveReach
+
+    readonly property real reach: root.departing ? root.heldReach : root.liveReach
+
     readonly property real spread: {
         let out = tissue.width;
         for (const cell of tissue.cells)
-            if (cell.placed && cell.reachWidth > out)
+            if ((cell.placed || cell.expanded || cell.leaving) && cell.reachWidth > out)
                 out = cell.reachWidth;
         return out;
     }

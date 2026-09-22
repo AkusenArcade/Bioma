@@ -206,7 +206,8 @@ Item {
     // moment the cell was closed dragged everything still on screen sideways
     // with it — the shapes retract into a cell that has already gone. The
     // header goes when the last of the composition has.
-    readonly property bool showsHeader: expanded && (headerMark !== null || headerTitle.length > 0)
+    readonly property bool showsHeader: (expanded || leaving)
+                                     && (headerMark !== null || headerTitle.length > 0)
 
     TextMetrics {
         id: headerMetrics
@@ -364,8 +365,15 @@ Item {
     }
 
     // A cell that is not shown occupies nothing; the tissue reflows around it.
-    visible: placed || appearance.running || leaving
-    opacity: placed ? 1 : 0
+    //
+    // **Unless it is still closing.** Dismissing a cell stops it being shown
+    // at once, and the composition hanging off it takes the closing time to
+    // retract — so the pill faded out from under its own expansion, and the
+    // tissue, measuring itself without it, collapsed and carried what was left
+    // across the screen. It stays, at full opacity, until the last of it has
+    // gone; `leaving` is the summoned cell's own shrink, after that.
+    visible: placed || expanded || appearance.running || leaving
+    opacity: placed || expanded ? 1 : 0
 
     // A contracted cell resizes to fit its content, and that is a reflow: it
     // must move at the rate its tissue and its neighbours move at, or the row

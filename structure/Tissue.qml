@@ -81,7 +81,7 @@ Item {
     // the cell, still drawn, was carried somewhere else and disappeared from
     // there. What leaves must leave from where it stood.
     function counts(cell) {
-        return cell && (cell.shown || cell.leaving);
+        return cell && (cell.shown || cell.expanded || cell.leaving);
     }
 
     readonly property real tallest: {
