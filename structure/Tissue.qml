@@ -161,6 +161,14 @@ Item {
 
     readonly property real contentLength: root.placement.length
 
+    // What this band would have to be granted to hold **everything declared in
+    // it** at each cell's narrowest — conditional cells included, because a
+    // band that only fits while the notification is away is a band that breaks
+    // when one arrives. The settings cell asks the same question of a list it
+    // has not built yet, through `Registry.roomFor`.
+    readonly property real required: Registry.roomFor(root.cellsConfig, root.metrics)
+    readonly property bool fits: root.slotLength <= 0 || root.required <= root.slotLength + 0.5
+
     readonly property real length: Math.min(slotLength > 0 ? slotLength : Number.MAX_VALUE,
                                             contentLength + padding * 2)
 

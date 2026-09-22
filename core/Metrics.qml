@@ -121,6 +121,20 @@ Singleton {
         };
     }
 
+    // What a band has to be to hold these widths: the cells themselves, one
+    // gap between each pair, and the tissue's own margin on both sides. The
+    // widths are logical units at the normal step, so they take the step here.
+    //
+    // The gap between two cells is the band showing through, which is the same
+    // margin on each side — twice the padding, as `Tissue` draws it.
+    function roomFor(widths, metrics) {
+        const m = metrics || root.step("normal");
+        let total = m.tissuePadding * 2;
+        for (let i = 0; i < widths.length; i++)
+            total += (i > 0 ? m.tissuePadding * 2 : 0) + widths[i] * m.factor;
+        return total;
+    }
+
     // A pill up to the ceiling, the panel radius above it. Past 110 px the cap
     // reaches sixty or eighty pixels, stops being a border and starts dictating
     // the content — eating the corners of images and lists.

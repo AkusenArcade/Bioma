@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import qs.core
+import qs.cells
 import qs.services
 
 // One edge of one monitor. Tissues anchored to it share its length.
@@ -327,9 +328,59 @@ PanelWindow {
             total += entry.percentage || 0;
         if (total > 100)
             console.warn(`Bioma: membrane ${edge} on ${screenItem ? screenItem.name : "?"} declares ${total}% of tissue — above 100, tissues will be clamped`);
+        root.checkRoom();
+    }
+
+    // And a ceiling has to be high enough for what is under it. A band granted
+    // less than its cells need at their narrowest does not break — the tissue
+    // leaves out what it cannot fit — but what the person sees is cells
+    // missing from their membrane with nothing said about it, so it is said
+    // here, in the one unit that fixes it: the percentage to raise it to.
+    property string lastShortfall: ""
+
+    // Measured once the surface has one, and once the configuration has
+    // settled: an output-sized surface is a few pixels wide for an instant
+    // while it is built, and a membrane that says a workspaces cell needs a
+    // hundred and thirty per cent of a seventy-pixel screen is the log crying
+    // wolf.
+    Timer {
+        id: roomSettled
+        interval: Timing.reflow + 80
+        onTriggered: root.reportRoom()
+    }
+
+    function checkRoom() {
+        if (root.usableLength > 0)
+            roomSettled.restart();
+    }
+
+    function reportRoom() {
+        if (root.usableLength <= 0)
+            return;
+
+        const short = [];
+        for (let i = 0; i < tissuesConfig.length; i++) {
+            const entry = tissuesConfig[i];
+            const granted = (entry.percentage || 0) / 100 * root.usableLength;
+            const needed = Registry.roomFor(entry.cells || [], root.metrics);
+            if (needed > granted + 0.5)
+                short.push(`tissue ${i + 1} holds ${(entry.cells || []).length} cells and needs `
+                           + `${Math.ceil(needed / root.usableLength * 100)}% rather than `
+                           + `${entry.percentage || 0}%`);
+        }
+
+        const said = short.join("; ");
+        if (said === root.lastShortfall)
+            return;
+        root.lastShortfall = said;
+        if (said.length > 0)
+            console.warn(`Bioma: the ${root.edge} membrane on `
+                         + `${screenItem ? screenItem.name : "this monitor"} is granted less `
+                         + `than it was asked to hold — ${said}`);
     }
 
     onTissuesConfigChanged: validate()
+    onUsableLengthChanged: checkRoom()
 
     // ---- Blur and input ----------------------------------------------------
 

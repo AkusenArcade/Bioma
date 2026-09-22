@@ -147,6 +147,23 @@ drawn at all until there is room for it again. The shell says so once, naming
 the membrane and the cell. A cell drawn outside its band, or off the screen, is
 the one outcome a ceiling exists to prevent.
 
+**The ceiling has a floor.** A band has to be granted at least what its cells
+need at their narrowest: every `min_width` in it, one gap between each pair and
+the tissue's own margin on both sides. Below that the membrane is drawn with
+cells missing from it, which looks like a defect rather than a setting, so the
+shell warns at startup and names the percentage to raise it to:
+
+```
+Bioma: the top membrane on HDMI-A-1 is granted less than it was asked to hold
+     — tissue 2 holds 4 cells and needs 12% rather than 5%
+```
+
+Conditional cells count: a band that only fits while the notification is away
+is a band that breaks when one arrives. The arithmetic is `Metrics.roomFor`,
+and `Registry.roomFor` answers it for a list of cell blocks — which is how the
+settings cell can refuse to add a cell to a band that cannot hold it, before
+the cell exists.
+
 ### cells
 
 | Key | Meaning |
@@ -158,7 +175,7 @@ the one outcome a ceiling exists to prevent.
 | `visibility.confirm` | How long the condition must hold before appearing. |
 | `visibility.dwell` | How long the cell remains after the condition lapses. |
 | `visibility.shortcut` | For `invoked`. |
-| `min_width` | Below it the cell prefers not to appear rather than appear illegible. A generous minimum also stops small content changes producing motion. |
+| `min_width` | Below it the cell prefers not to appear rather than appear illegible. A generous minimum also stops small content changes producing motion. Omitted, the cell's own floor from `cells/Registry.qml` applies; this raises it, and the band's percentage has to cover the sum. |
 | `width` | An **object**, not a bare number — `{ "elastic": true, "max_percent": 25 }` — so a per-cell weight stays possible later. |
 | `options` | Per-cell domain settings. |
 

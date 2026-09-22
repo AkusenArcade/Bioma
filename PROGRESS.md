@@ -1287,6 +1287,26 @@ Also taken out on the way: `ThemeCell`'s chips anchored to a parent a `Row`
 gives them and takes away, which logged "cannot read property verticalCenter of
 null" on every rebuild.
 
+### A band has a floor as well as a ceiling
+
+Akusen's window title was not on the HDMI membrane: its band was granted 20 %
+of 1920 px and held a clock, the sound cell, the dock and the title, so the
+title — elastic, and therefore the one that gives way — was never placed. The
+band is 44 % there now, the corner one 16 %, and the title is back.
+
+The general half is the one that matters. A tissue now knows what it was asked
+to hold: `Registry.minimums` is each cell's own floor, `Metrics.roomFor` adds
+the gaps and the tissue's margins, and `Tissue.required` / `fits` answer for a
+live band. The membrane checks every band once the surface has settled and
+warns in the unit that fixes it — "tissue 2 holds 4 cells and needs 12 % rather
+than 5 %".
+
+`Registry.roomFor` answers the same question for a **list of cell blocks**,
+which is what the settings cell needs: the Structure page has to refuse a cell
+that would not fit before the cell exists, rather than let somebody build a
+membrane with cells missing from it. Conditional cells count — a band that fits
+only while the notification is away breaks when one arrives.
+
 ## Phase 1 — Service porting
 
 Nine of ten done, each verified headlessly through `probe.qml` before moving
