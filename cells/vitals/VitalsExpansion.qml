@@ -295,6 +295,13 @@ Item {
     Panel {
         id: list
 
+        // The pointer over this panel is what asks the membrane for the
+        // keyboard — see the note in Vitals.qml. The pods are not part of it:
+        // nothing in them is typed into.
+        HoverHandler {
+            onHoveredChanged: if (root.cell) root.cell.panelHovered = hovered
+        }
+
         metrics: root.metrics
         targetWidth: root.panelWidth
         targetHeight: root.height
@@ -319,6 +326,17 @@ Item {
                 width: root.panelWidth - 20 * root.factor
                 height: root.metrics.fieldHeight
 
+                // Pressing the field keeps the keyboard after the pointer has
+                // wandered off the panel; Escape, or closing the cell, gives
+                // it back.
+                TapHandler {
+                    onTapped: {
+                        if (root.cell)
+                            root.cell.fieldEngaged = true;
+                        filter.forceActiveFocus();
+                    }
+                }
+
                 Row {
                     anchors.left: parent.left
                     anchors.verticalCenter: parent.verticalCenter
@@ -340,6 +358,12 @@ Item {
                         font.family: Typography.expressive
                         font.pixelSize: root.metrics.fontTitle
                         selectByMouse: true
+
+                        Keys.onEscapePressed: {
+                            filter.focus = false;
+                            if (root.cell)
+                                root.cell.fieldEngaged = false;
+                        }
 
                         Text {
                             anchors.fill: parent

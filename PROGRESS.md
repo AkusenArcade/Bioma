@@ -612,11 +612,19 @@ focusable only while one of those is open. Verified through `niri msg layers`:
 with the audio cell open both membranes report `none`, with vitals open the
 membrane carrying it reports `on-demand` and the other still reports `none`.
 
-Vitals is that cell, and it holds the keyboard for as long as it is open.
-Asking for it only when the field is pressed was tried first and does not
-work here: the press that makes the surface focusable is the press that
-should have reached the field, and nothing can be typed. Reverted the same
-session it was written.
+Vitals is that cell, and it asks only where the keyboard could be wanted:
+while the pointer is over **its own panel**, and afterwards for as long as the
+field is engaged — the press on the field sets that, Escape and closing the
+cell put it down. The pointer on the other cells of the same membrane no
+longer disturbs the window at all, which is what was actually being reported:
+niri's own focus ring blinking on and off as the pointer travelled.
+
+Two attempts before it, both worth not repeating. Asking for the whole time
+the cell is open is what caused the blinking. Asking only on the press cannot
+work: the press that makes the surface focusable is the press that should
+have reached the field, so nothing can be typed. Arriving over the panel is
+what earns the focus, and by the time the field is pressed the surface
+already has it.
 
 So the window title cell answers for it instead, which is the better answer
 and Akusen's: **the title says what has the focus, and sometimes that is a

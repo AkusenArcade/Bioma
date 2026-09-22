@@ -21,13 +21,23 @@ Cell {
 
     domain: "vitals"
 
-    // The one cell so far with a field to type in: the process filter. It holds
-    // the keyboard for as long as it is open, because a field that has to be
-    // asked for first cannot be typed into on this compositor — tried, and it
-    // does not work. What that costs is the window focus while the pointer is
-    // over the membrane, and the title cell answers for it by saying which
-    // cell has the focus instead of going out. Akusen's call, 2026-09-22.
-    wantsKeyboard: true
+    // The one cell so far with a field to type in: the process filter.
+    //
+    // Asking for the keyboard costs the window its focus — a focusable layer
+    // surface is one niri moves the focus to as the pointer crosses it, ring
+    // and all — so the cell asks only where the keyboard could be wanted: over
+    // its own panel, and afterwards for as long as the field is engaged. The
+    // pointer on the *other* cells of the same membrane no longer disturbs the
+    // window at all.
+    //
+    // Asking only on the press was tried first and cannot work: the press that
+    // makes the surface focusable is the press that should have reached the
+    // field. Arriving over the panel is what earns the focus, and by the time
+    // the field is pressed the surface already has it.
+    property bool panelHovered: false
+    property bool fieldEngaged: false
+
+    wantsKeyboard: root.open && (root.panelHovered || root.fieldEngaged)
 
     paddingLeading: 14
     paddingTrailing: 14
@@ -125,8 +135,15 @@ Cell {
     replacesContent: true
 
     // The process list is the one sample that costs something, so the service
-    // takes it only while it is being looked at.
-    onOpenChanged: SystemMonitor.listProcesses = root.open
+    // takes it only while it is being looked at — and a cell that closes lets
+    // go of everything, the keyboard with it.
+    onOpenChanged: {
+        SystemMonitor.listProcesses = root.open;
+        if (!root.open) {
+            root.panelHovered = false;
+            root.fieldEngaged = false;
+        }
+    }
 
     // The expansion is a composition — pods, threads and a panel — so it lives
     // in its own file beside this one and arrives through a Loader: a cell's
