@@ -1307,6 +1307,20 @@ that would not fit before the cell exists, rather than let somebody build a
 membrane with cells missing from it. Conditional cells count — a band that fits
 only while the notification is away breaks when one arrives.
 
+### And the cell has to wait for what hangs off it
+
+With the curve fixed, the closing still read wrong: the pill snapped back to
+its contracted width the instant the cell was closed, while the whole
+composition was still on screen. An expansion is placed against the cell's own
+edge, so the shapes were dragged sideways as the pill narrowed under them, and
+what was left at the end was one pod on its own in the middle — Akusen's
+"something appears in the middle and then goes away".
+
+The header now stands while the cell is **expanded** rather than while it is
+open: the shapes retract into a pill that is still there, and the pill returns
+to its contracted self once the last of them has gone. Which is the opening,
+backwards: the pill widens first and the composition grows out of it.
+
 ### The opening curve run backwards is not a closing curve
 
 Every expansion drove its cascade with `easeOpenFlat` in both directions. That

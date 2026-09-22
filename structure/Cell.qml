@@ -201,7 +201,12 @@ Item {
     // wants presses leaves this alone.
     property bool wantsKeyboard: false
 
-    readonly property bool showsHeader: open && (headerMark !== null || headerTitle.length > 0)
+    // While it is **expanded**, not while it is open: the composition hangs
+    // off this pill, and a pill that snapped back to its contracted width the
+    // moment the cell was closed dragged everything still on screen sideways
+    // with it — the shapes retract into a cell that has already gone. The
+    // header goes when the last of the composition has.
+    readonly property bool showsHeader: expanded && (headerMark !== null || headerTitle.length > 0)
 
     TextMetrics {
         id: headerMetrics
