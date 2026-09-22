@@ -751,9 +751,22 @@ Item {
                 Item {
                     id: douser
 
+                    // Measured rather than guessed: the leading margin, the
+                    // cross, the space after it, the word, and the same margin
+                    // on the other side. The guess was eleven pixels short and
+                    // the word ran out of its own pill.
+                    readonly property real inset: 8 * root.factor
+                    readonly property real afterCross: 7 * root.factor
+
+                    // Orbitron at this size paints wider than it measures —
+                    // the last letter sat on the border with the arithmetic
+                    // alone — so the trailing margin is given the difference.
+                    readonly property real tail: 6 * root.factor
+
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
-                    width: douserLabel.implicitWidth + 16 * root.factor + cross.width
+                    width: douser.inset * 2 + cross.width + douser.afterCross
+                         + douserLabel.implicitWidth + douser.tail
                     height: 22 * root.factor
 
                     Rectangle {
@@ -769,7 +782,7 @@ Item {
                         id: cross
 
                         anchors.left: parent.left
-                        anchors.leftMargin: 8 * root.factor
+                        anchors.leftMargin: douser.inset
                         anchors.verticalCenter: parent.verticalCenter
                         width: 9 * root.factor
                         height: width
@@ -781,7 +794,7 @@ Item {
                         id: douserLabel
 
                         anchors.left: cross.right
-                        anchors.leftMargin: 7 * root.factor
+                        anchors.leftMargin: douser.afterCross
                         anchors.verticalCenter: parent.verticalCenter
                         text: "REMOVE BAND"
                         color: douserHover.hovered ? Theme.alert : Theme.textMuted
