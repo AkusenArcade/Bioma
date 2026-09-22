@@ -25,10 +25,10 @@ Cell {
     // The icon is the whole content, so the padding is what makes the cell
     // square: 20 between two tens.
     readonly property real iconSize: 20 * metrics.factor
+    // A square around its glyph. What the cell wears when it opens keeps its
+    // own margins, which the engine works out from the header's mark.
     paddingLeading: 10 * metrics.factor
-    // Contracted the cell is a square around its glyph; open it carries a name
-    // as well, and a name keeps the full margin on its side.
-    paddingTrailing: open ? 16 : 10 * metrics.factor
+    paddingTrailing: 10 * metrics.factor
 
     // Open, the cell becomes the title of the panel it opened: the glyph of its
     // domain and its name, in the technical voice, like every other cell with

@@ -188,7 +188,21 @@ Item {
     // What the cell was actually given for its content, against what the header
     // would like. The ask always includes the name — a cell that asked for less
     // would never be granted more — and only the drawing gives it up.
-    readonly property real contentRoom: width - paddingLeading - paddingTrailing
+    // A header is a different composition from the contracted content, and it
+    // keeps its own margins. A cell built around a 30 px avatar leads with
+    // five pixels so the avatar is concentric with the cap; the same five in
+    // front of a 20 px glyph leave the glyph adrift against the edge. So the
+    // leading margin follows whichever mark is actually there, and the name on
+    // the other side keeps the full margin. Akusen saw it on the session cell,
+    // 2026-09-22 — and it was the same arithmetic in four cells, each doing it
+    // by hand with `open ? … : …`.
+    readonly property real headerLeading: (metrics.cellHeight - headerMarkSize) / 2
+    readonly property real headerTrailing: 16 * metrics.factor
+
+    readonly property real leadingInset: showsHeader ? headerLeading : paddingLeading
+    readonly property real trailingInset: showsHeader ? headerTrailing : paddingTrailing
+
+    readonly property real contentRoom: width - leadingInset - trailingInset
     readonly property bool headerNamed: root.contentRoom >= root.headerWidth - 0.5
 
     // ---- Size --------------------------------------------------------------
@@ -211,7 +225,7 @@ Item {
 
     readonly property real contractedHeight: metrics.cellHeight
     readonly property real contractedWidth: {
-        const natural = Math.max(minWidth, askedWidth + paddingLeading + paddingTrailing);
+        const natural = Math.max(minWidth, askedWidth + leadingInset + trailingInset);
         return maxWidth > 0 ? Math.min(natural, maxWidth) : natural;
     }
 
@@ -328,13 +342,13 @@ Item {
 
             // Against the leading cap when the name is beside it, and in the
             // middle of the cell when it is alone.
-            x: root.headerNamed ? root.paddingLeading
+            x: root.headerNamed ? root.leadingInset
                                 : Math.max(0, (root.width - width) / 2)
         }
 
         Text {
             anchors.verticalCenter: parent.verticalCenter
-            x: root.paddingLeading + root.headerMarkRoom
+            x: root.leadingInset + root.headerMarkRoom
             visible: root.headerNamed
             text: root.headerTitle
             color: Theme.text

@@ -26,10 +26,10 @@ Cell {
 
     domain: "theme"
 
-    // Contracted the chips take the full margin on both sides; open, the header
-    // leads with a round glyph, which sits against the cap and concentric with
-    // it like every other icon in the shell.
-    paddingLeading: open ? 10 * metrics.factor : 16
+    // The chips take the full margin on both sides. Open, the header leads
+    // with a round glyph concentric with the cap, and that margin is the
+    // engine's to work out.
+    paddingLeading: 16
     paddingTrailing: 16
 
     readonly property real chipWidth: 10 * metrics.factor

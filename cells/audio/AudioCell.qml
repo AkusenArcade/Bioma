@@ -35,7 +35,7 @@ Cell {
     // and a name keeps the full margin on its side.
     readonly property real dialSize: 26 * metrics.factor
     paddingLeading: 7 * metrics.factor
-    paddingTrailing: open ? 16 : 7 * metrics.factor
+    paddingTrailing: 7 * metrics.factor
 
     contentWidth: dialSize
 

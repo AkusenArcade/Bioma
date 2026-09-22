@@ -535,6 +535,14 @@ the fold to fourteen showing the shape of the music rather than a flat line.
   that sort the list by a domain were never claimed either. Akusen saw the first
   and the second came with it.
 
+- **A header keeps its own margins, and the engine works them out.** A cell
+  built around a 30 px avatar leads with five pixels so the avatar is
+  concentric with the cap; the same five in front of the 20 px glyph of its
+  header leave the glyph against the edge, which is what Akusen saw on the
+  session cell. The leading margin now follows whichever mark is actually
+  there and the name keeps the full margin on its side — and the four cells
+  that were each doing this arithmetic by hand with `open ? … : …` have
+  stopped.
 - **The face a cell wears when it opens is built once, in `structure/Cell.qml`.**
   Every cell with an expansion wears the same one — the glyph of its domain and
   its name in the technical voice — so each of them was carrying its own copy of

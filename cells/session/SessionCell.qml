@@ -22,7 +22,7 @@ Cell {
     // icon, so the padding is what makes the cell square around it.
     readonly property real avatarSize: 30 * metrics.factor
     paddingLeading: (metrics.cellHeight - avatarSize) / 2
-    paddingTrailing: open ? 16 : paddingLeading
+    paddingTrailing: paddingLeading
 
     contentWidth: avatarSize
 
