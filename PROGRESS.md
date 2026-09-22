@@ -1364,6 +1364,13 @@ built again.
 So a cell added from the settings page now appears on the membrane while the
 page stays open, which is what makes the page usable at all.
 
+And the cross on a slot did nothing, which was the same tap answered twice:
+both the cross's handler and the slot's own are offered it, so the band was
+removed and lit again in the same frame — an empty band at 25 %, which is what
+Akusen kept finding. The slot's handler now stands aside when the pointer is on
+the cross. The removal path itself was never at fault; a throwaway timer
+calling `clear()` took the band out and left it out.
+
 ## Phase 1 — Service porting
 
 Nine of ten done, each verified headlessly through `probe.qml` before moving

@@ -145,6 +145,7 @@ Item {
 
     onChosenChanged: if (!root.chosen) root.picking = false;
 
+
     // ---- Writing it back ----------------------------------------------------
     //
     // Every change rewrites the whole list: an array is one value to the merge,
@@ -505,6 +506,14 @@ Item {
 
                             TapHandler {
                                 onTapped: {
+                                    // Both handlers are offered the same tap.
+                                    // Without this the slot answered the press
+                                    // meant for its cross and lit the band
+                                    // again in the same frame it was removed,
+                                    // which looked exactly like nothing
+                                    // happening.
+                                    if (douse.visible && douseHover.hovered)
+                                        return;
                                     if (!slot.lit)
                                         root.light(edgeGroup.modelData, slot.modelData);
                                     root.choose(edgeGroup.modelData, slot.index);

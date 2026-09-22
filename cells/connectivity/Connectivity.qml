@@ -120,7 +120,6 @@ Cell {
             delegate: Icon {
                 required property string modelData
 
-                anchors.verticalCenter: parent.verticalCenter
                 name: modelData
                 width: root.glyphSize
                 height: width
