@@ -48,7 +48,12 @@ PanelWindow {
     WlrLayershell.namespace: "bioma-input"
 
     property var catchRegion: null
-    mask: catchRegion
+
+    // The same rule as the membrane's: before the holes are punched the sheet
+    // claims nothing, rather than claiming the screen.
+    Region { id: nothing }
+
+    mask: catchRegion ? catchRegion : nothing
 
     Item {
         id: sheet

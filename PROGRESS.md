@@ -136,6 +136,19 @@ so the dismissal itself is verified by hand.
 
 - **`Scale` → `Metrics`.** Name collision with `QtQuick.Scale`, which wins in
   every file that imports QtQuick.
+- **A membrane's surface is the size of its output, for the whole session.**
+  It used to take the screen when a cell opened and give it back when the last
+  one closed, and that resize is not atomic: Qt changes the window's height on
+  one frame and the compositor applies it on another, so everything positioned
+  from that height — the tissue on a bottom membrane sits at
+  `height − margin − thickness` — is drawn once at the old size and once at the
+  new. The bar appears twice, one of them near the top of the screen, and every
+  cell loses its glass for that frame. A transparent surface the size of the
+  output costs a buffer; it still reserves only its strip, and outside its cells
+  it catches nothing, because the mask is built from the cells themselves.
+  Which makes the mask load-bearing in a way it was not: a **null** mask means
+  the whole surface takes the pointer, so both the membrane and the catcher now
+  fall back to an empty region until their first rebuild.
 - **A region tree is grown and never shrunk.** Rebuilding one is the single
   frame a surface has no region at all — the old object is destroyed, the new
   one assigned, and in between the compositor is told to blur nothing. Every

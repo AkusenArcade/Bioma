@@ -77,10 +77,21 @@ PanelWindow {
     exclusiveZone: reserving ? Math.round(strip) : 0
 
     // An expansion grows out of the strip and over the windows, so the surface
-    // has to be large enough to hold it before the growth starts. Resizing a
-    // layer surface every frame of an animation is not worth the saving, so the
-    // surface takes the whole screen for as long as something is open and goes
-    // back to the strip when everything is closed.
+    // has to be large enough to hold it — and it holds that size for the whole
+    // session rather than taking it when a cell opens and giving it back when
+    // it closes.
+    //
+    // Resizing a layer surface is not free and it is not atomic: the window's
+    // height changes on one frame and the compositor applies the new size on
+    // another, and everything positioned from that height — the tissue on a
+    // bottom membrane sits at `height - margin - thickness` — is drawn once at
+    // the old size and once at the new. What the eye sees is the whole bar
+    // appearing twice, one of them near the top of the screen, and every cell
+    // losing its glass for that frame. Akusen saw both, 2026-09-22.
+    //
+    // A surface the size of the output costs a transparent buffer and nothing
+    // else: it reserves only its strip, and outside its cells it catches no
+    // pointer, because the input mask is built from the cells themselves.
     readonly property bool anyOpen: {
         for (const tissue of root.tissues)
             for (const cell of tissue.cells)
@@ -89,20 +100,8 @@ PanelWindow {
         return false;
     }
 
-    // Open, or still retracting. The surface has to outlast the closing
-    // animation: cut it at the moment the cell stops being open and the
-    // expansion is clipped away mid-retraction, which looks exactly like an
-    // expansion that never animated at all.
-    readonly property bool anyExpanded: {
-        for (const tissue of root.tissues)
-            for (const cell of tissue.cells)
-                if (cell.expanded)
-                    return true;
-        return false;
-    }
-
-    implicitHeight: horizontal ? (anyExpanded ? (screen ? screen.height : strip) : strip) : 0
-    implicitWidth: horizontal ? 0 : (anyExpanded ? (screen ? screen.width : strip) : strip)
+    implicitHeight: horizontal ? (screen ? screen.height : strip) : 0
+    implicitWidth: horizontal ? 0 : (screen ? screen.width : strip)
 
     // Keyboard focus is asked for by the cell that needs it, and by no other.
     //
@@ -337,14 +336,21 @@ PanelWindow {
     property var maskRegion: null
     property var blurRegion: null
 
-    mask: maskRegion
+    // Until the first rebuild the mask has to be **empty**, not absent: a null
+    // mask means the whole surface takes the pointer, and this surface is the
+    // size of the output. A region with no item and no size claims nothing.
+    Region { id: nothing }
+
+    mask: maskRegion ? maskRegion : nothing
     BackgroundEffect.blurRegion: blurRegion
 
     // Where this surface sits on its output. A layer surface has no position of
     // its own as far as Qt is concerned — the compositor places it — so it is
-    // derived from the edge it is anchored to and the size it currently has.
-    // A membrane at the bottom of the screen in its resting strip is 1372 px
-    // down; expanded it covers the output and the offset is nothing.
+    // derived from the edge it is anchored to and the size it has. Covering the
+    // output, as it now always does, that offset is nothing; the arithmetic
+    // stays because a membrane on an edge it does not fill is still a case the
+    // engine has to answer, and because it is what makes the catcher's
+    // coordinates true.
     readonly property real originX: edge === "right" ? (screen ? screen.width : 0) - width : 0
     readonly property real originY: edge === "bottom" ? (screen ? screen.height : 0) - height : 0
 
@@ -381,8 +387,9 @@ PanelWindow {
     }
 
     // The offset above changes with the surface, so the catcher has to be told
-    // when the surface changes size — expanding for a panel moves every cell on
-    // a bottom membrane a screen's height in the catcher's coordinates.
+    // when the surface changes size. It no longer does so for an expansion —
+    // it is the size of the output from the start — but a monitor that changes
+    // mode still moves every cell in the catcher's coordinates.
     onHeightChanged: root.refreshRegions()
     onWidthChanged: root.refreshRegions()
 
