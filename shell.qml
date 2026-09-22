@@ -72,6 +72,24 @@ ShellRoot {
                     tissuesConfig: modelData.tissues || []
                 }
             }
+
+            // The tissues with no edge: anchored to a corner or centred, over
+            // the windows, ceding nothing. A floating block declares which
+            // monitors it appears on the same way a membrane does.
+            Variants {
+                model: {
+                    if (!Config.ready)
+                        return [];
+                    return Config.get("floating", []).filter(entry => root.membraneMatches(entry, perScreen.modelData));
+                }
+
+                delegate: Float {
+                    required property var modelData
+
+                    screenItem: perScreen.modelData
+                    config: modelData
+                }
+            }
         }
     }
 
@@ -106,9 +124,6 @@ ShellRoot {
         }
     }
 
-    // TODO Phase 0: the floating tissues — anchor plus margins rather than a
-    // percentage of an edge, on their own surface, allowed to overlap.
-    //
     // TODO Phase 3: the last user of the input surface — cells positioned at
     // the pointer, which need the pointer position it is the only way to learn.
 

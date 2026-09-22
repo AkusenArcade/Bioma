@@ -79,17 +79,30 @@ Singleton {
         }
     }
 
+    // The same domain may answer twice on one monitor: the audio cell is on
+    // the membrane *and* centred on the screen as its invoked form (CELLS
+    // §05). A shortcut means the one that exists only when it is asked for —
+    // the other is already on screen and needs no asking — so a cell whose
+    // visibility is `invoked` wins over one that is merely invocable, and the
+    // output the keyboard is on wins over any other.
     function cellFor(domain, output) {
-        let fallback = null;
+        let best = null;
+        let rank = -1;
+
         for (const cell of root.invocable) {
             if (!cell || cell.domain !== domain)
                 continue;
-            if (output && cell.output === output)
-                return cell;
-            if (!fallback)
-                fallback = cell;
+
+            const here = output && cell.output === output;
+            const asked = cell.visibility.type === "invoked";
+            const score = (here ? 2 : 0) + (asked ? 1 : 0);
+
+            if (score > rank) {
+                best = cell;
+                rank = score;
+            }
         }
-        return fallback;
+        return best;
     }
 
     readonly property var domains: {

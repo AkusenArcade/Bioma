@@ -25,13 +25,13 @@ Three ways in, and they are independent:
 2. **Notifications**, which closes phase 1 and burns the bridge — the only work
    that cannot be done without switching the running shell off. See the
    pre-flight below.
-3. **The rest of the engine**: floating tissues, auto-hide, vertical tissues,
-   and the last user of the full-screen input surface — cells positioned at the
-   pointer, which need the pointer position it is the only way to learn. The
-   audio cell wants the floating tissue for its invoked form: CELLS §05 asks
-   for the *same* cell centred on the screen, born in a tissue of its own
-   rather than on a membrane; the notification cell wants one too, and the
-   configuration already declares both. **Invocation is done** — see below.
+3. **The rest of the engine**: auto-hide, vertical tissues that stack cells of
+   different heights — the notification column is the one that needs it — and
+   the last user of the full-screen input surface, cells positioned at the
+   pointer. **Invocation and floating tissues are done**, see below; what is
+   left of the audio cell's invoked form is what it *shows* there, because
+   CELLS §05 draws the capsule alone with no thread and the cell currently
+   arrives as itself and opens in the usual way.
 
 ### Confirmed by a real hand, at last
 
@@ -895,6 +895,31 @@ Verified against the running shell: `list` returned the five invocable
 domains, `toggle audio` opened the audio cell on the focused monitor and
 `close audio` shut it — the first interaction in this project that has been
 driven end to end without a pointer, because a shortcut is not a pointer.
+
+### A tissue with no edge
+
+`structure/Float.qml`: a tissue anchored to a corner or centred, over the
+windows, ceding nothing. The three levels are unchanged — it is the edge that
+is missing, so the tissue is placed by an anchor and a pair of margins instead
+of a percentage of a strip, and there is no window line to hang an expansion
+from but the one it works out for itself.
+
+- **The surface is the size of the output and never resizes**, for the reason
+  the membranes learnt: a layer surface that changes size draws its content
+  twice for a frame. It reserves nothing, and outside its cells it claims
+  nothing, with the same empty-region fallback until the first rebuild.
+- **It registers with `Focus` exactly as a membrane does**, so the catcher
+  subtracts its cells from the sheet that closes an open cell. Nothing in
+  `Focus` needed changing: it asks a surface for its screen and its rectangles
+  and does not care which kind it is.
+- **A shortcut prefers the invoked form.** The same domain can answer twice on
+  one monitor — the audio cell is on the membrane *and* centred on the screen
+  — so a cell whose visibility is `invoked` wins over one that is merely
+  invocable, and the output the keyboard is on wins over any other.
+
+Verified with a floating block declared in the test layer: `ipc call cell
+toggle audio` brought the audio cell up in the middle of the screen, blurred,
+shadowed at the floating depth, and closed it again.
 
 ## Phase 1 — Service porting
 
