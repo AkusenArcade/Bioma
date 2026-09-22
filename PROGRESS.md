@@ -1307,6 +1307,22 @@ that would not fit before the cell exists, rather than let somebody build a
 membrane with cells missing from it. Conditional cells count — a band that fits
 only while the notification is away breaks when one arrives.
 
+### The opening curve run backwards is not a closing curve
+
+Every expansion drove its cascade with `easeOpenFlat` in both directions. That
+curve starts fast and ends slow, which is what opening wants — and backwards it
+means the shapes fall out of the composition in the first fifty milliseconds
+and then crawl the rest of the way. Akusen saw it on audio and vitals.
+
+Measured at quarter speed, closing: the cascade went 1.00, 0.87, 0.49, 0.27,
+0.14 while the cell's own thread and panel went 1.00, 0.99, 0.96, 0.92, 0.86.
+Two different closings in one movement. With `easeClose` the cascade now tracks
+the cell exactly — 0.99, 0.96, 0.92, 0.86 — which is the whole point of having
+one timing set.
+
+Fixed in all six expansions: audio, vitals, theme, session, sinestesia and
+settings.
+
 ### A summoned cell leaves the way it arrived
 
 There was no closing animation on the floating cells at all: they were there,

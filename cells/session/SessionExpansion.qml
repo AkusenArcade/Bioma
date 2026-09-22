@@ -77,6 +77,13 @@ Item {
             cascade.stop();
             cascade.to = root.cell.open ? 1 : 0;
             cascade.duration = root.cell.open ? Timing.open : Timing.close;
+            // The opening curve run backwards is not a closing curve: it
+            // starts fast and ends slow, so the shapes fell out of the
+            // composition in the first fifty milliseconds and then crawled the
+            // rest of the way. Closing takes the closing curve — it opens
+            // calmly and closes quickly.
+            cascade.easing.bezierCurve = root.cell.open ? Timing.easeOpenFlat
+                                                     : Timing.easeClose;
             cascade.start();
             if (root.cell.open)
                 keys.forceActiveFocus();
