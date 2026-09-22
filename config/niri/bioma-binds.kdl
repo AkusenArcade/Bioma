@@ -23,25 +23,32 @@
 //
 // niri merges an included `binds` block with its own, so nothing here has to
 // be repeated there.
+//
+// **The prefix is Mod+Alt while another shell is still running.** The keys the
+// configuration declares — Mod+V, Mod+T, Mod+Escape — belong to Noctalia
+// until the cutover, and one of them is the terminal. Two bindings on one key
+// is not a thing to leave lying around, so Bioma stays out of the way and
+// takes the plain Mod+ keys when the other shell goes; the `shortcut` strings
+// in `config/default.json` are what it takes them back to.
 
 binds {
-    Mod+V hotkey-overlay-title="Bioma: vitals" {
+    Mod+Alt+V hotkey-overlay-title="Bioma: vitals" {
         spawn "qs" "-p" "/home/akusen/Documents/Development/Bioma/shell.qml" "ipc" "call" "cell" "toggle" "vitals"
     }
 
-    Mod+P hotkey-overlay-title="Bioma: capture" {
+    Mod+Alt+P hotkey-overlay-title="Bioma: capture" {
         spawn "qs" "-p" "/home/akusen/Documents/Development/Bioma/shell.qml" "ipc" "call" "cell" "toggle" "utility"
     }
 
-    Mod+T hotkey-overlay-title="Bioma: theme" {
+    Mod+Alt+T hotkey-overlay-title="Bioma: theme" {
         spawn "qs" "-p" "/home/akusen/Documents/Development/Bioma/shell.qml" "ipc" "call" "cell" "toggle" "theme"
     }
 
-    Mod+A hotkey-overlay-title="Bioma: audio" {
+    Mod+Alt+A hotkey-overlay-title="Bioma: audio" {
         spawn "qs" "-p" "/home/akusen/Documents/Development/Bioma/shell.qml" "ipc" "call" "cell" "toggle" "audio"
     }
 
-    Mod+Escape hotkey-overlay-title="Bioma: session" {
+    Mod+Alt+Escape hotkey-overlay-title="Bioma: session" {
         spawn "qs" "-p" "/home/akusen/Documents/Development/Bioma/shell.qml" "ipc" "call" "cell" "toggle" "session"
     }
 }

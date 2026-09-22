@@ -400,7 +400,10 @@ Singleton {
     function focusWorkspaceDown() { root.dispatch(["action", "focus-workspace-down"]); }
     function focusWorkspaceUp() { root.dispatch(["action", "focus-workspace-up"]); }
     function toggleOverview() { root.dispatch(["action", "toggle-overview"]); }
-    function reloadConfig() { root.dispatch(["action", "reload-config"]); }
+    // niri calls it `load-config-file`; `reload-config` is not an action it
+    // knows, and the call failed silently because nothing here reads what
+    // `niri msg` says back. Found while wiring the keybinds, 2026-09-22.
+    function reloadConfig() { root.dispatch(["action", "load-config-file"]); }
 
     // Verified against niri 26.04: `center-window` centres the focused window.
     // The window title cell shows the focused window, so no prior focus call is
