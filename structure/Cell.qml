@@ -347,7 +347,15 @@ Item {
             duration: Timing.close
         }
 
-        onFinished: root.gone()
+        // Hidden before it is let go. The host clears the cell on `gone`, and
+        // clearing it empties the tissue, which re-places what is left — so
+        // for the frame between the two the shape is somewhere else. It has
+        // faded to nothing by then, but an invisible shape that moves is still
+        // a shape that can be caught moving.
+        onFinished: {
+            root.visible = false;
+            root.gone();
+        }
     }
 
     // A cell that is not shown occupies nothing; the tissue reflows around it.
@@ -365,7 +373,7 @@ Item {
     // value that moves in two hundred and fifty — and the shape ends up
     // standing still at full size while the number underneath it travels.
     Behavior on width {
-        enabled: !arrival.running
+        enabled: !arrival.running && !departure.running
         NumberAnimation {
             duration: Timing.reflow
             easing.type: Easing.Bezier
@@ -381,7 +389,7 @@ Item {
     // instantly and the other travelled. Akusen saw the launcher coming in
     // from the bottom right, 2026-09-22.
     Behavior on height {
-        enabled: !arrival.running
+        enabled: !arrival.running && !departure.running
         NumberAnimation {
             duration: Timing.reflow
             easing.type: Easing.Bezier

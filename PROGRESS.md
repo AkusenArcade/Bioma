@@ -1326,9 +1326,21 @@ delete the movement.
   container vanished and took the leaving with it. It stays while anything in
   it is on its way out.
 
-Measured with the timing set to a quarter speed: three hundred milliseconds
-after the shortcut the launcher is still there, smaller and half faded; two
-seconds later it is gone.
+Two more came out of driving it, and the first is the one Akusen saw: the cell
+**moved** and then vanished.
+
+- **The tissue measured itself without it.** `tallest` and `widest` count what
+  is *shown*, and a dismissed cell is not — so the container shrank around the
+  hole and carried the cell, still drawn, somewhere else. A cell on its way out
+  now counts for everything the tissue measures: what leaves, leaves from where
+  it stood.
+- **And it was not shrinking at all.** The width and height Behaviors stand
+  aside for the arrival — a reflow smoothing a value that moves faster than it
+  does leaves the shape standing still — and nobody had told them about the
+  departure. Same gate, both animations.
+
+Measured frame by frame at quarter speed: 480 × 382 down to 394 × 313 with the
+centre fixed at 960, then hidden and let go.
 
 ### The order of a band is dragged, not retyped
 

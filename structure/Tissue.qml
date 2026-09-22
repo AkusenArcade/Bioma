@@ -75,11 +75,20 @@ Item {
     readonly property real thickness: (horizontal ? root.tallest : root.widest)
                                     + padding * 2
 
+    // A cell on its way out still counts for everything the tissue measures.
+    // It stops being *shown* the moment it is dismissed, and a tissue that
+    // measured itself without it shrank and re-centred around the hole — so
+    // the cell, still drawn, was carried somewhere else and disappeared from
+    // there. What leaves must leave from where it stood.
+    function counts(cell) {
+        return cell && (cell.shown || cell.leaving);
+    }
+
     readonly property real tallest: {
         revision;
         let out = metrics.cellHeight;
         for (const cell of root.cells)
-            if (cell.shown && cell.contractedHeight > out)
+            if (root.counts(cell) && cell.contractedHeight > out)
                 out = cell.contractedHeight;
         return out;
     }
@@ -88,7 +97,7 @@ Item {
         revision;
         let out = metrics.cellHeight;
         for (const cell of root.cells)
-            if (cell.shown && cell.contractedWidth > out)
+            if (root.counts(cell) && cell.contractedWidth > out)
                 out = cell.contractedWidth;
         return out;
     }
@@ -145,7 +154,7 @@ Item {
         // order decides, and that order has to be exactly the declared one.
         for (const level of [2, 1, 0]) {
             for (const cell of order) {
-                if (!cell.shown || cell.precedence !== level)
+                if (!root.counts(cell) || cell.precedence !== level)
                     continue;
                 const along = root.axisFor(cell);
                 const before = placed.length > 0 ? root.gap : 0;
@@ -205,19 +214,9 @@ Item {
         }
     }
 
-    // A tissue with nothing to show is not an empty tray — unless what it
-    // holds is still on its way out. A cell stops being *placed* the moment it
-    // is dismissed, so a tissue that went with the placement took the leaving
-    // with it, and a summoned cell vanished rather than closing.
-    readonly property bool departing: {
-        revision;
-        for (const cell of root.cells)
-            if (cell && cell.leaving)
-                return true;
-        return false;
-    }
-
-    visible: contentLength > 0 || root.departing
+    // A tissue with nothing to show is not an empty tray. What is leaving is
+    // still something to show, and `counts` above is what keeps it in.
+    visible: contentLength > 0
 
     // ---- Cells -------------------------------------------------------------
     //
