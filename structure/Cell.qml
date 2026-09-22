@@ -480,6 +480,33 @@ Item {
         onTapped: root.open = !root.open
     }
 
+    // The other two gestures a pill can answer, here for the same reason the
+    // tap is: a cell that wants them wants them over its whole shape. A cell
+    // says it takes them and receives the gesture; what it means is the cell's
+    // own business.
+    property bool acceptsWheel: false
+    signal wheeled(int steps)
+
+    WheelHandler {
+        enabled: root.acceptsWheel
+        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+        onWheel: event => {
+            if (event.angleDelta.y > 0)
+                root.wheeled(1);
+            else if (event.angleDelta.y < 0)
+                root.wheeled(-1);
+        }
+    }
+
+    property bool acceptsMiddle: false
+    signal middleTapped
+
+    TapHandler {
+        enabled: root.acceptsMiddle
+        acceptedButtons: Qt.MiddleButton
+        onTapped: root.middleTapped()
+    }
+
     HoverHandler {
         id: hover
         // Interaction suspends disappearance (PRD §5.2). Mandatory for

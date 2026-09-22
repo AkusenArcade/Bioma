@@ -95,6 +95,18 @@ Singleton {
         return node.nickname || node.description || node.name || "";
     }
 
+    // What to say on the right of a device's name. The bus is the honest
+    // answer and the short one — USB, PCI — and where a device declares what
+    // it *is*, that is better still: a webcam's microphone is a webcam's
+    // microphone whatever it is plugged into.
+    function connection(node) {
+        const properties = node?.properties ?? ({});
+        const form = properties["device.form-factor"] ?? "";
+        if (form.length > 0 && form !== "internal")
+            return form.toUpperCase();
+        return (properties["device.bus"] ?? "").toUpperCase();
+    }
+
     // Changing the default is a preference, not a command: PipeWire applies it
     // and reports back through `defaultAudioSink`, so nothing here assumes it
     // took effect.

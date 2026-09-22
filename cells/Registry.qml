@@ -19,7 +19,8 @@ Singleton {
         "theme": "theme/ThemeCell.qml",
         "utility": "utility/Utility.qml",
         "recording": "recording/Recording.qml",
-        "sinestesia": "sinestesia/Sinestesia.qml"
+        "sinestesia": "sinestesia/Sinestesia.qml",
+        "volume": "volume/Volume.qml"
     })
 
     property var cache: ({})

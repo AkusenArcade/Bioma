@@ -166,6 +166,7 @@ what a cell displays. A cell's own settings live in its `options`.
 | Key | Meaning |
 |---|---|
 | `audio.monitor_signal` | Whether the peak monitor on the default sink runs. It is Sinestesia's visibility condition, and it is the only continuous audio work in the shell. |
+| `audio.step` | How far one notch of the wheel moves the volume cell, as a fraction of the travel. The wheel is that cell's main interaction, and a mouse with a coarse wheel and a touchpad want different answers. |
 | `sinestesia.bands` | How many bands `tools/sinestesia-bands` emits per frame. The cell folds them down to the fourteen it draws contracted and the thirty-four it draws open, so this is the resolution the folding starts from, not the number of bars. |
 | `sinestesia.fps` | Frames per second out of the tool. Sixty is what Sinestesia itself runs at. |
 | `sinestesia.gain` | Multiplier applied after the dB mapping, 0.1 to 10. The mapping puts −70 dB at nothing and 0 dB at full; quiet material needs more than 1. |

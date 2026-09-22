@@ -3,30 +3,33 @@
 Where the work stands. `services/INVENTORY.md` holds the detail and the
 reasoning; this is the short version and the list of what is *not* done.
 
-Last worked: 2026-09-21.
+Last worked: 2026-09-22.
 
 ## Where to pick up
 
 Phase 1 is nine services of ten, every one verified. Phase 0's engine draws and
-has been exercised by seven cells; phase 2 is finished — window title,
-workspaces and vitals, the last of them opening into pods and a process list —
-and phase 3 has started: the theme cell retints the shell live, and the utility
-cell captures — with Bioma's own selection rectangle, not `slurp`.
+has been exercised by nine cells; phase 2 is finished — window title,
+workspaces and vitals, the last of them opening into pods and a process list;
+phase 3 is finished — the theme cell retints the shell live, the utility cell
+captures with Bioma's own selection rectangle rather than `slurp`, and
+sinestesia draws the sound. Phase 4 has started with the volume cell.
 
 Three ways in, and they are independent:
 
-1. **Phase 3 is done.** Sinestesia draws: fourteen capsules and the track's name
-   contracted, the visualiser capsule and the track panel open. What is left of
-   it is the two things CELLS §04 left open — what to do on a narrow screen, and
-   whether a long title scrolls on hover — plus reduced motion, which asks for
-   the band to become a single bar rather than stop.
+1. **The rest of phase 4**: connectivity, session, dock. Volume is done — the
+   dial, the capsule and the three wells, against the real PipeWire graph. What
+   is left of the two cells already drawn is what CELLS left open: sinestesia
+   on a narrow screen and whether a long title scrolls on hover, and reduced
+   motion, which asks for the band to become a single bar rather than stop.
 2. **Notifications**, which closes phase 1 and burns the bridge — the only work
    that cannot be done without switching the running shell off. See the
    pre-flight below.
 3. **The rest of the engine**: auto-hide, vertical and floating tissues,
    keyboard focus for invoked cells, and the last user of the full-screen input
    surface — cells positioned at the pointer, which need the pointer position it
-   is the only way to learn.
+   is the only way to learn. The volume cell wants the floating tissue for its
+   invoked form: CELLS §05 asks for the *same* cell centred on the screen, born
+   in a tissue of its own rather than on a membrane.
 
 ### Confirmed by a real hand, at last
 
@@ -58,6 +61,13 @@ been confirmed by a real press:
   throwaway timer instead — the list opens, the switch slides, and a palette
   written through `Config.set` retints the whole shell in a screenshot taken
   three seconds later — but no press has ever reached any of them.
+- **every gesture of the volume cell**: the wheel on the pill, the middle
+  button, the main slider, the per-application sliders and their mute rings,
+  and picking an output or an input. What they *show* is confirmed against the
+  live graph — the volume was moved with `wpctl` and the dial followed, three
+  applications were given three different volumes and one of them muted, and
+  the rows drew it — but the path from a press back to PipeWire has only ever
+  been driven from the other end.
 
 The way to verify anything visual here is a temporary `Timer` that sets
 `open = true` a couple of seconds after start, then `grim` for a frame or a
@@ -91,9 +101,9 @@ Drawn, and verified on screen against the design handoff.
 | `structure/Tissue.qml` | Real. Ceiling-not-reservation widths, elastic share, reflow, the punched band. |
 | `structure/Cell.qml` | Real, contracted. Glass, rim, config-driven width and visibility, growth mechanics written. |
 | `structure/Visibility.qml` | **Exercised at last** — the window title appears and disappears with focus. |
-| `components/` | `Rim`, `Ring`, `DashedRing`, `Disc`, `Dial`, `Icon`, `LightGradient`, `Thread`, `Panel`, `Well`, `WorkspaceBars`, `Vital`. |
+| `components/` | `Rim`, `Ring`, `DashedRing`, `Disc`, `Dial`, `Gauge`, `Slider`, `Icon`, `LightGradient`, `Thread`, `Panel`, `Well`, `Band`, `Sweep`, `Segmented`, `WorkspaceBars`, `Vital`. |
 | `structure/InputSurface.qml` + `core/Focus.qml` | The full-screen surface of PRD §8, and the register of what is open. Built; the press path still needs a human to click. |
-| `cells/clock`, `cells/window_title`, `cells/workspaces`, `cells/vitals`, `cells/theme`, `cells/utility`, `cells/recording`, `cells/sinestesia` | Eight cells. Vitals opens into pods, threads and the process list; theme into the wallpaper carousel and the two palette capsules; utility into the capture panel, and generates the recording cell. |
+| `cells/clock`, `cells/window_title`, `cells/workspaces`, `cells/vitals`, `cells/theme`, `cells/utility`, `cells/recording`, `cells/sinestesia`, `cells/volume` | Nine cells. Vitals opens into pods, threads and the process list; theme into the wallpaper carousel and the two palette capsules; utility into the capture panel, and generates the recording cell. |
 | `structure/SelectionSurface.qml` | Bioma's own selection rectangle, over the whole desktop, in place of `slurp`. Up only while a region is being asked for, and it holds the keyboard for that long so Escape means cancel. |
 | `components/Segmented.qml` | The segmented control, shared: the theme cell's source switch and the utility cell's three kinds are the same object. |
 | `core/Config.qml` write-back | `Config.set` writes one key into the override layer. Brought forward from phase 5 because the theme cell has to keep a choice. |
@@ -524,6 +534,61 @@ the fold to fourteen showing the shape of the music rather than a flat line.
   Akusen drew the glyph that belongs to it — four bars, the band itself. It now
   stands in the cover well too, where a record without a picture is a record
   without a picture rather than the shell introducing itself.
+
+### Volume, the first control
+
+The catalogue's first cell that is not an indicator. Everything else in the
+shell is coloured by something the machine measured on its own; this one is
+moved by a hand, so it keeps the primary for its whole run — a hundred per cent
+is the top of the travel, not an alarm — and nothing in it ever takes a state
+colour.
+
+- **`components/Gauge.qml` is the dial, and it is not `Dial.qml`.** A dial
+  fills a sector because a minute is a fraction of a whole. This is a travel
+  with a head: a track, an arc, a node at the end of it, and three limit
+  drawings that are genuinely three drawings — muted is the arc gone and a cut
+  left across the track, zero is the arc closed with the node back at the top
+  and *no* cut, and above a hundred the excess restarts as a thinner arc
+  further out. All three are photographed against the real service, with the
+  machine's own volume moved by `wpctl` and put back.
+- **The handoff draws it in a 64-unit box, so the component is that box
+  scaled.** Track at r 24, node r 3.4, the outer arc at r 30, stroke 3 —
+  figures which at the contracted 26 px and the capsule's 56 px both come out
+  at about 1.3 px, which is the thread's weight and not a coincidence. One
+  component serves both sizes because the ratios, not the pixels, are what the
+  handoff states.
+- **An opacity set on a layer that is only ever read as a texture goes
+  nowhere.** The muted dial faded its gradient source and kept a lit node
+  hanging over the cut. The fade belongs on the `OpacityMask` — the thing that
+  is actually drawn — and then the arc and the node leave together.
+- **The wheel and the middle button are the cell's, not the content's.** The
+  wheel is this cell's main interaction and the whole pill has to answer it,
+  which is the rule `structure/Cell.qml` already carries for the tap: a handler
+  a cell declares lands in the content slot, and on a forty pixel cell that is
+  the glyph and two pixels around it. `Cell` now offers `acceptsWheel` and
+  `acceptsMiddle` with a signal each, so a cell says which gestures it takes
+  and what they mean, and the engine decides where they are heard.
+- **The main slider runs to a hundred and stops.** PipeWire allows more and the
+  service does too, but a bar that silently held a hundred and fifty would put
+  every ordinary setting in its first two thirds. Above the travel the figure
+  says so and the dial's outer arc draws it; the wheel is how you get there,
+  deliberately.
+- **Three wells of fixed height, not three tabs.** Output, input and
+  applications are looked at together — the cell is usually opened *because*
+  the sound is coming out of the wrong place. Nodes appear and disappear
+  constantly, so the applications well keeps its three rows whether or not
+  anything is playing, and says it is empty rather than collapsing and taking
+  the panel's height with it. Devices scroll past three as well: this machine
+  publishes five sinks and five sources, which is exactly the case a fitted
+  panel would have grown to a page for.
+- **A device row says how the device is attached** — `USB`, `PCI`, `WEBCAM` —
+  from `device.form-factor` where it is published and `device.bus` otherwise.
+  Verified against the graph before the row was drawn: the property is on the
+  node, which is not something to find out from an empty column.
+- **Per-application mute is the cell's own sign at a smaller size.** Silencing
+  Spotify and silencing everything are said the same way, and the slider stays
+  where it was and only dims, because muting is not zeroing. Confirmed with
+  three players at three volumes, one of them muted from `wpctl`.
 
 ## Phase 1 — Service porting
 

@@ -58,7 +58,8 @@
   },
 
   "audio": {
-    "monitor_signal": true
+    "monitor_signal": true,
+    "step": 0.05
   },
 
   "sinestesia": {
@@ -181,8 +182,8 @@
             {
               "type": "volume",
               "enabled": true,
-              "visibility": { "type": "always" },
-              "min_width": { "value": 24 }
+              "visibility": { "type": "always", "invocable": true, "shortcut": "Mod+A" },
+              "min_width": { "value": 40 }
             },
             {
               "type": "session",
