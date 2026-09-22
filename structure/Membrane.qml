@@ -53,7 +53,7 @@ PanelWindow {
 
     // ---- Thickness ---------------------------------------------------------
 
-    readonly property real tissueThickness: metrics.cellHeight + Math.max(2, Math.min(12, Config.get("tissue.padding", 2))) * 2
+    readonly property real tissueThickness: metrics.cellHeight + metrics.tissuePadding * 2
 
     // The strip the membrane actually occupies: the screen edge margin is a
     // frame, not a surface, but it is part of what the windows must not cover.
@@ -191,8 +191,8 @@ PanelWindow {
                 opensAway: root.edge === "top" || root.edge === "left"
                 orientation: modelData.orientation || (root.horizontal ? "horizontal" : "vertical")
                 padding: modelData.padding !== undefined
-                         ? Math.max(2, Math.min(12, modelData.padding))
-                         : Math.max(2, Math.min(12, Config.get("tissue.padding", 2)))
+                         ? Math.max(2, Math.min(12, modelData.padding)) * root.metrics.factor
+                         : root.metrics.tissuePadding
                 fillOpacity: modelData.opacity !== undefined ? modelData.opacity : Config.get("tissue.opacity", 0.5)
 
                 anchorSide: root.anchorFor(index, modelData)

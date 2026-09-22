@@ -46,7 +46,7 @@ Item {
 
     readonly property real capsuleWidth: 268 * factor
     readonly property real capsuleHeight: 96 * factor
-    readonly property real gap: 24 * factor
+    readonly property real gap: metrics.gap
 
     // What the capsules hold, stated here because the list the dropdown opens
     // has to be born from the dropdown's own bottom edge — and that edge is

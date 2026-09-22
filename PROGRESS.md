@@ -55,6 +55,10 @@ this machine — so these are written, look right in a screenshot, and have neve
 been confirmed by a real press:
 
 - **a press outside an open cell dismisses it**, through `structure/InputSurface.qml`;
+- **the workspaces cell opening its list** — `ipc call cell toggle workspaces`
+  answers and nothing appears, with a binding loop on `reach` logged from
+  `Workspaces.qml`. It predates the settings cell (checked against a clean
+  tree, 2026-09-22) and is the next defect to take;
 - **the scrollbar** in both lists, which appears while the list is moving;
 - **pressing the vitals search field**, which used to dismiss the cell and
   should not any more: the masks are rebound when an expansion finishes
@@ -1211,6 +1215,35 @@ last.
 Verified on screen, both pages, on the bottom membrane of DP-1. Nothing here
 has been pressed by hand — the capsules, the sliders and the segmented controls
 are drawn and bound, and the writing path was checked without a pointer.
+
+Akusen drove it and found four things, 2026-09-22. Three of them were the
+settings cell telling the truth about a shell that was not listening:
+
+- **Two keys for one margin.** The tissue-to-cell distance is `tissue.padding`,
+  read in four places, each repeating the 2–12 clamp; `appearance.tissue` was a
+  second key for the same distance that nothing read, so the row moved nothing.
+  One key now, clamped once in `Metrics`, and the three places that re-read the
+  configuration ask `metrics.tissuePadding` instead — which also means the
+  margin scales with the density step, as a density value should.
+- **The gap between shapes was a literal in three expansions.** Vitals, theme
+  and sinestesia each wrote `24 * factor` rather than `metrics.gap`, which is
+  the token the row moves. That is the rule about durations, applied to a
+  distance: the value comes from the set or it is not the value.
+- **Scale is a membrane's, and there is no global one to write.** The row was
+  writing `appearance.scale`, which nothing reads — every membrane block
+  declares its own. It writes the membranes now, all of them together; the
+  per-membrane choice belongs to the Structure page, beside the edge it applies
+  to.
+- **The switch's knob sat high.** Two pixels of inset against a 24 px pill
+  holding a 16 px knob. The inset is what is left over now, so the same figure
+  holds it off the top, the bottom and the end.
+
+And two things it was missing rather than lying about: the cell now wears its
+header when open — the mark and the name, like every other cell — and lists
+that are longer than their room say so. The scrollbar was written out by hand
+in four cells, twice as a file-local `component Scroller` and twice as a bare
+`Rectangle`; it is `components/Scroller.qml` now, and the settings catalogue
+and the launcher's results have one too.
 
 ## Phase 1 — Service porting
 

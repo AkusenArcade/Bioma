@@ -110,11 +110,17 @@ Item {
         font.pixelSize: root.metrics.fontTitle
     }
 
+    Scroller {
+        flick: list
+        factor: root.metrics.factor
+        x: root.width - width
+    }
+
     ListView {
         id: list
 
         y: search.height + cell.listGap
-        width: root.width
+        width: root.width - 8 * root.metrics.factor
         height: cell.shownRows * cell.resultHeight
         visible: cell.results.length > 0
 

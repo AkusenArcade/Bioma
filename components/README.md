@@ -14,3 +14,6 @@ Expected early residents:
   Overshoot easing is appropriate here and not on large panels.
 - **Indicator** — the shared base for vitals drawing: motion encodes a live
   value in its rate or extent, colour encodes state.
+- **Scroller** — the bar beside a list that is longer than its room. It exists
+  only while the list is moving; a list that fits shows nothing. Four cells had
+  written it out by hand before it was one file.

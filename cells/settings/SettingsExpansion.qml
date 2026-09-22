@@ -30,7 +30,7 @@ Item {
     readonly property real capsuleWidth: 160 * factor
     readonly property real capsuleHeight: 44 * factor
     readonly property real capsulePitch: 52 * factor
-    readonly property real threadLength: 24 * factor
+    readonly property real threadLength: metrics.gap
 
     readonly property real rowHeight: 44 * factor
     readonly property real listRow: 38 * factor

@@ -28,8 +28,14 @@ Singleton {
     // shapes of one open cell. The figures below are the handoff's, and they
     // are what the shell uses until somebody says otherwise.
     readonly property real marginEdge: Config.get("appearance.edge", 12)
-    readonly property real marginTissue: Config.get("appearance.tissue", 2)
     readonly property real gapShape: Config.get("appearance.gap", 24)
+
+    // The tissue margin is `tissue.padding`, where it has always been, and the
+    // clamp that keeps it a margin rather than a tray lives here — it used to
+    // be written out at each of the four places that read the key, and a
+    // second key for the same distance under `appearance` was worse: one of
+    // the two was bound to nothing.
+    readonly property real marginTissue: Math.max(2, Math.min(12, Config.get("tissue.padding", 2)))
 
     readonly property real radiusPanel: 20     // fixed, for rectangular content
     readonly property real radiusWell: 10      // concentric inside a panel

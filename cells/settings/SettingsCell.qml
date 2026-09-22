@@ -30,6 +30,20 @@ Cell {
 
     contentWidth: markSize
 
+    // Open, it is the title of its own expansion: the mark and the name, like
+    // every other cell in the shell.
+    headerTitle: "SETTINGS"
+    headerMarkSize: root.markSize
+    headerMark: Component {
+        Icon {
+            anchors.fill: parent
+            name: "mark"
+            gradient: true
+        }
+    }
+
+    replacesContent: true
+
     // Which category is being looked at. It lives on the cell rather than in
     // the expansion so that closing and reopening comes back to the same
     // place — somebody adjusting a margin closes this to look at the result.

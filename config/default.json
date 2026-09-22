@@ -5,7 +5,6 @@
     "radius": 100,
     "xray": false,
     "edge": 12,
-    "tissue": 2,
     "gap": 24
   },
 

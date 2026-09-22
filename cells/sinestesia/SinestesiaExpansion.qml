@@ -30,7 +30,7 @@ Item {
 
     readonly property real panelWidth: 372 * factor
     readonly property real panelHeight: 164 * factor
-    readonly property real gap: 24 * factor
+    readonly property real gap: metrics.gap
 
     readonly property bool hasTrack: Media.hasMetadata
 

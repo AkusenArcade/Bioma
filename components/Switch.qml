@@ -21,7 +21,11 @@ Item {
     implicitHeight: 24 * factor
 
     readonly property real knobSize: 16 * factor
-    readonly property real inset: 2 * factor
+
+    // What is left over on each side once the knob is in: the knob is round
+    // and centred in a pill, so the same distance holds it off the top, the
+    // bottom and whichever end it is at.
+    readonly property real inset: (root.implicitHeight - knobSize) / 2
 
     opacity: settling ? 0.6 : 1
     Behavior on opacity { NumberAnimation { duration: Timing.transition } }
@@ -61,7 +65,7 @@ Item {
         height: width
         radius: width / 2
         antialiasing: true
-        y: root.inset
+        y: (root.height - height) / 2
         x: root.on ? root.width - width - root.inset : root.inset
         color: root.on ? Theme.background : Qt.alpha(Theme.text, 0.45)
 

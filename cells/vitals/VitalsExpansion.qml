@@ -29,7 +29,7 @@ Item {
     readonly property real podWidth: 236 * factor
     readonly property real podHeight: 108 * factor
     readonly property real panelWidth: 372 * factor
-    readonly property real gap: 24 * factor
+    readonly property real gap: metrics.gap
 
     implicitWidth: podWidth + gap + panelWidth
     implicitHeight: panelWidth   // 372: three pods of 108 and two gaps of 24
@@ -392,25 +392,10 @@ Item {
                 height: root.height - 20 * root.factor - root.metrics.fieldHeight - 10 * root.factor
                         - (confirmation.visible ? confirmation.height + 10 * root.factor : 0)
 
-                // The scrollbar lives inside the well and only while the list
-                // is moving: at rest the shell does not speak, and a bar that
-                // stays is a figure nobody asked for.
-                Rectangle {
-                    z: 1
-                    visible: processes.contentHeight > processes.height
-                    opacity: processes.moving || processes.flicking || processes.dragging ? 1 : 0
-                    width: 3 * root.factor
-                    radius: width / 2
-                    color: Theme.line
+                Scroller {
+                    flick: processes
+                    factor: root.factor
                     x: well.width - width - 4 * root.factor
-                    height: Math.max(width * 4, processes.height * processes.height
-                                     / Math.max(1, processes.contentHeight))
-                    y: processes.contentHeight > processes.height
-                       ? processes.y + (processes.contentY / (processes.contentHeight - processes.height))
-                         * (processes.height - height)
-                       : 0
-
-                    Behavior on opacity { NumberAnimation { duration: Timing.contentFade } }
                 }
 
                 ListView {

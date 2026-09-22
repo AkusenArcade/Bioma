@@ -123,10 +123,17 @@ Item {
         return rule;
     }
 
+    Scroller {
+        flick: list
+        factor: root.factor
+        x: root.width - width
+    }
+
     ListView {
         id: list
 
         anchors.fill: parent
+        anchors.rightMargin: 8 * root.factor
         model: root.rows
         boundsBehavior: Flickable.StopAtBounds
         clip: true

@@ -46,9 +46,10 @@ Item {
     property string anchorSide: "start"    // "start" | "centre" | "end"
     property real slotLength: 0            // the ceiling, in logical units
 
-    // 2–12. The tissue background is a surface, not a border: at a wide padding
-    // the band reads as a tray.
-    property real padding: Math.max(2, Math.min(12, Config.get("tissue.padding", 2)))
+    // 2–12, clamped in `Metrics`, and scaled: it is a density value like any
+    // other. The tissue background is a surface, not a border — at a wide
+    // padding the band reads as a tray.
+    property real padding: metrics.tissuePadding
     property real fillOpacity: Config.get("tissue.opacity", 0.5)
 
     // The gap between two cells is the band showing through, and it is the same

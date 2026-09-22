@@ -61,12 +61,14 @@ through, which is exactly how this was found.
 | `radius` | One value as a percentage: 0 is a rectangle, 100 a pill. A cell's radius is its tissue's minus the padding, so concentric corners are automatic at every value. |
 | `xray` | On: blur a static copy of the wallpaper — cheap, but it blurs the wallpaper even when windows are underneath. Off: blur the actual underlying content — correct, more expensive, still experimental. |
 | `edge` | Margin between the screen edge and a tissue, in logical units. |
-| `tissue` | Margin between a tissue's own edge and the cells inside it. |
-| `gap` | Distance between the shapes of an open cell — the cell, its thread and its panel. |
+| `gap` | Distance between the shapes of one open cell — a capsule and the panel beside it, the pods and the list. |
 
-The three margins are one family read in one place: `core/Metrics.qml` is the
-only thing that reads them, and everything drawn takes its spacing from there.
-They are what the settings cell's **Appearance** page moves.
+The third margin of the family, the one between a tissue and the cells inside
+it, is `tissue.padding` below, where it has always been. All three are read in
+one place — `core/Metrics.qml` — and everything drawn takes its spacing from
+there; they are what the settings cell's **Appearance** page moves. Scale is
+not among them: it belongs to a membrane, and each membrane block declares its
+own.
 
 ### `cell`, `tissue`
 

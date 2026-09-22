@@ -34,11 +34,33 @@ Item {
           "unit": "%", "scale": 1, "fallback": 100 },
         { "label": "EDGE", "key": "appearance.edge", "from": 0, "to": 32, "step": 1,
           "unit": " px", "scale": 1, "fallback": 12 },
-        { "label": "TISSUE", "key": "appearance.tissue", "from": 2, "to": 12, "step": 1,
+        { "label": "TISSUE", "key": "tissue.padding", "from": 2, "to": 12, "step": 1,
           "unit": " px", "scale": 1, "fallback": 2 },
         { "label": "GAP", "key": "appearance.gap", "from": 8, "to": 48, "step": 1,
           "unit": " px", "scale": 1, "fallback": 24 }
     ]
+
+    // Scale is a **membrane** property, not a global one — a smaller second
+    // monitor may run `compact` — so there is no `appearance.scale` to write
+    // and a row that wrote one moved nothing at all. This moves every membrane
+    // together, which is what a person asking for a denser shell means; the
+    // per-membrane choice belongs to the Structure page, beside the edge it
+    // applies to.
+    readonly property var bands: Config.get("membranes", [])
+
+    readonly property string density: {
+        for (const membrane of root.bands)
+            if (membrane.scale)
+                return membrane.scale;
+        return "normal";
+    }
+
+    function setDensity(name) {
+        const copy = JSON.parse(JSON.stringify(root.bands));
+        for (const membrane of copy)
+            membrane.scale = name;
+        Config.set("membranes", copy);
+    }
 
     Column {
         anchors.fill: parent
@@ -169,8 +191,8 @@ Item {
                     { "key": "normal", "label": "Normal" },
                     { "key": "comfortable", "label": "Comfortable" }
                 ]
-                current: Config.get("appearance.scale", "normal")
-                onChose: key => Config.set("appearance.scale", key)
+                current: root.density
+                onChose: key => root.setDensity(key)
             }
         }
 

@@ -240,8 +240,8 @@ PanelWindow {
         slotLength: 0
 
         padding: root.config.padding !== undefined
-                 ? Math.max(2, Math.min(12, root.config.padding))
-                 : Math.max(2, Math.min(12, Config.get("tissue.padding", 2)))
+                 ? Math.max(2, Math.min(12, root.config.padding)) * root.metrics.factor
+                 : root.metrics.tissuePadding
         fillOpacity: root.config.opacity !== undefined
                      ? root.config.opacity : Config.get("tissue.opacity", 0.5)
 

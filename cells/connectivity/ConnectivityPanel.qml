@@ -156,28 +156,6 @@ Item {
         }
     }
 
-    component Scroller: Rectangle {
-        id: hint
-
-        property Flickable flick: null
-        property real factor: 1
-
-        z: 1
-        visible: hint.flick !== null && hint.flick.contentHeight > hint.flick.height
-        opacity: hint.flick && (hint.flick.moving || hint.flick.flicking || hint.flick.dragging) ? 1 : 0
-        width: 3 * hint.factor
-        radius: width / 2
-        color: Theme.line
-        height: hint.flick ? Math.max(width * 4, hint.flick.height * hint.flick.height
-                                      / Math.max(1, hint.flick.contentHeight)) : 0
-        y: hint.flick && hint.flick.contentHeight > hint.flick.height
-           ? hint.flick.y + (hint.flick.contentY / (hint.flick.contentHeight - hint.flick.height))
-             * (hint.flick.height - height)
-           : 0
-
-        Behavior on opacity { NumberAnimation { duration: Timing.contentFade } }
-    }
-
     // ---- Wi-Fi ---------------------------------------------------------------
 
     Column {

@@ -150,21 +150,10 @@ Item {
             }
         }
 
-        // The scrollbar lives inside the well and only while the list is
-        // moving: at rest the shell does not speak.
-        Rectangle {
-            visible: view.contentHeight > view.height
-            opacity: view.moving || view.flicking || view.dragging ? 1 : 0
-
-            Behavior on opacity { NumberAnimation { duration: Timing.contentFade } }
-            width: 3 * root.metrics.factor
-            radius: width / 2
-            color: Theme.line
+        Scroller {
+            flick: view
+            factor: root.metrics.factor
             x: well.width - width - 4 * root.metrics.factor
-            height: Math.max(width * 4, view.height * view.height / Math.max(1, view.contentHeight))
-            y: view.contentHeight > view.height
-               ? (view.contentY / (view.contentHeight - view.height)) * (view.height - height)
-               : 0
         }
     }
 }

@@ -152,28 +152,6 @@ Item {
         })
     }
 
-    // The bar that says a list has more in it, inside the well and only while
-    // the list is moving: at rest the shell does not speak.
-    component Scroller: Rectangle {
-        property Flickable flick: null
-        property real factor: 1
-
-        z: 1
-        visible: flick !== null && flick.contentHeight > flick.height
-        opacity: flick && (flick.moving || flick.flicking || flick.dragging) ? 1 : 0
-        width: 3 * factor
-        radius: width / 2
-        color: Theme.line
-        height: flick ? Math.max(width * 4, flick.height * flick.height
-                                 / Math.max(1, flick.contentHeight)) : 0
-        y: flick && flick.contentHeight > flick.height
-           ? flick.y + (flick.contentY / (flick.contentHeight - flick.height))
-             * (flick.height - height)
-           : 0
-
-        Behavior on opacity { NumberAnimation { duration: Timing.contentFade } }
-    }
-
     // A device: the mark of what is chosen, its own name for itself, and how it
     // is attached to the machine.
     component DeviceRow: Item {
