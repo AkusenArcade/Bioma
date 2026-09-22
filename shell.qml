@@ -1,6 +1,8 @@
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import qs.core
+import qs.services
 import qs.structure
 
 // Bioma — entry point.
@@ -70,6 +72,37 @@ ShellRoot {
                     tissuesConfig: modelData.tissues || []
                 }
             }
+        }
+    }
+
+    // ---- Being asked for ----------------------------------------------------
+    //
+    // The compositor holds the keys; the shell holds the cells. A binding in
+    // niri runs `qs -p <this file> ipc call cell toggle <domain>` and lands
+    // here, and here is the whole of it: no second model for invoked surfaces,
+    // no separate window for a launcher or a session menu — a shortcut asks
+    // the register for a cell of that domain and toggles it (PRD §5).
+    //
+    // The cell it reaches is the one on the output the keyboard is pointed at,
+    // because the same cell exists once per monitor and the one meant is the
+    // one being looked at.
+    IpcHandler {
+        target: "cell"
+
+        function toggle(domain: string): string {
+            return Focus.invoke(domain, Niri.focusedOutput)
+                ? `toggled ${domain}` : `no invocable cell "${domain}"`;
+        }
+
+        function close(domain: string): string {
+            return Focus.retire(domain, Niri.focusedOutput)
+                ? `closed ${domain}` : `no invocable cell "${domain}"`;
+        }
+
+        // Everything that answers to a name, for a keybind file to be written
+        // against rather than guessed at.
+        function list(): string {
+            return Focus.domains.join("\n");
         }
     }
 

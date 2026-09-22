@@ -52,6 +52,82 @@ Singleton {
             root.cell.open = false;
     }
 
+    // ---- Cells that answer to a name ---------------------------------------
+    //
+    // A shortcut does not reach a cell directly: it reaches the shell, which
+    // asks this register for the cell of that domain. The register is what
+    // makes "launcher, session menu and settings are not a separate category"
+    // true in code (PRD §5) — there is no second model for invoked surfaces,
+    // only cells that happen to be invocable.
+    //
+    // The same cell exists once per monitor, so a domain answers with several
+    // and the one on the output the keyboard is pointed at is the one meant.
+
+    property var invocable: []
+
+    function offer(cell) {
+        if (root.invocable.indexOf(cell) < 0)
+            root.invocable = root.invocable.concat([cell]);
+    }
+
+    function withdraw(cell) {
+        const index = root.invocable.indexOf(cell);
+        if (index >= 0) {
+            const next = root.invocable.slice();
+            next.splice(index, 1);
+            root.invocable = next;
+        }
+    }
+
+    function cellFor(domain, output) {
+        let fallback = null;
+        for (const cell of root.invocable) {
+            if (!cell || cell.domain !== domain)
+                continue;
+            if (output && cell.output === output)
+                return cell;
+            if (!fallback)
+                fallback = cell;
+        }
+        return fallback;
+    }
+
+    readonly property var domains: {
+        const out = [];
+        for (const cell of root.invocable)
+            if (cell && out.indexOf(cell.domain) < 0)
+                out.push(cell.domain);
+        return out.sort();
+    }
+
+    // What a shortcut does. A cell that is only ever there when asked for
+    // arrives and opens in one gesture; one that is always on the membrane is
+    // already there, so the gesture is the opening.
+    function invoke(domain, output) {
+        const cell = root.cellFor(domain, output);
+        if (!cell)
+            return false;
+
+        if (cell.visibility.type === "invoked") {
+            cell.visibility.toggle();
+            cell.open = cell.visibility.invoked && cell.hasPanel;
+            return true;
+        }
+
+        cell.open = !cell.open;
+        return true;
+    }
+
+    function retire(domain, output) {
+        const cell = root.cellFor(domain, output);
+        if (!cell)
+            return false;
+        cell.open = false;
+        if (cell.visibility.type === "invoked")
+            cell.visibility.invoked = false;
+        return true;
+    }
+
     // ---- The register ------------------------------------------------------
 
     property var membranes: []

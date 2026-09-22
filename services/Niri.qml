@@ -55,6 +55,14 @@ Singleton {
         return list;
     }
 
+    // Which output the user is on. There is one focused workspace in the
+    // session however many outputs there are, and it is on the monitor the
+    // keyboard is pointed at — which is where an invoked cell belongs.
+    readonly property string focusedOutput: {
+        const focused = root.workspaceList.find(ws => ws.isFocused);
+        return focused ? focused.output : "";
+    }
+
     // niri keeps one active workspace per output, so there is no single global
     // "current" workspace on a multi-monitor session — ask per output.
     function workspacesForOutput(outputName) {

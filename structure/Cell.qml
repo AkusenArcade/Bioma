@@ -71,6 +71,11 @@ Item {
 
     readonly property bool shown: visibility.shown
 
+    // A cell that can be asked for by name says so, and stops saying it when
+    // it goes. The register is what a shortcut reaches; see `core/Focus.qml`.
+    Component.onCompleted: if (visibility.invocable) Focus.offer(root)
+    Component.onDestruction: Focus.withdraw(root)
+
     // Set by the tissue when there is no room left for this cell inside the
     // percentage its membrane granted. A cell has no position and no width of
     // its own — it takes what the tissue grants — and what a tissue cannot
@@ -444,10 +449,16 @@ Item {
     onOpenChanged: {
         // One cell at a time: opening this one closes whatever was open, and a
         // press anywhere the shell does not claim closes this one.
-        if (open)
+        if (open) {
             Focus.opened(root);
-        else
+        } else {
             Focus.released(root);
+            // A cell that exists only while it is asked for goes when it is
+            // closed, however it was closed — the press outside that shut it
+            // is also the answer to "do you still want this?".
+            if (visibility.type === "invoked")
+                visibility.invoked = false;
+        }
 
         if (!hasPanel)
             return;

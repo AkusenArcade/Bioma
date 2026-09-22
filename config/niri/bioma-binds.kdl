@@ -1,0 +1,47 @@
+// Bioma — the keys that ask for a cell.
+//
+// The compositor holds the keys and the shell holds the cells, and the whole
+// of the connection is one IPC call: `qs ipc call cell toggle <domain>` asks
+// the register for a cell of that domain and toggles it. There is no second
+// model for invoked surfaces — a launcher, a session menu and a settings page
+// are cells whose visibility is `invoked`, and they arrive the same way the
+// always-visible ones open (PRD §5).
+//
+// The domain is the `type` in the configuration, and a cell answers only if
+// its block says `"invocable": true` or its visibility is `"invoked"`. Ask the
+// running shell which ones do:
+//
+//     qs -p ~/Documents/Development/Bioma/shell.qml ipc call cell list
+//
+// `-p` names the instance. Once Bioma is started as the session's shell from a
+// configuration directory, `qs -c bioma ipc call …` is the shorter form, and
+// these lines should be changed to match how it is actually started.
+//
+// Include this file from `~/.config/niri/config.kdl`:
+//
+//     include "/home/akusen/Documents/Development/Bioma/config/niri/bioma-binds.kdl"
+//
+// niri merges an included `binds` block with its own, so nothing here has to
+// be repeated there.
+
+binds {
+    Mod+V hotkey-overlay-title="Bioma: vitals" {
+        spawn "qs" "-p" "/home/akusen/Documents/Development/Bioma/shell.qml" "ipc" "call" "cell" "toggle" "vitals"
+    }
+
+    Mod+P hotkey-overlay-title="Bioma: capture" {
+        spawn "qs" "-p" "/home/akusen/Documents/Development/Bioma/shell.qml" "ipc" "call" "cell" "toggle" "utility"
+    }
+
+    Mod+T hotkey-overlay-title="Bioma: theme" {
+        spawn "qs" "-p" "/home/akusen/Documents/Development/Bioma/shell.qml" "ipc" "call" "cell" "toggle" "theme"
+    }
+
+    Mod+A hotkey-overlay-title="Bioma: audio" {
+        spawn "qs" "-p" "/home/akusen/Documents/Development/Bioma/shell.qml" "ipc" "call" "cell" "toggle" "audio"
+    }
+
+    Mod+Escape hotkey-overlay-title="Bioma: session" {
+        spawn "qs" "-p" "/home/akusen/Documents/Development/Bioma/shell.qml" "ipc" "call" "cell" "toggle" "session"
+    }
+}

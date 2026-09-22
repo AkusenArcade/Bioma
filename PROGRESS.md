@@ -25,12 +25,13 @@ Three ways in, and they are independent:
 2. **Notifications**, which closes phase 1 and burns the bridge — the only work
    that cannot be done without switching the running shell off. See the
    pre-flight below.
-3. **The rest of the engine**: auto-hide, vertical and floating tissues,
-   keyboard focus for invoked cells, and the last user of the full-screen input
-   surface — cells positioned at the pointer, which need the pointer position it
-   is the only way to learn. The audio cell wants the floating tissue for its
-   invoked form: CELLS §05 asks for the *same* cell centred on the screen, born
-   in a tissue of its own rather than on a membrane.
+3. **The rest of the engine**: floating tissues, auto-hide, vertical tissues,
+   and the last user of the full-screen input surface — cells positioned at the
+   pointer, which need the pointer position it is the only way to learn. The
+   audio cell wants the floating tissue for its invoked form: CELLS §05 asks
+   for the *same* cell centred on the screen, born in a tissue of its own
+   rather than on a membrane; the notification cell wants one too, and the
+   configuration already declares both. **Invocation is done** — see below.
 
 ### Confirmed by a real hand, at last
 
@@ -868,6 +869,32 @@ Verified on screen against the real graph: three kept applications resolve
 their own icons, the two running ones that are not kept sit past the divider
 with their rings, and the kept application that *is* running wears the ring
 in place rather than appearing a second time.
+
+### A shortcut is a cell, asked for by name
+
+The compositor holds the keys and the shell holds the cells, and the whole of
+the connection is `qs ipc call cell toggle <domain>`. No second model for
+invoked surfaces: a shortcut asks a register for a cell of that domain and
+toggles it, which is what makes PRD §5's "launcher, session menu and settings
+are not a separate category" true in code rather than in prose.
+
+- **`core/Focus.qml` keeps the register.** A cell offers itself when it is
+  invocable and withdraws when it goes, so nothing enumerates cells by hand.
+- **The cell reached is the one on the output the keyboard is pointed at.**
+  The same cell exists once per monitor, and `Niri.focusedOutput` — the
+  focused workspace's output — says which one is meant.
+- **What the gesture does depends on what the cell is.** One that exists only
+  when asked for arrives and opens together; one that is always on the
+  membrane is already there, so the gesture is the opening. And a cell whose
+  visibility is `invoked` goes when it is closed, however it was closed: the
+  press outside that shut it is also the answer to "do you still want this?".
+- **`config/niri/bioma-binds.kdl`** is the keybind file, ready to include, and
+  the shell will say what it answers to: `ipc call cell list`.
+
+Verified against the running shell: `list` returned the five invocable
+domains, `toggle audio` opened the audio cell on the focused monitor and
+`close audio` shut it — the first interaction in this project that has been
+driven end to end without a pointer, because a shortcut is not a pointer.
 
 ## Phase 1 — Service porting
 
