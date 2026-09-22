@@ -672,6 +672,12 @@ devices — so the width says how many there are without writing a number. With
 none it goes: a struck-through icon would claim a fault, and being offline is
 a condition.
 
+- **One glyph is a round cell.** CELLS §11 gives the contracted cell a minimum
+  of 64 px with a single glyph, and on the membrane that is a short bar with a
+  small mark adrift in it — a cell that has lost its content. The configured
+  minimum belongs to the composed form, where the width *is* the count; with
+  one connection the cell is square around its glyph and reads as a pill like
+  utility's. Akusen's call, 2026-09-22, against the figure in the handoff.
 - **The header composes itself too.** The mark is whichever connection leads
   the row, so the glyph that was on the membrane a moment ago is the glyph the
   cell wears when it opens.

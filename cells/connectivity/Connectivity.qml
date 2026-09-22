@@ -25,8 +25,21 @@ Cell {
     readonly property real glyphSize: 18 * metrics.factor
     readonly property real pitch: 10 * metrics.factor
 
-    paddingLeading: 14 * metrics.factor
-    paddingTrailing: 14 * metrics.factor
+    readonly property bool composed: root.glyphs.length > 1
+
+    // One glyph is a round cell, not a short bar. A single mark in a pill twice
+    // its own width reads as a cell that has lost its content — the minimum in
+    // the handoff belongs to the composed form, where the width is the count.
+    // Akusen's call, 2026-09-22, against the 64 px in CELLS §11.
+    readonly property real configuredMin: config.min_width && config.min_width.value !== undefined
+                                          ? config.min_width.value : 64
+
+    minWidth: composed ? configuredMin : metrics.cellHeight
+
+    // With one glyph the padding is whatever makes the cell square around it,
+    // so the glyph stays concentric with the cap.
+    paddingLeading: composed ? 14 * metrics.factor : (metrics.cellHeight - glyphSize) / 2
+    paddingTrailing: paddingLeading
 
     // What is actually carrying traffic, in the order the design lists it:
     // the wire first, because it is the one that does not negotiate.
