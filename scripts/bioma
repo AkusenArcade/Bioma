@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Bioma, started the way it wants to be started.
+#
+# The one thing this adds is the Qt platform theme. Bioma draws every pixel it
+# shows, so a theme plugin has nothing to style here — except the file picker
+# the session cell opens, which is Qt's `FileDialog`. Qt asks the platform
+# theme for a native dialog and draws its own when there is none, and `qt6ct`,
+# which is a common choice for everything else on a machine, provides none. So
+# a picker that should be the desktop's own comes up looking like nothing else
+# on the screen.
+#
+# `xdgdesktopportal` hands the request to xdg-desktop-portal, which is the
+# desktop's real file chooser. It is set for this process only: whatever the
+# session uses for every other Qt application stays as it was.
+set -eu
+
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+export QT_QPA_PLATFORMTHEME="${BIOMA_PLATFORMTHEME:-xdgdesktopportal}"
+
+exec qs -p "$here/shell.qml" "$@"

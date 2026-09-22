@@ -23,13 +23,25 @@ quiet when nothing is happening.
 
 ## Running
 
-Quickshell loads a configuration by directory name. Link this repository into
-the Quickshell configuration directory and start it:
+```sh
+scripts/bioma
+```
+
+Quickshell also loads a configuration by directory name, and that works too:
 
 ```sh
 ln -s "$PWD" ~/.config/quickshell/bioma
 quickshell -c bioma
 ```
+
+The script exists for one reason: it sets `QT_QPA_PLATFORMTHEME` to
+`xdgdesktopportal` for this process. Bioma draws every pixel it shows, so a
+platform theme has nothing to style here — except the file picker the session
+cell opens, which is Qt's own `FileDialog`. Qt asks the platform theme for a
+native dialog and draws its own when there is none, and `qt6ct`, a common
+choice for everything else on a machine, provides none. Started any other way
+the shell still works and the picker is Qt's, which looks like nothing else on
+the screen. Set `BIOMA_PLATFORMTHEME` to override it.
 
 ## Verifying a service without a UI
 

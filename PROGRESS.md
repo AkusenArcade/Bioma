@@ -777,6 +777,13 @@ of gravity, each with its number.
   by writing the current picture back as an identical copy: polkit allowed it
   with no password, exit 0, and the file came out byte for byte the same.
   Akusen asked for it, 2026-09-22.
+- **The picker is the desktop's, and that is an environment setting rather
+  than code.** Qt's `FileDialog` asks the platform theme for a native dialog
+  and draws its own when there is none; this machine runs `qt6ct`, which
+  provides none, so what came up was Qt's — a dialog that looks like nothing
+  else on the screen. With `QT_QPA_PLATFORMTHEME=xdgdesktopportal` the same
+  call opens the portal's chooser, confirmed in a screenshot. `scripts/bioma`
+  sets it for Bioma's process alone and is now the way to start the shell.
 - **A new picture lands at the old path**, so the URL has to change or nothing
   reloads: the service bumps a revision into the fragment, which is dropped
   when the path is resolved.

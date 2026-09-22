@@ -207,10 +207,13 @@ Item {
                 }
             }
 
-            // Qt's own dialog, which on this desktop is the portal's. It is a
-            // window of its own, so the cell is dismissed under it the moment
-            // it takes the pointer — the write does not need the cell to still
-            // be open.
+            // The system's own picker, through Qt: with the portal platform
+            // theme this is the desktop's file chooser, and without one Qt
+            // draws its own — which works and looks like nothing else on the
+            // screen. `scripts/bioma` is what sets the theme; the README says
+            // why. It is a window of its own, so the cell is dismissed under
+            // it the moment it takes the pointer, and the write does not need
+            // the cell to still be open.
             FileDialog {
                 id: picker
                 title: "Choose a picture"
