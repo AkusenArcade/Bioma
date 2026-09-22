@@ -113,18 +113,10 @@ Cell {
         }
     }
 
-    // ---- Contracted ---------------------------------------------------------
+    // Urgency is an outline, and the cell draws it on its own shape.
+    outline: root.critical ? Theme.alert : "transparent"
 
-    // The urgent outline, over the cell's own rim.
-    Rectangle {
-        anchors.fill: parent
-        visible: root.critical
-        radius: root.radius
-        color: "transparent"
-        border.width: Metrics.crisp(1.5 * root.metrics.factor, Screen.devicePixelRatio)
-        border.color: Theme.alert
-        antialiasing: true
-    }
+    // ---- Contracted ---------------------------------------------------------
 
     Row {
         anchors.verticalCenter: parent.verticalCenter

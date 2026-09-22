@@ -1016,6 +1016,12 @@ Two things the first parade of real notifications found:
   ordinary ones do not queue behind it: they are kept and they are in the
   history. Going past it *visibly* needs this cell to be a column of cells,
   which is the vertical tissue's next job.
+- **An outline that belongs to the cell is drawn by the cell.** The urgent
+  ring was declared in the notification cell, so it landed in the content
+  slot — which is inset by the cell's own padding — and what appeared was a
+  smaller pill inside the real one, a shape that matched nothing. Same trap
+  as the tap and the wheel before it: `Cell.outline` now draws it on the
+  cell's own geometry, and a cell says which colour rather than where.
 - **And it needed a way to be answered.** A notification with no clock and no
   gesture to close it is a trap: the middle button dismisses, as it does
   everywhere else in the shell — the gesture that acts without opening

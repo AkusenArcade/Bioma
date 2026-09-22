@@ -311,6 +311,28 @@ Item {
         Behavior on bottomColour { ColorAnimation { duration: Timing.transition } }
     }
 
+    // A state that belongs to the whole cell, said on its edge: urgency is an
+    // outline and never a fill, because a coloured surface makes the text
+    // unreadable and the shell look broken.
+    //
+    // It is drawn here rather than by the cell that wants it, for the same
+    // reason the tap is: anything a cell declares lands in the content slot,
+    // which is inset by the cell's own padding — so an outline drawn there is
+    // a smaller pill inside the real one, which is exactly how it looked.
+    property color outline: "transparent"
+
+    Rectangle {
+        anchors.fill: parent
+        visible: root.outline.a > 0
+        radius: root.radius
+        color: "transparent"
+        border.width: Metrics.crisp(1.5 * root.metrics.factor, Screen.devicePixelRatio)
+        border.color: root.outline
+        antialiasing: true
+
+        Behavior on border.color { ColorAnimation { duration: Timing.transition } }
+    }
+
     // ---- Content -----------------------------------------------------------
 
     Item {
