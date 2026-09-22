@@ -67,7 +67,14 @@ PanelWindow {
                 if (cell.domain !== root.summoned)
                     continue;
                 cell.visibility.invoked = true;
-                cell.open = cell.hasPanel;
+
+                // A cell with a panel opens it; one whose content is itself
+                // has nothing to open and claims the attention directly, so
+                // that a press outside still reaches it and closes it.
+                if (cell.hasPanel)
+                    cell.open = true;
+                else
+                    Focus.opened(cell);
             }
         }
     }
@@ -105,18 +112,29 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.namespace: "bioma-float"
 
-    // The same rule the membranes keep: the keyboard is asked for by the cell
-    // that needs it and by no other, because a focusable surface is one the
-    // compositor moves the focus to. Here it is not a nicety — a launcher
-    // that cannot be typed into is not a launcher.
+    // The keyboard is asked for by the cell that needs it and by no other —
+    // and here it is asked for **exclusively**, which a membrane never does.
+    //
+    // On-demand means "the compositor may focus this surface", and niri does
+    // that when the pointer crosses it or a press lands on it. A cell that
+    // was summoned by a shortcut has had neither: the hand is on the keyboard
+    // and the pointer is wherever it was left, so the launcher came up and
+    // swallowed nothing. Exclusive is the layer-shell way of saying the keys
+    // are mine while I am here, which is exactly what an invoked cell means —
+    // and it is what `structure/SelectionSurface.qml` already does so that
+    // Escape cancels a capture.
+    // Placed, not open: a cell whose whole content is itself never opens —
+    // the launcher has no panel to grow, it *is* the panel — and asking only
+    // open cells left it on screen with the keys going elsewhere.
     readonly property bool anyKeyboard: {
         for (const cell of tissue.cells)
-            if (cell.open && cell.wantsKeyboard)
+            if (cell.placed && cell.wantsKeyboard)
                 return true;
         return false;
     }
 
-    focusable: anyKeyboard
+    WlrLayershell.keyboardFocus: anyKeyboard ? WlrKeyboardFocus.Exclusive
+                                             : WlrKeyboardFocus.None
 
     readonly property var metrics: Metrics.step(config.scale || "normal")
 

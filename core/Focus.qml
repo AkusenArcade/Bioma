@@ -48,9 +48,16 @@ Singleton {
     }
 
     // The pointer landed somewhere that belongs to nobody.
+    //
+    // Closing is not only `open = false`: a cell whose whole content is
+    // itself never opened in the first place — the launcher is the panel —
+    // and the way such a cell leaves is by no longer being asked for.
     function dismiss() {
-        if (root.cell)
-            root.cell.open = false;
+        if (!root.cell)
+            return;
+        root.cell.open = false;
+        if (root.cell.visibility.invocable)
+            root.cell.visibility.invoked = false;
     }
 
     // ---- Cells that answer to a name ---------------------------------------

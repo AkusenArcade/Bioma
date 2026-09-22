@@ -71,6 +71,12 @@ Item {
 
     readonly property bool shown: visibility.shown
 
+    // A cell that was holding the shell's attention and then left the screen
+    // gives it back. One that opened a panel does this when the panel closes;
+    // one whose content is itself has no panel to close, so going is the
+    // whole of it.
+    onShownChanged: if (!shown) Focus.released(root)
+
     // A cell that can be asked for by name says so, and stops saying it when
     // it goes. The register is what a shortcut reaches; see `core/Focus.qml`.
     Component.onCompleted: if (visibility.invocable) Focus.offer(root)

@@ -1081,9 +1081,18 @@ almost nothing in the file that is not one of those.
 - **It needs no configuration at all.** Nothing declares it anywhere: it is a
   cell with no place of its own, so asking for it by name is what builds it,
   in the middle of the screen the keyboard is pointed at.
-- **A floating tissue asks for the keyboard the way a membrane does**, from
-  the cell that needs it — a launcher that cannot be typed into is not a
-  launcher.
+- **A floating tissue asks for the keyboard *exclusively*, which a membrane
+  never does.** On-demand means "the compositor may focus this surface", and
+  niri does that when the pointer crosses it or a press lands on it — a cell
+  summoned by a shortcut has had neither, so the launcher came up and
+  swallowed nothing. Exclusive is the layer-shell way of saying the keys are
+  mine while I am here, which is what an invoked cell means; the selection
+  rectangle already did it so that Escape cancels a capture.
+- **Placed, not open.** The first ask was for cells that were *open*, and
+  this cell never opens: it has no panel to grow, it *is* the panel. Which
+  also means it claims the shell's attention directly when it is summoned, or
+  the sheet that closes an open cell would not know it was there and a press
+  outside would leave it standing.
 - **The matched letters are lit.** It is the one place in this shell where
   colour enters a word, and it earns it: it shows the search's reasoning, so
   a wrong answer is visibly wrong rather than broken. Built as markup,

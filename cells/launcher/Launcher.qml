@@ -140,7 +140,6 @@ Cell {
 
     function dismiss() {
         root.query = "";
-        root.open = false;
         root.visibility.invoked = false;
     }
 
@@ -153,14 +152,18 @@ Cell {
 
     // The field takes the caret the moment the cell is there, because nobody
     // asks for a launcher in order to click on it first.
-    onOpenChanged: {
-        if (root.open)
+    //
+    // On `placed` and not on `open`: this cell never opens. Everything else
+    // in the shell has a pill and grows a panel out of it; here the panel is
+    // the cell, so being on screen at all is the whole of its arriving.
+    onPlacedChanged: {
+        if (root.placed)
             field.forceActiveFocus();
         else
             root.query = "";
     }
 
-    Component.onCompleted: if (root.open) field.forceActiveFocus()
+    Component.onCompleted: if (root.placed) field.forceActiveFocus()
 
     // ---- The field -----------------------------------------------------------
 
