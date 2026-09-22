@@ -262,6 +262,22 @@ Item {
         });
     }
 
+    // The temporal grammar a new block carries. The catalogue answers what a
+    // condition means for that domain: a window title goes when the focus
+    // does, a sound level takes four seconds to be forgotten.
+    function ruled(kind, type) {
+        const rule = { "type": kind };
+        if (kind !== "conditional")
+            return rule;
+
+        const grammar = Registry.grammarOf(type);
+        rule.enter = grammar.enter;
+        rule.exit = grammar.exit;
+        rule.confirm = grammar.confirm;
+        rule.dwell = grammar.dwell;
+        return rule;
+    }
+
     function addCell(edge, place, type) {
         root.edit(copy => {
             const block = root.blockIn(copy, edge, false);
@@ -272,9 +288,9 @@ Item {
             tissue.cells = (tissue.cells || []).concat([{
                 "type": type,
                 "enabled": true,
-                // Through `ruled`, so a conditional cell arrives with the
-                // thresholds that make it conditional rather than with none.
-                "visibility": root.ruled(null, kind)
+                // A conditional cell arrives with the grammar its domain
+                // means, rather than with none — or with one generic figure.
+                "visibility": root.ruled(kind, type)
             }]);
             return true;
         });

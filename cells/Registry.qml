@@ -127,6 +127,33 @@ Singleton {
         return Metrics.roomFor(wanted, metrics);
     }
 
+    // The temporal grammar a domain's condition means when its block does not
+    // say. A conditional cell is not conditional in the abstract: a window
+    // title goes when the focus does, a recording goes the moment it stops, a
+    // sound level needs a fraction of a second to be believed and four to be
+    // forgotten. Leaving them all at one generic figure made the window title
+    // sit there for two seconds with nothing to name — Akusen, 2026-09-22.
+    //
+    // These are the figures `config/default.json` ships; a block that names
+    // its own still wins.
+    readonly property var grammar: ({
+        "window_title": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 200 },
+        "sinestesia": { "enter": 0.02, "exit": 0.005, "confirm": 200, "dwell": 4000 },
+        "recording": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 0 },
+        "connectivity": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 1000 },
+        "dock": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 400 },
+        "notifications": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 400 }
+    })
+
+    // Boolean, appearing promptly and leaving slowly, for a domain with
+    // nothing more particular to say.
+    readonly property var defaultGrammar: ({ "enter": 1, "exit": 1, "confirm": 0, "dwell": 2000 })
+
+    function grammarOf(type) {
+        const own = root.grammar[type];
+        return own === undefined ? root.defaultGrammar : own;
+    }
+
     function allows(type, kind) {
         const list = root.visibilities[type];
         return list === undefined || list.indexOf(kind) >= 0;

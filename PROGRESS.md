@@ -1307,6 +1307,24 @@ that would not fit before the cell exists, rather than let somebody build a
 membrane with cells missing from it. Conditional cells count — a band that fits
 only while the notification is away breaks when one arrives.
 
+### What a condition means depends on the domain
+
+The window title stayed on an empty workspace as a pill with the fallback icon
+and no text. The condition was lapsing correctly — measured, `focusedWindowId`
+went to -1 and the condition to 0 — but the block, written by the settings
+cell, named no `dwell`, and the engine's generic figure is two seconds. Two
+seconds of a cell with nothing to say is exactly what the silence rule forbids.
+
+A conditional cell is not conditional in the abstract. `Registry.grammar` holds
+what a condition means per domain — the figures `config/default.json` already
+shipped — and a block that names none now falls back to its own domain's:
+the window title goes in 200 ms, a recording the moment it stops, sinestesia
+takes four seconds to be forgotten. The settings cell writes the same figures
+when it adds a cell, so a block is still self-describing.
+
+(The same pass found that `SettingsStructure.addCell` was calling a `ruled`
+that lives in `SettingsCells` — it has its own now.)
+
 ### What a cell claims is not what it draws
 
 The notification's actions could not be reached: the pointer left the pill to

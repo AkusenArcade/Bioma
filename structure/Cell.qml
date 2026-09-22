@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import qs.core
+import qs.cells
 import qs.components
 
 // A unit of content with one domain. It has no position of its own and no max
@@ -60,6 +61,11 @@ Item {
 
     property Visibility visibility: Visibility {
         readonly property var rule: root.config.visibility || ({})
+
+        // What this domain's condition means when the block does not say. It
+        // is the catalogue's answer, not a generic one: see `Registry.grammar`.
+        readonly property var grammar: Registry.grammarOf(root.domain)
+
         value: root.condition
         type: rule.type || "always"
         invocable: rule.invocable === true || (rule.type === "invoked")
@@ -69,10 +75,10 @@ Item {
         // meant "always", silently. The window title stayed on the membrane
         // with no window to name, showing the fallback icon and an empty
         // string. A continuous condition declares its own figures.
-        enterThreshold: rule.enter !== undefined ? rule.enter : 1
-        exitThreshold: rule.exit !== undefined ? rule.exit : 1
-        confirmDelay: rule.confirm !== undefined ? rule.confirm : 300
-        dwellTime: rule.dwell !== undefined ? rule.dwell : 2000
+        enterThreshold: rule.enter !== undefined ? rule.enter : grammar.enter
+        exitThreshold: rule.exit !== undefined ? rule.exit : grammar.exit
+        confirmDelay: rule.confirm !== undefined ? rule.confirm : grammar.confirm
+        dwellTime: rule.dwell !== undefined ? rule.dwell : grammar.dwell
     }
 
     readonly property bool shown: visibility.shown

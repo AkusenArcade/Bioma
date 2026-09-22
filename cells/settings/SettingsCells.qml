@@ -94,7 +94,7 @@ Item {
                     for (const entry of (group.cells || [])) {
                         if (entry.type !== type)
                             continue;
-                        entry.visibility = root.ruled(entry.visibility, kind);
+                        entry.visibility = root.ruled(entry.visibility, kind, type);
                         touched = true;
                     }
                 }
@@ -110,15 +110,16 @@ Item {
     // condition is already met, and "conditional" would mean "always" with
     // extra words. What the block already says is kept — a cell put back to
     // conditional comes back to its own grammar, not to a default one.
-    function ruled(existing, kind) {
+    function ruled(existing, kind, type) {
         const rule = Object.assign({}, existing || ({}));
         rule.type = kind;
 
         if (kind === "conditional") {
-            if (rule.enter === undefined) rule.enter = 1;
-            if (rule.exit === undefined) rule.exit = 1;
-            if (rule.confirm === undefined) rule.confirm = 0;
-            if (rule.dwell === undefined) rule.dwell = 2000;
+            const grammar = Registry.grammarOf(type);
+            if (rule.enter === undefined) rule.enter = grammar.enter;
+            if (rule.exit === undefined) rule.exit = grammar.exit;
+            if (rule.confirm === undefined) rule.confirm = grammar.confirm;
+            if (rule.dwell === undefined) rule.dwell = grammar.dwell;
         }
         return rule;
     }

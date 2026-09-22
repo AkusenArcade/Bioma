@@ -176,9 +176,9 @@ the cell exists.
 | `type` | Which cell |
 | `enabled` | |
 | `visibility.type` | `always` \| `conditional` \| `invoked`. They combine — a cell may be conditional *and* invocable. |
-| `visibility.enter` / `exit` | Dual threshold, **1 by default**. Distinct values on every boundary, so the state cannot flicker around one. Most conditions are boolean — a window has the focus, a device is connected — and zero would be met by a condition of zero, which is a conditional cell that is always there. A continuous condition (sinestesia's signal level) states its own. |
+| `visibility.enter` / `exit` | Dual threshold. Distinct values on every boundary, so the state cannot flicker around one. Omitted, the cell's domain answers — `cells/Registry.qml` holds the grammar each condition means, and zero would have been met by a condition of zero. |
 | `visibility.confirm` | How long the condition must hold before appearing. |
-| `visibility.dwell` | How long the cell remains after the condition lapses. |
+| `visibility.dwell` | How long the cell remains after the condition lapses. Omitted, the domain's own figure applies: a window title goes in 200 ms because with no window it has nothing to name, a sound level takes four seconds to be forgotten. |
 | `visibility.shortcut` | For `invoked`. |
 | `min_width` | Below it the cell prefers not to appear rather than appear illegible. A generous minimum also stops small content changes producing motion. Omitted, the cell's own floor from `cells/Registry.qml` applies; this raises it, and the band's percentage has to cover the sum. |
 | `width` | An **object**, not a bare number — `{ "elastic": true, "max_percent": 25 }` — so a per-cell weight stays possible later. |
