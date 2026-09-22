@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# The keys that act on the machine without opening anything.
+#
+# Volume, brightness and the transport keys are not cells: they reach a
+# service and change something. What makes this a script rather than a
+# straight `qs ipc call` in the keybind file is the switch — while Bioma is
+# being built the session goes back and forth between the two shells, and a
+# key that only works under one of them is a key that is broken half the time.
+#
+#     key volume-up [percent]     key mute        key media-toggle
+#     key volume-down [percent]   key mic-mute    key media-next
+#     key brightness-up [percent]                 key media-previous
+#     key brightness-down [percent]               key media-stop
+#
+# Under Bioma each one is an IPC call into the running shell; under the other
+# one it is that shell's own message. Neither running is not an error worth
+# printing on a keypress.
+set -eu
+
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+step="${2:-}"
+
+bioma() {
+    qs -p "$here/shell.qml" ipc call "$@" >/dev/null 2>&1 || true
+}
+
+other() {
+    command -v noctalia >/dev/null 2>&1 || return 0
+    noctalia msg "$@" >/dev/null 2>&1 || true
+}
+
+running_bioma() { pgrep -f -- "qs -p $here/shell.qml" >/dev/null 2>&1; }
+
+case "${1-}" in
+    volume-up)
+        if running_bioma; then bioma audio up "${step:-0}"; else other volume-up "${step:-3}"; fi ;;
+    volume-down)
+        if running_bioma; then bioma audio down "${step:-0}"; else other volume-down "${step:-3}"; fi ;;
+    mute)
+        if running_bioma; then bioma audio mute; else other volume-mute; fi ;;
+    mic-mute)
+        if running_bioma; then bioma audio micMute; else other mic-mute; fi ;;
+
+    brightness-up)
+        if running_bioma; then bioma brightness up "${step:-0}"; else other brightness-up current "${step:-5}"; fi ;;
+    brightness-down)
+        if running_bioma; then bioma brightness down "${step:-0}"; else other brightness-down current "${step:-5}"; fi ;;
+
+    media-toggle)
+        if running_bioma; then bioma media toggle; else other media toggle; fi ;;
+    media-next)
+        if running_bioma; then bioma media next; else other media next; fi ;;
+    media-previous)
+        if running_bioma; then bioma media previous; else other media previous; fi ;;
+    media-stop)
+        if running_bioma; then bioma media stop; else other media stop; fi ;;
+
+    *)
+        echo "usage: key <volume-up|volume-down|mute|mic-mute|brightness-up|brightness-down|media-toggle|media-next|media-previous|media-stop> [percent]" >&2
+        exit 2 ;;
+esac

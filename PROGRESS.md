@@ -1043,6 +1043,29 @@ alert outline and stays; an ordinary one sent while it is up goes to the
 history instead of queueing behind it. The hover body, the actions, the
 history and the middle button are drawn and have never been pressed.
 
+### The keys that are not cells
+
+Switching the old shell off took the media keys with it: volume, mic mute,
+brightness and the transport were all bound to `noctalia msg …`, and that
+daemon is gone. Bioma's own services had answered for all of them since phase
+1 and nothing had ever asked.
+
+- **`scripts/key` is what a binding runs**, and it sends each one to whichever
+  shell is running. A key that works under one shell and not the other is a
+  key that is broken half the time, and the session goes back and forth while
+  this one is being built. Noctalia's copies of those binds are commented out
+  in its own file, because two bindings on one key is not a thing to leave
+  lying around — and a note there says so, since it may rewrite the file.
+- **A service nothing reads has never started.** Quickshell's singletons
+  initialise on their first property *binding*, not on first access, so
+  `brightness up` stepped from nothing and answered `0%`: no cell reads
+  brightness yet. Three bindings in `shell.qml` start audio, brightness and
+  media, which is what lets a key work before the cell for it exists. The
+  oldest lesson in this project, found again from the other end.
+
+Verified on the machine: volume down and up either side of 40%, mute and
+back, brightness 50 → 55 → 50 over DDC on the real monitors.
+
 ## Phase 1 — Service porting
 
 Nine of ten done, each verified headlessly through `probe.qml` before moving

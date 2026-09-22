@@ -132,6 +132,90 @@ ShellRoot {
         }
     }
 
+    // ---- The keys that are not cells ----------------------------------------
+    //
+    // Bound before they are called. Quickshell's singletons initialise on
+    // their first property **binding**, not on first access, so a service
+    // that nothing on screen reads has never started when a keypress arrives
+    // — and a service that has not started answers with a zero. Brightness
+    // was that service: no cell reads it yet, and the first `brightness up`
+    // stepped from nothing and reported nothing. These three lines are what
+    // makes a key work before a cell for it exists.
+    readonly property real volumeLevel: Audio.volume
+    readonly property real brightnessLevel: Brightness.brightness
+    readonly property bool mediaPlaying: Media.playing
+
+    //
+    // Volume, brightness and the transport keys act on the machine without
+    // opening anything, so they reach the services rather than the register
+    // of cells. They are here for the same reason the cell handler is: the
+    // compositor holds the keys and the shell holds the domains, and one IPC
+    // call is the whole of the connection.
+    //
+    // `scripts/key` is what a binding actually runs — it sends these to
+    // whichever shell is running, so the keys keep working across the switch.
+
+    IpcHandler {
+        target: "audio"
+
+        function up(step: real): string {
+            Audio.stepVolume(step > 0 ? step / 100 : Config.get("audio.step", 0.05));
+            return `${Audio.volumePercent}%`;
+        }
+
+        function down(step: real): string {
+            Audio.stepVolume(-(step > 0 ? step / 100 : Config.get("audio.step", 0.05)));
+            return `${Audio.volumePercent}%`;
+        }
+
+        function set(percent: real): string {
+            Audio.setVolume(Math.max(0, percent) / 100);
+            return `${Audio.volumePercent}%`;
+        }
+
+        function mute(): string {
+            Audio.toggleMute();
+            return Audio.muted ? "muted" : "audible";
+        }
+
+        function micMute(): string {
+            Audio.toggleInputMute();
+            return Audio.inputMuted ? "muted" : "audible";
+        }
+    }
+
+    IpcHandler {
+        target: "media"
+
+        function toggle(): string {
+            Media.playPause();
+            return Media.playing ? "playing" : "paused";
+        }
+
+        function next(): string { Media.next(); return "next"; }
+        function previous(): string { Media.previous(); return "previous"; }
+        function stop(): string { Media.pause(); return "paused"; }
+    }
+
+    IpcHandler {
+        target: "brightness"
+
+        function up(step: real): string {
+            Brightness.step((step > 0 ? step : 5) / 100);
+            return `${Math.round(Brightness.brightness * 100)}%`;
+        }
+
+        function down(step: real): string {
+            Brightness.step(-(step > 0 ? step : 5) / 100);
+            return `${Math.round(Brightness.brightness * 100)}%`;
+        }
+
+        function set(percent: real): string {
+            Brightness.set(Math.max(0, percent) / 100);
+            return `${Math.round(Brightness.brightness * 100)}%`;
+        }
+    }
+
     // TODO Phase 3: the last user of the input surface — cells positioned at
     // the pointer, which need the pointer position it is the only way to learn.
 

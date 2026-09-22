@@ -52,6 +52,55 @@ binds {
         spawn "qs" "-p" "/home/akusen/Documents/Development/Bioma/shell.qml" "ipc" "call" "cell" "toggle" "session"
     }
 
+    // ---- The keys that are not cells ------------------------------------
+    //
+    // Volume, brightness and the transport act on the machine without opening
+    // anything, so they do not go through the cell register. `scripts/key`
+    // sends each one to whichever shell is running, which is what keeps them
+    // working across the switch — the same keys were Noctalia's and are
+    // commented out in its own binds file, because two bindings on one key is
+    // not a thing to leave lying around.
+
+    XF86AudioRaiseVolume allow-when-locked=true {
+        spawn "/home/akusen/Documents/Development/Bioma/scripts/key" "volume-up"
+    }
+
+    XF86AudioLowerVolume allow-when-locked=true {
+        spawn "/home/akusen/Documents/Development/Bioma/scripts/key" "volume-down"
+    }
+
+    XF86AudioMute allow-when-locked=true {
+        spawn "/home/akusen/Documents/Development/Bioma/scripts/key" "mute"
+    }
+
+    XF86AudioMicMute allow-when-locked=true {
+        spawn "/home/akusen/Documents/Development/Bioma/scripts/key" "mic-mute"
+    }
+
+    XF86MonBrightnessUp allow-when-locked=true {
+        spawn "/home/akusen/Documents/Development/Bioma/scripts/key" "brightness-up"
+    }
+
+    XF86MonBrightnessDown allow-when-locked=true {
+        spawn "/home/akusen/Documents/Development/Bioma/scripts/key" "brightness-down"
+    }
+
+    XF86AudioPlay hotkey-overlay-title="Media: play or pause" {
+        spawn "/home/akusen/Documents/Development/Bioma/scripts/key" "media-toggle"
+    }
+
+    XF86AudioNext hotkey-overlay-title="Media: next" {
+        spawn "/home/akusen/Documents/Development/Bioma/scripts/key" "media-next"
+    }
+
+    XF86AudioPrev hotkey-overlay-title="Media: previous" {
+        spawn "/home/akusen/Documents/Development/Bioma/scripts/key" "media-previous"
+    }
+
+    XF86AudioStop hotkey-overlay-title="Media: stop" {
+        spawn "/home/akusen/Documents/Development/Bioma/scripts/key" "media-stop"
+    }
+
     // Not a cell: the shell itself. One of the two runs at a time, because
     // one program per session may own the notification bus — and going back
     // to the other one is a thing to do often while this one is being built.
