@@ -164,7 +164,14 @@ Item {
     // same rate as the cells inside it, and a centred tissue is re-placed from
     // this animated width, which is what makes it grow from its middle instead
     // of jumping to a new centre.
+    // A tissue on a membrane reflows, and that movement is the design moment
+    // the PRD calls it. A floating one does not: what it holds arrives and
+    // leaves whole, and a band that animated its own size while the cell
+    // inside it was drawn at full size dragged that cell across the screen.
+    property bool animates: true
+
     Behavior on width {
+        enabled: root.animates
         NumberAnimation {
             duration: Timing.reflow
             easing.type: Easing.Bezier
@@ -173,6 +180,7 @@ Item {
     }
 
     Behavior on height {
+        enabled: root.animates
         NumberAnimation {
             duration: Timing.reflow
             easing.type: Easing.Bezier

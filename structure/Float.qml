@@ -68,6 +68,11 @@ PanelWindow {
                     continue;
                 cell.visibility.invoked = true;
 
+                // Summoned into the middle of the screen, it grows into
+                // place rather than sliding in from wherever the tissue
+                // happened to be a moment ago.
+                cell.growsOnArrival = true;
+
                 // A cell with a panel opens it; one whose content is itself
                 // has nothing to open and claims the attention directly, so
                 // that a press outside still reaches it and closes it.
@@ -221,6 +226,10 @@ PanelWindow {
         output: root.screenItem ? root.screenItem.name : ""
 
         floating: true
+
+        // What it holds arrives and leaves whole: the band does not reflow,
+        // the cell grows.
+        animates: false
         orientation: root.config.orientation || "vertical"
         anchorSide: root.config.anchor_side
                     || (root.atLeft ? "start" : root.atRight ? "end" : "centre")

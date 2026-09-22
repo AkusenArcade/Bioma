@@ -259,8 +259,39 @@ Item {
     implicitWidth: contractedWidth
     implicitHeight: contractedHeight
 
-    width: grantedWidth
-    height: contractedHeight
+    // A cell born in the middle of the screen grows into place. There is
+    // nowhere for it to grow *from* — no membrane, no thread, no pill it came
+    // out of — so the growth is the arrival itself, in both measures, from
+    // the middle of where it will be.
+    //
+    // Behaviors do not run on a first value, so this is an animation of its
+    // own rather than a Behavior; and the shape is translated by half of what
+    // it has not grown yet, because the tissue puts a cell's corner somewhere
+    // and a corner is not a centre. Translating is not scaling: the rim keeps
+    // its weight and the text its size.
+    property bool growsOnArrival: false
+    property real emergence: 1
+
+    width: grantedWidth * emergence
+    height: contractedHeight * emergence
+
+    transform: Translate {
+        x: (root.grantedWidth - root.width) / 2
+        y: (root.contractedHeight - root.height) / 2
+    }
+
+    NumberAnimation {
+        id: arrival
+        target: root
+        property: "emergence"
+        from: 0.82
+        to: 1
+        duration: Timing.open
+        easing.type: Easing.Bezier
+        easing.bezierCurve: Timing.easeOpenFlat
+    }
+
+    onGrowsOnArrivalChanged: if (growsOnArrival) arrival.restart()
 
     // A cell that is not shown occupies nothing; the tissue reflows around it.
     visible: placed || appearance.running
@@ -272,7 +303,12 @@ Item {
     //
     // Reversible from wherever it is, never queued: a Behavior interrupted
     // mid-flight retargets, which is exactly the required behaviour.
+    // Not while it is arriving: a reflow that smooths every change also
+    // smooths the growth, chasing with two hundred and twenty milliseconds a
+    // value that moves in two hundred and fifty — and the shape ends up
+    // standing still at full size while the number underneath it travels.
     Behavior on width {
+        enabled: !arrival.running
         NumberAnimation {
             duration: Timing.reflow
             easing.type: Easing.Bezier
@@ -288,6 +324,7 @@ Item {
     // instantly and the other travelled. Akusen saw the launcher coming in
     // from the bottom right, 2026-09-22.
     Behavior on height {
+        enabled: !arrival.running
         NumberAnimation {
             duration: Timing.reflow
             easing.type: Easing.Bezier

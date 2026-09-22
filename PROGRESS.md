@@ -1093,15 +1093,26 @@ almost nothing in the file that is not one of those.
   also means it claims the shell's attention directly when it is summoned, or
   the sheet that closes an open cell would not know it was there and a press
   outside would leave it standing.
-- **It grows from its own centre, in both measures at once.** Width animated
-  and height snapped, and a centred floating tissue is placed by the size of
-  what it holds — so one dimension settled instantly while the other
-  travelled, and the panel looked like it was flying in from the bottom
-  right. `Cell` animates height the way it animates width now, and the
-  content waits for `Cell.grown` rather than drawing itself into a shape that
-  is still growing. No scaling anywhere: the project's rule is to grow by
-  animating width and height, and that is what makes a centred tissue grow
-  from its middle for free.
+- **It grows from its own centre**, and getting there took three wrong
+  answers and one measurement. The first guess — animate the height as well
+  as the width — changed nothing; the numbers said why. A floating tissue was
+  animating *its own* size while the cell inside it was already drawn at full
+  size, so the cell sat in the corner of a band that was still growing and
+  slid across the screen with it. That is the entrance Akusen saw coming from
+  the bottom right, twice.
+  - A floating tissue does not reflow: what it holds arrives and leaves
+    whole. The band is placed at its final size and the **cell** grows.
+  - A summoned cell grows into place from 0.82 in both measures, translated
+    by half of what it has not grown yet — the tissue puts a corner somewhere
+    and a corner is not a centre. Translating, never scaling: the rim keeps
+    its weight and the text its size.
+  - And the reflow `Behavior` had to be let out of the way. It smooths every
+    change, growth included: two hundred and twenty milliseconds chasing a
+    value that moves in two hundred and fifty leaves the shape standing at
+    full size while the number underneath it travels. Measured, not guessed —
+    `emergence` was animating and `width` never moved.
+  - The content waits for `Cell.grown`, so a field is never drawn into a
+    shape that is still moving.
 - **Its height is fixed, and that is the whole of it.** A panel that grew and
   shrank with the number of results re-centred its tissue on every letter
   typed, and the blur region chased a shape that had already moved: the field
