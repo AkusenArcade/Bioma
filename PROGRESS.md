@@ -7,32 +7,32 @@ Last worked: 2026-09-22.
 
 ## Where to pick up
 
-Phase 1 is nine services of ten, every one verified. Phase 0's engine draws and
-has been exercised by nine cells; phase 2 is finished — window title,
-workspaces and vitals, the last of them opening into pods and a process list;
-phase 3 is finished — the theme cell retints the shell live, the utility cell
-captures with Bioma's own selection rectangle rather than `slurp`, and
-sinestesia draws the sound. Phase 4 has started with the audio cell.
+Phases 0 to 4 are done and phase 6 with them: the engine, ten services, and
+fifteen cells — the last of them notifications, with the bus taken off Noctalia,
+and the launcher in both its forms. Phase 5 is three pages of five.
 
-Three ways in, and they are independent:
+Akusen has been driving the whole shell by hand since 2026-09-22, and most of
+what is written below the fold came out of that: the settings cell, the
+structure page, and a run of engine defects that only a pointer could find.
 
-1. **Phase 4 is done but for notifications.** Audio, connectivity, session and the dock are drawn —
-   the dial, the capsule and the three wells against the real PipeWire graph,
-   and one glyph per live connection with the two family wells under it. What
-   is left of the cells already drawn is what CELLS left open: sinestesia on a
-   narrow screen and whether a long title scrolls on hover, and reduced motion,
-   which asks for the band to become a single bar rather than stop.
-2. **Notifications are in and the bridge is burnt.** Noctalia is off, Bioma
-   owns `org.freedesktop.Notifications`, and a notification arrives, waits its
-   dwell and leaves. What has never been touched is the half that needs a
-   pointer: the body and the actions on hover, and the history on a press.
-3. **The rest of the engine**: the last user of the full-screen input surface,
-   cells positioned at the pointer. **Vertical tissues stack** and **auto-hide
-   hides**, see below; what auto-hide has never done is come back, because
-   only a pointer at the edge can ask it to. **Invocation and floating tissues are done**, see below; what is
-   left of the audio cell's invoked form is what it *shows* there, because
-   CELLS §05 draws the capsule alone with no thread and the cell currently
-   arrives as itself and opens in the usual way.
+What is left, in the order it is worth taking:
+
+1. **Settings, the last two pages.** **Keybinds** — added, edited and removed,
+   the combination recorded by pressing it rather than typed — and
+   **Monitors**, dragged and snapped, with the name and mode on two lines
+   inside each rectangle. Both write **niri's own configuration** rather than
+   Bioma's, which is why they were left for last: the shell edits a file it
+   does not own, and has to leave everything else in it untouched.
+2. **What CELLS left open in the cells already drawn.** Sinestesia on a narrow
+   screen and reduced motion (the band becomes a single bar rather than
+   stopping); whether a long window title scrolls on hover; the audio cell's
+   invoked form, which §05 draws as the capsule alone with no thread; the
+   notification column, so ordinary ones can scroll past a critical one; the
+   session cell's own silhouette glyph.
+3. **The last piece of the engine**: cells positioned at the pointer, which is
+   the remaining user of the full-screen input surface.
+
+Still undecided, from the PRD: whether there is a tray cell at all.
 
 ### Confirmed by a real hand, at last
 
