@@ -37,12 +37,25 @@ Item {
     readonly property int shownRows: 3
 
     readonly property var networks: Network.visibleNetworks
-    readonly property var devices: Bluetooth.pairedDevices
+    // The paired devices, then — while searching — what the search has found,
+    // each marked by which it is.
+    readonly property var devices: {
+        const out = Bluetooth.pairedDevices.map(device => ({ "device": device, "found": false }));
+        if (Bluetooth.discovering)
+            for (const device of Bluetooth.foundDevices)
+                out.push({ "device": device, "found": true });
+        return out;
+    }
 
     // The scanner costs power and is wanted only while the list is being
     // looked at. The cell owns it: on when the panel is here, off when it goes.
+    // The Bluetooth search is asked for by hand — it floods the list with the
+    // room's devices — and ends with the panel all the same.
     Component.onCompleted: Network.scanning = true
-    Component.onDestruction: Network.scanning = false
+    Component.onDestruction: {
+        Network.scanning = false;
+        Bluetooth.discovering = false;
+    }
 
     // ---- Asking for a password ---------------------------------------------
     //
@@ -128,9 +141,65 @@ Item {
         property var metrics: Metrics.step("normal")
         property real factor: 1
 
+        // A family that can look for more says so beside its switch: the
+        // Bluetooth devices. While it looks, the loader runs beside the word —
+        // the one movement that means "nothing yet".
+        property bool searchable: false
+        property bool searching: false
+
         signal switched(bool on)
+        signal searchToggled
 
         height: 30 * family.factor
+
+        Item {
+            id: search
+
+            visible: family.searchable && family.on
+            anchors.right: toggle.left
+            anchors.rightMargin: 10 * family.factor
+            anchors.verticalCenter: parent.verticalCenter
+            width: searchRow.implicitWidth + 20 * family.factor
+            height: 22 * family.factor
+
+            Rectangle {
+                anchors.fill: parent
+                radius: Metrics.radiusFor(height, family.metrics)
+                antialiasing: true
+                color: family.searching ? Qt.alpha(Theme.primary, 0.16) : "transparent"
+                border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+                border.color: family.searching ? Theme.primary : searchHover.hovered ? Theme.text : Theme.line
+            }
+
+            Row {
+                id: searchRow
+                anchors.centerIn: parent
+                spacing: 6 * family.factor
+
+                Sweep {
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: family.searching
+                    running: family.searching
+                    width: 16 * family.factor
+                    height: width
+                }
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: family.searching ? "STOP" : "SEARCH"
+                    color: family.searching ? Theme.text : Theme.textMuted
+                    font: Qt.font({
+                        "family": Typography.technical,
+                        "pixelSize": family.metrics.fontMeta,
+                        "letterSpacing": Typography.tracking(family.metrics.fontMeta,
+                                                             Typography.labelTracking)
+                    })
+                }
+            }
+
+            HoverHandler { id: searchHover }
+            TapHandler { onTapped: family.searchToggled() }
+        }
 
         Text {
             anchors.left: parent.left
@@ -147,6 +216,7 @@ Item {
         }
 
         Switch {
+            id: toggle
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
             factor: family.factor
@@ -428,7 +498,10 @@ Item {
                 title: "DEVICES"
                 on: Bluetooth.enabled
                 settling: Bluetooth.settling
+                searchable: true
+                searching: Bluetooth.scanning
                 onSwitched: value => Bluetooth.setEnabled(value)
+                onSearchToggled: Bluetooth.discovering = !Bluetooth.discovering
             }
 
             Scroller {
@@ -443,6 +516,7 @@ Item {
                 visible: !Bluetooth.enabled || root.devices.length === 0
                 text: !Bluetooth.available ? "No adapter"
                     : !Bluetooth.enabled ? "Wireless is off"
+                    : Bluetooth.scanning ? "Looking…"
                     : "Nothing paired"
                 color: Theme.textMuted
                 font.family: Typography.expressive
@@ -466,14 +540,18 @@ Item {
 
                     required property var modelData
 
-                    readonly property bool connected: deviceRow.modelData.connected
-                    readonly property bool busy: Bluetooth.isBusy(deviceRow.modelData)
+                    readonly property var device: deviceRow.modelData.device
+                    readonly property bool found: deviceRow.modelData.found
+                    readonly property bool connected: deviceRow.device.connected
+                    readonly property bool busy: Bluetooth.isBusy(deviceRow.device)
+                    readonly property bool failed: deviceRow.found
+                                                   && Bluetooth.failedAddress === deviceRow.device.address
 
                     // Form says the domain: a headset is drawn as a headset,
                     // whatever it is called. The shell's own wireless mark
                     // stands for everything it has no drawing for.
                     readonly property string glyph: {
-                        const name = (Bluetooth.icon(deviceRow.modelData) || "").toLowerCase();
+                        const name = (Bluetooth.icon(deviceRow.device) || "").toLowerCase();
                         if (name.indexOf("headset") >= 0 || name.indexOf("headphone") >= 0
                             || name.indexOf("audio") >= 0)
                             return "headphones";
@@ -503,8 +581,10 @@ Item {
                         id: state
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
-                        text: deviceRow.busy ? "Working"
-                            : deviceRow.connected ? "Connected" : "Paired"
+                        text: deviceRow.found
+                              ? (deviceRow.device.pairing ? "Pairing" : deviceRow.failed ? "Failed" : "Pair")
+                              : deviceRow.busy ? "Working"
+                              : deviceRow.connected ? "Connected" : "Paired"
                         color: Theme.textMuted
                         font.family: Typography.technical
                         font.pixelSize: root.metrics.fontMeta
@@ -516,10 +596,11 @@ Item {
                         anchors.right: state.left
                         anchors.rightMargin: 12 * root.factor
                         anchors.verticalCenter: parent.verticalCenter
-                        text: Bluetooth.describe(deviceRow.modelData)
+                        text: Bluetooth.describe(deviceRow.device)
                         elide: Text.ElideRight
                         maximumLineCount: 1
-                        color: Theme.text
+                        // Found, not yet ours: said more quietly than what is.
+                        color: deviceRow.found ? Theme.textMuted : Theme.text
                         font.family: Typography.expressive
                         font.pixelSize: root.metrics.fontSecondary
                     }
@@ -528,12 +609,43 @@ Item {
                     // because more than one can be connected at a time.
                     TapHandler {
                         onTapped: {
-                            if (deviceRow.connected)
-                                Bluetooth.disconnectDevice(deviceRow.modelData);
+                            if (deviceRow.found)
+                                Bluetooth.pairAndConnect(deviceRow.device);
+                            else if (deviceRow.connected)
+                                Bluetooth.disconnectDevice(deviceRow.device);
                             else
-                                Bluetooth.connectDevice(deviceRow.modelData);
+                                Bluetooth.connectDevice(deviceRow.device);
                         }
                     }
+
+                    // Forgetting a paired device: a cross that appears under
+                    // the pointer, in place of the state it covers.
+                    Item {
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 18 * root.factor
+                        height: width
+                        visible: !deviceRow.found && rowHover.hovered
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: width / 2
+                            color: Theme.background
+                        }
+
+                        Icon {
+                            anchors.centerIn: parent
+                            width: 9 * root.factor
+                            height: width
+                            name: "close"
+                            colour: forgetHover.hovered ? Theme.alert : Theme.textMuted
+                        }
+
+                        HoverHandler { id: forgetHover }
+                        TapHandler { onTapped: Bluetooth.forget(deviceRow.device) }
+                    }
+
+                    HoverHandler { id: rowHover }
                 }
             }
         }

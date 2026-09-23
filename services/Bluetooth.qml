@@ -158,6 +158,47 @@ Singleton {
         device?.pair();
     }
 
+    // Pairing a found device is the start, not the end: somebody pressing a
+    // headset in the list wants to hear it. So once it pairs it is trusted —
+    // it may reconnect by itself from then on — and connected. Pairing needs
+    // no agent for a device that asks for nothing (headsets, mice, speakers);
+    // one that shows a code to confirm cannot be paired from here, since
+    // Quickshell registers no agent, and it says so by failing.
+    property var pending: null
+    property string failedAddress: ""
+
+    function pairAndConnect(device) {
+        if (!device)
+            return;
+        root.failedAddress = "";
+        root.pending = device;
+        device.pair();
+    }
+
+    Connections {
+        target: root.pending
+        function onPairedChanged() {
+            const device = root.pending;
+            if (!device || !device.paired)
+                return;
+            device.trusted = true;
+            device.connect();
+            root.pending = null;
+        }
+        function onPairingChanged() {
+            const device = root.pending;
+            if (device && !device.pairing && !device.paired) {
+                root.failedAddress = device.address;
+                root.pending = null;
+            }
+        }
+    }
+
+    // What discovery has found that is worth a row: it has a name. Nameless
+    // devices are the neighbours' fridges.
+    readonly property var foundDevices: discoveredDevices.filter(d => (d.name || d.deviceName || "").length > 0
+                                                                      && !/^([0-9A-F]{2}[-:]){5}[0-9A-F]{2}$/i.test(d.name || ""))
+
     function cancelPair(device) {
         device?.cancelPair();
     }

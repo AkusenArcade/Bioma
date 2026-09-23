@@ -1656,6 +1656,23 @@ Super+Alt+K rewrote the one line of `Mod+N`; a filter typed, Enter taking
 leaving the list where it was. The presses that start each of those came from
 a throwaway timer.
 
+### Bluetooth: searching and pairing
+
+The devices well learns to look. A SEARCH pill beside its switch starts
+discovery, with the loader running beside the word while it looks — the one
+movement that means "nothing yet" — and what is found with a name joins the
+list under the paired devices, said more quietly. A press pairs it, trusts it
+and connects it: somebody pressing a headset wants to hear it. A cross under
+the pointer forgets a paired device. Discovery ends with the panel.
+
+Quickshell registers no BlueZ agent, so a device that asks nothing — headsets,
+mice, speakers — pairs, and one that shows a code to confirm cannot; it says
+`Failed`.
+
+Verified: the search starts from the panel — STOP with the loader, "Looking…".
+Not verified: pairing, connecting and forgetting — no discoverable device with
+a name was in range, and none is paired on this machine.
+
 ### The clock, opened
 
 Nothing in CELLS draws it; the style guide leaves the clues — a city's name
