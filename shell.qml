@@ -75,6 +75,13 @@ ShellRoot {
                 screen: perScreen.modelData
             }
 
+            // The same picture, blurred, behind the workspaces in niri's
+            // overview.
+            WallpaperSurface {
+                screen: perScreen.modelData
+                backdrop: true
+            }
+
             // Over everything, and only while a cell is open: the surface that
             // knows where the pointer is. PRD §8.
             InputSurface {

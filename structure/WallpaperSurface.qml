@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Effects
 import Quickshell
 import Quickshell.Wayland
 import qs.core
@@ -12,11 +13,25 @@ import qs.services
 // image swapped hard while the opacity animation ran against the already-swapped
 // picture. A real crossfade needs the incoming image loaded and ready before
 // anything fades, which is what the pair below is for.
+//
+// A second one per screen, `backdrop`, is the same picture blurred: niri puts
+// it behind the workspaces in the overview (`place-within-backdrop`, in
+// config/niri/bioma.kdl), where the wallpaper proper is drawn inside each
+// workspace and the space between them would otherwise be a flat colour.
 PanelWindow {
     id: root
 
+    // The overview's backdrop rather than the wallpaper. Read once, when the
+    // surface is made: a layer surface's namespace cannot change after.
+    property bool backdrop: false
+
+    // How far the blurred picture runs past the screen's edges. A blur fades to
+    // nothing at the edge of what it blurs, and a picture blurred only to the
+    // screen's edge would be a picture with a dark frame.
+    readonly property real bleed: root.backdrop ? 96 : 0
+
     WlrLayershell.layer: WlrLayer.Background
-    WlrLayershell.namespace: "bioma-wallpaper"
+    WlrLayershell.namespace: root.backdrop ? "bioma-backdrop" : "bioma-wallpaper"
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
     anchors { top: true; bottom: true; left: true; right: true }
@@ -103,9 +118,12 @@ PanelWindow {
 
             // Decode at the size actually needed. A 6000 px photograph on a
             // 1920 px monitor otherwise costs its full decoded size in memory,
-            // once per screen.
-            sourceSize.width: Math.round(width * (root.screen?.devicePixelRatio ?? 1))
-            sourceSize.height: Math.round(height * (root.screen?.devicePixelRatio ?? 1))
+            // once per screen. The backdrop is blurred anyway, so a quarter of
+            // that is all it needs — and the smooth upscale is the first half
+            // of the blur.
+            readonly property real density: (root.screen?.devicePixelRatio ?? 1) / (root.backdrop ? 4 : 1)
+            sourceSize.width: Math.round(width * density)
+            sourceSize.height: Math.round(height * density)
 
             onStatusChanged: {
                 if (status === Image.Ready)
@@ -116,18 +134,35 @@ PanelWindow {
         }
     }
 
-    Layer {
-        id: first
-        opacity: root.showingSecond ? 0 : 1
-        onReady: root.reveal(first)
-        Behavior on opacity { NumberAnimation { duration: Timing.wallpaper; easing.type: Easing.InOutQuad } }
-    }
+    Item {
+        x: -root.bleed
+        y: -root.bleed
+        width: root.width + root.bleed * 2
+        height: root.height + root.bleed * 2
 
-    Layer {
-        id: second
-        opacity: root.showingSecond ? 1 : 0
-        onReady: root.reveal(second)
-        Behavior on opacity { NumberAnimation { duration: Timing.wallpaper; easing.type: Easing.InOutQuad } }
+        // Rendered once into a texture and blurred there; it is redrawn only
+        // when the picture changes, so the overview costs nothing to hold.
+        layer.enabled: root.backdrop
+        layer.effect: MultiEffect {
+            blurEnabled: true
+            blur: 1.0
+            blurMax: 64
+            autoPaddingEnabled: false
+        }
+
+        Layer {
+            id: first
+            opacity: root.showingSecond ? 0 : 1
+            onReady: root.reveal(first)
+            Behavior on opacity { NumberAnimation { duration: Timing.wallpaper; easing.type: Easing.InOutQuad } }
+        }
+
+        Layer {
+            id: second
+            opacity: root.showingSecond ? 1 : 0
+            onReady: root.reveal(second)
+            Behavior on opacity { NumberAnimation { duration: Timing.wallpaper; easing.type: Easing.InOutQuad } }
+        }
     }
 
     Component.onCompleted: first.source = root.source

@@ -24,3 +24,13 @@ layer-rule {
         xray false
     }
 }
+
+// The overview. niri draws background-layer surfaces inside each workspace, so
+// when the workspaces shrink into the overview the wallpaper shrinks with them
+// and the space around them is niri's flat backdrop colour. Bioma puts a
+// blurred copy of the wallpaper on a surface of its own, and this places that
+// surface in the backdrop instead of in a workspace.
+layer-rule {
+    match namespace="^bioma-backdrop$"
+    place-within-backdrop true
+}

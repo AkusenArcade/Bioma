@@ -1664,6 +1664,19 @@ Super+Alt+K rewrote the one line of `Mod+N`; a filter typed, Enter taking
 leaving the list where it was. The presses that start each of those came from
 a throwaway timer.
 
+### The overview's backdrop
+
+Akusen noticed that under Noctalia, niri's overview showed a blurred wallpaper
+around the workspaces, and under Bioma it showed a flat colour. The reason is
+that niri draws a background-layer surface inside each workspace, so the
+wallpaper shrinks with the workspaces. Noctalia keeps a second surface for the
+space around them. Bioma now does the same: a second `WallpaperSurface` per
+screen with `backdrop: true`, which uses the namespace `bioma-backdrop`. It
+shows the same picture, decoded at a quarter of the size and blurred once by
+`MultiEffect`, and it extends 96 px past the screen's edges so the blur has no
+dark frame. `config/niri/bioma.kdl` places it with `place-within-backdrop`.
+Verified in the overview on DP-1; the normal view is unchanged.
+
 ### The palette, outside the shell
 
 Akusen asked for the theme to reach the rest of the desktop, the way Noctalia's
