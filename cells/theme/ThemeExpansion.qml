@@ -613,6 +613,11 @@ Item {
 
     property real listGrowth: root.listing ? 1 : 0
 
+    // The list is a shape of its own, and the cell's regions are rectangles
+    // read once its shapes stop moving — so a shape that moves says so, or
+    // the region is whatever it was when something else last did.
+    onListGrowthChanged: if (root.cell) root.cell.shapesSettling()
+
     Behavior on listGrowth {
         NumberAnimation {
             duration: root.listing ? Timing.grow : Timing.close
