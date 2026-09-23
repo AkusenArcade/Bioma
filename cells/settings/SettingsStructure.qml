@@ -603,10 +603,10 @@ Item {
 
     // ---- Drawing ------------------------------------------------------------
 
-    // The page scrolls rather than shrinking what is on it: the settings
-    // panel is one fixed height for every category (CELLS §12), and the
-    // floating places took the room the chosen tissue's cells used to have.
-    // Everything below is drawn into this and keeps its own coordinates.
+    // The panel is sized so this page does not scroll (SettingsExpansion's
+    // `panelHeight`). This is the fallback for a band with more cells than
+    // that was measured for — it never moves while the content fits.
+    // Everything below is drawn into it and keeps its own coordinates.
     Flickable {
         id: scroller
 
@@ -1007,12 +1007,12 @@ Item {
         metrics: root.metrics
         width: scroller.width
         y: layout.y + layout.height + root.threadLength
-        // What is left of the page, or what the tissue needs — its place,
-        // its cells, and room for the picker when it is open.
+        // What is left of the page, or — past what the panel was sized for —
+        // what the tissue's place and cells need. The picker is not counted:
+        // it scrolls inside its own well.
         height: Math.max(root.height - y,
                          24 * root.factor + 30 * root.factor + 12 * root.factor
-                         + root.chipRows * root.chipPitchY
-                         + (root.picking ? 200 * root.factor : 0))
+                         + root.chipRows * root.chipPitchY)
 
         Item {
             anchors.fill: parent

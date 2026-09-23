@@ -54,7 +54,10 @@ Item {
     }
 
     readonly property real panelWidth: root.categories[root.chosenIndex].width * factor
-    readonly property real panelHeight: 420 * factor
+    // One height for every category, and tall enough that none of them
+    // scrolls as a page: Structure is the tallest, with the floating places
+    // between its two edges and three rows of cell chips under them.
+    readonly property real panelHeight: 540 * factor
 
     readonly property real columnHeight: root.categories.length * capsulePitch - (capsulePitch - capsuleHeight)
 

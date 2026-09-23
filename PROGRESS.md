@@ -1677,8 +1677,12 @@ layer with its own notification column in the top-right corner.
   monitors, the remove control, the chips, the picker and the drag to reorder
   — every write to the chosen tissue goes through one `editChosen`, whichever
   list it lives in. Two cells of one domain are told apart by `options.show`.
-- **The page scrolls.** The settings panel has one fixed height (§12), and the
-  floating places took the room the chosen tissue's cells had.
+- **The panel is taller rather than scrolling**, Akusen's call: 540 rather than
+  420, one height for every category as §12 asks, measured so Structure holds
+  the floating places and three rows of cell chips — 512 of 512 with the
+  top-right band's five cells and the picker open. The page keeps a Flickable
+  only as a fallback for a band with more cells than that; it does not move
+  while the content fits.
 - The thread to the detail leaves the chosen slot and runs under the rows below
   it. It used to start under the last row whatever was chosen, which read as
   the bottom membrane's empty slot being the one open.
