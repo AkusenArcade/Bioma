@@ -2,6 +2,9 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
+// For `ProcessContext`: `execDetached` takes one only where Quickshell.Io is
+// imported, and refuses the plain object otherwise.
+import Quickshell.Io
 
 // Which application a name belongs to.
 //
@@ -31,6 +34,25 @@ Singleton {
     readonly property var entries: DesktopEntries.applications?.values ?? []
 
     onEntriesChanged: root.cache = ({})
+
+    // Start an application, with whatever the shell adds to its environment —
+    // the proxy, while one is on. A desktop entry's own `execute()` takes no
+    // environment, so the entry is run by its command; one that runs in a
+    // terminal is left to the entry, which knows how to find the terminal.
+    function run(entry, environment) {
+        if (!entry)
+            return;
+        const extra = environment || ({});
+        if (entry.runInTerminal || Object.keys(extra).length === 0 || !entry.command
+                || entry.command.length === 0) {
+            entry.execute();
+            return;
+        }
+        const context = { "command": entry.command, "environment": extra };
+        if (entry.workingDirectory && entry.workingDirectory.length > 0)
+            context.workingDirectory = entry.workingDirectory;
+        Quickshell.execDetached(context);
+    }
 
     property var cache: ({})
 

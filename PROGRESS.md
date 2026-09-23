@@ -1656,6 +1656,38 @@ Super+Alt+K rewrote the one line of `Mod+N`; a filter typed, Enter taking
 leaving the list where it was. The presses that start each of those came from
 a throwaway timer.
 
+### A proxy that follows the networks
+
+Asked for while the VPN was being built: a system-wide proxy with a switch,
+turning on by itself with a VPN or a particular network. Akusen chose several
+profiles, each with its own triggers, applied both as the desktop's setting and
+to the programs the shell starts.
+
+- **A fourth well, PROXY.** One row per profile — name, then `HTTP · host:port ·
+  triggers` — with a switch that forces it on (or everything off), and an AUTO
+  pill that gives the choice back to the triggers. A row pressed opens it for
+  editing: name, HTTP or SOCKS5, host and port, the hosts that go around it,
+  and its triggers as chips — every VPN profile, the Wi-Fi network the machine
+  is on, the wire. While it is edited the other wells step aside; the form and
+  four wells do not fit above a membrane on 1080 lines.
+- **`services/Proxy.qml`** picks the profile on and writes it to
+  `org.gnome.system.proxy` (browsers and GTK programs read it live), and hands
+  `http_proxy`, `https_proxy`, `all_proxy` for SOCKS and `no_proxy` to what the
+  launcher and the dock start — `Apps.run` now starts an entry by its command
+  with that environment. With no profiles it leaves the desktop's proxy alone;
+  having set it and lost its last profile, it puts it back to none, once.
+- Found on the way, and fixed: services that act by themselves — the proxy, the
+  OSD, the alarm — started only when something first *bound* them, which for
+  the proxy meant when the panel first opened. `shell.qml` binds them at start.
+  And `execDetached` refuses a plain object as its process context unless the
+  file imports `Quickshell.Io`: `core/Apps.qml` does now.
+
+Verified against the real desktop setting, backed up first and put back after:
+a profile triggered by the wire set `mode manual` and `proxy.example:3128` at
+start, without the panel ever opening; removing it set `mode none`. The
+environment reached a started program (`http_proxy`, `NO_PROXY` read back from
+its `env`). The switches and the form were driven from a throwaway timer.
+
 ### VPN, set up from the panel
 
 A third well in connectivity, VPN: one row per profile NetworkManager keeps

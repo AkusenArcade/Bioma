@@ -129,7 +129,106 @@ Item {
                      + (Vpn.error.length > 0 ? root.errorHeight : 0))
     readonly property real chipRoom: 34 * factor
 
-    readonly property real contentHeight: wellSpacing * 2 + wifiHeight + deviceHeight + vpnHeight
+    // ---- Proxies ---------------------------------------------------------------
+    //
+    // While one is being edited the other wells step aside: the form is tall,
+    // and four wells and a form do not fit above a membrane on a 1080 screen.
+
+    property var editing: null
+    property bool editingNew: false
+    property bool removingProxy: false
+
+    readonly property real proxyRow: 44 * factor
+
+    // What the form offers as triggers: every VPN profile, the wireless
+    // network the machine is on and any already chosen, and the wire.
+    readonly property var triggerChoices: {
+        const out = [];
+        for (const profile of Vpn.profiles)
+            out.push({ "kind": "vpn", "uuid": profile.uuid, "name": profile.name });
+        const ssids = [];
+        if (Network.wifiConnected && Network.ssid.length > 0)
+            ssids.push(Network.ssid);
+        if (root.editing)
+            for (const t of (root.editing.triggers || []))
+                if (t.kind === "wifi" && ssids.indexOf(t.ssid) < 0)
+                    ssids.push(t.ssid);
+        for (const ssid of ssids)
+            out.push({ "kind": "wifi", "ssid": ssid });
+        out.push({ "kind": "wired" });
+        return out;
+    }
+
+    function sameTrigger(a, b) {
+        return a.kind === b.kind && (a.kind !== "vpn" || a.uuid === b.uuid)
+            && (a.kind !== "wifi" || a.ssid === b.ssid);
+    }
+
+    function hasTrigger(trigger) {
+        return root.editing !== null && (root.editing.triggers || []).some(t => root.sameTrigger(t, trigger));
+    }
+
+    function flipTrigger(trigger) {
+        const copy = JSON.parse(JSON.stringify(root.editing));
+        const list = copy.triggers || [];
+        const index = list.findIndex(t => root.sameTrigger(t, trigger));
+        if (index >= 0)
+            list.splice(index, 1);
+        else
+            list.push(trigger);
+        copy.triggers = list;
+        root.editing = copy;
+    }
+
+    function edit(profile) {
+        root.adding = false;
+        root.removingProxy = false;
+        root.editingNew = profile === null;
+        root.editing = profile !== null ? JSON.parse(JSON.stringify(profile))
+            : { "id": Proxy.newId(), "name": "", "type": "http", "host": "", "port": 8080,
+                "noProxy": "localhost,127.0.0.1,::1", "triggers": [] };
+        proxyName.text = root.editing.name;
+        proxyHost.text = root.editing.host;
+        proxyPort.text = String(root.editing.port || "");
+        proxyExceptions.text = root.editing.noProxy || "";
+    }
+
+    function stopEditing() {
+        root.editing = null;
+        root.removingProxy = false;
+    }
+
+    onEditingChanged: if (root.cell) root.cell.asking = root.editing !== null || root.adding
+
+    readonly property bool proxyValid: proxyHost.text.trim().length > 0
+                                       && parseInt(proxyPort.text, 10) > 0
+
+    function saveProxy() {
+        if (!root.proxyValid)
+            return;
+        const profile = JSON.parse(JSON.stringify(root.editing));
+        profile.name = proxyName.text.trim().length > 0 ? proxyName.text.trim() : proxyHost.text.trim();
+        profile.host = proxyHost.text.trim();
+        profile.port = parseInt(proxyPort.text, 10);
+        profile.noProxy = proxyExceptions.text.trim();
+        Proxy.save(profile);
+        root.stopEditing();
+    }
+
+    readonly property real chipPitch: 32 * factor
+    readonly property int triggerRows: Math.ceil(root.triggerChoices.length / 3)
+    readonly property real proxyFormHeight: 4 * (root.fieldHeight + 8 * factor)
+                                            + 30 * factor + 20 * factor
+                                            + root.triggerRows * root.chipPitch
+                                            + 24 * factor + 16 * factor
+    readonly property real proxyHeight: root.editing !== null
+        ? root.wellPadding * 2 + root.headerHeight + root.proxyFormHeight
+        : root.wellPadding * 2 + root.headerHeight
+          + Math.max(1, Proxy.profiles.length) * root.proxyRow + root.chipRoom
+
+    readonly property real contentHeight: root.editing !== null
+        ? root.proxyHeight
+        : wellSpacing * 3 + wifiHeight + deviceHeight + vpnHeight + proxyHeight
 
     // ---- Adding a VPN profile ------------------------------------------------
 
@@ -139,7 +238,7 @@ Item {
 
     onAddingChanged: {
         if (root.cell)
-            root.cell.asking = root.adding;
+            root.cell.asking = root.adding || root.editing !== null;
         if (root.adding) {
             root.chosenFile = "";
             userField.text = "";
@@ -268,6 +367,8 @@ Item {
 
         Well {
             id: wifiWell
+
+            visible: root.editing === null
 
             metrics: root.metrics
             inset: root.wellInset
@@ -518,6 +619,8 @@ Item {
         Well {
             id: deviceWell
 
+            visible: root.editing === null
+
             metrics: root.metrics
             inset: root.wellInset
             width: parent.width
@@ -694,6 +797,8 @@ Item {
         Well {
             id: vpnWell
 
+            visible: root.editing === null
+
             metrics: root.metrics
             inset: root.wellInset
             width: parent.width
@@ -769,7 +874,7 @@ Item {
                             spacing: 10 * root.factor
 
                             // Asking: the answer and the way back.
-                            VpnPill {
+                            PanelPill {
                                 visible: profileRow.asked
                                 label: "REMOVE"
                                 alert: true
@@ -779,7 +884,7 @@ Item {
                                 }
                             }
 
-                            VpnPill {
+                            PanelPill {
                                 visible: profileRow.asked
                                 label: "KEEP"
                                 onPressed: root.confirming = ""
@@ -854,7 +959,7 @@ Item {
                     width: parent.width
                     height: root.chipRoom
 
-                    VpnPill {
+                    PanelPill {
                         anchors.left: parent.left
                         anchors.verticalCenter: parent.verticalCenter
                         label: "+ PROFILE"
@@ -878,7 +983,7 @@ Item {
                     width: parent.width
                     height: root.fieldHeight
 
-                    VpnPill {
+                    PanelPill {
                         id: choose
                         anchors.left: parent.left
                         anchors.verticalCenter: parent.verticalCenter
@@ -901,12 +1006,12 @@ Item {
                     }
                 }
 
-                VpnField {
+                PanelField {
                     id: userField
                     placeholder: "User name"
                 }
 
-                VpnField {
+                PanelField {
                     id: passwordField
                     placeholder: "Password"
                     secret: true
@@ -927,7 +1032,7 @@ Item {
                 Row {
                     spacing: 8 * root.factor
 
-                    VpnPill {
+                    PanelPill {
                         id: importButton
                         label: Vpn.busy ? "IMPORTING" : "IMPORT"
                         lit: root.chosenFile.toString().length > 0 && !Vpn.busy
@@ -939,7 +1044,7 @@ Item {
                         }
                     }
 
-                    VpnPill {
+                    PanelPill {
                         label: "CANCEL"
                         onPressed: root.adding = false
                     }
@@ -953,9 +1058,257 @@ Item {
                 onAccepted: root.chosenFile = ovpnPicker.selectedFile
             }
         }
+
+        // ---- Proxy -----------------------------------------------------------
+        //
+        // One row per profile, with the switch that forces it on; AUTO gives
+        // the choice back to the triggers. A row pressed opens it for editing.
+
+        Well {
+            id: proxyWell
+
+            metrics: root.metrics
+            inset: root.wellInset
+            width: parent.width
+            height: root.proxyHeight
+
+            Text {
+                x: root.wellInset
+                y: root.wellPadding
+                height: root.headerHeight
+                verticalAlignment: Text.AlignVCenter
+                text: "PROXY"
+                color: Theme.textMuted
+                font: Qt.font({
+                    "family": Typography.technical,
+                    "pixelSize": root.metrics.fontLabel,
+                    "weight": Typography.weightLabel,
+                    "letterSpacing": Typography.tracking(root.metrics.fontLabel,
+                                                         Typography.labelTracking)
+                })
+            }
+
+            PanelPill {
+                visible: root.editing === null && Proxy.profiles.length > 0
+                x: proxyWell.width - width - root.wellInset
+                y: root.wellPadding + (root.headerHeight - height) / 2
+                label: "AUTO"
+                lit: Proxy.mode === "auto"
+                onPressed: Proxy.setMode("auto")
+            }
+
+            Column {
+                visible: root.editing === null
+                x: root.wellInset
+                y: root.wellPadding + root.headerHeight
+                width: proxyWell.width - root.wellInset * 2
+
+                Repeater {
+                    model: Proxy.profiles
+
+                    delegate: Item {
+                        id: proxyRowItem
+
+                        required property var modelData
+
+                        readonly property bool active: Proxy.current !== null
+                                                       && Proxy.current.id === proxyRowItem.modelData.id
+
+                        width: parent.width
+                        height: root.proxyRow
+
+                        Column {
+                            anchors.left: parent.left
+                            anchors.right: proxySwitch.left
+                            anchors.rightMargin: 10 * root.factor
+                            anchors.verticalCenter: parent.verticalCenter
+
+                            Text {
+                                width: parent.width
+                                elide: Text.ElideRight
+                                text: proxyRowItem.modelData.name
+                                color: Theme.text
+                                font.family: Typography.expressive
+                                font.pixelSize: root.metrics.fontSecondary
+                            }
+
+                            // The address, and what turns it on by itself.
+                            Text {
+                                width: parent.width
+                                elide: Text.ElideRight
+                                text: {
+                                    const p = proxyRowItem.modelData;
+                                    const kind = p.type === "socks5" ? "SOCKS5" : "HTTP";
+                                    const triggers = (p.triggers || []).map(t => Proxy.describe(t)).join(", ");
+                                    return `${kind} · ${p.host}:${p.port}` + (triggers ? ` · ${triggers}` : "");
+                                }
+                                color: Theme.textFaint
+                                font.family: Typography.technical
+                                font.pixelSize: root.metrics.fontMeta
+                            }
+                        }
+
+                        TapHandler { onTapped: root.edit(proxyRowItem.modelData) }
+
+                        Switch {
+                            id: proxySwitch
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            factor: root.factor
+                            on: proxyRowItem.active
+                            onToggled: value => Proxy.setMode(value ? proxyRowItem.modelData.id : "off")
+                        }
+                    }
+                }
+
+                Text {
+                    visible: Proxy.profiles.length === 0
+                    width: parent.width
+                    height: root.proxyRow
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    text: "No proxies"
+                    color: Theme.textMuted
+                    font.family: Typography.expressive
+                    font.pixelSize: root.metrics.fontSecondary
+                }
+
+                Item {
+                    width: parent.width
+                    height: root.chipRoom
+
+                    PanelPill {
+                        anchors.left: parent.left
+                        anchors.verticalCenter: parent.verticalCenter
+                        label: "+ PROXY"
+                        dashed: true
+                        onPressed: root.edit(null)
+                    }
+                }
+            }
+
+            // Editing one.
+            Column {
+                visible: root.editing !== null
+                x: root.wellInset
+                y: root.wellPadding + root.headerHeight
+                width: proxyWell.width - root.wellInset * 2
+                spacing: 8 * root.factor
+
+                PanelField {
+                    id: proxyName
+                    placeholder: "Name"
+                    onEscaped: root.stopEditing()
+                }
+
+                Segmented {
+                    metrics: root.metrics
+                    fontSize: root.metrics.fontMeta
+                    buttonHeight: 24 * root.factor
+                    buttonPadding: 14 * root.factor
+                    current: root.editing ? root.editing.type : "http"
+                    options: [
+                        { "key": "http", "label": "HTTP" },
+                        { "key": "socks5", "label": "SOCKS5" }
+                    ]
+                    onChose: key => {
+                        const copy = JSON.parse(JSON.stringify(root.editing));
+                        copy.type = key;
+                        root.editing = copy;
+                    }
+                }
+
+                Row {
+                    width: parent.width
+                    spacing: 8 * root.factor
+
+                    PanelField {
+                        id: proxyHost
+                        width: parent.width - proxyPort.width - parent.spacing
+                        placeholder: "Host"
+                        onEscaped: root.stopEditing()
+                    }
+
+                    PanelField {
+                        id: proxyPort
+                        width: 86 * root.factor
+                        placeholder: "Port"
+                        digits: true
+                        onEscaped: root.stopEditing()
+                    }
+                }
+
+                PanelField {
+                    id: proxyExceptions
+                    placeholder: "Not for: localhost, *.lan"
+                    onEscaped: root.stopEditing()
+                    onAccepted: root.saveProxy()
+                }
+
+                Text {
+                    height: 20 * root.factor
+                    verticalAlignment: Text.AlignBottom
+                    text: "ON BY ITSELF WITH"
+                    color: Theme.textFaint
+                    font: Qt.font({
+                        "family": Typography.technical,
+                        "pixelSize": root.metrics.fontMeta,
+                        "letterSpacing": Typography.tracking(root.metrics.fontMeta, Typography.labelTracking)
+                    })
+                }
+
+                Flow {
+                    width: parent.width
+                    spacing: 8 * root.factor
+
+                    Repeater {
+                        model: root.triggerChoices
+
+                        delegate: PanelPill {
+                            required property var modelData
+                            label: modelData.kind === "wired" ? "WIRED"
+                                 : modelData.kind === "wifi" ? modelData.ssid
+                                 : modelData.name
+                            lit: root.hasTrigger(modelData)
+                            onPressed: root.flipTrigger(modelData)
+                        }
+                    }
+                }
+
+                Row {
+                    spacing: 8 * root.factor
+
+                    PanelPill {
+                        label: "SAVE"
+                        lit: root.proxyValid
+                        onPressed: root.saveProxy()
+                    }
+
+                    PanelPill {
+                        label: "CANCEL"
+                        onPressed: root.stopEditing()
+                    }
+
+                    // Removing asks, by asking again.
+                    PanelPill {
+                        visible: !root.editingNew
+                        label: root.removingProxy ? "REMOVE?" : "REMOVE"
+                        alert: root.removingProxy
+                        onPressed: {
+                            if (!root.removingProxy) {
+                                root.removingProxy = true;
+                                return;
+                            }
+                            Proxy.remove(root.editing.id);
+                            root.stopEditing();
+                        }
+                    }
+                }
+            }
+        }
     }
 
-    component VpnPill: Item {
+    component PanelPill: Item {
         id: pill
 
         property string label: ""
@@ -1001,13 +1354,15 @@ Item {
         TapHandler { onTapped: pill.pressed() }
     }
 
-    component VpnField: Item {
+    component PanelField: Item {
         id: field
 
         property string placeholder: ""
         property bool secret: false
+        property bool digits: false
         property alias text: input.text
         signal accepted
+        signal escaped
 
         width: parent ? parent.width : 0
         height: root.fieldHeight
@@ -1034,8 +1389,15 @@ Item {
             font.family: Typography.expressive
             font.pixelSize: root.metrics.fontSecondary
             clip: true
+            inputMethodHints: field.digits ? Qt.ImhDigitsOnly : Qt.ImhNone
+            validator: field.digits ? portRule : null
             onAccepted: field.accepted()
-            Keys.onEscapePressed: root.adding = false
+            Keys.onEscapePressed: {
+                root.adding = false;
+                field.escaped();
+            }
+
+            IntValidator { id: portRule; bottom: 1; top: 65535 }
 
             Text {
                 visible: input.text.length === 0

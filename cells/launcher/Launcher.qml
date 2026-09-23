@@ -157,7 +157,7 @@ Cell {
         counted[result.entry.id] = (counted[result.entry.id] ?? 0) + 1;
         Config.set("launcher.uses", counted);
 
-        result.entry.execute();
+        Apps.run(result.entry, Proxy.environment);
         root.dismiss();
     }
 

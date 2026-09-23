@@ -244,7 +244,7 @@ Cell {
             console.info(`Bioma: the dock has no desktop entry for "${appId}"`);
             return;
         }
-        entry.execute();
+        Apps.run(entry, Proxy.environment);
     }
 
     // ---- The row -------------------------------------------------------------

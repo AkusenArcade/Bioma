@@ -194,6 +194,14 @@ ShellRoot {
     readonly property real brightnessLevel: Brightness.brightness
     readonly property bool mediaPlaying: Media.playing
 
+    // And the services that act by themselves, with nothing on screen reading
+    // them: the proxy that follows the networks, the display that answers a
+    // key, the timer and alarm that ring. Unbound, they would start only when
+    // their panel was first opened.
+    readonly property bool proxyOn: Proxy.on
+    readonly property string osdKind: Osd.kind
+    readonly property bool alarmOn: Time.alarm.on === true
+
     //
     // Volume, brightness and the transport keys act on the machine without
     // opening anything, so they reach the services rather than the register
