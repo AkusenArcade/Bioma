@@ -17,8 +17,8 @@ structure page, and a run of engine defects that only a pointer could find.
 
 What is left, in the order it is worth taking:
 
-1. **The last piece of the engine**: cells positioned at the pointer, which is
-   the remaining user of the full-screen input surface.
+Nothing in the build order is left. What comes next is the list of features
+Akusen is keeping for after it — the system-wide OSD among them.
 
 What CELLS left open in the cells already drawn is closed, except Sinestesia
 on a narrow screen and under reduced motion, which wait by Akusen's call
@@ -1655,6 +1655,33 @@ Super+Alt+K rewrote the one line of `Mod+N`; a filter typed, Enter taking
 "Close window", and Super+Ctrl+Alt+J appended to `config.kdl`; a mid-list edit
 leaving the list where it was. The presses that start each of those came from
 a throwaway timer.
+
+### A cell at the pointer
+
+The last piece of the engine, and the third user of the full-screen surface
+PRD §8 names. A floating tissue may say `"anchor": "pointer"`: when its cell
+appears, the tissue is centred on the pointer, kept on the screen, and opens
+towards the larger half of it.
+
+- **The pointer is asked for by being under it.** Wayland has no query, but a
+  surface that appears under the pointer is told where the pointer is — and
+  niri tells it without the pointer moving. Prototyped first, alone: a
+  full-screen surface mapped under a still pointer reported (2805, 396); the
+  cursor in a `grim -c` frame of the same moment was drawn at (2804, 397).
+- `core/Pointer.qml` is the register: the full-screen surfaces report what
+  they see, and a question is answered by a sighting newer than itself. The
+  floating surface takes input everywhere for the moment it takes to be
+  entered, draws nothing until then, and gives the region back to its cells.
+  No answer within `Timing.locate` (120 ms, not scaled by the speed setting)
+  and it takes the middle.
+- Found on the way: `Focus.invoke` opened every declared invoked cell that had
+  a panel, ignoring `opensOnArrival` — the audio capsule came up with its wells
+  open. It honours it now, and a cell that arrives unopened claims the
+  attention instead, so a press outside still sends it off.
+
+Verified with a pointer-anchored audio cell in a scratch configuration: the
+capsule came up centred on the cursor to the pixel, closed, and the same
+shortcut put it away.
 
 ### The silhouette, for a session with no picture
 

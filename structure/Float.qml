@@ -171,6 +171,79 @@ PanelWindow {
                                    : root.metrics.marginEdge;
     }
 
+    // ---- At the pointer --------------------------------------------------------
+    //
+    // `"anchor": "pointer"` puts the tissue where the pointer is when its cell
+    // appears — the third user of the full-screen surface PRD §8 names. The
+    // shell cannot ask where the pointer is, so for a moment this surface
+    // takes input everywhere: niri tells a surface that appears under the
+    // pointer where the pointer is, even when it has not moved. The answer
+    // lands in `Pointer`, the region goes back to the cells, and the tissue
+    // is placed. Nothing is drawn until then, so the cell does not appear in
+    // the middle and jump. No answer within `Timing.locate` — the pointer is
+    // on another output, or over another of the shell's surfaces — and it
+    // takes the middle.
+    readonly property bool atPointer: anchorName === "pointer"
+
+    readonly property bool anyShown: {
+        for (const cell of tissue.cells)
+            if (cell.placed || cell.expanded || cell.leaving)
+                return true;
+        return false;
+    }
+
+    property bool locating: false
+    property bool located: false
+    property bool pointerKnown: false
+    property real pointerX: 0
+    property real pointerY: 0
+    property int askedAt: 0
+
+    onAnyShownChanged: {
+        if (!root.atPointer)
+            return;
+        if (!root.anyShown) {
+            root.located = false;
+            root.locating = false;
+            return;
+        }
+        if (root.located || root.locating)
+            return;
+        root.askedAt = Pointer.seen;
+        root.pointerKnown = false;
+        root.locating = true;
+        giveUp.restart();
+    }
+
+    Connections {
+        target: Pointer
+        enabled: root.locating
+        function onSeenChanged() {
+            if (Pointer.seen <= root.askedAt || !root.screenItem
+                    || Pointer.output !== root.screenItem.name)
+                return;
+            root.pointerX = Pointer.x;
+            root.pointerY = Pointer.y;
+            root.pointerKnown = true;
+            root.settle();
+        }
+    }
+
+    Timer {
+        id: giveUp
+        interval: Timing.locate
+        onTriggered: if (root.locating) root.settle()
+    }
+
+    function settle() {
+        giveUp.stop();
+        root.locating = false;
+        root.located = true;
+        root.refreshRegions();
+    }
+
+    readonly property bool byPointer: root.atPointer && root.pointerKnown
+
     readonly property bool atTop: anchorName.indexOf("top") >= 0
     readonly property bool atBottom: anchorName.indexOf("bottom") >= 0
     readonly property bool atLeft: anchorName.indexOf("left") >= 0
@@ -222,14 +295,30 @@ PanelWindow {
         return out;
     }
 
-    readonly property real placedX: atLeft ? root.margin("left")
-                                   : atRight ? root.width - tissue.width - root.margin("right")
-                                   : (root.width - tissue.width) / 2
+    // Centred on the pointer, and kept on the screen: the whole composition
+    // has to fit, so the tissue gives way to the edge it is nearest.
+    function clamp(value, low, high) {
+        return Math.max(low, Math.min(high, value));
+    }
+
+    readonly property real placedX: byPointer
+        ? root.clamp(root.pointerX - tissue.width / 2, root.metrics.marginEdge,
+                     root.width - tissue.width - root.metrics.marginEdge)
+        : atLeft ? root.margin("left")
+        : atRight ? root.width - tissue.width - root.margin("right")
+        : (root.width - tissue.width) / 2
 
     // Anchored to an edge the tissue keeps its margin and the composition
     // hangs where it hangs; centred, the whole of it is centred, which moves
     // the tissue up by half of what hangs below it.
     readonly property real placedY: {
+        if (byPointer) {
+            const edge = root.metrics.marginEdge;
+            const wanted = root.pointerY - tissue.height / 2;
+            return root.opensDown
+                ? root.clamp(wanted, edge, root.height - tissue.height - root.reach - edge)
+                : root.clamp(wanted, root.reach + edge, root.height - tissue.height - edge);
+        }
         if (atTop)
             return root.margin("top");
         if (atBottom)
@@ -240,9 +329,29 @@ PanelWindow {
     // An expansion grows away from whatever the tissue is nearest to, and a
     // centred one grows downward: there is more screen below the middle than
     // above it once a panel is as tall as a panel.
-    readonly property bool opensDown: !atBottom
+    // At the pointer it opens towards the larger half of the screen.
+    readonly property bool opensDown: byPointer ? root.pointerY < root.height / 2 : !atBottom
 
     // ---- The tissue ----------------------------------------------------------
+
+    // Under everything, taking no presses: what it is for is being entered.
+    // Whatever the pointer does over this surface is reported, so the next
+    // question about where it is has an answer.
+    MouseArea {
+        id: sheet
+
+        anchors.fill: parent
+        acceptedButtons: Qt.NoButton
+        hoverEnabled: true
+
+        function report() {
+            if (root.screenItem)
+                Pointer.saw(root.screenItem.name, sheet.mouseX, sheet.mouseY);
+        }
+
+        onContainsMouseChanged: if (containsMouse) sheet.report()
+        onPositionChanged: sheet.report()
+    }
 
     // Only invoked and expanded surfaces carry a shadow, and a floating one
     // carries the deeper of the two: it is the one thing on the screen that is
@@ -254,7 +363,7 @@ PanelWindow {
         spread: 0
         offset.y: 22
         color: Theme.shadowFloat
-        opacity: tissue.visible && tissue.length > 0 ? 1 : 0
+        opacity: tissue.visible && tissue.length > 0 && tissue.opacity > 0 ? 1 : 0
 
         Behavior on opacity { NumberAnimation { duration: Timing.transition } }
     }
@@ -295,6 +404,9 @@ PanelWindow {
         x: root.placedX
         y: root.placedY
 
+        // At the pointer, nothing is drawn until the pointer has been found.
+        opacity: root.atPointer && !root.located ? 0 : 1
+
         onVisibleChanged: root.refreshRegions()
         onRevisionChanged: root.refreshRegions()
         onPlacementChanged: root.refreshRegions()
@@ -314,7 +426,10 @@ PanelWindow {
 
     Region { id: nothing }
 
-    mask: maskRegion ? maskRegion : nothing
+    // The whole surface, for the moment it takes to find the pointer.
+    Region { id: everything; item: sheet }
+
+    mask: root.locating ? everything : (maskRegion ? maskRegion : nothing)
     BackgroundEffect.blurRegion: blurRegion
 
     // This surface covers the output, so an item's own coordinates are already

@@ -61,6 +61,12 @@ Singleton {
     // the value lands. See docs/design/icons/LOADER.md.
     readonly property int loader: scaled(Config.get("timing.loader", 1200))
 
+    // How long a cell that appears at the pointer waits to be told where the
+    // pointer is before it gives up and takes the middle of the screen. Not
+    // an animation, so the speed setting leaves it alone: the pointer does
+    // not answer faster because the shell was asked to move slower.
+    readonly property int locate: Config.get("timing.locate", 120)
+
     // Wallpaper crossfade. Slower than a palette change: the picture is the
     // whole screen, and anything quick here reads as a flicker rather than a
     // change of scene.

@@ -199,7 +199,13 @@ Singleton {
         if (cell) {
             if (cell.visibility.type === "invoked") {
                 cell.visibility.toggle();
-                cell.open = cell.visibility.invoked && cell.hasPanel;
+                // Arriving is opening, for a cell that has a panel and does
+                // not arrive as its own first shape; one that does claims the
+                // attention instead, so a press outside still sends it off.
+                const opens = cell.visibility.invoked && cell.hasPanel && cell.opensOnArrival;
+                cell.open = opens;
+                if (cell.visibility.invoked && !opens)
+                    root.opened(cell);
             } else {
                 cell.open = !cell.open;
             }

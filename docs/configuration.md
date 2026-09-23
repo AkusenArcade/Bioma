@@ -142,6 +142,14 @@ take from its place in the list. The settings cell always writes it, because
 six slots drawn on screen are positional: an empty middle one must not move the
 two beside it.
 
+A floating tissue's `anchor` is a corner or edge (`top-left`, `top`, `right`,
+…), `centre`, or **`pointer`**: the tissue appears centred on wherever the
+pointer is when its cell appears, kept on the screen, and opens towards the
+larger half of it. It is for invoked cells — `{ "anchor": "pointer", "monitor":
+"all", "cells": [ { "type": "audio", "visibility": { "type": "invoked" } } ] }`
+brings the audio capsule up under the hand. With the pointer on another output
+it takes the middle of this one after `timing.locate` milliseconds.
+
 Collision between tissues on one membrane is impossible by construction.
 Floating tissues may overlap; that is not prevented.
 

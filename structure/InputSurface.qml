@@ -72,12 +72,22 @@ PanelWindow {
                 Focus.dismiss();
                 event.accepted = true;
             }
+
+            // A full-screen surface sees the pointer, and nothing else in the
+            // shell reliably does — see core/Pointer.qml.
+            onContainsMouseChanged: if (containsMouse) root.report()
+            onPositionChanged: root.report()
         }
     }
 
     // What a pointer-positioned cell and the capture rectangle will read. This
     // is the only way a Wayland client learns where the pointer is, and it only
     // knows while this surface is up.
+    function report() {
+        if (root.screenItem)
+            Pointer.saw(root.screenItem.name, catcher.mouseX, catcher.mouseY);
+    }
+
     readonly property real pointerX: catcher.mouseX
     readonly property real pointerY: catcher.mouseY
     readonly property bool pointerInside: catcher.containsMouse
