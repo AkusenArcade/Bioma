@@ -1,0 +1,111 @@
+#!/usr/bin/env python3
+# Photograph cells, opened, for the README.
+#
+#     tools/showcase OUTPUT DIR CELL [CELL …]     each cell opened on OUTPUT,
+#                                                 cropped to what opened
+#     tools/showcase OUTPUT DIR --rest NAME       the whole output as it is
+#
+# A cell opens on the focused output, so OUTPUT is focused first. For each cell
+# the output is photographed just before and a moment after the cell is asked
+# for; what changed is what opened. The crop is the large regions of change —
+# not every changed pixel, because the indicators on the membrane keep moving
+# while the cell opens, and they are not what is being photographed.
+#
+# The picture is the running shell as it stands: the palette, the wallpaper and
+# the layout are whatever the session has. Arrange those first.
+import os
+import subprocess
+import sys
+import tempfile
+import time
+
+from PIL import Image, ImageChops
+
+HERE = os.path.dirname(os.path.realpath(__file__))
+SHELL = os.path.join(os.path.dirname(HERE), "shell.qml")
+
+SETTLE = 1.4      # seconds after asking: the cascade, and the content's fade
+BLOCK = 12        # the grid the change is read on, in pixels
+PAD = 36          # room around the crop, so a shadow is not cut
+
+
+def ipc(*args):
+    subprocess.run(["qs", "ipc", "-p", SHELL, "call", *args], check=True, capture_output=True)
+
+
+def grab(output, path):
+    subprocess.run(["grim", "-o", output, path], check=True)
+
+
+def region(before, after):
+    """The bounding box of the regions of change that are shapes.
+
+    A composition can be several shapes joined by threads thinner than the
+    grid, so every region at least a quarter the size of the largest counts;
+    what is smaller is an indicator that moved.
+    """
+    diff = ImageChops.difference(before.convert("RGB"), after.convert("RGB")).convert("L")
+    mask = diff.point(lambda v: 255 if v > 18 else 0)
+    width, height = mask.size
+    cols, rows = (width + BLOCK - 1) // BLOCK, (height + BLOCK - 1) // BLOCK
+    small = mask.resize((cols, rows), Image.Resampling.BOX)
+    lit = {(x, y) for y in range(rows) for x in range(cols) if small.getpixel((x, y)) > 20}
+
+    blobs, seen = [], set()
+    for start in lit:
+        if start in seen:
+            continue
+        stack, blob = [start], []
+        seen.add(start)
+        while stack:
+            x, y = stack.pop()
+            blob.append((x, y))
+            for dx in range(-2, 3):
+                for dy in range(-2, 3):
+                    n = (x + dx, y + dy)
+                    if n in lit and n not in seen:
+                        seen.add(n)
+                        stack.append(n)
+        blobs.append(blob)
+    if not blobs:
+        return None
+    largest = max(len(b) for b in blobs)
+    kept = [block for b in blobs if len(b) * 4 >= largest for block in b]
+    xs = [x for x, _ in kept]
+    ys = [y for _, y in kept]
+    return (max(0, min(xs) * BLOCK - PAD), max(0, min(ys) * BLOCK - PAD),
+            min(width, (max(xs) + 1) * BLOCK + PAD), min(height, (max(ys) + 1) * BLOCK + PAD))
+
+
+def main():
+    if len(sys.argv) < 4:
+        print("usage: showcase OUTPUT DIR CELL [CELL …] | OUTPUT DIR --rest NAME", file=sys.stderr)
+        sys.exit(1)
+    output, directory = sys.argv[1], sys.argv[2]
+    os.makedirs(directory, exist_ok=True)
+    subprocess.run(["niri", "msg", "action", "focus-monitor", output], check=True)
+
+    if sys.argv[3] == "--rest":
+        grab(output, os.path.join(directory, sys.argv[4] + ".png"))
+        return
+
+    with tempfile.TemporaryDirectory() as scratch:
+        for cell in sys.argv[3:]:
+            before_path = os.path.join(scratch, "before.png")
+            after_path = os.path.join(scratch, "after.png")
+            grab(output, before_path)
+            ipc("cell", "toggle", cell)
+            time.sleep(SETTLE)
+            grab(output, after_path)
+            ipc("cell", "close", cell)
+            box = region(Image.open(before_path), Image.open(after_path))
+            if box is None:
+                print(f"{cell}: nothing opened", file=sys.stderr)
+            else:
+                Image.open(after_path).crop(box).save(os.path.join(directory, cell + ".png"))
+                print(f"{cell}: {box[2] - box[0]}x{box[3] - box[1]}")
+            time.sleep(0.6)
+
+
+if __name__ == "__main__":
+    main()

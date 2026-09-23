@@ -8,7 +8,102 @@ quiet when nothing is happening.
 
 - **Compositor**: Niri
 - **Toolkit**: Quickshell (Qt/QML)
-- **Status**: services ported and verified; the layout engine draws, with the first two cells on it
+- **Status**: every cell of the first version is built and in daily use, with
+  the settings cell and the launcher; see `PROGRESS.md` for what is left
+
+![The desktop at rest](docs/media/at-rest.webp)
+
+## How it works
+
+### At rest, the interface does not speak
+
+There is no bar. Each edge of a monitor is a **membrane**. A membrane carries
+**tissues**, positioned containers, and a tissue carries **cells**, one domain
+each: the clock, the workspaces, audio, the machine's vitals. At rest a cell is
+its glyph and nothing more. No percentages, no counters, no figures. The clock,
+the window title, the track playing and a notification are the only things
+that are ever written out.
+
+![The three tissues of the top membrane at rest](docs/media/at-rest-detail.png)
+
+A cell exists when it has something to say. A cell can be set to be always
+there, or to appear only when something happens: the workspaces when you
+change one, audio when the volume moves, vitals when a reading turns critical.
+
+<p align="center">
+  <img src="docs/media/notification.webp" width="300" alt="A notification at the left edge">
+</p>
+
+### Movement means something
+
+Every animation encodes a live value in its rate or its extent. A ring fills
+as far as the load it measures; a bar breathes as fast as the audio it hears.
+Motion at a fixed rate with no data behind it is decoration, and Bioma has
+none: an indicator with nothing to report is still, or absent. Colour says
+state (calm, active, alert), and form says domain.
+
+### Expanded forms grow from their origin
+
+Opening a cell grows it out of the place it sits, shape by shape, joined by
+threads. Nothing appears from nowhere, and nothing scales: shapes grow by
+width and height, so the lit border and the radii stay true while they move.
+
+<p align="center">
+  <img src="docs/media/clock.webp" width="600" alt="The clock, opened: other places, the month, a timer and an alarm">
+</p>
+
+<p align="center">
+  <img src="docs/media/vitals.webp" width="480" alt="Vitals, opened: CPU, memory and GPU beside the tasks using them">
+  <img src="docs/media/audio.webp" width="310" alt="Audio, opened: outputs, inputs, the applications playing, and the volume">
+</p>
+
+<p align="center">
+  <img src="docs/media/connectivity.webp" width="360" alt="Connectivity: Wi-Fi, Bluetooth devices, VPN profiles and proxies">
+  <img src="docs/media/system.webp" width="480" alt="System: the account, the machine, and the ways to leave">
+</p>
+
+<p align="center">
+  <img src="docs/media/utility.webp" width="300" alt="Utility: screenshot and recording of a screen, a window or a region">
+  <img src="docs/media/workspaces.webp" width="190" alt="Workspaces, opened">
+  <img src="docs/media/launcher.webp" width="380" alt="The launcher">
+</p>
+
+Every cell also answers a key. A cell placed on a membrane opens there, and a
+cell placed nowhere opens floating: in the middle of the screen, at a corner,
+or at the pointer.
+
+### One palette, the whole desktop
+
+A palette has four roles (background, text, primary, secondary), and every
+surface derives from them. It is either one of Bioma's own palettes or computed
+from the wallpaper by matugen. The theme cell switches it live. Colour is an
+animated value rather than a constant copied into each cell, so the whole shell
+changes colour at once.
+
+<p align="center">
+  <img src="docs/media/theme.webp" width="560" alt="The theme cell: the wallpaper carousel, the palette source, and the palette">
+</p>
+
+The same palette goes past the shell into the rest of the desktop. It sets
+niri's focus ring and borders, and rounds niri's windows to the shell's radius.
+It also themes GTK, Qt, and the terminals and tools that have a template:
+Alacritty, btop, cava, Kitty, Foot, Ghostty and more, chosen under APPS in the
+theme cell.
+
+![niri, Alacritty and btop in the Bioma palette](docs/media/applications.webp)
+
+### Settings, in the shell
+
+The layout is edited from the shell itself, with no config file to write by
+hand. The settings cell has five pages: Appearance, Structure (which cell goes
+where, on each monitor), Cells (always or conditional), Monitors and Keybinds.
+Adding a cell costs one block of configuration, and the Structure page writes
+that block for you.
+
+<p align="center">
+  <img src="docs/media/settings-structure.webp" width="440" alt="Settings, Structure: bands and floating tissues per monitor">
+  <img src="docs/media/settings-appearance.webp" width="330" alt="Settings, Appearance: opacity, radius, spacing, blur, scale and timing">
+</p>
 
 ## Requirements
 
@@ -36,7 +131,7 @@ quickshell -c bioma
 
 The script exists for one reason: it sets `QT_QPA_PLATFORMTHEME` to
 `xdgdesktopportal` for this process. Bioma draws every pixel it shows, so a
-platform theme has nothing to style here — except the file picker the session
+platform theme has nothing to style here — except the file picker the system
 cell opens, which is Qt's own `FileDialog`. Qt asks the platform theme for a
 native dialog and draws its own when there is none, and `qt6ct`, a common
 choice for everything else on a machine, provides none. Started any other way
@@ -84,6 +179,8 @@ config/            default.json + palettes/
 assets/icons/      the 33 glyphs, at runtime
 docs/              bioma-prd.md — the specification
 docs/design/       the visual specification: style guide, cells, tokens, mockups
+docs/media/        the screenshots in this file (tools/showcase takes them)
+tools/             development tools
 ```
 
 ## Configuration
@@ -94,10 +191,11 @@ and demonstrates the vocabulary — it is not exhaustive.
 
 ## Trying it on one monitor
 
-Bioma is not finished, and `org.freedesktop.Notifications` has one owner per
-session, so it is not meant to replace a running shell yet. It can run beside
-one: declare a membrane on a monitor the other shell does not occupy in
-`~/.config/bioma/override.json`, then
+`org.freedesktop.Notifications` has one owner per session, so Bioma and another
+shell cannot both show notifications — `scripts/shell` above switches between
+them. To try Bioma beside another shell without switching, declare a membrane
+on a monitor the other shell does not occupy in `~/.config/bioma/override.json`,
+then
 
 ```sh
 qs -p "$PWD/shell.qml"
