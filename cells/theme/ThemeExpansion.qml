@@ -825,7 +825,7 @@ Item {
                 width: parent.width
                 spacing: root.stackSpacing
 
-                LookLabel { text: "APPS" }
+                LookLabel { text: "APP TEMPLATES" }
 
                 Flow {
                     width: parent.width

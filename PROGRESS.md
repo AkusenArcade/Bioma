@@ -1670,7 +1670,7 @@ Akusen, the same evening: "sposta le impostazioni dei template delle app nella
 capsula desktop, così semplifichiamo". The APPS button beside the palette
 dropdown is gone, and so is the panel it called up. Its chips now sit in the
 DESKTOP capsule, under the icons and the cursor, with the failure line under
-them. The palette capsule is back to its dropdown alone.
+them, labelled APP TEMPLATES, which says what they are (his word). The palette capsule is back to its dropdown alone.
 
 - DESKTOP is a panel, not a pill (his other correction: a pill's round ends
   put the labels at its corners too close to the edge).
