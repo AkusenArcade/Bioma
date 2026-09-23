@@ -9,11 +9,12 @@ import qs.core
 // with the thin outline, which is what makes portraits of every size and
 // colour read as one family.
 //
-// With no picture the well stands empty. **Never an initial in a coloured
-// circle**: a letter in a disc is a label pretending to be a portrait, and the
-// design says so in as many words (CELLS §08). The silhouette the handoff
-// draws is not in the icon set yet, and an empty well is the honest shape
-// until it is.
+// With no picture the well holds a silhouette — head and shoulders in the rim
+// colour, cut by the circle, as the design page draws it on a 64 grid. **Never
+// an initial in a coloured circle**: a letter in a disc is a label pretending
+// to be a portrait, and the design says so in as many words (CELLS §08). It is
+// not an interface icon, which is why it is drawn here and not in the set: it
+// is filled, and it only ever lives inside this well.
 Item {
     id: root
 
@@ -51,6 +52,46 @@ Item {
         onStatusChanged: if (status === Image.Error) root.failed()
     }
 
+    // The silhouette, on the design's 64-unit grid: a head of radius 11 at
+    // (32, 25) and shoulders that are the top half of a disc of radius 21
+    // standing on y 58. Drawn into a layer and cut by the same mask as the
+    // picture, because the shoulders' corners reach past the circle.
+    readonly property bool bare: !root.available || picture.status !== Image.Ready
+    readonly property real unit: width / 64
+
+    Item {
+        id: silhouette
+        anchors.fill: parent
+        visible: false
+        layer.enabled: true
+
+        Rectangle {
+            x: (32 - 11) * root.unit
+            y: (25 - 11) * root.unit
+            width: 22 * root.unit
+            height: width
+            radius: width / 2
+            color: Qt.alpha(Theme.rim, 0.55)
+            antialiasing: true
+        }
+
+        Item {
+            x: (32 - 21) * root.unit
+            y: (58 - 21) * root.unit
+            width: 42 * root.unit
+            height: 21 * root.unit
+            clip: true
+
+            Rectangle {
+                width: parent.width
+                height: width
+                radius: width / 2
+                color: Qt.alpha(Theme.rim, 0.45)
+                antialiasing: true
+            }
+        }
+    }
+
     Rectangle {
         id: mask
         anchors.fill: parent
@@ -63,7 +104,14 @@ Item {
 
     OpacityMask {
         anchors.fill: parent
-        visible: root.available && picture.status === Image.Ready
+        visible: root.bare
+        source: silhouette
+        maskSource: mask
+    }
+
+    OpacityMask {
+        anchors.fill: parent
+        visible: !root.bare
         source: picture
         maskSource: mask
     }
