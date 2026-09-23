@@ -14,6 +14,18 @@ import qs.cells
 Item {
     id: root
 
+    // Escape closes the open cell (Akusen, 2026-09-23). A cell with a field
+    // holds the keyboard on this tissue's surface, and whatever the field does
+    // not use for itself — clearing a filter, cancelling a key being recorded —
+    // comes up to here. A cell without one never had the keyboard: the input
+    // surface takes it while the cell is open, and answers the same way.
+    Keys.onEscapePressed: event => {
+        if (!Focus.anyOpen)
+            return;
+        Focus.dismiss();
+        event.accepted = true;
+    }
+
     // ---- Configuration -----------------------------------------------------
 
     property var metrics: Metrics.step("normal")

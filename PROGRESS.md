@@ -1664,6 +1664,34 @@ Super+Alt+K rewrote the one line of `Mod+N`; a filter typed, Enter taking
 leaving the list where it was. The presses that start each of those came from
 a throwaway timer.
 
+### From his list of bugs, 2026-09-23
+
+His notes ("Bug e Migliorie") had three items:
+
+- **The APPS panel's radius differed from the rectangular capsules.** This was
+  already gone: APPS had moved into DESKTOP, which is a panel.
+- **Escape should close an open cell.** Two routes, because most cells have no
+  keyboard while open: the window keeps it.
+  - The input surface, up only while a cell is open, now takes the keyboard
+    exclusively while the open cell has no field of its own (`Focus.anyOpen &&
+    !Focus.holdsKeyboard`). Escape on it dismisses the cell. This is the claim
+    the press outside already makes: while a cell is open it has the attention.
+    niri's own keys stay niri's, so the shortcuts still work.
+  - A cell with a field holds the keyboard on its own surface. Escape that the
+    field does not use for itself comes up to the tissue, which dismisses the
+    cell. Examples of a field using it: clearing a filter, cancelling a key
+    being recorded.
+  - Verified with a synthetic Escape, on an empty workspace so that a stray key
+    could reach no window: the theme cell (top membrane), vitals (bottom
+    membrane, other monitor) and the clipboard (floating, field focused) all
+    closed.
+- **The brightness display came up at every start.** Over DDC the first reading
+  arrives about 3.5 s after start, past `Timing.settle`, and it looked like
+  somebody changing the brightness. `Brightness.known` now says when the value
+  is a reading. The display remembers the first reading and speaks only when a
+  later one differs from it. Verified: nothing at start; +5 and −5 through IPC
+  each showed it.
+
 ### APPS moves into DESKTOP
 
 Akusen, the same evening: "sposta le impostazioni dei template delle app nella

@@ -29,7 +29,30 @@ Singleton {
 
     onVolumeChanged: root.say("volume")
     onMutedChanged: root.say("volume")
-    onBrightnessChanged: root.say("brightness")
+
+    // The first reading is not a change. Settling is not enough for the
+    // brightness: over DDC it is read three and a half seconds after the shell
+    // starts, later than `Timing.settle`, and the display came up at every
+    // start (Akusen's report, 2026-09-23). So the first value that is a
+    // reading is only remembered, and what differs from it is a change.
+    property real heardBrightness: -1
+
+    onBrightnessChanged: root.heard()
+
+    Connections {
+        target: Brightness
+        function onKnownChanged() { root.heard(); }
+    }
+
+    function heard() {
+        if (!Brightness.known)
+            return;
+        const first = root.heardBrightness < 0;
+        const moved = root.heardBrightness !== root.brightness;
+        root.heardBrightness = root.brightness;
+        if (!first && moved)
+            root.say("brightness");
+    }
 
     // A declared audio cell on that monitor, anywhere but in the middle of it
     // as a summoned copy.

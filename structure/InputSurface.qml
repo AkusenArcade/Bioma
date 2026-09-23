@@ -47,6 +47,15 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.namespace: "bioma-input"
 
+    // And the keyboard, while a cell that has none of its own is open, so that
+    // Escape closes it (Akusen, 2026-09-23). It is the same claim the press
+    // outside already makes: while a cell is open it has the attention, and
+    // the first thing done elsewhere closes it. niri's own keys are niri's
+    // before any surface's, so the shortcuts keep working. A cell with a field
+    // holds the keyboard on its own surface, and Escape reaches its tissue.
+    WlrLayershell.keyboardFocus: Focus.anyOpen && !Focus.holdsKeyboard ? WlrKeyboardFocus.Exclusive
+                                                                       : WlrKeyboardFocus.None
+
     property var catchRegion: null
 
     // The same rule as the membrane's: before the holes are punched the sheet
@@ -58,6 +67,12 @@ PanelWindow {
     Item {
         id: sheet
         anchors.fill: parent
+        focus: true
+
+        Keys.onEscapePressed: event => {
+            Focus.dismiss();
+            event.accepted = true;
+        }
 
         MouseArea {
             id: catcher
@@ -101,7 +116,11 @@ PanelWindow {
         root.catchRegion = Regions.rebindHoleRects(root, root.catchRegion, sheet, rects);
     }
 
-    onVisibleChanged: rebuild()
+    onVisibleChanged: {
+        rebuild();
+        if (visible)
+            sheet.forceActiveFocus();
+    }
 
     // The sheet is 500 × 500 until the compositor has configured the surface,
     // and a region bound to rectangles does not follow it afterwards the way a

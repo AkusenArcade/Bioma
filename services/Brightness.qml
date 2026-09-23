@@ -270,6 +270,14 @@ Singleton {
         return 0;
     }
 
+    // Whether `brightness` is a reading yet. Over DDC the first answer comes
+    // after detection — three and a half seconds on this machine, past the
+    // shell's settling — and the value moving from nothing to what it is must
+    // not look like somebody changing it.
+    readonly property bool known: root.backend === "backlight" ? root.hasBacklight
+                                : root.backend === "ddc" ? !!root.display && root.display.value >= 0
+                                : false
+
     // -1 when that display has not answered yet, which is not the same as 0.
     function brightnessFor(connector) {
         const entry = root.displayFor(connector);
