@@ -1664,25 +1664,30 @@ still came twice: the override declares `membranes`, lists replace wholesale,
 and `floating` — which the page did not show — kept coming from the default
 layer with its own notification column in the top-right corner.
 
-- **A FLOATING row between TOP and BOTTOM**, where those tissues actually are:
-  one slot per floating tissue shown on this monitor, named by its anchor and
-  its cell count (and `ALL` when it is on every monitor), and a dashed one to
-  add another.
-- **Chosen, it opens the same detail a band does**, with the width slider
-  replaced by its place: a three-by-three map of the screen, the anchor lit,
-  and a `POINTER` chip beside it. The chips, the picker, the drag to reorder
-  and the remove control are the band's own — every write to the chosen
-  tissue goes through one `editChosen`, whichever list it lives in. Two cells
-  of one domain are told apart by their `options.show`.
+- **The places are the slots.** Between TOP and BOTTOM, nine slots in three
+  rows — the screen in small, the columns lined up with the bands' — and a
+  `POINTER` slot beside the FLOATING label, because the pointer is not a place
+  on the screen. Lit, a slot says its first cell and how many more; dashed, a
+  press puts a tissue there. One tissue per anchor on a monitor.
+  The first version drew a row of slots whose order meant nothing and chose the
+  anchor on a map inside the detail; Akusen asked what the difference was
+  between a tissue in the right slot anchored top-left and one in the middle
+  slot anchored top-left — none, which is the defect.
+- **Chosen, it opens the band's own detail**: where it is and on which
+  monitors, the remove control, the chips, the picker and the drag to reorder
+  — every write to the chosen tissue goes through one `editChosen`, whichever
+  list it lives in. Two cells of one domain are told apart by `options.show`.
+- **The page scrolls.** The settings panel has one fixed height (§12), and the
+  floating places took the room the chosen tissue's cells had.
 - The thread to the detail leaves the chosen slot and runs under the rows below
   it. It used to start under the last row whatever was chosen, which read as
   the bottom membrane's empty slot being the one open.
 
-Verified against a scratch copy of the configuration: the anchor moved to
-bottom-left and a cell removed, then a floating tissue removed and a new one
-added — each written as the `floating` list into the override. Akusen's own
-override was not written: removing the duplicate column is his to do, from the
-page.
+Verified against a scratch copy of the configuration: a cell removed, a
+floating tissue removed and a new one added — each written as the `floating`
+list into the override. Akusen then moved the notification column himself,
+from the page, and the grid draws his layout: the column at the left edge, the
+launcher in the middle.
 
 ### A cell at the pointer
 

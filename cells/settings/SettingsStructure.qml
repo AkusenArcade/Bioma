@@ -218,13 +218,22 @@ Item {
         Config.set("floating", copy);
     }
 
-    function addFloat() {
-        const used = root.floatsHere.map(f => root.anchorOf(f.block));
-        const free = ["top-right", "top-left", "bottom-right", "bottom-left", "centre",
-                      "top", "bottom", "left", "right"].find(a => used.indexOf(a) < 0) || "centre";
+    // **Where a floating tissue is, is which slot it is.** The nine anchors
+    // are drawn as a small screen between the two edges, and the pointer as a
+    // slot of its own: a row of slots whose order meant nothing, with the
+    // place chosen somewhere else, drew a position that was not one. One
+    // tissue per anchor on a monitor — two in one corner are drawn on top of
+    // each other.
+    function floatAt(anchor) {
+        return root.floatsHere.find(f => root.anchorOf(f.block) === anchor) || null;
+    }
+
+    function addFloatAt(anchor) {
+        if (root.floatAt(anchor))
+            return;
         const at = root.floats.length;
         root.editFloats(copy => {
-            copy.push({ "anchor": free, "monitor": root.monitor, "orientation": "vertical",
+            copy.push({ "anchor": anchor, "monitor": root.monitor, "orientation": "vertical",
                         "cells": [] });
             return true;
         });
@@ -243,11 +252,11 @@ Item {
             root.cell.slot = -1;
     }
 
-    function setAnchor(value) {
-        root.editChosen(tissue => {
-            tissue.anchor = value;
-            return true;
-        });
+    // Where an anchor sits on the small screen: its row and its column, the
+    // columns lined up with the bands' own three.
+    function spotOf(anchor) {
+        const index = root.anchorNames.indexOf(anchor);
+        return index < 0 ? { "row": 1, "column": 1 } : { "row": Math.floor(index / 3), "column": index % 3 };
     }
 
     // The chosen tissue, wherever it lives, changed in a copy of its list and
@@ -594,8 +603,35 @@ Item {
 
     // ---- Drawing ------------------------------------------------------------
 
+    // The page scrolls rather than shrinking what is on it: the settings
+    // panel is one fixed height for every category (CELLS §12), and the
+    // floating places took the room the chosen tissue's cells used to have.
+    // Everything below is drawn into this and keeps its own coordinates.
+    Flickable {
+        id: scroller
+
+        // As wide as the page: the page is as wide as the bands it draws, and
+        // the scrollbar only shows while the page is moving.
+        anchors.fill: parent
+        contentWidth: width
+        contentHeight: Math.max(height, detail.visible ? detail.y + detail.height
+                                                       : layout.y + layout.height)
+        boundsBehavior: Flickable.StopAtBounds
+        clip: true
+        // A reorder is a drag, and the page must not scroll under it.
+        interactive: !root.carrying
+    }
+
+    Scroller {
+        flick: scroller
+        factor: root.factor
+        x: root.width - width
+    }
+
     Column {
         id: layout
+
+        parent: scroller.contentItem
 
         width: parent.width
         spacing: 10 * root.factor
@@ -630,13 +666,15 @@ Item {
         }
 
         // What floats over the screen sits between its two edges, where it
-        // actually is: one slot per floating tissue shown on this monitor,
-        // named by where it is anchored, and a dashed one to add another.
+        // actually is: nine slots in three rows, the screen in small, each one
+        // a place — lit when a tissue is anchored there, dashed and free when
+        // not. The pointer is not a place on the screen, so it is a slot of
+        // its own beside the name.
         Item {
             id: floatGroup
 
             width: layout.width
-            height: floatTitle.height + 6 * root.factor + floatSlots.height
+            height: floatTitle.height + 6 * root.factor + floatGrid.height
 
             Text {
                 id: floatTitle
@@ -653,78 +691,31 @@ Item {
                 })
             }
 
-            Flow {
-                id: floatSlots
+            FloatSlot {
+                id: pointerSlot
+                anchor: "pointer"
+                label: "POINTER"
+                x: root.slotsWidth - width
+                width: root.slotWidth
+                height: floatTitle.height
+            }
+
+            Grid {
+                id: floatGrid
 
                 y: floatTitle.height + 6 * root.factor
-                width: root.slotsWidth
-                spacing: root.slotGap
+                columns: 3
+                columnSpacing: root.slotGap
+                rowSpacing: 6 * root.factor
 
                 Repeater {
-                    model: root.floatsHere
+                    model: root.anchorNames
 
-                    delegate: Item {
-                        id: floatSlot
-
-                        required property var modelData
-
-                        readonly property bool chosen: root.floatingChosen
-                                                       && root.chosenSlot === floatSlot.modelData.index
-                        readonly property var block: floatSlot.modelData.block
-
+                    delegate: FloatSlot {
+                        required property string modelData
+                        anchor: modelData
                         width: root.slotWidth
                         height: root.slotHeight
-
-                        Rectangle {
-                            anchors.fill: parent
-                            radius: Metrics.shaped(11 * root.factor)
-                            antialiasing: true
-                            color: Qt.alpha(Theme.lift(Theme.background,
-                                                       floatSlot.chosen ? 0.04 : 0.015), 0.9)
-                            border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
-                            border.color: floatSlot.chosen ? Theme.primary : Theme.line
-                        }
-
-                        // Where it is and how much is in it — and, when it is
-                        // on every monitor, that it is.
-                        Text {
-                            anchors.centerIn: parent
-                            text: root.anchorOf(floatSlot.block).toUpperCase()
-                                  + `  ·  ${(floatSlot.block.cells || []).length}`
-                                  + ((floatSlot.block.monitor === "all" || floatSlot.block.monitor === "*")
-                                     ? "  ·  ALL" : "")
-                            color: floatSlot.chosen ? Theme.text : Theme.textMuted
-                            font: Typography.tabular(Qt.font({
-                                "family": Typography.technical,
-                                "pixelSize": root.metrics.fontMeta
-                            }))
-                        }
-
-                        TapHandler {
-                            onTapped: root.choose("floating", floatSlot.modelData.index)
-                        }
-                    }
-                }
-
-                Item {
-                    width: root.slotWidth
-                    height: root.slotHeight
-
-                    DashedSlot {
-                        anchors.fill: parent
-                        radius: Metrics.shaped(11 * root.factor)
-                    }
-
-                    Icon {
-                        anchors.centerIn: parent
-                        width: 11 * root.factor
-                        height: width
-                        name: "plus"
-                        colour: Theme.textFaint
-                    }
-
-                    TapHandler {
-                        onTapped: root.addFloat()
                     }
                 }
             }
@@ -733,6 +724,81 @@ Item {
         Repeater {
             model: ["bottom"]
             delegate: edgeRow
+        }
+    }
+
+    // One floating place. Lit, it says what is in it — the first cell and how
+    // many more, and ALL when the tissue is on every monitor; dashed, it is
+    // free and a press puts a tissue there.
+    component FloatSlot: Item {
+        id: spot
+
+        property string anchor: "centre"
+        property string label: ""
+
+        readonly property var entry: root.floatAt(spot.anchor)
+        readonly property bool lit: spot.entry !== null
+        readonly property bool chosen: spot.lit && root.floatingChosen
+                                       && root.chosenSlot === spot.entry.index
+
+        readonly property string content: {
+            if (!spot.lit)
+                return spot.label;
+            const cells = spot.entry.block.cells || [];
+            const first = cells.length > 0 ? Registry.nameOf(cells[0].type).toUpperCase() : "EMPTY";
+            const more = cells.length > 1 ? ` +${cells.length - 1}` : "";
+            const monitor = spot.entry.block.monitor;
+            const everywhere = monitor === "all" || monitor === "*" ? "  ·  ALL" : "";
+            return (spot.label.length > 0 ? spot.label + "  ·  " : "") + first + more + everywhere;
+        }
+
+        DashedSlot {
+            anchors.fill: parent
+            visible: !spot.lit
+            radius: Metrics.shaped(11 * root.factor)
+        }
+
+        Rectangle {
+            anchors.fill: parent
+            visible: spot.lit
+            radius: Metrics.shaped(11 * root.factor)
+            antialiasing: true
+            color: Qt.alpha(Theme.lift(Theme.background, spot.chosen ? 0.04 : 0.015), 0.9)
+            border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+            border.color: spot.chosen ? Theme.primary : Theme.line
+        }
+
+        Text {
+            anchors.centerIn: parent
+            width: parent.width - 16 * root.factor
+            horizontalAlignment: Text.AlignHCenter
+            elide: Text.ElideRight
+            visible: spot.content.length > 0
+            text: spot.content
+            color: spot.chosen ? Theme.text : spot.lit ? Theme.textMuted : Theme.textFaint
+            font: Typography.tabular(Qt.font({
+                "family": Typography.technical,
+                "pixelSize": root.metrics.fontMeta,
+                "letterSpacing": Typography.tracking(root.metrics.fontMeta, Typography.labelTracking)
+            }))
+        }
+
+        Icon {
+            anchors.centerIn: parent
+            visible: !spot.lit && spot.label.length === 0
+            width: 11 * root.factor
+            height: width
+            name: "plus"
+            colour: Theme.textFaint
+        }
+
+        TapHandler {
+            onTapped: {
+                if (spot.lit)
+                    root.choose("floating", spot.entry.index);
+                else
+                    root.addFloatAt(spot.anchor);
+            }
         }
     }
 
@@ -877,10 +943,11 @@ Item {
     // With nothing chosen the page says what to do once, rather than showing
     // a large empty area under the slots.
     Text {
+        parent: scroller.contentItem
         visible: root.chosen === null
         x: 0
         y: layout.y + layout.height + root.threadLength + 20 * root.factor
-        width: root.width
+        width: scroller.width
         horizontalAlignment: Text.AlignHCenter
         text: "Pick a band or a floating tissue to see what is in it"
         color: Theme.textFaint
@@ -894,10 +961,12 @@ Item {
     // Where the chosen slot ends, in the page's coordinates.
     readonly property real chosenBottom: {
         if (root.floatingChosen) {
-            const position = Math.max(0, root.floatsHere.findIndex(f => f.index === root.chosenSlot));
-            const row = Math.floor(position / 3);
-            return layout.y + floatGroup.y + floatSlots.y
-                 + (row + 1) * root.slotHeight + row * root.slotGap;
+            const anchor = root.chosen ? root.anchorOf(root.chosen) : "centre";
+            if (anchor === "pointer")
+                return layout.y + floatGroup.y + pointerSlot.y + pointerSlot.height;
+            const row = root.spotOf(anchor).row;
+            return layout.y + floatGroup.y + floatGrid.y
+                 + (row + 1) * root.slotHeight + row * 6 * root.factor;
         }
         const group = root.chosenEdge === "bottom" ? root.bottomRow : root.topRow;
         return group ? layout.y + group.y + group.height : layout.y + layout.height;
@@ -910,6 +979,7 @@ Item {
     Thread {
         id: link
 
+        parent: scroller.contentItem
         visible: root.chosen !== null
         z: -1
         vertical: true
@@ -918,8 +988,10 @@ Item {
         height: Math.max(0, layout.y + layout.height + root.threadLength - root.chosenBottom)
         x: {
             let place = Math.max(0, root.chosenSlot);
-            if (root.floatingChosen)
-                place = Math.max(0, root.floatsHere.findIndex(f => f.index === root.chosenSlot)) % 3;
+            if (root.floatingChosen) {
+                const anchor = root.chosen ? root.anchorOf(root.chosen) : "centre";
+                place = anchor === "pointer" ? 2 : root.spotOf(anchor).column;
+            }
             return place * (root.slotWidth + root.slotGap) + root.slotWidth / 2 - width / 2;
         }
         y: root.chosenBottom
@@ -930,11 +1002,17 @@ Item {
     Well {
         id: detail
 
+        parent: scroller.contentItem
         visible: root.chosen !== null
         metrics: root.metrics
-        width: root.width
+        width: scroller.width
         y: layout.y + layout.height + root.threadLength
-        height: Math.max(0, root.height - y)
+        // What is left of the page, or what the tissue needs — its place,
+        // its cells, and room for the picker when it is open.
+        height: Math.max(root.height - y,
+                         24 * root.factor + 30 * root.factor + 12 * root.factor
+                         + root.chipRows * root.chipPitchY
+                         + (root.picking ? 200 * root.factor : 0))
 
         Item {
             anchors.fill: parent
@@ -952,100 +1030,28 @@ Item {
                 readonly property int floor: root.chosen && !root.floatingChosen
                     ? root.floorFor(root.chosenEdge, root.chosen) : 0
 
-                // A floating tissue has no share of anything to set; what it
-                // has is a place, chosen on a small map of the screen — nine
-                // anchors — or the pointer.
-                Row {
-                    id: anchorPad
-
+                // A floating tissue has no share of anything to set, and its
+                // place is the slot it was chosen from; what is left to say is
+                // where that is and on which monitors.
+                Text {
                     visible: root.floatingChosen
                     anchors.left: parent.left
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: 10 * root.factor
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 60 * root.factor
-                        text: "PLACE"
-                        color: Theme.textMuted
-                        font: Qt.font({
-                            "family": Typography.technical,
-                            "pixelSize": root.metrics.fontMeta,
-                            "letterSpacing": Typography.tracking(root.metrics.fontMeta,
-                                                                 Typography.labelTracking)
-                        })
+                    text: {
+                        if (!root.chosen || !root.floatingChosen)
+                            return "";
+                        const monitor = root.chosen.monitor || "primary";
+                        const where = monitor === "all" || monitor === "*" ? "EVERY MONITOR"
+                                    : monitor === "primary" ? "PRIMARY MONITOR" : monitor;
+                        return root.anchorOf(root.chosen).toUpperCase() + "  ·  " + where;
                     }
-
-                    Grid {
-                        anchors.verticalCenter: parent.verticalCenter
-                        columns: 3
-                        spacing: 3 * root.factor
-
-                        Repeater {
-                            model: root.anchorNames
-
-                            delegate: Rectangle {
-                                id: spot
-
-                                required property string modelData
-
-                                readonly property bool here: root.chosen !== null
-                                                             && root.anchorOf(root.chosen) === spot.modelData
-
-                                width: 16 * root.factor
-                                height: 8 * root.factor
-                                radius: Metrics.shaped(2 * root.factor)
-                                antialiasing: true
-                                color: spot.here ? Theme.primary
-                                     : spotHover.hovered ? Qt.alpha(Theme.line, 0.8)
-                                     : Qt.alpha(Theme.line, 0.35)
-
-                                HoverHandler { id: spotHover }
-
-                                TapHandler {
-                                    onTapped: root.setAnchor(spot.modelData)
-                                }
-                            }
-                        }
-                    }
-
-                    // The pointer is a place too, but not one on the map.
-                    Item {
-                        id: pointerChip
-
-                        readonly property bool here: root.chosen !== null
-                                                     && root.anchorOf(root.chosen) === "pointer"
-
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: pointerLabel.implicitWidth + 24 * root.factor
-                        height: 22 * root.factor
-
-                        Rectangle {
-                            anchors.fill: parent
-                            radius: Metrics.radiusFor(height, root.metrics)
-                            antialiasing: true
-                            color: pointerChip.here ? Qt.alpha(Theme.primary, 0.16) : "transparent"
-                            border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
-                            border.color: pointerChip.here ? Theme.primary : Theme.line
-                        }
-
-                        Text {
-                            id: pointerLabel
-                            anchors.centerIn: parent
-                            text: "POINTER"
-                            color: pointerChip.here ? Theme.text : Theme.textMuted
-                            font: Qt.font({
-                                "family": Typography.technical,
-                                "pixelSize": root.metrics.fontMeta,
-                                "letterSpacing": Typography.tracking(root.metrics.fontMeta,
-                                                                     Typography.labelTracking)
-                            })
-                        }
-
-                        TapHandler {
-                            onTapped: root.setAnchor("pointer")
-                        }
-                    }
+                    color: Theme.textMuted
+                    font: Qt.font({
+                        "family": Typography.technical,
+                        "pixelSize": root.metrics.fontMeta,
+                        "letterSpacing": Typography.tracking(root.metrics.fontMeta,
+                                                             Typography.labelTracking)
+                    })
                 }
 
                 Text {
