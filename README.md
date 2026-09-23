@@ -10,8 +10,9 @@ quiet when nothing is happening.
 
 - **Compositor**: Niri
 - **Toolkit**: Quickshell (Qt/QML)
-- **Status**: every cell of the first version is built and in daily use, with
-  the settings cell and the launcher; see `PROGRESS.md` for what is left
+- **Status**: **1.0 beta**. Every cell of the first version is built and in
+  daily use, with the settings cell and the launcher. See `PROGRESS.md` for
+  what is left and what has not been verified on real hardware
 
 ![The desktop at rest](docs/media/at-rest.webp)
 
@@ -109,14 +110,82 @@ that block for you.
 
 ## Requirements
 
-| Requirement | Notes |
+Bioma is written for **niri** and **Quickshell 0.3.1**, and it is tested on Arch
+Linux (CachyOS). Package names below are Arch's.
+
+| Required | Package | For |
+|---|---|---|
+| niri 26.04 or later | `niri` | the compositor; 26.04 is the first with `ext-background-effect` blur |
+| Quickshell 0.3.1 | `quickshell` | the shell runtime |
+| Python 3 | `python` | the helper scripts in `scripts/` |
+| gsettings | `glib2` | the desktop's settings: palette, icons, cursor, proxy |
+| wl-clipboard | `wl-clipboard` | the clipboard cell |
+| ImageMagick | `imagemagick` | wallpaper thumbnails |
+
+| Optional | Package | For |
+|---|---|---|
+| matugen | `matugen` | palettes computed from the wallpaper |
+| grim, tesseract | `grim`, `tesseract` | screenshots and text recognition |
+| wl-screenrec or wf-recorder | `wl-screenrec`, `wf-recorder` | screen recording (VAAPI; the second is the fallback) |
+| NetworkManager | `networkmanager` | Wi-Fi, wired, VPN profiles, proxy triggers |
+| BlueZ | `bluez`, `bluez-utils` | Bluetooth |
+| ddcutil | `ddcutil` | the brightness of external monitors |
+| PipeWire | `pipewire` | audio, and the alarm's sound |
+| UPower | `upower` | the battery, on a laptop |
+| pciutils, libnotify | `pciutils`, `libnotify` | the graphics card in the System cell; timer and alarm notifications |
+| Spectral, Orbitron | `ttf-spectral`, AUR `ttf-orbitron` | the two voices, expressive and technical. Declared as roles, so their absence degrades rather than breaks. Both are SIL OFL, and the Google Fonts families dropped into `~/.local/share/fonts` work too |
+
+## Install
+
+```sh
+git clone https://github.com/AkusenArcade/Bioma.git
+cd Bioma
+scripts/install --autostart
+```
+
+`scripts/install` says what is missing first, and stops if anything required is.
+Then it writes the keys and tells niri where Bioma is:
+
+- `bioma-binds.kdl`, next to niri's `config.kdl`, from
+  `config/niri/bioma-binds.kdl.in` with the repository's path filled in. The
+  keys are under `Mod+Alt`, so they stay clear of niri's own defaults. The copy
+  is yours: the settings cell's Keybinds page edits it, and the installer
+  leaves it alone from then on (`--force` writes it again).
+- `include` lines at the end of `config.kdl` for that file and for
+  `config/niri/bioma.kdl`, the layer rules. With `--autostart`, it also adds a
+  `spawn-at-startup` for `scripts/shell start`.
+
+`config.kdl` is copied aside first, and the result goes through `niri validate`.
+If niri refuses it, the copy is put back. Running the installer again changes
+nothing.
+
+Then start it with `scripts/shell bioma`, or log in again. The first start uses
+`config/default.json`. Everything after that is set from the settings cell
+(`Mod+Alt+S`) and kept in `~/.config/bioma/override.json`.
+
+### Keys
+
+| Key | Opens |
 |---|---|
-| Niri | 26.04 or later for `ext-background-effect` blur |
-| Quickshell | recent build; the PRD assumes current API |
-| matugen | optional, wallpaper-reactive palette |
-| grim, slurp, tesseract | screenshot and OCR |
-| wl-screenrec (VAAPI) | video capture; `wf-recorder` as fallback |
-| Spectral, Orbitron | fonts; declared as roles — expressive and technical — so absence degrades rather than breaks. Both are SIL OFL: on Arch, `ttf-spectral` and AUR `ttf-orbitron`, or drop the families from Google Fonts into `~/.local/share/fonts` |
+| `Mod+Space` | the launcher |
+| `Mod+Alt+S` | settings |
+| `Mod+Alt+T` | theme: wallpaper, palette, icons, cursor, application templates |
+| `Mod+Alt+V` | vitals and tasks |
+| `Mod+Alt+A` | audio |
+| `Mod+Alt+P` | capture and recording |
+| `Mod+Alt+K` | keyboard layouts |
+| `Mod+Alt+Escape` | system: the account, the machine, the ways to leave |
+| `Mod+Shift+Space` | the next keyboard layout |
+| `Mod+Alt+B` | switch between Bioma and the other shell |
+
+The volume, brightness and media keys go to Bioma too. Every other cell also
+answers `qs -p /path/to/Bioma/shell.qml ipc call cell toggle <name>`, so any
+key can be given to any cell from the Keybinds page. Escape, or a press
+anywhere else, closes what is open.
+
+**Bioma has no lock screen.** The System cell's Lock runs `session.lock`, which
+is `loginctl lock-session` by default. It locks the screen only if a locker is
+installed and listening, such as hyprlock or swaylock with an idle daemon.
 
 ## Running
 

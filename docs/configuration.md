@@ -26,12 +26,21 @@ membrane list or a hand-written `$comment` survives a setting being changed.
 
 ## What niri has to be told
 
-One file, `config/niri/bioma.kdl`, included from the user's own niri
-configuration:
+`scripts/install` does all of this. It is written out here so that it can be
+checked, or done by hand.
+
+Two files are included from the user's own niri configuration: the layer rules
+from the repository, and the keys, written from a template next to
+`config.kdl`:
 
 ```kdl
 include "/path/to/Bioma/config/niri/bioma.kdl"
+include "bioma-binds.kdl"
 ```
+
+`bioma-binds.kdl` is `config/niri/bioma-binds.kdl.in` with `@BIOMA@` replaced
+by the repository's path. Once written it is the user's: the settings cell's
+Keybinds page edits it where it is.
 
 Blur itself needs no rule. niri turns it on by itself for any surface that
 declares a blur region through `ext-background-effect`, which is exactly how

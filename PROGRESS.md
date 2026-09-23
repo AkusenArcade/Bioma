@@ -1664,6 +1664,36 @@ Super+Alt+K rewrote the one line of `Mod+N`; a filter typed, Enter taking
 leaving the list where it was. The presses that start each of those came from
 a throwaway timer.
 
+### 1.0.0-beta.1
+
+The first release, 2026-09-23, at Akusen's word ("direi che siamo pronti per
+una release beta 1.0"). Before tagging, what would have stopped anybody else:
+
+- **The keys named this machine.** `config/niri/bioma-binds.kdl` carried
+  `/home/akusen/Documents/Development/Bioma` twenty times. It is now a template,
+  `bioma-binds.kdl.in`, with `@BIOMA@` in place of the path.
+- **`scripts/install`** checks what is missing (required and optional, with
+  Arch package names). It writes `bioma-binds.kdl` next to niri's `config.kdl`
+  once; after that the file is the user's, and the Keybinds page edits it. It
+  adds the includes, and with `--autostart` the `spawn-at-startup`. It replaces
+  an include of the repository's old binds file. It copies `config.kdl` aside
+  and puts it back if `niri validate` refuses the result. Running it twice
+  changes nothing. Tested on a scratch configuration, then on Akusen's.
+  - The font check first reported both fonts missing when both were installed:
+    `grep -q` under `pipefail` makes a found font read as absent.
+- **The README** now lists every requirement the scripts actually call, has an
+  Install section and a table of the default keys, and says plainly that Bioma
+  has no lock screen.
+
+Akusen's own niri configuration was cleaned at the same time, at his request:
+Noctalia's and Prisma's pieces are gone.
+- His general keys moved from `noctalia-binds.kdl` to `binds.kdl`.
+- The eight keys that called `noctalia msg` now open the matching Bioma cells.
+  Examples: Mod+V is the clipboard, Mod+N the notifications, Ctrl+Alt+Delete
+  vitals. Mod+Alt+L, the lock, is left free, since there is no locker.
+- The `noctalia-backdrop` rule, Prisma's layer rules and `cliphist` are gone.
+- A full copy is in `~/.cache/bioma-niri-cleanup-20260923-233757`.
+
 ### From his list of bugs, 2026-09-23
 
 His notes ("Bug e Migliorie") had three items:

@@ -12,37 +12,35 @@
 // placed nowhere on the monitor it comes up in the middle. Ask the running
 // shell which domains it knows:
 //
-//     qs -p ~/Documents/Development/Bioma/shell.qml ipc call cell list
+//     qs -p /path/to/Bioma/shell.qml ipc call cell list
 //
-// `-p` names the instance. Once Bioma is started as the session's shell from a
-// configuration directory, `qs -c bioma ipc call …` is the shorter form, and
-// these lines should be changed to match how it is actually started.
-//
-// Include this file from `~/.config/niri/config.kdl`:
-//
-//     include "/home/akusen/Documents/Development/Bioma/config/niri/bioma-binds.kdl"
+// **This is a template.** `scripts/install` writes it out as
+// `bioma-binds.kdl` beside niri's `config.kdl`, with `@BIOMA@` replaced by
+// where the repository actually is, and includes it. The written copy is
+// yours: the settings cell's Keybinds page edits it in place, and the
+// installer does not overwrite it again unless asked to (`--force`).
 //
 // niri merges an included `binds` block with its own, so nothing here has to
 // be repeated there.
 //
-// **The prefix is Mod+Alt while another shell is still running.** The keys the
-// configuration declares — Mod+V, Mod+T, Mod+Escape — belong to Noctalia
-// until the cutover, and one of them is the terminal. Two bindings on one key
-// is not a thing to leave lying around, so Bioma stays out of the way and
-// takes the plain Mod+ keys when the other shell goes; the `shortcut` strings
-// in `config/default.json` are what it takes them back to.
+// **The prefix is Mod+Alt.** niri's own default configuration already uses the
+// plain keys a shell would want — Mod+T is the terminal, Mod+V and Mod+Escape
+// are taken — and two bindings on one key is not a thing to ship. The
+// `shortcut` strings in `config/default.json` are the plain keys the cells
+// were drawn with; move a bind there from the Keybinds page if the key is free
+// on your machine.
 
 binds {
     Mod+Alt+V hotkey-overlay-title="Bioma: vitals" {
-        spawn "qs" "-p" "/home/akusen/Documents/Development/Bioma/shell.qml" "ipc" "call" "cell" "toggle" "vitals"
+        spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "cell" "toggle" "vitals"
     }
 
     Mod+Alt+P hotkey-overlay-title="Bioma: capture" {
-        spawn "qs" "-p" "/home/akusen/Documents/Development/Bioma/shell.qml" "ipc" "call" "cell" "toggle" "utility"
+        spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "cell" "toggle" "utility"
     }
 
     Mod+Alt+K hotkey-overlay-title="Bioma: keyboard" {
-        spawn "qs" "-p" "/home/akusen/Documents/Development/Bioma/shell.qml" "ipc" "call" "cell" "toggle" "keyboard"
+        spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "cell" "toggle" "keyboard"
     }
 
     // The next layout, straight from niri: the keyboard cell shows which one
@@ -50,19 +48,19 @@ binds {
     Mod+Shift+Space hotkey-overlay-title="Next keyboard layout" { switch-layout "next"; }
 
     Mod+Alt+T hotkey-overlay-title="Bioma: theme" {
-        spawn "qs" "-p" "/home/akusen/Documents/Development/Bioma/shell.qml" "ipc" "call" "cell" "toggle" "theme"
+        spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "cell" "toggle" "theme"
     }
 
     Mod+Alt+A hotkey-overlay-title="Bioma: audio" {
-        spawn "qs" "-p" "/home/akusen/Documents/Development/Bioma/shell.qml" "ipc" "call" "cell" "toggle" "audio"
+        spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "cell" "toggle" "audio"
     }
 
     Mod+Alt+S hotkey-overlay-title="Bioma: settings" {
-        spawn "qs" "-p" "/home/akusen/Documents/Development/Bioma/shell.qml" "ipc" "call" "cell" "toggle" "settings"
+        spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "cell" "toggle" "settings"
     }
 
     Mod+Alt+Escape hotkey-overlay-title="Bioma: system" {
-        spawn "qs" "-p" "/home/akusen/Documents/Development/Bioma/shell.qml" "ipc" "call" "cell" "toggle" "system"
+        spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "cell" "toggle" "system"
     }
 
     // ---- The keys that are not cells ------------------------------------
@@ -75,55 +73,55 @@ binds {
     // not a thing to leave lying around.
 
     XF86AudioRaiseVolume allow-when-locked=true {
-        spawn "/home/akusen/Documents/Development/Bioma/scripts/key" "volume-up"
+        spawn "@BIOMA@/scripts/key" "volume-up"
     }
 
     XF86AudioLowerVolume allow-when-locked=true {
-        spawn "/home/akusen/Documents/Development/Bioma/scripts/key" "volume-down"
+        spawn "@BIOMA@/scripts/key" "volume-down"
     }
 
     XF86AudioMute allow-when-locked=true {
-        spawn "/home/akusen/Documents/Development/Bioma/scripts/key" "mute"
+        spawn "@BIOMA@/scripts/key" "mute"
     }
 
     XF86AudioMicMute allow-when-locked=true {
-        spawn "/home/akusen/Documents/Development/Bioma/scripts/key" "mic-mute"
+        spawn "@BIOMA@/scripts/key" "mic-mute"
     }
 
     XF86MonBrightnessUp allow-when-locked=true {
-        spawn "/home/akusen/Documents/Development/Bioma/scripts/key" "brightness-up"
+        spawn "@BIOMA@/scripts/key" "brightness-up"
     }
 
     XF86MonBrightnessDown allow-when-locked=true {
-        spawn "/home/akusen/Documents/Development/Bioma/scripts/key" "brightness-down"
+        spawn "@BIOMA@/scripts/key" "brightness-down"
     }
 
     XF86AudioPlay hotkey-overlay-title="Media: play or pause" {
-        spawn "/home/akusen/Documents/Development/Bioma/scripts/key" "media-toggle"
+        spawn "@BIOMA@/scripts/key" "media-toggle"
     }
 
     XF86AudioNext hotkey-overlay-title="Media: next" {
-        spawn "/home/akusen/Documents/Development/Bioma/scripts/key" "media-next"
+        spawn "@BIOMA@/scripts/key" "media-next"
     }
 
     XF86AudioPrev hotkey-overlay-title="Media: previous" {
-        spawn "/home/akusen/Documents/Development/Bioma/scripts/key" "media-previous"
+        spawn "@BIOMA@/scripts/key" "media-previous"
     }
 
     XF86AudioStop hotkey-overlay-title="Media: stop" {
-        spawn "/home/akusen/Documents/Development/Bioma/scripts/key" "media-stop"
+        spawn "@BIOMA@/scripts/key" "media-stop"
     }
 
     // The launcher has no place of its own: asked for, it is built in the
     // middle of the screen the keyboard is pointed at.
     Mod+Space hotkey-overlay-title="Bioma: launcher" {
-        spawn "qs" "-p" "/home/akusen/Documents/Development/Bioma/shell.qml" "ipc" "call" "cell" "toggle" "launcher"
+        spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "cell" "toggle" "launcher"
     }
 
     // Not a cell: the shell itself. One of the two runs at a time, because
-    // one program per session may own the notification bus — and going back
-    // to the other one is a thing to do often while this one is being built.
+    // one program per session may own the notification bus — see
+    // `scripts/shell` for the other one it switches to.
     Mod+Alt+B hotkey-overlay-title="Bioma: switch shell" {
-        spawn "/home/akusen/Documents/Development/Bioma/scripts/shell" "toggle"
+        spawn "@BIOMA@/scripts/shell" "toggle"
     }
 }

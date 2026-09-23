@@ -1,0 +1,162 @@
+#!/usr/bin/env bash
+# Set Bioma up for this user, from wherever the repository is.
+#
+#     scripts/install              check what is missing, write the keys, and
+#                                  include Bioma's niri files
+#     scripts/install --autostart  also start Bioma with the niri session
+#     scripts/install --force      write the keys again over an existing copy
+#     scripts/install --check      only say what is missing
+#
+# What it writes, all of it next to niri's config.kdl:
+#   - bioma-binds.kdl, from config/niri/bioma-binds.kdl.in with the repository's
+#     path filled in. Only if there is none yet: the copy is the user's, and the
+#     settings cell's Keybinds page edits it in place.
+#   - `include` lines at the end of config.kdl for the repository's
+#     config/niri/bioma.kdl and for bioma-binds.kdl — once each. An include of
+#     the repository's own binds file, from before the template, is replaced.
+#   - with --autostart, `spawn-at-startup ".../scripts/shell" "start"`.
+#
+# config.kdl is copied aside first and the whole configuration is handed to
+# `niri validate` afterwards; if niri refuses it, the copy is put back.
+set -euo pipefail
+
+here="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
+
+autostart=false
+force=false
+check_only=false
+for arg in "$@"; do
+    case "$arg" in
+        --autostart) autostart=true ;;
+        --force) force=true ;;
+        --check) check_only=true ;;
+        -h|--help) sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        *) echo "unknown option: $arg" >&2; exit 2 ;;
+    esac
+done
+
+# ---- What is missing ---------------------------------------------------------
+#
+# Required: without these the shell does not start or cannot do its basic job.
+# The rest each serve one cell or one feature, and their absence costs only that.
+
+missing_required=0
+
+need() {   # program, Arch package, what for
+    if command -v "$1" >/dev/null 2>&1; then
+        printf '  ok        %-14s %s\n' "$1" "$3"
+    else
+        printf '  MISSING   %-14s %s  (%s)\n' "$1" "$3" "$2"
+        missing_required=$((missing_required + 1))
+    fi
+}
+
+want() {   # program, Arch package, what for
+    if command -v "$1" >/dev/null 2>&1; then
+        printf '  ok        %-14s %s\n' "$1" "$3"
+    else
+        printf '  optional  %-14s %s  (%s)\n' "$1" "$3" "$2"
+    fi
+}
+
+echo "Required:"
+need niri       niri            "the compositor, 26.04 or later"
+need qs         quickshell      "the shell runtime, 0.3.1"
+need python3    python          "the helper scripts"
+need gsettings  glib2           "desktop settings: theme, icons, cursor, proxy"
+need wl-paste   wl-clipboard    "the clipboard cell"
+need magick     imagemagick     "wallpaper thumbnails"
+echo "Optional:"
+want matugen    matugen         "palettes computed from the wallpaper"
+want grim       grim            "screenshots"
+want tesseract  tesseract       "text recognition from a region"
+want wl-screenrec wl-screenrec  "screen recording (VAAPI)"
+want wf-recorder wf-recorder    "screen recording, fallback"
+want nmcli      networkmanager  "Wi-Fi, wired, VPN and proxy triggers"
+want bluetoothctl bluez-utils   "Bluetooth pairing"
+want ddcutil    ddcutil         "external monitor brightness"
+want pw-play    pipewire        "the alarm's sound"
+want lspci      pciutils        "the graphics card, in the System cell"
+want notify-send libnotify      "the timer and alarm notifications"
+
+if command -v niri >/dev/null 2>&1; then
+    version="$(niri --version 2>/dev/null | awk '{print $2}')"
+    major="${version%%.*}"
+    if [ -n "$major" ] && [ "$major" -lt 26 ] 2>/dev/null; then
+        echo "  niri $version is older than 26.04: blur (ext-background-effect) will not work." >&2
+    fi
+fi
+
+# Not `grep -q`: it stops at the first match, fc-list dies of the closed pipe,
+# and under pipefail a font that is there reads as missing.
+fc-list : family 2>/dev/null | grep -i "Spectral" >/dev/null || echo "  font      Spectral        not found (ttf-spectral) — the expressive voice falls back"
+fc-list : family 2>/dev/null | grep -i "Orbitron" >/dev/null || echo "  font      Orbitron        not found (AUR ttf-orbitron) — the technical voice falls back"
+
+if [ "$missing_required" -gt 0 ]; then
+    echo
+    echo "$missing_required required program(s) missing; install them and run this again." >&2
+    exit 1
+fi
+$check_only && exit 0
+
+# ---- niri ------------------------------------------------------------------------
+
+config="${NIRI_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/niri/config.kdl}"
+if [ ! -f "$config" ]; then
+    echo "No niri configuration at $config — start niri once, or set NIRI_CONFIG." >&2
+    exit 1
+fi
+real="$(readlink -f "$config")"
+dir="$(dirname "$real")"
+binds="$dir/bioma-binds.kdl"
+
+backup="$real.before-bioma.$(date +%Y%m%d-%H%M%S)"
+cp -p "$real" "$backup"
+
+if [ ! -f "$binds" ] || $force; then
+    sed "s#@BIOMA@#$here#g" "$here/config/niri/bioma-binds.kdl.in" >"$binds"
+    echo "wrote     $binds"
+else
+    echo "kept      $binds (yours; --force writes it again)"
+fi
+
+# An include of the repository's own binds file predates the template: it is
+# the same keys, read from the repository, so it becomes the written copy.
+old="include \"$here/config/niri/bioma-binds.kdl\""
+if grep -qF "$old" "$real"; then
+    sed -i "s#^\([[:space:]]*\)include \"$here/config/niri/bioma-binds.kdl\"#\1include \"bioma-binds.kdl\"#" "$real"
+    echo "replaced  the include of $here/config/niri/bioma-binds.kdl"
+fi
+
+ensure() {   # a line, and a pattern that finds it already there
+    if ! grep -qE "$2" "$real"; then
+        printf '\n%s\n' "$1" >>"$real"
+        echo "added     $1"
+    fi
+}
+
+ensure "include \"$here/config/niri/bioma.kdl\"" \
+       "^[[:space:]]*include[[:space:]]+\"[^\"]*/config/niri/bioma\.kdl\""
+ensure "include \"bioma-binds.kdl\"" \
+       "^[[:space:]]*include[[:space:]]+\"(.*/)?bioma-binds\.kdl\""
+if $autostart; then
+    ensure "spawn-at-startup \"$here/scripts/shell\" \"start\"" \
+           "^[[:space:]]*spawn-at-startup[[:space:]]+\"[^\"]*/scripts/shell\"[[:space:]]+\"start\""
+fi
+
+if refusal="$(niri validate -c "$config" 2>&1)"; then
+    if cmp -s "$backup" "$real"; then
+        rm -f "$backup"
+    else
+        echo "config.kdl was changed; the previous one is $backup"
+    fi
+    echo "niri accepts the configuration."
+else
+    cp -p "$backup" "$real"
+    echo "niri refused the result, so config.kdl is back as it was:" >&2
+    printf '%s\n' "$refusal" | sed 's/\x1b\[[0-9;]*m//g' | tail -5 >&2
+    exit 1
+fi
+
+echo
+echo "Start Bioma with $here/scripts/shell bioma — or log in again, with --autostart."
