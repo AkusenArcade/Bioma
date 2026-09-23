@@ -66,8 +66,40 @@ Item {
     readonly property bool listening: root.recording.length > 0
 
     // The rows, with the one being added at the end while it waits for keys.
+    // What the search asks for. Words that are all names of keys are a
+    // combination, and find the binds that use every one of those keys —
+    // "super v" is Clipboard Manager, not every action with a v in its name.
+    // Anything else is looked for in what the bind does, any key named along
+    // the way still counting as a key: "super workspace".
+    readonly property var words: search.text.toLowerCase().split(/[\s+]+/)
+        .filter(w => w.length > 0)
+        .map(w => w === "mod" || w === "win" || w === "meta" ? "super" : w === "control" ? "ctrl" : w)
+
+    readonly property var capNames: {
+        const seen = {};
+        for (const bind of Keybinds.binds)
+            for (const cap of bind.caps)
+                seen[cap.toLowerCase()] = true;
+        return seen;
+    }
+
+    readonly property bool combination: root.words.length > 0
+                                        && root.words.every(word => root.capNames[word] === true)
+
+    function matches(bind) {
+        if (root.words.length === 0)
+            return true;
+        const caps = bind.caps.map(cap => cap.toLowerCase());
+        if (root.combination)
+            return root.words.every(word => caps.includes(word));
+        const label = bind.label.toLowerCase();
+        return root.words.every(word => caps.includes(word) || label.includes(word));
+    }
+
+    readonly property var found: Keybinds.binds.filter(bind => root.matches(bind))
+
     readonly property var rows: {
-        const out = Keybinds.binds.slice();
+        const out = root.found.slice();
         if (root.adding)
             out.push({
                 "id": "new",
@@ -84,7 +116,10 @@ Item {
     // modifier moves the mouse as often as not.
     onListeningChanged: if (root.cell) root.cell.holdsKeys = root.listening || root.picking
     onPickingChanged: if (root.cell) root.cell.holdsKeys = root.listening || root.picking
-    Component.onDestruction: if (root.cell) root.cell.holdsKeys = false
+    Component.onDestruction: if (root.cell) {
+        root.cell.holdsKeys = false;
+        root.cell.fieldEngaged = false;
+    }
 
     function edit(bind) {
         root.picking = false;
@@ -276,13 +311,92 @@ Item {
 
     // ---- The list ----------------------------------------------------------
 
+    // ---- The search --------------------------------------------------------
+    //
+    // The vitals search, the same object: a lens in the primary, no well of its
+    // own, and the count said in words on the other side. Pressing the field
+    // keeps the keyboard after the pointer has wandered off the panel; Escape
+    // empties it first and gives the keyboard back second.
+
+    Item {
+        id: searchRow
+
+        width: parent.width
+        height: root.metrics.fieldHeight
+
+        TapHandler {
+            onTapped: {
+                if (root.cell)
+                    root.cell.fieldEngaged = true;
+                search.forceActiveFocus();
+            }
+        }
+
+        Icon {
+            id: lens
+            anchors.left: parent.left
+            anchors.leftMargin: 6 * root.factor
+            anchors.verticalCenter: parent.verticalCenter
+            name: "search"
+            width: 16 * root.factor
+            height: width
+            gradient: true
+        }
+
+        TextInput {
+            id: search
+
+            anchors.left: lens.right
+            anchors.leftMargin: 10 * root.factor
+            anchors.right: count.left
+            anchors.rightMargin: 12 * root.factor
+            anchors.verticalCenter: parent.verticalCenter
+            color: Theme.text
+            font.family: Typography.expressive
+            font.pixelSize: root.metrics.fontTitle
+            selectByMouse: true
+            clip: true
+
+            Keys.onEscapePressed: {
+                if (search.text.length > 0) {
+                    search.text = "";
+                    return;
+                }
+                search.focus = false;
+                if (root.cell)
+                    root.cell.fieldEngaged = false;
+            }
+
+            Text {
+                anchors.fill: parent
+                visible: search.text === ""
+                text: "Search shortcuts"
+                color: Theme.textMuted
+                font: search.font
+            }
+        }
+
+        Text {
+            id: count
+            anchors.right: parent.right
+            anchors.rightMargin: 6 * root.factor
+            anchors.verticalCenter: parent.verticalCenter
+            text: root.words.length === 0 ? Keybinds.count + " shortcuts"
+                                          : root.found.length + " of " + Keybinds.count
+            color: Theme.textMuted
+            font.family: Typography.expressive
+            font.pixelSize: root.metrics.fontSecondary
+        }
+    }
+
     Well {
         id: well
 
         metrics: root.metrics
         inset: 6 * root.factor
+        y: searchRow.height + 10 * root.factor
         width: parent.width
-        height: parent.height - root.footerHeight
+        height: parent.height - root.footerHeight - y
 
         // Picking is about the picker; the list stays where it was, quieter.
         opacity: root.picking ? 0.35 : 1
@@ -484,6 +598,15 @@ Item {
             flick: list
             factor: root.factor
             x: well.width - width - 4 * root.factor
+        }
+
+        Text {
+            anchors.centerIn: parent
+            visible: root.rows.length === 0
+            text: root.words.length > 0 ? "Nothing bound to that" : "Reading niri's configuration…"
+            color: Theme.textFaint
+            font.family: Typography.expressive
+            font.pixelSize: root.metrics.fontSecondary
         }
     }
 

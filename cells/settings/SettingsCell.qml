@@ -65,10 +65,17 @@ Cell {
     // modifier moves the mouse as often as not.
     property bool holdsKeys: false
 
-    wantsKeyboard: root.open && (root.panelHovered || root.holdsKeys)
+    // A search field that was pressed keeps asking for the keyboard after the
+    // pointer has left the panel — asking, not taking, as in vitals.
+    property bool fieldEngaged: false
+
+    wantsKeyboard: root.open && (root.panelHovered || root.holdsKeys || root.fieldEngaged)
     takesKeyboard: root.open && root.holdsKeys
 
-    onOpenChanged: if (!root.open) root.panelHovered = false
+    onOpenChanged: if (!root.open) {
+        root.panelHovered = false;
+        root.fieldEngaged = false;
+    }
 
     expansion: Component {
         Loader {
