@@ -1664,6 +1664,20 @@ Super+Alt+K rewrote the one line of `Mod+N`; a filter typed, Enter taking
 leaving the list where it was. The presses that start each of those came from
 a throwaway timer.
 
+### APPS moves into DESKTOP
+
+Akusen, the same evening: "sposta le impostazioni dei template delle app nella
+capsula desktop, così semplifichiamo". The APPS button beside the palette
+dropdown is gone, and so is the panel it called up. Its chips now sit in the
+DESKTOP capsule, under the icons and the cursor, with the failure line under
+them. The palette capsule is back to its dropdown alone.
+
+- DESKTOP is a panel, not a pill (his other correction: a pill's round ends
+  put the labels at its corners too close to the edge).
+- Its height now comes from what it holds: 20 of padding, the icons/cursor
+  row, and the chips wrapping inside the carousel's width.
+- The lists open past it, as before.
+
 ### Icons and cursor, in the theme cell
 
 This is from the same list of ideas ("Selettore icon package in theme",

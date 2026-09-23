@@ -19,15 +19,13 @@ import qs.services
 // changes what it lists: matugen's calculation methods, or the names of Bioma's
 // own palettes.
 //
-// Under them, DESKTOP: the desktop's icon theme and cursor, which are not the
-// palette but are the same question — how the desktop looks — and belong where
-// that question is asked (Akusen, 2026-09-23). See services/Looks.qml.
-//
-// Beside the dropdown, APPS calls up the applications the palette is carried to
-// outside the shell — niri, the toolkits, the terminals (services/Templates.qml).
-// It is asked for rather than always there: it is a setting made once, not a
-// choice made every time the theme changes, and it opens where the dropdown's
-// list opens, so the two take turns.
+// Under them, DESKTOP: how the rest of the desktop looks. The icon theme and the
+// cursor (services/Looks.qml), and APPS, the applications the palette is carried
+// to outside the shell — niri, the toolkits, the terminals
+// (services/Templates.qml). They are not the palette but they are the same
+// question, and they are settings made once rather than choices made every time
+// the theme changes, so they share one capsule below the ones that are
+// (Akusen, 2026-09-23 — APPS was a button beside the dropdown before).
 //
 // See docs/design/CELLS.md §07.
 Item {
@@ -73,22 +71,16 @@ Item {
 
     // Where each block sits in the composition. The near edge is the one facing
     // the cell, and it is where the thread from the cell lands.
-    // A little taller than the two above it: under the icons there is room
-    // kept for one line, so the capsule does not change size when it appears.
-    readonly property real desktopHeight: 108 * factor
+    // As tall as what it holds: the icons and the cursor, and under them every
+    // application the palette can be carried to. Its content wraps inside a
+    // fixed width, so the figure does not depend on the capsule's growth.
+    readonly property real desktopHeight: desktop.targetHeight
+    readonly property real desktopPadding: 20 * factor
     readonly property real carouselY: upward ? desktopHeight + gap + capsuleHeight + gap : 0
     readonly property real capsuleY: upward ? desktopHeight + gap : carouselHeight + gap
     readonly property real desktopY: upward ? 0 : capsuleY + capsuleHeight + gap
     readonly property real carouselNear: upward ? carouselY + carouselHeight : carouselY
     readonly property real capsuleNear: upward ? capsuleY + capsuleHeight : capsuleY
-
-    // The dropdown and APPS share a row centred in the palette capsule. Both
-    // widths are the controls' own — text and padding — which do not change
-    // while the capsule grows, so each control's centre is arithmetic.
-    readonly property real controlSpacing: 8 * factor
-    readonly property real paletteCentreX: capsuleWidth + gap + capsuleWidth / 2
-    readonly property real controlsWidth: dropdown.width + controlSpacing + appsButton.width
-    readonly property real appsButtonCentreX: paletteCentreX + controlsWidth / 2 - appsButton.width / 2
 
     // Orbitron 12 for the dropdown is CELLS.md §07's own figure, and the
     // controls beside it are the same voice at the same size: a segmented
@@ -177,10 +169,8 @@ Item {
             capsules.easing.bezierCurve = root.cell.open ? Timing.easeOpenFlat
                                                      : Timing.easeClose;
             capsules.start();
-            if (!root.cell.open) {
+            if (!root.cell.open)
                 root.listing = "";
-                root.appsOpen = false;
-            }
         }
     }
 
@@ -580,7 +570,6 @@ Item {
                 id: controls
 
                 anchors.horizontalCenter: parent.horizontalCenter
-                spacing: root.controlSpacing
 
                 Item {
                     id: dropdown
@@ -625,41 +614,6 @@ Item {
                     }
 
                     TapHandler { onTapped: root.toggleList("palette", dropdown) }
-                }
-
-                // Lit while its capsule is out: the same mark a lit pill makes
-                // everywhere else in the shell.
-                Item {
-                    id: appsButton
-
-                    width: appsText.implicitWidth + 12 * root.factor * 2
-                    height: root.dropdownHeight
-
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: Metrics.radiusFor(height, root.metrics)
-                        color: root.appsOpen ? Qt.alpha(Theme.primary, 0.16) : "transparent"
-                        border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
-                        border.color: root.appsOpen ? Theme.primary
-                                    : appsHover.hovered ? Theme.text : Theme.line
-                        antialiasing: true
-                    }
-
-                    Text {
-                        id: appsText
-                        anchors.centerIn: parent
-                        text: "APPS"
-                        color: root.appsOpen ? Theme.text : Theme.textMuted
-                        font: Qt.font({
-                            "family": Typography.technical,
-                            "pixelSize": root.fontControl,
-                            "weight": Typography.weightLabel,
-                            "letterSpacing": Typography.tracking(root.fontControl, Typography.labelTracking)
-                        })
-                    }
-
-                    HoverHandler { id: appsHover }
-                    TapHandler { onTapped: root.appsOpen = !root.appsOpen }
                 }
             }
         }
@@ -763,9 +717,10 @@ Item {
         // A panel's radius, not a pill's: it is as wide as the carousel, and
         // a pill's caps would bring the labels at its corners too close to
         // the edge (Akusen, 2026-09-23).
-        padding: 14 * root.factor
+        // More room inside than a capsule's: it holds two rows of controls and
+        // a field of chips, and they need air around them to read as groups.
+        padding: root.desktopPadding
         targetWidth: root.carouselWidth
-        targetHeight: root.desktopHeight
         growth: root.desktopProgress
         contentReady: root.desktopProgress > 0.999
 
@@ -775,80 +730,125 @@ Item {
         nodeX: Math.max(source.x, Math.min(source.x + source.width, root.capsuleWidth / 2))
         nodeY: root.upward ? source.y : source.y + source.height
 
-        Row {
-            anchors.centerIn: parent
-            spacing: 24 * root.factor
+        Column {
+            width: root.carouselWidth - root.desktopPadding * 2
+            spacing: 20 * root.factor
 
-            Column {
-                spacing: root.stackSpacing
+            Item {
+                width: parent.width
+                height: looks.height
 
-                LookLabel { text: "ICONS" }
+                Row {
+                    id: looks
 
-                LookDropdown {
-                    id: iconsDrop
-                    label: Looks.nameOf(Looks.icons, Looks.iconTheme)
-                    open: root.listing === "icons"
-                    onPressed: root.toggleList("icons", iconsDrop)
-                }
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    spacing: 24 * root.factor
 
-                // The shell's own icons are the one thing that cannot follow a
-                // change live; it says so rather than looking as though the
-                // choice half failed. Held to the dropdown's width, so the
-                // capsule's row does not grow when it appears.
-                Item {
-                    width: iconsDrop.width
-                    height: pending.implicitHeight
+                    Column {
+                        spacing: root.stackSpacing
 
-                    Text {
-                        id: pending
-                        width: parent.width
-                        horizontalAlignment: Text.AlignHCenter
-                        visible: Looks.iconsPending
-                        text: "SHELL: NEXT START"
-                        elide: Text.ElideRight
-                        color: Theme.textFaint
-                        font: Qt.font({
-                            "family": Typography.technical,
-                            "pixelSize": root.metrics.fontMeta,
-                            "letterSpacing": Typography.tracking(root.metrics.fontMeta, Typography.labelTracking)
-                        })
+                        LookLabel { text: "ICONS" }
+
+                        LookDropdown {
+                            id: iconsDrop
+                            label: Looks.nameOf(Looks.icons, Looks.iconTheme)
+                            open: root.listing === "icons"
+                            onPressed: root.toggleList("icons", iconsDrop)
+                        }
+
+                        // The shell's own icons are the one thing that cannot follow a
+                        // change live; it says so rather than looking as though the
+                        // choice half failed. Held to the dropdown's width, so the
+                        // capsule's row does not grow when it appears.
+                        Item {
+                            width: iconsDrop.width
+                            height: pending.implicitHeight
+
+                            Text {
+                                id: pending
+                                width: parent.width
+                                horizontalAlignment: Text.AlignHCenter
+                                visible: Looks.iconsPending
+                                text: "SHELL: NEXT START"
+                                elide: Text.ElideRight
+                                color: Theme.textFaint
+                                font: Qt.font({
+                                    "family": Typography.technical,
+                                    "pixelSize": root.metrics.fontMeta,
+                                    "letterSpacing": Typography.tracking(root.metrics.fontMeta, Typography.labelTracking)
+                                })
+                            }
+                        }
+                    }
+
+                    Column {
+                        spacing: root.stackSpacing
+
+                        Row {
+                            spacing: 8 * root.factor
+
+                            LookLabel { text: "CURSOR" }
+
+                            LookLabel {
+                                visible: Looks.error.length > 0
+                                text: "· REFUSED"
+                                color: Theme.alert
+                            }
+                        }
+
+                        Row {
+                            spacing: 8 * root.factor
+
+                            LookDropdown {
+                                id: cursorDrop
+                                label: Looks.nameOf(Looks.cursors, Looks.cursorTheme)
+                                open: root.listing === "cursor"
+                                onPressed: root.toggleList("cursor", cursorDrop)
+                            }
+
+                            Segmented {
+                                anchors.verticalCenter: parent.verticalCenter
+                                metrics: root.metrics
+                                fontSize: root.fontControl
+                                options: Looks.sizes.map(size => ({ "key": String(size), "label": String(size) }))
+                                current: String(Looks.cursorSize)
+                                onChose: key => Looks.setCursor("", parseInt(key, 10))
+                            }
+                        }
                     }
                 }
             }
 
+            // Where the palette goes outside the shell: every application there
+            // is a template for, lit when it is on.
             Column {
+                width: parent.width
                 spacing: root.stackSpacing
 
-                Row {
-                    spacing: 8 * root.factor
+                LookLabel { text: "APPS" }
 
-                    LookLabel { text: "CURSOR" }
+                Flow {
+                    width: parent.width
+                    spacing: 6 * root.factor
 
-                    LookLabel {
-                        visible: Looks.error.length > 0
-                        text: "· REFUSED"
-                        color: Theme.alert
+                    Repeater {
+                        model: Templates.catalogue
+
+                        delegate: AppChip {
+                            required property var modelData
+                            entry: modelData
+                        }
                     }
                 }
 
-                Row {
-                    spacing: 8 * root.factor
-
-                    LookDropdown {
-                        id: cursorDrop
-                        label: Looks.nameOf(Looks.cursors, Looks.cursorTheme)
-                        open: root.listing === "cursor"
-                        onPressed: root.toggleList("cursor", cursorDrop)
-                    }
-
-                    Segmented {
-                        anchors.verticalCenter: parent.verticalCenter
-                        metrics: root.metrics
-                        fontSize: root.fontControl
-                        options: Looks.sizes.map(size => ({ "key": String(size), "label": String(size) }))
-                        current: String(Looks.cursorSize)
-                        onChose: key => Looks.setCursor("", parseInt(key, 10))
-                    }
+                Text {
+                    width: parent.width
+                    visible: root.failed !== null
+                    text: root.failed ? `${root.failed.name}: ${root.failed.error}` : ""
+                    color: Theme.alert
+                    elide: Text.ElideRight
+                    font.family: Typography.technical
+                    font.pixelSize: root.metrics.fontMeta
                 }
             }
         }
@@ -884,10 +884,6 @@ Item {
         root.listShown = which;
         root.listing = which;
     }
-
-    // The list and the APPS capsule open in the same place, so asking for one
-    // puts the other away.
-    onListingChanged: if (root.listing.length > 0) root.appsOpen = false
 
     // Closing the list when the source changes under it, so a matugen method
     // never stands open over a list of Bioma palettes.
@@ -1033,24 +1029,6 @@ Item {
 
     // ---- Where the palette goes ---------------------------------------------
 
-    property bool appsOpen: false
-
-    onAppsOpenChanged: if (root.appsOpen) root.listing = ""
-
-    property real appsGrowth: root.appsOpen ? 1 : 0
-
-    onAppsGrowthChanged: if (root.cell) root.cell.shapesSettling()
-
-    Behavior on appsGrowth {
-        NumberAnimation {
-            duration: root.appsOpen ? Timing.grow : Timing.close
-            easing.type: Easing.Bezier
-            easing.bezierCurve: root.appsOpen ? Timing.easeOpen : Timing.easeClose
-        }
-    }
-
-    readonly property real appsPadding: 14 * factor
-
     // What failed, said once under the chips: the first template that did not
     // render, with the reason its program gave.
     readonly property var failed: {
@@ -1058,57 +1036,6 @@ Item {
             if (Templates.isOn(entry.id) && Templates.failures[entry.id] !== undefined)
                 return { "name": entry.name, "error": Templates.failures[entry.id] };
         return null;
-    }
-
-    Panel {
-        id: apps
-
-        metrics: root.metrics
-        radius: root.metrics.radiusWell
-        padding: root.appsPadding
-        fixedWidth: root.carouselWidth
-        growth: root.appsGrowth
-        contentReady: root.appsGrowth > 0.999
-        visible: root.appsGrowth > 0
-
-        // Born from the button's own edge and settled clear of the capsule,
-        // away from the composition — the same place and the same rule as the
-        // dropdown's list, which is why the two take turns.
-        anchorX: 0
-        anchorY: root.upward ? root.desktopY - 8 * root.factor - targetHeight
-                             : root.desktopY + root.desktopHeight + 8 * root.factor
-        nodeX: root.appsButtonCentreX
-        nodeY: root.capsuleY + (root.upward ? root.dropdownTop : root.dropdownBottom)
-
-        Column {
-            width: root.carouselWidth - root.appsPadding * 2
-            spacing: 10 * root.factor
-
-            Flow {
-                width: parent.width
-                spacing: 6 * root.factor
-
-                Repeater {
-                    model: Templates.catalogue
-
-                    delegate: AppChip {
-                        required property var modelData
-                        entry: modelData
-                    }
-                }
-            }
-
-            Text {
-                width: parent.width
-                visible: root.failed !== null
-                text: root.failed ? `${root.failed.name}: ${root.failed.error}` : ""
-                color: Theme.alert
-                elide: Text.ElideRight
-                horizontalAlignment: Text.AlignHCenter
-                font.family: Typography.technical
-                font.pixelSize: root.metrics.fontMeta
-            }
-        }
     }
 
     // One application. Lit when the palette goes to it; an application that is
@@ -1168,8 +1095,6 @@ Item {
         ];
         if (root.listGrowth > 0)
             out.push({ "item": list, "radius": list.radius });
-        if (root.appsGrowth > 0)
-            out.push({ "item": apps, "radius": apps.radius });
         return out;
     }
 }
