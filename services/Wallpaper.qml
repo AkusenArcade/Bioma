@@ -28,8 +28,8 @@ Singleton {
     //
     //   fill         cover each monitor, cropping the overflow
     //   fit          contain within each monitor, letterboxing
-    //   span         one image stretched across the bounding box of every
-    //                monitor, each showing its own portion
+    //   span         one image covering the bounding box of every monitor,
+    //                cropped rather than stretched, each showing its own portion
     //   per_monitor  a different image per output, each filled
     readonly property var modes: ["fill", "fit", "span", "per_monitor"]
 

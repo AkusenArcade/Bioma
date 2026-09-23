@@ -73,9 +73,9 @@ PanelWindow {
         Image {
             id: image
 
-            // In span mode the image is scaled to the bounding box of every
-            // monitor and shifted so this screen shows its own portion. In every
-            // other mode it simply fills the screen.
+            // In span mode the item is the bounding box of every monitor,
+            // shifted so this screen shows its own portion. In every other mode
+            // it simply fills the screen.
             width: layer.geometry
                 ? layer.width * (layer.geometry.totalWidth / layer.geometry.screenWidth)
                 : layer.width
@@ -90,7 +90,13 @@ PanelWindow {
                 : 0
 
             source: layer.source.length > 0 ? "file://" + layer.source : ""
-            fillMode: root.spanning ? Image.Stretch : Wallpaper.fillModeForScreen()
+            // The box is covered, never stretched: an L of a 3440 × 1440
+            // screen over a 1920 × 1080 one is a 3440 × 2520 box, and a 21:9
+            // photograph forced into that is a photograph squashed by half.
+            // Cropped from the centre, the image keeps its proportions and the
+            // slices still line up across the seam — the same cover-then-slice
+            // the span mode does in Noctalia.
+            fillMode: Wallpaper.fillModeForScreen()
             asynchronous: true
             cache: false
             smooth: true
