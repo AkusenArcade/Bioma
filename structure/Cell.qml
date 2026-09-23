@@ -758,6 +758,20 @@ Item {
          : 0
     }
 
+    // And a cell can come to claim the attention while it is already open:
+    // the notification's body, opened by the pointer, then pressed for its
+    // history. The claim is made then, or a press outside would not close
+    // what somebody asked for; and dropped when it goes, so what the pointer
+    // alone is holding open is not closed by a press elsewhere.
+    onClaimsFocusChanged: {
+        if (!root.open)
+            return;
+        if (root.claimsFocus)
+            Focus.opened(root);
+        else
+            Focus.released(root);
+    }
+
     onOpenChanged: {
         // One cell at a time: opening this one closes whatever was open, and a
         // press anywhere the shell does not claim closes this one.

@@ -1664,6 +1664,27 @@ Super+Alt+K rewrote the one line of `Mod+N`; a filter typed, Enter taking
 leaving the list where it was. The presses that start each of those came from
 a throwaway timer.
 
+### Dismissing the last notification with the history open
+
+Akusen's report: with the history open, the cross took only the title off the
+pill, and the whole cell froze. The log showed why. A press on the pill opened
+the history without marking the cell as asked for (`visibility.invoked`), as the
+key does. So when the cross dismissed the last notification, the cell's
+condition fell while the history was still open. The cell stopped being placed
+and dropped out of the input region, leaving an empty pill and a panel that
+took no presses. And because the body had opened on hover first, the history
+had never claimed the attention, so a press outside did not close it either.
+
+- A press on the pill now marks the cell invoked, as the key does, and closing
+  clears it.
+- `Cell` claims the attention when `claimsFocus` turns on while the cell is
+  already open, and releases it when `claimsFocus` turns off.
+- On an empty pill the cross closes the cell: it is still the way out.
+
+Verified with the absolute pointer: hover, press, cross, press outside — the
+history stays usable after the cross, and the outside press closes the cell and
+sends it away. Hover then cross, with no history, still dismisses and leaves.
+
 ### A notification on a side edge flickered under the pointer
 
 Akusen's report: the notifications in the floating tissue flickered on hover

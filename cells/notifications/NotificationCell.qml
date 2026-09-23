@@ -124,7 +124,18 @@ Cell {
 
     onTouchedChanged: root.settle()
 
-    onHistoryChanged: root.settle()
+    // A press on the pill asks for the history the way the key does, so it is
+    // asked for the same way: the cell is shown for as long as the history is
+    // open, whatever the queue does meanwhile. Without it, dismissing the last
+    // notification from its cross with the history open took the cell's
+    // condition away under a panel still open — no longer placed, so no
+    // longer in the input region: an empty pill and a history that answered
+    // nothing. Closing clears it, as it does for every invoked cell.
+    onHistoryChanged: {
+        if (root.history)
+            root.visibility.invoked = true;
+        root.settle();
+    }
     onShoutChanged: root.settle()
 
     // Opened by anything but the pointer — a keybind — is asking for the
@@ -258,7 +269,14 @@ Cell {
             anchors.fill: parent
             anchors.margins: -4 * root.metrics.factor
             hoverEnabled: true
-            onClicked: Notifications.dismiss(root.shout)
+            // With nothing left to dismiss — the last one went while the
+            // history was open — it is still the way out, of the cell itself.
+            onClicked: {
+                if (root.shout)
+                    Notifications.dismiss(root.shout);
+                else
+                    root.open = false;
+            }
         }
     }
 }
