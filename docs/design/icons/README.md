@@ -56,6 +56,7 @@ something is, never **how hard** it is working.
 | `plus.svg` `close.svg` `edit.svg` | add, remove, edit |
 | `error.svg` | beside the reason, in the alert colour, under the field that refused the input |
 | `clock.svg` | ring plus minute pie |
+| `brightness.svg` | the sun in the middle of the brightness display's dial |
 
 ## QML
 

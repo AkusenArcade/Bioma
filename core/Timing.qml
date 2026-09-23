@@ -78,6 +78,10 @@ Singleton {
     // appear for. Not scaled either.
     readonly property int settle: Config.get("timing.settle", 3000)
 
+    // How long the on-screen display stays after the last change it shows.
+    // A dwell, not an animation, so the speed setting leaves it alone.
+    readonly property int osd: Config.get("timing.osd", 1500)
+
     // Wallpaper crossfade. Slower than a palette change: the picture is the
     // whole screen, and anything quick here reads as a flicker rather than a
     // change of scene.

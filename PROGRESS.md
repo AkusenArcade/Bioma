@@ -1656,6 +1656,27 @@ Super+Alt+K rewrote the one line of `Mod+N`; a filter typed, Enter taking
 leaving the list where it was. The presses that start each of those came from
 a throwaway timer.
 
+### The on-screen display
+
+The first of the features after the build order (Akusen's list, 2026-09-23).
+The volume or the brightness, said for `Timing.osd` after it changes, low in the
+middle of the monitor the keyboard is on — **only where no cell says it
+already**: the brightness always, having no cell; the volume only on a monitor
+that declares no audio cell, since a declared one, conditional or always, is
+the answer there. Akusen's rule, and the thing CELLS §05 left open.
+
+- It is the audio cell's summoned capsule — dial, figure, slider — because it
+  says the same thing; the brightness wears the same capsule with a sun in the
+  middle of its dial, `brightness.svg`, new in the icon set.
+- `services/Osd.qml` decides what is said and where; `structure/OsdSurface.qml`
+  is one overlay per monitor that takes no input, blurs its capsule and grows
+  it from its own centre. Nothing in the first `Timing.settle` is said.
+
+Verified on the desktop: a one-percent `wpctl` nudge with HDMI-A-1 focused
+showed nothing (its audio cell answers); with DP-1 focused, the capsule at 96 %.
+The brightness through DDC, 50 → 55 → 50 on HDMI-A-1: the capsule with the sun
+at 55 %, gone a second and a half later, and the monitor back at 50.
+
 ### What conditional means, cell by cell
 
 Akusen's conditions, 2026-09-23: the clock for the minute the hour strikes;

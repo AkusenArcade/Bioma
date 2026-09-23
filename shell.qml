@@ -87,6 +87,12 @@ ShellRoot {
                 screenItem: perScreen.modelData
             }
 
+            // Over everything, taking nothing, and only for a moment: the
+            // volume or the brightness where no cell says it already.
+            OsdSurface {
+                screenItem: perScreen.modelData
+            }
+
             // One membrane per edge of this screen, keyed by the **edge** and
             // not by the block: `Variants` keeps an instance for a value it
             // still sees, and the configuration hands out a fresh object on
