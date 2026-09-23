@@ -760,7 +760,9 @@ Item {
         id: desktop
 
         metrics: root.metrics
-        radius: Metrics.radiusFor(root.desktopHeight, root.metrics)
+        // A panel's radius, not a pill's: it is as wide as the carousel, and
+        // a pill's caps would bring the labels at its corners too close to
+        // the edge (Akusen, 2026-09-23).
         padding: 14 * root.factor
         targetWidth: root.carouselWidth
         targetHeight: root.desktopHeight
