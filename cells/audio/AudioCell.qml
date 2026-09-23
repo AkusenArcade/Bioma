@@ -34,10 +34,33 @@ Cell {
     // square: 26 between two sevens. Open, the cell carries its name as well,
     // and a name keeps the full margin on its side.
     readonly property real dialSize: 26 * metrics.factor
-    paddingLeading: 7 * metrics.factor
-    paddingTrailing: 7 * metrics.factor
 
-    contentWidth: dialSize
+    // Two forms, one cell — the launcher's rule. On a membrane it is the dial,
+    // and the capsule hangs from it when it opens. Summoned into the middle
+    // of the screen it has no membrane to hang anything from, so it **is** the
+    // capsule: dial, figure and slider, with no thread above it and the wells
+    // hanging below when pressed. CELLS §05, "Invoked": what changes is where
+    // it is born, not what it does.
+    readonly property bool asCapsule: root.floating
+
+    readonly property real capsuleWidth: 372 * metrics.factor
+    readonly property real capsuleHeight: 88 * metrics.factor
+
+    // The capsule's contents measure themselves; the padding is what is left
+    // of the capsule's stated width.
+    readonly property real capsuleContent: capsule.item ? capsule.item.contentWidth : 0
+    readonly property real capsulePadding: (root.capsuleWidth - root.capsuleContent) / 2
+
+    paddingLeading: root.asCapsule ? root.capsulePadding : 7 * metrics.factor
+    paddingTrailing: root.paddingLeading
+
+    contentWidth: root.asCapsule ? root.capsuleContent : dialSize
+    bodyHeight: root.asCapsule ? root.capsuleHeight : metrics.cellHeight
+
+    // The tissue hands every cell its own concentric radius; the capsule is
+    // drawn the way the expansion draws it on a membrane.
+    Component.onCompleted: if (root.asCapsule)
+        root.radius = Qt.binding(() => Metrics.radiusFor(root.capsuleHeight, root.metrics))
 
     readonly property real travel: Math.min(1, Audio.volume)
     readonly property real overflow: Math.max(0, Audio.volume - 1)
@@ -52,9 +75,12 @@ Cell {
     // with one — and its glyph is the dial itself, still live, because the
     // wheel keeps working while the panel is open and the mark is where the
     // eye already is.
-    headerTitle: "AUDIO"
+    headerTitle: root.asCapsule ? "" : "AUDIO"
     headerMarkSize: 20 * metrics.factor
-    headerMark: Component {
+    headerMark: root.asCapsule ? null : dialMark
+
+    Component {
+        id: dialMark
         Gauge {
             anchors.fill: parent
             fraction: root.travel
@@ -63,7 +89,23 @@ Cell {
         }
     }
 
-    replacesContent: true
+    // The capsule keeps what it carries when it opens: the wells hang below
+    // it, and the dial is still where the wheel is aimed.
+    replacesContent: !root.asCapsule
+
+    // Summoned, it arrives as the capsule and the wells wait for a press.
+    opensOnArrival: !root.asCapsule
+
+    // Closing the wells does not end the summoning: the capsule is still
+    // there because it was asked for, and it keeps the attention so that a
+    // press outside is what sends it away. Checked again a moment later,
+    // because a press outside closes it *and then* ends the summoning.
+    leavesOnClose: !root.asCapsule
+    onOpenChanged: if (!root.open && root.asCapsule)
+        Qt.callLater(() => {
+            if (root.visibility.invoked && !root.open)
+                Focus.opened(root);
+        })
 
     expansion: Component {
         Loader {
@@ -96,8 +138,19 @@ Cell {
 
     // ---- Contracted ---------------------------------------------------------
 
+    // A sibling file is reached through a loader here: a cell is built from
+    // a `qs:@` address, and the directory is not imported from there.
+    Loader {
+        id: capsule
+        anchors.fill: parent
+        active: root.asCapsule
+        source: Qt.resolvedUrl("AudioCapsule.qml")
+        onLoaded: item.metrics = Qt.binding(() => root.metrics)
+    }
+
     Gauge {
         anchors.centerIn: parent
+        visible: !root.asCapsule
         width: root.dialSize
         height: width
         fraction: root.travel

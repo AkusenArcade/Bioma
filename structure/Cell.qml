@@ -314,6 +314,18 @@ Item {
     property bool growsOnArrival: false
     property real emergence: 1
 
+    // Whether a cell summoned into the middle of the screen arrives open. A
+    // cell with a panel usually does — being asked for is being asked to
+    // open — but one that is already its own first shape when it floats (the
+    // audio capsule) arrives as that shape, and opens when it is pressed.
+    property bool opensOnArrival: true
+
+    // Whether an invoked cell goes when it closes. Usually it does — the press
+    // that shut it is also the answer to "do you still want this?" — but a
+    // summoned cell that is its own first shape only folds its panel away,
+    // and it is the press outside that sends it off.
+    property bool leavesOnClose: true
+
     width: grantedWidth * emergence
     height: contractedHeight * emergence
 
@@ -728,7 +740,7 @@ Item {
             // A cell that exists only while it is asked for goes when it is
             // closed, however it was closed — the press outside that shut it
             // is also the answer to "do you still want this?".
-            if (visibility.type === "invoked")
+            if (visibility.type === "invoked" && leavesOnClose)
                 visibility.invoked = false;
         }
 

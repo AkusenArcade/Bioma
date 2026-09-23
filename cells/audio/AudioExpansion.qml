@@ -30,16 +30,11 @@ Item {
 
     readonly property real capsuleWidth: 372 * factor
     readonly property real capsuleHeight: 88 * factor
-    readonly property real dialSize: 56 * factor
-    readonly property real figureWidth: 62 * factor
-    readonly property real sliderWidth: 168 * factor
-    readonly property real capsuleGap: 20 * factor
-
-    // What is left once the three elements and the two gaps have taken their
-    // measures: the handoff states the capsule and its contents, not the
-    // padding, and a padding invented on top of them would widen the capsule.
+    // What is left once the capsule's contents have taken their measures: the
+    // handoff states the capsule and its contents, not the padding, and a
+    // padding invented on top of them would widen the capsule.
     readonly property real capsulePadding:
-        Math.max(0, (capsuleWidth - dialSize - figureWidth - sliderWidth - capsuleGap * 2) / 2)
+        Math.max(0, (capsuleWidth - (capsuleContent.item ? capsuleContent.item.contentWidth : 0)) / 2)
 
     // ---- The panel ----------------------------------------------------------
 
@@ -90,12 +85,18 @@ Item {
 
     readonly property bool upward: root.cell ? !root.cell.opensDown : false
 
+    // Summoned, the cell is the capsule already, and only the wells hang from
+    // it — on the cell's own thread, the one every expansion hangs by.
+    readonly property bool bare: root.cell ? root.cell.asCapsule === true : false
+
+    readonly property real capsuleSpan: bare ? 0 : capsuleHeight + gap
+
     readonly property real capsuleY: upward ? panelHeight + gap : 0
-    readonly property real panelY: upward ? 0 : capsuleHeight + gap
+    readonly property real panelY: upward ? 0 : capsuleSpan
     readonly property real capsuleNear: upward ? capsuleY + capsuleHeight : capsuleY
 
-    implicitWidth: Math.max(capsuleWidth, panelWidth)
-    implicitHeight: capsuleHeight + gap + panelHeight
+    implicitWidth: Math.max(bare ? 0 : capsuleWidth, panelWidth)
+    implicitHeight: capsuleSpan + panelHeight
 
     width: implicitWidth
     height: implicitHeight
@@ -372,6 +373,7 @@ Item {
     Panel {
         id: capsule
 
+        visible: !root.bare
         metrics: root.metrics
         radius: Metrics.radiusFor(root.capsuleHeight, root.metrics)
         padding: root.capsulePadding
@@ -385,55 +387,11 @@ Item {
         nodeX: root.width / 2
         nodeY: root.capsuleNear
 
-        Item {
+        Loader {
+            id: capsuleContent
             anchors.fill: parent
-
-            Gauge {
-                id: dial
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-                width: root.dialSize
-                height: width
-                // The capsule's dial is drawn finer than the contracted one:
-                // the same figures, at a size where 3 units would be a band.
-                trackUnits: 1.5
-                nodeUnits: 4
-                fraction: Math.min(1, Audio.volume)
-                overflow: Math.max(0, Audio.volume - 1)
-                muted: Audio.muted
-            }
-
-            Text {
-                id: reading
-                anchors.left: dial.right
-                anchors.leftMargin: root.capsuleGap
-                anchors.verticalCenter: parent.verticalCenter
-                width: root.figureWidth
-                text: `${Audio.volumePercent}%`
-                color: Theme.text
-                opacity: Audio.muted ? 0.45 : 1
-                font: Typography.tabular(Qt.font({
-                    "family": Typography.technical,
-                    "pixelSize": root.metrics.fontValue,
-                    "weight": Typography.weightValue
-                }))
-            }
-
-            // The travel is the travel: this slider runs to a hundred, and
-            // what is above it was asked for deliberately with the wheel and
-            // is shown on the dial's outer arc. A bar that silently held a
-            // hundred and fifty would make every ordinary setting land in its
-            // first two thirds.
-            Slider {
-                anchors.left: reading.right
-                anchors.leftMargin: root.capsuleGap
-                anchors.verticalCenter: parent.verticalCenter
-                width: root.sliderWidth
-                factor: root.factor
-                value: Math.min(1, Audio.volume)
-                dimmed: Audio.muted
-                onMoved: value => Audio.setVolume(value)
-            }
+            source: Qt.resolvedUrl("AudioCapsule.qml")
+            onLoaded: item.metrics = Qt.binding(() => root.metrics)
         }
     }
 
@@ -442,6 +400,7 @@ Item {
     Thread {
         id: descent
 
+        visible: !root.bare
         readonly property real headY: root.upward ? devices.y + devices.height
                                                   : capsule.y + capsule.height
         readonly property real footY: root.upward ? capsule.y : devices.y
@@ -463,8 +422,10 @@ Item {
         padding: root.panelPadding
         targetWidth: root.panelWidth
         targetHeight: root.panelHeight
-        growth: root.panelProgress
-        contentReady: root.panelProgress > 0.999
+        // First in line when there is no capsule before it.
+        growth: root.bare ? (root.cell ? root.cell.panelGrowth : 0) : root.panelProgress
+        contentReady: root.bare ? (root.cell ? root.cell.panelReady : false)
+                                : root.panelProgress > 0.999
 
         anchorX: 0
         anchorY: root.panelY
@@ -620,6 +581,8 @@ Item {
 
     // What the membrane has to mask and blur: the surfaces, never the threads.
     function shapes() {
+        if (root.bare)
+            return [{ "item": devices, "radius": devices.radius }];
         return [
             { "item": capsule, "radius": capsule.radius },
             { "item": devices, "radius": devices.radius }

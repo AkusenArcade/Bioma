@@ -17,9 +17,8 @@ structure page, and a run of engine defects that only a pointer could find.
 
 What is left, in the order it is worth taking:
 
-1. **What CELLS left open in the cells already drawn.** The audio cell's
-   invoked form, which §05 draws as the capsule alone with no thread; the
-   session cell's own silhouette glyph. Sinestesia on a narrow screen and
+1. **What CELLS left open in the cells already drawn.** The session cell's
+   own silhouette glyph. Sinestesia on a narrow screen and
    reduced motion wait, by Akusen's call on 2026-09-23. A long window title
    was never open: §01 says ellipsis, never scrolling — scrolling on hover is
    the track title's, in Sinestesia.
@@ -1655,6 +1654,30 @@ Super+Alt+K rewrote the one line of `Mod+N`; a filter typed, Enter taking
 "Close window", and Super+Ctrl+Alt+J appended to `config.kdl`; a mid-list edit
 leaving the list where it was. The presses that start each of those came from
 a throwaway timer.
+
+### The audio cell, summoned, is the capsule
+
+CELLS §05's invoked form, drawn as `05-volume-invoked-floating`: in the middle
+of the screen the audio cell is the capsule itself — dial, figure, slider — with
+no thread above it, because there is no membrane to hang from. The launcher's
+rule: what changes is where it is born, not what it does. A press hangs the
+three wells below it on the cell's own thread, and folding them away leaves the
+capsule; the press outside is what sends it off.
+
+- `cells/audio/AudioCapsule.qml` is the capsule's content, loaded in both
+  places — the first shape of the expansion on a membrane, the cell's body
+  when floating. A sibling file is reached through a `Loader`: cells are built
+  from `qs:@` addresses and their directory is not imported from there
+  (`import qs.cells.audio` is "not installed").
+- Two engine switches on `Cell`, both defaulting to what was: `opensOnArrival`
+  — a summoned cell with a panel opened on arrival, and the capsule arrives
+  closed — and `leavesOnClose` — an invoked cell went when it closed, and the
+  capsule only folds its wells.
+
+Verified from `ipc call cell toggle audio` on the running desktop, where the
+audio cell lives on HDMI-A-1 only and so is summoned on DP-1: the capsule
+alone, matching the mockup; and, with the panel driven by a throwaway timer,
+the wells hung below it and folded away with the capsule left standing.
 
 ### A critical notification sits on top, and the others go past it
 

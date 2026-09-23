@@ -87,9 +87,10 @@ PanelWindow {
                 cell.growsOnArrival = true;
 
                 // A cell with a panel opens it; one whose content is itself
-                // has nothing to open and claims the attention directly, so
-                // that a press outside still reaches it and closes it.
-                if (cell.hasPanel)
+                // — or that arrives as its own first shape — claims the
+                // attention directly, so that a press outside still reaches
+                // it and closes it.
+                if (cell.hasPanel && cell.opensOnArrival)
                     cell.open = true;
                 else
                     Focus.opened(cell);
