@@ -19,6 +19,10 @@ import qs.services
 // changes what it lists: matugen's calculation methods, or the names of Bioma's
 // own palettes.
 //
+// Under them, DESKTOP: the desktop's icon theme and cursor, which are not the
+// palette but are the same question — how the desktop looks — and belong where
+// that question is asked (Akusen, 2026-09-23). See services/Looks.qml.
+//
 // Beside the dropdown, APPS calls up the applications the palette is carried to
 // outside the shell — niri, the toolkits, the terminals (services/Templates.qml).
 // It is asked for rather than always there: it is a setting made once, not a
@@ -69,8 +73,12 @@ Item {
 
     // Where each block sits in the composition. The near edge is the one facing
     // the cell, and it is where the thread from the cell lands.
-    readonly property real carouselY: upward ? capsuleHeight + gap : 0
-    readonly property real capsuleY: upward ? 0 : carouselHeight + gap
+    // A little taller than the two above it: under the icons there is room
+    // kept for one line, so the capsule does not change size when it appears.
+    readonly property real desktopHeight: 108 * factor
+    readonly property real carouselY: upward ? desktopHeight + gap + capsuleHeight + gap : 0
+    readonly property real capsuleY: upward ? desktopHeight + gap : carouselHeight + gap
+    readonly property real desktopY: upward ? 0 : capsuleY + capsuleHeight + gap
     readonly property real carouselNear: upward ? carouselY + carouselHeight : carouselY
     readonly property real capsuleNear: upward ? capsuleY + capsuleHeight : capsuleY
 
@@ -80,7 +88,6 @@ Item {
     readonly property real controlSpacing: 8 * factor
     readonly property real paletteCentreX: capsuleWidth + gap + capsuleWidth / 2
     readonly property real controlsWidth: dropdown.width + controlSpacing + appsButton.width
-    readonly property real dropdownCentreX: paletteCentreX - controlsWidth / 2 + dropdown.width / 2
     readonly property real appsButtonCentreX: paletteCentreX + controlsWidth / 2 - appsButton.width / 2
 
     // Orbitron 12 for the dropdown is CELLS.md §07's own figure, and the
@@ -90,7 +97,7 @@ Item {
     readonly property int fontControl: Math.round(12 * factor)
 
     implicitWidth: carouselWidth
-    implicitHeight: carouselHeight + gap + capsuleHeight
+    implicitHeight: carouselHeight + gap + capsuleHeight + gap + desktopHeight
 
     width: implicitWidth
     height: implicitHeight
@@ -135,7 +142,7 @@ Item {
 
     function choose(key) {
         Config.set(root.fromWallpaper ? "theme.matugen.scheme" : "theme.palette", key);
-        root.listing = false;
+        root.listing = "";
     }
 
     // ---- The cascade --------------------------------------------------------
@@ -148,12 +155,13 @@ Item {
     property real cascade: 0
 
     function stage(index) {
-        return Timing.stage(root.cascade, index, 3);
+        return Timing.stage(root.cascade, index, 4);
     }
 
     readonly property real linkProgress: stage(0)
     readonly property real sourceProgress: stage(1)
     readonly property real paletteProgress: stage(2)
+    readonly property real desktopProgress: stage(3)
 
     Connections {
         target: root.cell
@@ -170,7 +178,7 @@ Item {
                                                      : Timing.easeClose;
             capsules.start();
             if (!root.cell.open) {
-                root.listing = false;
+                root.listing = "";
                 root.appsOpen = false;
             }
         }
@@ -504,7 +512,7 @@ Item {
                 current: Theme.source
                 onChose: key => {
                     Config.set("theme.source", key);
-                    root.listing = false;
+                    root.listing = "";
                 }
             }
         }
@@ -616,7 +624,7 @@ Item {
                         }
                     }
 
-                    TapHandler { onTapped: root.listing = !root.listing }
+                    TapHandler { onTapped: root.toggleList("palette", dropdown) }
                 }
 
                 // Lit while its capsule is out: the same mark a lit pill makes
@@ -657,23 +665,257 @@ Item {
         }
     }
 
+    // ---- How the desktop looks ---------------------------------------------
+    //
+    // The desktop's icon theme and cursor. It hangs from the source capsule on
+    // the same line the source hangs from the carousel: one spine down the
+    // composition, and the palette beside it.
+
+    Thread {
+        id: descentDesktop
+
+        readonly property real headY: root.upward ? desktop.y + desktop.height
+                                                  : source.y + source.height
+        readonly property real footY: root.upward ? source.y : desktop.y
+
+        vertical: true
+        progress: root.linkProgress
+        width: implicitWidth
+        height: Math.max(0, descentDesktop.footY - descentDesktop.headY)
+        x: root.capsuleWidth / 2 - width / 2
+        y: descentDesktop.headY
+    }
+
+    // A dropdown in the desktop capsule: the same shape as the palette's, and
+    // lit while its list is out.
+    component LookDropdown: Item {
+        id: drop
+
+        property string label: ""
+        property bool open: false
+        signal pressed
+
+        // At most this wide, so the two of them and the sizes fit the capsule;
+        // a longer name is elided — the list shows it whole.
+        readonly property real widest: 164 * root.factor
+
+        width: Math.min(drop.widest,
+                        dropText.implicitWidth + 12 * root.factor * 2 + 7 * root.factor + dropChevron.width)
+        height: root.dropdownHeight
+
+        Rectangle {
+            anchors.fill: parent
+            radius: Metrics.radiusFor(height, root.metrics)
+            color: "transparent"
+            border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+            border.color: drop.open ? Theme.primary : dropHover.hovered ? Theme.text : Theme.line
+            antialiasing: true
+        }
+
+        Row {
+            anchors.centerIn: parent
+            spacing: 7 * root.factor
+
+            Text {
+                id: dropText
+                anchors.verticalCenter: parent.verticalCenter
+                width: Math.min(implicitWidth, drop.widest - 12 * root.factor * 2
+                                                - 7 * root.factor - dropChevron.width)
+                text: drop.label
+                elide: Text.ElideRight
+                color: Theme.text
+                font: Qt.font({
+                    "family": Typography.technical,
+                    "pixelSize": root.fontControl,
+                    "weight": Typography.weightLabel,
+                    "letterSpacing": Typography.tracking(root.fontControl, 0.04)
+                })
+            }
+
+            Icon {
+                id: dropChevron
+                anchors.verticalCenter: parent.verticalCenter
+                name: "chevron-down"
+                width: 9 * root.factor
+                height: width
+                colour: Qt.alpha(Theme.text, 0.6)
+            }
+        }
+
+        HoverHandler { id: dropHover }
+        TapHandler { onTapped: drop.pressed() }
+    }
+
+    component LookLabel: Text {
+        color: Theme.text
+        font: Qt.font({
+            "family": Typography.technical,
+            "pixelSize": root.fontControl,
+            "weight": Typography.weightLabel,
+            "letterSpacing": Typography.tracking(root.fontControl, Typography.labelTracking)
+        })
+    }
+
+    Panel {
+        id: desktop
+
+        metrics: root.metrics
+        radius: Metrics.radiusFor(root.desktopHeight, root.metrics)
+        padding: 14 * root.factor
+        targetWidth: root.carouselWidth
+        targetHeight: root.desktopHeight
+        growth: root.desktopProgress
+        contentReady: root.desktopProgress > 0.999
+
+        // Born from the node where its thread meets the source capsule's edge.
+        anchorX: 0
+        anchorY: root.desktopY
+        nodeX: Math.max(source.x, Math.min(source.x + source.width, root.capsuleWidth / 2))
+        nodeY: root.upward ? source.y : source.y + source.height
+
+        Row {
+            anchors.centerIn: parent
+            spacing: 24 * root.factor
+
+            Column {
+                spacing: root.stackSpacing
+
+                LookLabel { text: "ICONS" }
+
+                LookDropdown {
+                    id: iconsDrop
+                    label: Looks.nameOf(Looks.icons, Looks.iconTheme)
+                    open: root.listing === "icons"
+                    onPressed: root.toggleList("icons", iconsDrop)
+                }
+
+                // The shell's own icons are the one thing that cannot follow a
+                // change live; it says so rather than looking as though the
+                // choice half failed. Held to the dropdown's width, so the
+                // capsule's row does not grow when it appears.
+                Item {
+                    width: iconsDrop.width
+                    height: pending.implicitHeight
+
+                    Text {
+                        id: pending
+                        width: parent.width
+                        horizontalAlignment: Text.AlignHCenter
+                        visible: Looks.iconsPending
+                        text: "SHELL: NEXT START"
+                        elide: Text.ElideRight
+                        color: Theme.textFaint
+                        font: Qt.font({
+                            "family": Typography.technical,
+                            "pixelSize": root.metrics.fontMeta,
+                            "letterSpacing": Typography.tracking(root.metrics.fontMeta, Typography.labelTracking)
+                        })
+                    }
+                }
+            }
+
+            Column {
+                spacing: root.stackSpacing
+
+                Row {
+                    spacing: 8 * root.factor
+
+                    LookLabel { text: "CURSOR" }
+
+                    LookLabel {
+                        visible: Looks.error.length > 0
+                        text: "· REFUSED"
+                        color: Theme.alert
+                    }
+                }
+
+                Row {
+                    spacing: 8 * root.factor
+
+                    LookDropdown {
+                        id: cursorDrop
+                        label: Looks.nameOf(Looks.cursors, Looks.cursorTheme)
+                        open: root.listing === "cursor"
+                        onPressed: root.toggleList("cursor", cursorDrop)
+                    }
+
+                    Segmented {
+                        anchors.verticalCenter: parent.verticalCenter
+                        metrics: root.metrics
+                        fontSize: root.fontControl
+                        options: Looks.sizes.map(size => ({ "key": String(size), "label": String(size) }))
+                        current: String(Looks.cursorSize)
+                        onChose: key => Looks.setCursor("", parseInt(key, 10))
+                    }
+                }
+            }
+        }
+    }
+
     // ---- The list the dropdown opens ---------------------------------------
     //
     // It is born from the dropdown, like everything else in the shell, and it
     // is a shape of the cell: the membrane masks and blurs it with the rest, so
     // a press inside it is not a press outside the cell.
 
-    property bool listing: false
+    // Which list is open: the palette's, the icon themes, the cursors — or
+    // none. One at a time, because they all open in the same place.
+    property string listing: ""
+
+    // The list that is showing, kept while it closes: the one being put away
+    // still has its rows until it is gone.
+    property string listShown: ""
+
+    // Where the control that asked for it is — read when it is pressed, when
+    // the capsule that holds it has long finished growing.
+    property real listOriginX: 0
+    property real listOriginY: 0
+
+    function toggleList(which, control) {
+        if (root.listing === which) {
+            root.listing = "";
+            return;
+        }
+        const at = control.mapToItem(root, control.width / 2, root.upward ? 0 : control.height);
+        root.listOriginX = at.x;
+        root.listOriginY = at.y;
+        root.listShown = which;
+        root.listing = which;
+    }
 
     // The list and the APPS capsule open in the same place, so asking for one
     // puts the other away.
-    onListingChanged: if (root.listing) root.appsOpen = false
+    onListingChanged: if (root.listing.length > 0) root.appsOpen = false
 
     // Closing the list when the source changes under it, so a matugen method
     // never stands open over a list of Bioma palettes.
-    onFromWallpaperChanged: root.listing = false
+    onFromWallpaperChanged: if (root.listing === "palette") root.listing = ""
 
-    property real listGrowth: root.listing ? 1 : 0
+    readonly property var listOptions: root.listShown === "palette" ? root.options
+        : root.listShown === "icons" ? Looks.icons.map(t => ({ "key": t.id, "label": t.name }))
+        : root.listShown === "cursor" ? Looks.cursors.map(t => ({ "key": t.id, "label": t.name }))
+        : []
+
+    readonly property string listChosen: root.listShown === "palette" ? root.chosen
+        : root.listShown === "icons" ? Looks.iconTheme
+        : root.listShown === "cursor" ? Looks.cursorTheme
+        : ""
+
+    function listChoose(key) {
+        if (root.listShown === "palette")
+            root.choose(key);
+        else if (root.listShown === "icons")
+            Looks.setIcons(key);
+        else if (root.listShown === "cursor")
+            Looks.setCursor(key, 0);
+        root.listing = "";
+    }
+
+    // Past this many rows the list scrolls: there are two dozen cursors on a
+    // machine that has a few, and a list taller than the screen is not a list.
+    readonly property int listRows: 8
+
+    property real listGrowth: root.listing.length > 0 ? 1 : 0
 
     // The list is a shape of its own, and the cell's regions are rectangles
     // read once its shapes stop moving — so a shape that moves says so, or
@@ -682,9 +924,9 @@ Item {
 
     Behavior on listGrowth {
         NumberAnimation {
-            duration: root.listing ? Timing.grow : Timing.close
+            duration: root.listing.length > 0 ? Timing.grow : Timing.close
             easing.type: Easing.Bezier
-            easing.bezierCurve: root.listing ? Timing.easeOpen : Timing.easeClose
+            easing.bezierCurve: root.listing.length > 0 ? Timing.easeOpen : Timing.easeClose
         }
     }
 
@@ -697,48 +939,55 @@ Item {
         metrics: root.metrics
         radius: root.metrics.radiusWell
         padding: root.listPadding
-        targetWidth: root.capsuleWidth - 40 * root.factor
-        targetHeight: root.options.length * root.listRow + root.listPadding * 2
+        targetWidth: root.listShown === "palette" ? root.capsuleWidth - 40 * root.factor
+                                                  : 300 * root.factor
+        targetHeight: Math.min(root.listOptions.length, root.listRows) * root.listRow + root.listPadding * 2
         growth: root.listGrowth
         contentReady: root.listGrowth > 0.999
         visible: root.listGrowth > 0
 
-        // The dropdown's own edge, computed rather than read off the item: the
-        // capsule's content is still growing when the list starts, and a shape
-        // born from a moving point is born from the wrong one.
-        //
-        // It opens away from the composition, which on a membrane at the bottom
-        // of the screen means upwards: opening downwards there would lay the
-        // list over the carousel.
-        readonly property real originX: root.dropdownCentreX
-        readonly property real originY: root.capsuleY + (root.upward ? root.dropdownTop
-                                                                     : root.dropdownBottom)
+        // It opens away from the composition, past its last capsule, which on
+        // a membrane at the bottom of the screen means upwards: opening
+        // downwards there would lay the list over the carousel. It is born
+        // from the edge of the control that asked for it and settles clear of
+        // the composition: two glass surfaces over each other read as one
+        // misdrawn shape rather than as two.
+        anchorX: Math.max(0, Math.min(root.carouselWidth - targetWidth, root.listOriginX - targetWidth / 2))
+        anchorY: root.upward ? root.desktopY - 8 * root.factor - targetHeight
+                             : root.desktopY + root.desktopHeight + 8 * root.factor
+        nodeX: root.listOriginX
+        nodeY: root.listOriginY
 
-        // It is born from the dropdown's own edge and settles clear of the
-        // capsule: a list that stopped eight pixels from the dropdown would
-        // stand on the capsule's cap, and two glass surfaces over each other
-        // read as one misdrawn shape rather than as two.
-        anchorX: list.originX - targetWidth / 2
-        anchorY: root.upward ? root.capsuleY - 8 * root.factor - targetHeight
-                             : root.capsuleY + root.capsuleHeight + 8 * root.factor
-        nodeX: list.originX
-        nodeY: list.originY
+        ListView {
+            id: listView
 
-        Column {
-            width: parent.width
+            width: list.targetWidth - root.listPadding * 2
+            height: Math.min(root.listOptions.length, root.listRows) * root.listRow
+            model: root.listOptions
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
 
-            Repeater {
-                model: root.options
+            // Opened on a long list, the choice is where the eye is. After the
+            // rows exist, and from the top: one view serves every list, and
+            // the last one's scroll is not this one's.
+            function reveal() {
+                listView.positionViewAtBeginning();
+                const at = root.listOptions.findIndex(o => o.key === root.listChosen);
+                if (at >= 0)
+                    listView.positionViewAtIndex(at, ListView.Contain);
+            }
+
+            onModelChanged: Qt.callLater(listView.reveal)
 
                 delegate: Item {
                     id: option
 
                     required property var modelData
 
-                    width: list.targetWidth - root.listPadding * 2
+                    width: listView.width
                     height: root.listRow
 
-                    readonly property bool current: option.modelData.key === root.chosen
+                    readonly property bool current: option.modelData.key === root.listChosen
 
                     Text {
                         anchors.left: parent.left
@@ -768,9 +1017,15 @@ Item {
                         antialiasing: true
                     }
 
-                    TapHandler { onTapped: root.choose(option.modelData.key) }
+                    TapHandler { onTapped: root.listChoose(option.modelData.key) }
                 }
-            }
+        }
+
+        Scroller {
+            flick: listView
+            factor: root.factor
+            x: list.targetWidth - root.listPadding * 2 - width
+            visible: root.listOptions.length > root.listRows
         }
     }
 
@@ -778,7 +1033,7 @@ Item {
 
     property bool appsOpen: false
 
-    onAppsOpenChanged: if (root.appsOpen) root.listing = false
+    onAppsOpenChanged: if (root.appsOpen) root.listing = ""
 
     property real appsGrowth: root.appsOpen ? 1 : 0
 
@@ -818,8 +1073,8 @@ Item {
         // away from the composition — the same place and the same rule as the
         // dropdown's list, which is why the two take turns.
         anchorX: 0
-        anchorY: root.upward ? root.capsuleY - 8 * root.factor - targetHeight
-                             : root.capsuleY + root.capsuleHeight + 8 * root.factor
+        anchorY: root.upward ? root.desktopY - 8 * root.factor - targetHeight
+                             : root.desktopY + root.desktopHeight + 8 * root.factor
         nodeX: root.appsButtonCentreX
         nodeY: root.capsuleY + (root.upward ? root.dropdownTop : root.dropdownBottom)
 
@@ -906,7 +1161,8 @@ Item {
         const out = [
             { "item": carousel, "radius": carousel.radius },
             { "item": source, "radius": source.radius },
-            { "item": palette, "radius": palette.radius }
+            { "item": palette, "radius": palette.radius },
+            { "item": desktop, "radius": desktop.radius }
         ];
         if (root.listGrowth > 0)
             out.push({ "item": list, "radius": list.radius });

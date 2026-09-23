@@ -29,6 +29,8 @@ ShellRoot {
     readonly property var niriLayouts: Niri.windowLayouts
     readonly property var keyboardLayouts: Keyboard.layouts
     readonly property int keyboardCatalogue: Keyboard.catalogue.length
+    readonly property var looksIcons: Looks.icons
+    readonly property string looksCursor: Looks.cursorTheme
     readonly property bool wallpaperLoaded: Wallpaper.loaded
     readonly property string wallpaperPath: Wallpaper.path
     readonly property string wallpaperMode: Wallpaper.mode
@@ -491,6 +493,13 @@ ShellRoot {
             console.log(`      ${line}`);
     }
 
+    function probeLooks() {
+        console.log("── Looks ─────────────────────────────────────────");
+        console.log(`  icons: ${Looks.iconTheme}  (${root.looksIcons.length} installed; shell has "${Looks.shellIcons}", pending ${Looks.iconsPending})`);
+        console.log(`  cursor: ${root.looksCursor} ${Looks.cursorSize}px  (${Looks.cursors.length} installed; sizes ${Looks.sizes.join(" ")})`);
+        console.log(`  names: ${Looks.nameOf(Looks.icons, "breeze-dark")}, ${Looks.nameOf(Looks.cursors, "Adwaita")}`);
+    }
+
     function probeScreens() {
         console.log("── Screens ───────────────────────────────────────");
         for (const s of Quickshell.screens)
@@ -524,6 +533,7 @@ ShellRoot {
             probeConditions();
             probeCapture();
             probeKeyboard();
+            probeLooks();
             console.log("──────────────────────────────────────────────────");
             Qt.exit(0);
         }

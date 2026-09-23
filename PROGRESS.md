@@ -1664,6 +1664,47 @@ Super+Alt+K rewrote the one line of `Mod+N`; a filter typed, Enter taking
 leaving the list where it was. The presses that start each of those came from
 a throwaway timer.
 
+### Icons and cursor, in the theme cell
+
+This is from the same list of ideas ("Selettore icon package in theme",
+"Selettore cursore in theme"). The theme cell has a third capsule, **DESKTOP**,
+under the source and the palette. Akusen chose where it goes. It hangs from the
+source capsule, on the same vertical line that joins the carousel to the
+source. It has two dropdowns, the icon theme and the cursor, plus the cursor's
+size (24 / 32 / 48, with the current size kept among them if it is another).
+
+- **Where a choice goes:**
+  - **Icons:** the desktop's setting (`org.gnome.desktop.interface
+    icon-theme`), which GTK reads live, and `icon_theme` in qt5ct/qt6ct.
+  - **Cursor:** the same setting's `cursor-theme`/`cursor-size`, and niri's
+    `bioma-cursor.kdl` through `scripts/niri-include`. The file is included
+    last, so it overrides the user's `cursor.kdl`.
+  - Nothing is written until something is chosen. What is shown is read from
+    the desktop (`scripts/looks list`), and `services/Looks.qml` holds it.
+- **The shell's own icons:** they now follow the desktop's theme at all.
+  `scripts/bioma` passes the theme to Quickshell as `QS_ICON_THEME`. Before
+  that, Qt found nothing but hicolor: `Quickshell.iconPath("folder")` answered
+  empty, and a themed icon never appeared. Quickshell reads the variable only
+  at start. Until the next start, the capsule says so under the icons
+  dropdown ("SHELL: NEXT START"). Keeping the row the same width is why the
+  capsule is 108 tall.
+- **The lists:** the palette list, the two new lists and APPS all open in the
+  same place, past the last capsule, one at a time. The list is now a scrolling
+  view of at most eight rows (there are 24 cursors here). It opens scrolled to
+  the current choice, recomputed after its rows exist. Opening the cursors
+  after the icons first showed the icons' scroll position, with the current
+  cursor out of view.
+
+Verified by pressing with the absolute pointer, on DP-1:
+- The cursor list opened and Bibata-Modern-Ice was picked, with size 32. The
+  desktop's setting and `bioma-cursor.kdl` followed.
+- Breeze Dark was picked for the icons. The desktop's setting and qt5ct/qt6ct
+  followed, and nothing else in those files changed.
+- After a restart the shell's own icons were Breeze Dark. Choosing Qogir back
+  showed the note.
+- Everything was then set back from the capsule itself. The setting and both
+  qtct files are byte-identical to the backup taken first.
+
 ### The keyboard cell
 
 This is from Akusen's list of new ideas, 2026-09-23 (from his notes: "Switcher

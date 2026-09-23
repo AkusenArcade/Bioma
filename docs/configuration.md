@@ -52,6 +52,7 @@ their `include` line to the end of it the first time:
 |---|---|---|
 | `bioma-theme.kdl` | the palette's niri template | focus ring, borders and the windows' corner radius |
 | `bioma-keyboard.kdl` | the keyboard cell | `input.keyboard.xkb` layout and variant |
+| `bioma-cursor.kdl` | the theme cell's DESKTOP capsule | `cursor` theme and size |
 
 Each is included last on purpose. niri merges most sections property by
 property and the later file wins, so a file like this overrides only what it

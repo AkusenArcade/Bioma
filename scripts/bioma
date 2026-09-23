@@ -18,4 +18,14 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 export QT_QPA_PLATFORMTHEME="${BIOMA_PLATFORMTHEME:-xdgdesktopportal}"
 
+# And the icon theme, which that platform theme does not pass on: without it Qt
+# looks in hicolor alone, so an application's own icon is found and a themed
+# one — a folder, a device — is not. Quickshell reads the theme from
+# `QS_ICON_THEME` once, when it starts; the theme cell's DESKTOP capsule sets
+# the desktop's, and the shell's own icons follow it at the next start.
+if [ -z "${QS_ICON_THEME:-}" ] && command -v gsettings >/dev/null 2>&1; then
+    QS_ICON_THEME="$(gsettings get org.gnome.desktop.interface icon-theme 2>/dev/null | tr -d "'")"
+    export QS_ICON_THEME
+fi
+
 exec qs -p "$here/shell.qml" "$@"

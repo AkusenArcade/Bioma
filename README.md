@@ -131,14 +131,21 @@ ln -s "$PWD" ~/.config/quickshell/bioma
 quickshell -c bioma
 ```
 
-The script exists for one reason: it sets `QT_QPA_PLATFORMTHEME` to
-`xdgdesktopportal` for this process. Bioma draws every pixel it shows, so a
+The script sets two things for this process. The first is `QT_QPA_PLATFORMTHEME`,
+set to `xdgdesktopportal`. Bioma draws every pixel it shows, so a
 platform theme has nothing to style here — except the file picker the system
 cell opens, which is Qt's own `FileDialog`. Qt asks the platform theme for a
 native dialog and draws its own when there is none, and `qt6ct`, a common
 choice for everything else on a machine, provides none. Started any other way
 the shell still works and the picker is Qt's, which looks like nothing else on
 the screen. Set `BIOMA_PLATFORMTHEME` to override it.
+
+The second is `QS_ICON_THEME`, read from the desktop's icon theme
+(`org.gnome.desktop.interface icon-theme`). That platform theme does not pass
+the icon theme on, and without it Qt looks only in hicolor. An application's
+own icon is still found there, but a themed icon, such as a folder or a
+device, is not. Quickshell reads the variable once, at start: an icon theme
+chosen in the theme cell reaches the shell's own icons at its next start.
 
 ## Two shells, one session
 
