@@ -68,16 +68,13 @@ Singleton {
     // A shortcut does not reach a cell directly: it reaches the shell, which
     // asks this register for the cell of that domain. The register is what
     // makes "launcher, session menu and settings are not a separate category"
-    // true in code (PRD §5) — there is no second model for invoked surfaces,
-    // only cells that happen to be invocable.
+    // true in code (PRD §5) — there is no second model for invoked surfaces.
     //
-    // **Every cell is in it**, not only the ones whose block says invocable.
-    // A cell already on the membrane is the answer to somebody asking for it
-    // by name — it held only the declared ones before, so asking for the
-    // workspaces cell, which is always visible and says nothing about being
-    // invocable, summoned a second copy of it into the middle of the screen
-    // while the first sat on the membrane. What `invocable` decides is the
-    // *ranking* below, not who may answer.
+    // **Every cell is in it, and every cell answers** (Akusen's rule,
+    // 2026-09-23): on a membrane it opens where it is, in a floating slot it
+    // appears there, and placed nowhere on the monitor it is summoned into the
+    // middle. A cell has one place per monitor — the Structure page will not
+    // give it a second — so the answer is never a guess.
     //
     // The same cell exists once per monitor, so a domain answers with several
     // and the one on the output the keyboard is pointed at is the one meant.
@@ -119,17 +116,12 @@ Singleton {
             if (output && cell.output !== output)
                 continue;
 
-            // Three ranks, in the order of how much the asking is *for* them:
-            // a cell that exists only when it is asked for, then one that says
-            // it answers, then one that is simply on screen already. A cell
-            // that is neither declared nor currently shown is not an answer at
-            // all — a conditional cell with nothing to report has nothing to
-            // open — and the summoned copy is what that asking gets.
-            const asked = cell.visibility.type === "invoked" ? 3
-                        : cell.visibility.invocable ? 2
-                        : cell.shown ? 1 : 0;
-            if (asked === 0)
-                continue;
+            // Every cell answers its name — on a membrane it opens where it
+            // is, in a floating slot it appears there. One cell per domain per
+            // monitor is the Structure page's rule; a block whose visibility
+            // is `invoked` (the summoned copy, or an old configuration) still
+            // wins over one that is simply placed.
+            const asked = cell.visibility.type === "invoked" ? 2 : 1;
             if (asked > rank) {
                 best = cell;
                 rank = asked;
@@ -197,18 +189,25 @@ Singleton {
     function invoke(domain, output) {
         const cell = root.cellFor(domain, output);
         if (cell) {
-            if (cell.visibility.type === "invoked") {
-                cell.visibility.toggle();
-                // Arriving is opening, for a cell that has a panel and does
-                // not arrive as its own first shape; one that does claims the
-                // attention instead, so a press outside still sends it off.
-                const opens = cell.visibility.invoked && cell.hasPanel && cell.opensOnArrival;
-                cell.open = opens;
-                if (cell.visibility.invoked && !opens)
-                    root.opened(cell);
-            } else {
-                cell.open = !cell.open;
+            // Asking twice puts it away: open, it closes; there because it was
+            // asked for, it goes.
+            if (cell.open || cell.visibility.invoked) {
+                cell.open = false;
+                cell.visibility.invoked = false;
+                root.released(cell);
+                return true;
             }
+
+            // Asked for, it is shown whatever its visibility says — a
+            // conditional cell with nothing to report comes anyway, and goes
+            // again when it is closed. Arriving is opening, for a cell that has
+            // a panel and does not arrive as its own first shape; one that does
+            // claims the attention instead, so a press outside sends it off.
+            cell.visibility.invoked = true;
+            if (cell.hasPanel && cell.opensOnArrival)
+                cell.open = true;
+            else
+                root.opened(cell);
             return true;
         }
 

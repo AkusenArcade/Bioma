@@ -68,7 +68,10 @@ Item {
 
         value: root.condition
         type: rule.type || "always"
-        invocable: rule.invocable === true || (rule.type === "invoked")
+        // Every cell can be asked for by name: on a membrane it opens where
+        // it is, anywhere else it floats. Whether it is also on screen
+        // without being asked for is what `type` says.
+        invocable: true
         // One, not nothing. Most conditions are boolean — a window has the
         // focus, a device is connected — and a threshold of zero is met by a
         // condition of zero, so a conditional block that named no thresholds
@@ -740,7 +743,7 @@ Item {
             // A cell that exists only while it is asked for goes when it is
             // closed, however it was closed — the press outside that shut it
             // is also the answer to "do you still want this?".
-            if (visibility.type === "invoked" && leavesOnClose)
+            if (visibility.invoked && leavesOnClose)
                 visibility.invoked = false;
         }
 

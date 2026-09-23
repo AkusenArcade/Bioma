@@ -177,7 +177,7 @@
             {
               "type": "vitals",
               "enabled": true,
-              "visibility": { "type": "always", "invocable": true, "shortcut": "Mod+V" },
+              "visibility": { "type": "always", "shortcut": "Mod+V" },
               "min_width": { "value": 90 },
               "options": { "gpu": true, "process_sort": "ram" }
             },
@@ -190,13 +190,13 @@
             {
               "type": "utility",
               "enabled": true,
-              "visibility": { "type": "always", "invocable": true, "shortcut": "Mod+P" },
+              "visibility": { "type": "always", "shortcut": "Mod+P" },
               "min_width": { "value": 40 }
             },
             {
               "type": "theme",
               "enabled": true,
-              "visibility": { "type": "always", "invocable": true, "shortcut": "Mod+T" },
+              "visibility": { "type": "always", "shortcut": "Mod+T" },
               "min_width": { "value": 120 }
             },
             {
@@ -214,19 +214,19 @@
             {
               "type": "audio",
               "enabled": true,
-              "visibility": { "type": "always", "invocable": true, "shortcut": "Mod+A" },
+              "visibility": { "type": "always", "shortcut": "Mod+A" },
               "min_width": { "value": 40 }
             },
             {
               "type": "settings",
               "enabled": true,
-              "visibility": { "type": "always", "invocable": true, "shortcut": "Mod+Comma" },
+              "visibility": { "type": "always", "shortcut": "Mod+Comma" },
               "min_width": { "value": 40 }
             },
             {
               "type": "session",
               "enabled": true,
-              "visibility": { "type": "always", "invocable": true, "shortcut": "Mod+Escape" },
+              "visibility": { "type": "always", "shortcut": "Mod+Escape" },
               "min_width": { "value": 40 }
             }
           ]

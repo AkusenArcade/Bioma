@@ -587,15 +587,32 @@ Item {
         });
     }
 
+    // **One place per cell per monitor.** A cell is on one band of one
+    // membrane or in one floating slot, and that place is where a keybind
+    // opens it — two would make the keybind a guess. So the picker offers only
+    // what is nowhere on this monitor yet: not in this tissue, not in another
+    // band, not floating.
+    readonly property var placedHere: {
+        const out = [];
+        for (const block of root.bands) {
+            if (!root.claims(block))
+                continue;
+            for (const tissue of (block.tissues || []))
+                for (const entry of (tissue.cells || []))
+                    out.push(entry.type);
+        }
+        for (const f of root.floatsHere)
+            for (const entry of (f.block.cells || []))
+                out.push(entry.type);
+        return out;
+    }
+
     readonly property var absent: {
         const out = [];
         if (!root.chosen)
             return out;
-        const taken = [];
-        for (const entry of (root.chosen.cells || []))
-            taken.push(entry.type);
         for (const type in Registry.files)
-            if (taken.indexOf(type) < 0)
+            if (root.placedHere.indexOf(type) < 0)
                 out.push(type);
         return out;
     }

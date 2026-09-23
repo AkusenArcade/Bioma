@@ -183,7 +183,7 @@ the cell exists.
 |---|---|
 | `type` | Which cell |
 | `enabled` | |
-| `visibility.type` | `always` \| `conditional` \| `invoked`. They combine — a cell may be conditional *and* invocable. |
+| `visibility.type` | `always` \| `conditional` — whether the cell is on screen without being asked for. **Every cell answers a keybind** regardless: on a membrane it opens where it is, in a floating tissue it appears there, and placed nowhere on the monitor it is summoned into the middle. `invoked` still reads, for a block that should exist only while asked for. A cell may be in **one place per monitor** — one band or one floating tissue — and the settings cell will not give it a second. |
 | `visibility.enter` / `exit` | Dual threshold. Distinct values on every boundary, so the state cannot flicker around one. Omitted, the cell's domain answers — `cells/Registry.qml` holds the grammar each condition means, and zero would have been met by a condition of zero. |
 | `visibility.confirm` | How long the condition must hold before appearing. |
 | `visibility.dwell` | How long the cell remains after the condition lapses. Omitted, the domain's own figure applies: a window title goes in 200 ms because with no window it has nothing to name, a sound level takes four seconds to be forgotten. |

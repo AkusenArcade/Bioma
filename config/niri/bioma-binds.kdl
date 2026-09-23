@@ -7,9 +7,10 @@
 // are cells whose visibility is `invoked`, and they arrive the same way the
 // always-visible ones open (PRD §5).
 //
-// The domain is the `type` in the configuration, and a cell answers only if
-// its block says `"invocable": true` or its visibility is `"invoked"`. Ask the
-// running shell which ones do:
+// The domain is the `type` in the configuration, and every cell answers: on a
+// membrane it opens where it is, in a floating slot it appears there, and
+// placed nowhere on the monitor it comes up in the middle. Ask the running
+// shell which domains it knows:
 //
 //     qs -p ~/Documents/Development/Bioma/shell.qml ipc call cell list
 //

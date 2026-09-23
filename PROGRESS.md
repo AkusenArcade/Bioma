@@ -1656,6 +1656,34 @@ Super+Alt+K rewrote the one line of `Mod+N`; a filter typed, Enter taking
 leaving the list where it was. The presses that start each of those came from
 a throwaway timer.
 
+### One place per cell per monitor, and every cell answers its key
+
+Akusen's simplification, 2026-09-23. Where a cell is and when it shows are two
+separate questions, each answered in one place:
+
+- **Where — Structure, per monitor.** A cell is in one band of one membrane or
+  in one floating slot, never two. The picker offers only what is nowhere on
+  that monitor yet.
+- **When — Cells, and only always or conditional.** "Invoked only" is gone
+  from the page. A cell placed nowhere on any monitor is listed as keybind
+  only. What each condition means per cell is Akusen's to give, next.
+- **The keybind, for every cell.** `Cell` is always invocable. On a membrane the
+  cell opens where it is; in a floating slot it appears there, even if its
+  condition is not met, and goes again when it is put away; placed nowhere on
+  the monitor it is summoned into the middle. Asking twice puts it away.
+  `"invocable": true` is gone from the default layer — it no longer decides
+  anything — and a block of type `invoked` still reads.
+- The notification cell opened by a key opens its history: there is no body to
+  show a hand that is not there.
+- The Keybinds page's picker no longer dims cells as "not placed": every cell
+  has somewhere to come up.
+
+Verified on the running desktop with `ipc call cell toggle`: notifications came
+up in Akusen's left floating slot with the history, vitals — on HDMI-A-1 only —
+in the middle of DP-1, the clock opened nothing because it has nothing to open,
+and each went away when asked again. The picker on DP-1 offered vitals, audio,
+connectivity, dock and tray, the five cells not on it.
+
 ### Structure shows what floats
 
 A part of the layout the settings cell could not see is a part nobody can fix.

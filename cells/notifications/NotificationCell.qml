@@ -127,7 +127,14 @@ Cell {
     onHistoryChanged: root.settle()
     onShoutChanged: root.settle()
 
-    onOpenChanged: if (!root.open) root.history = false
+    // Opened by anything but the pointer — a keybind — is asking for the
+    // history: there is no body to show a hand that is not there.
+    onOpenChanged: {
+        if (!root.open)
+            root.history = false;
+        else if (!root.touched)
+            root.history = true;
+    }
 
     TapHandler {
         onTapped: root.history = !root.history

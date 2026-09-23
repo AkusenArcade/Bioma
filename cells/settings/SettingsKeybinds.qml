@@ -169,8 +169,6 @@ Item {
 
         if (root.recording === "new") {
             Keybinds.add(combination, root.adding.action, root.adding.title);
-            if (root.adding.cell)
-                root.summonable(root.adding.cell);
         } else {
             const bind = root.bindOf(root.recording);
             if (bind)
@@ -686,9 +684,9 @@ Item {
     //
     // It hangs off the add chip on a thread and grows up from it, over the
     // list: the cells first, as the shell's own, then niri's actions — every
-    // one this niri knows that needs no argument. A cell with no place in the
-    // configuration stays listed, dimmed and saying so: a key for it would
-    // have nothing to open.
+    // one this niri knows that needs no argument. Every cell is on it: a key
+    // opens a cell where it is placed on the monitor, and in the middle of it
+    // when it is placed nowhere.
 
     readonly property var choices: {
         const out = [];
@@ -706,7 +704,6 @@ Item {
                 "group": "CELLS",
                 "label": label,
                 "cell": type,
-                "placed": root.declared(type),
                 "title": "Bioma: " + label.toLowerCase(),
                 "action": {
                     "name": "spawn",
@@ -724,7 +721,6 @@ Item {
                 "group": "NIRI",
                 "label": label,
                 "cell": "",
-                "placed": true,
                 "title": "",
                 "action": { "name": name, "args": [] }
             });
@@ -757,55 +753,6 @@ Item {
         root.picking = false;
         root.adding = choice;
         root.listen("new");
-    }
-
-    // ---- Summoning a cell by key -------------------------------------------
-    //
-    // A key only opens a cell whose block says it may be summoned. Giving a
-    // cell a key is asking for exactly that, so every declaration of it says
-    // so from then on — on every monitor, as the Cells page does, because
-    // whether a domain can be summoned is a property of the domain.
-
-    readonly property var bands: Config.get("membranes", [])
-    readonly property var floats: Config.get("floating", [])
-
-    function declared(type) {
-        for (const band of root.bands)
-            for (const tissue of (band.tissues || []))
-                for (const entry of (tissue.cells || []))
-                    if (entry.type === type)
-                        return true;
-        for (const group of root.floats)
-            for (const entry of (group.cells || []))
-                if (entry.type === type)
-                    return true;
-        return false;
-    }
-
-    function summonable(type) {
-        for (const list of ["membranes", "floating"]) {
-            const copy = JSON.parse(JSON.stringify(list === "membranes" ? root.bands : root.floats));
-            let touched = false;
-
-            for (const block of copy) {
-                const groups = list === "membranes" ? (block.tissues || []) : [block];
-                for (const group of groups) {
-                    for (const entry of (group.cells || [])) {
-                        if (entry.type !== type)
-                            continue;
-                        const rule = Object.assign({}, entry.visibility || ({}));
-                        if (rule.type === "invoked" || rule.invocable === true)
-                            continue;
-                        rule.invocable = true;
-                        entry.visibility = rule;
-                        touched = true;
-                    }
-                }
-            }
-
-            if (touched)
-                Config.set(list, copy);
-        }
     }
 
     Thread {
@@ -866,7 +813,7 @@ Item {
 
                 Keys.onEscapePressed: root.picking = false
                 onAccepted: {
-                    const first = root.choices.find(choice => choice.placed);
+                    const first = root.choices.length > 0 ? root.choices[0] : null;
                     if (first)
                         root.choose(first);
                 }
@@ -925,37 +872,19 @@ Item {
                 Text {
                     anchors.left: parent.left
                     anchors.leftMargin: 8 * root.factor
-                    anchors.right: option.modelData.placed ? parent.right : note.left
+                    anchors.right: parent.right
                     anchors.rightMargin: 8 * root.factor
                     anchors.verticalCenter: parent.verticalCenter
                     text: option.modelData.label
                     elide: Text.ElideRight
-                    color: !option.modelData.placed ? Theme.textFaint
-                         : optionHover.hovered ? Theme.primary : Theme.text
+                    color: optionHover.hovered ? Theme.primary : Theme.text
                     font.family: Typography.expressive
                     font.pixelSize: 14 * root.factor
-                }
-
-                Text {
-                    id: note
-                    anchors.right: parent.right
-                    anchors.rightMargin: 8 * root.factor
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: !option.modelData.placed
-                    text: "not placed"
-                    color: Theme.textFaint
-                    font: Qt.font({
-                        "family": Typography.technical,
-                        "pixelSize": root.metrics.fontMeta,
-                        "letterSpacing": Typography.tracking(root.metrics.fontMeta,
-                                                             Typography.labelTracking)
-                    })
                 }
 
                 HoverHandler { id: optionHover }
 
                 TapHandler {
-                    enabled: option.modelData.placed
                     onTapped: root.choose(option.modelData)
                 }
             }

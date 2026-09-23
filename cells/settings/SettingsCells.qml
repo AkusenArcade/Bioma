@@ -7,17 +7,18 @@ import qs.cells
 // When each cell exists.
 //
 // One row per cell in the catalogue, with its visibility as a small segmented
-// control: always, conditional, invoked only. **Invoked only is named that way
-// because every cell is invokable** — a shortcut opens it whatever it is. What
-// the option decides is whether the cell exists *without* being asked for.
+// control: always, or conditional. **Every cell answers a keybind** whatever
+// this says — on a membrane it opens where it is, in a floating slot it appears
+// there, and placed nowhere on the monitor it comes up in the middle — so the
+// only question left here is whether it is on screen without being asked for.
+// Where it is, is the Structure page's.
 //
 // Options a cell cannot wear stay in the track, dimmed: a window title with no
 // window has nothing to say, so it is conditional and nothing else, and seeing
 // that is how the shell explains itself.
 //
-// A cell that is in no tissue at all is invoked only and can be nothing else
-// from here — the other two answers need somewhere to be, and giving it a
-// place is the Structure page's work, not this one's.
+// A cell that is in no tissue at all has neither answer — both need somewhere
+// to be — and its row says it is reached by keybind only.
 //
 // See docs/design/CELLS.md §12.
 Item {
@@ -67,7 +68,7 @@ Item {
                 "type": type,
                 "name": Registry.nameOf(type),
                 "placed": found !== null,
-                "state": found ? (rule.type || "always") : "invoked"
+                "state": found ? (rule.type || "always") : ""
             });
         }
         return out;
@@ -176,6 +177,23 @@ Item {
                 font.pixelSize: 14 * root.factor
             }
 
+            // Placed nowhere, it has no rest state to choose — it is there
+            // when it is asked for, and that is what the row says.
+            Text {
+                anchors.right: parent.right
+                anchors.rightMargin: 6 * root.factor
+                anchors.verticalCenter: parent.verticalCenter
+                visible: !row.modelData.placed
+                text: "KEYBIND ONLY"
+                color: Theme.textFaint
+                font: Qt.font({
+                    "family": Typography.technical,
+                    "pixelSize": root.metrics.fontMeta,
+                    "letterSpacing": Typography.tracking(root.metrics.fontMeta,
+                                                         Typography.labelTracking)
+                })
+            }
+
             Segmented {
                 id: choice
 
@@ -189,13 +207,13 @@ Item {
 
                 current: row.modelData.state
 
+                visible: row.modelData.placed
+
                 options: [
                     { "key": "always", "label": "Always",
-                      "dimmed": !row.modelData.placed || !Registry.allows(row.modelData.type, "always") },
+                      "dimmed": !Registry.allows(row.modelData.type, "always") },
                     { "key": "conditional", "label": "Conditional",
-                      "dimmed": !row.modelData.placed || !Registry.allows(row.modelData.type, "conditional") },
-                    { "key": "invoked", "label": "Invoked only",
-                      "dimmed": !row.modelData.placed || !Registry.allows(row.modelData.type, "invoked") }
+                      "dimmed": !Registry.allows(row.modelData.type, "conditional") }
                 ]
 
                 onChose: key => root.apply(row.modelData.type, key)
