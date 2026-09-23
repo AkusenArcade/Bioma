@@ -1664,6 +1664,28 @@ Super+Alt+K rewrote the one line of `Mod+N`; a filter typed, Enter taking
 leaving the list where it was. The presses that start each of those came from
 a throwaway timer.
 
+### A notification on a side edge flickered under the pointer
+
+Akusen's report: the notifications in the floating tissue flickered on hover
+instead of opening. The tissue is anchored `left`, halfway down DP-1, and the
+side anchors had taken the centred rule, which re-centres the whole composition
+on what it opens. So the pill rose by half of what it opened, left the pointer
+below it, and closed. Then it dropped back under the pointer and opened again.
+Measured with an absolute pointer: `tissue.y` went 698 → 634.5 → 698 for as
+long as the pointer stayed.
+
+- `left` and `right` now keep their place, like every other edge anchor, and
+  the composition hangs from them.
+- A centred tissue holds its place while the pointer is on a cell it opened.
+  It lets go once the pointer has left and the cell has closed. The rule is
+  that what the pointer opens never moves out from under it. A summoned cell
+  is exempt, because the pointer neither opens nor closes it and it still has
+  to be centred.
+
+Verified: the notification opens on hover and stays open for as long as the
+pointer is on it, with the pill at y 698 throughout. The clipboard, summoned
+with the pointer resting in the middle of the screen, is still centred.
+
 ### The overview's backdrop
 
 Akusen noticed that under Noctalia, niri's overview showed a blurred wallpaper

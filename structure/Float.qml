@@ -311,6 +311,13 @@ PanelWindow {
     // Anchored to an edge the tissue keeps its margin and the composition
     // hangs where it hangs; centred, the whole of it is centred, which moves
     // the tissue up by half of what hangs below it.
+    //
+    // A side edge is an edge too. `left` and `right` sit halfway down their
+    // edge, and they once took the centred rule as well — so a notification
+    // there, opened by the pointer, rose by half of what it opened, left the
+    // pointer below it, closed, dropped back under the pointer and opened
+    // again: 698 to 634.5 and back, for as long as the pointer stayed.
+    // Measured, 2026-09-23.
     readonly property real placedY: {
         if (byPointer) {
             const edge = root.metrics.marginEdge;
@@ -323,8 +330,44 @@ PanelWindow {
             return root.margin("top");
         if (atBottom)
             return root.height - tissue.height - root.margin("bottom");
+        if (atLeft || atRight)
+            return (root.height - tissue.height) / 2;
         return (root.height - tissue.height - root.reach) / 2;
     }
+
+    // And what the pointer opens never moves out from under it, whatever the
+    // anchor. A centred tissue re-centres on what it opens, which is right for
+    // a cell a key summoned and wrong for one the pointer is on: the shape
+    // would slide away from the hand that opened it. So while the pointer is
+    // on a cell the tissue holds where it was, and it lets go once the pointer
+    // has left and what it opened has closed.
+    //
+    // Not for a summoned cell: a key opened it, the pointer neither opens nor
+    // closes it, and one that arrives under a resting pointer still has to be
+    // centred on what it grows into.
+    readonly property bool pointerOn: {
+        for (const cell of tissue.cells)
+            if (cell.touched && !cell.visibility.invoked)
+                return true;
+        return false;
+    }
+
+    property bool keepsPlace: false
+    property real heldY: 0
+
+    // Set here rather than bound: the position to hold is the one from before
+    // the pointer arrived, and a binding would read it after.
+    onPointerOnChanged: {
+        if (root.pointerOn) {
+            if (!root.keepsPlace)
+                root.heldY = root.placedY;
+            root.keepsPlace = true;
+        } else if (root.reach === 0) {
+            root.keepsPlace = false;
+        }
+    }
+
+    onReachChanged: if (!root.pointerOn && root.reach === 0) root.keepsPlace = false
 
     // An expansion grows away from whatever the tissue is nearest to, and a
     // centred one grows downward: there is more screen below the middle than
@@ -402,7 +445,7 @@ PanelWindow {
         opensAway: root.opensDown
 
         x: root.placedX
-        y: root.placedY
+        y: root.keepsPlace ? root.heldY : root.placedY
 
         // At the pointer, nothing is drawn until the pointer has been found.
         opacity: root.atPointer && !root.located ? 0 : 1
