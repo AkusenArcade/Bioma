@@ -235,6 +235,8 @@ Item {
                         return Qt.resolvedUrl("SettingsCells.qml");
                     if (root.chosen === "structure")
                         return Qt.resolvedUrl("SettingsStructure.qml");
+                    if (root.chosen === "monitors")
+                        return Qt.resolvedUrl("SettingsMonitors.qml");
                     if (root.chosen === "keybinds")
                         return Qt.resolvedUrl("SettingsKeybinds.qml");
                     return "";

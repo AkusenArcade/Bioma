@@ -9,7 +9,7 @@ Last worked: 2026-09-23.
 
 Phases 0 to 4 are done and phase 6 with them: the engine, ten services, and
 fifteen cells — the last of them notifications, with the bus taken off Noctalia,
-and the launcher in both its forms. Phase 5 is four pages of five.
+and the launcher in both its forms. Phase 5 is done: all five settings pages.
 
 Akusen has been driving the whole shell by hand since 2026-09-22, and most of
 what is written below the fold came out of that: the settings cell, the
@@ -17,19 +17,13 @@ structure page, and a run of engine defects that only a pointer could find.
 
 What is left, in the order it is worth taking:
 
-1. **Settings, the last page: Monitors**, dragged and snapped, with the name
-   and mode on two lines inside each rectangle. It writes **niri's own
-   configuration** rather than Bioma's, like Keybinds before it: the shell
-   edits a file it does not own, and has to leave everything else in it
-   untouched. `services/niri-binds.js` is the way that was done for binds —
-   scan for positions, replace one span, validate before writing.
-2. **What CELLS left open in the cells already drawn.** Sinestesia on a narrow
+1. **What CELLS left open in the cells already drawn.** Sinestesia on a narrow
    screen and reduced motion (the band becomes a single bar rather than
    stopping); whether a long window title scrolls on hover; the audio cell's
    invoked form, which §05 draws as the capsule alone with no thread; the
    notification column, so ordinary ones can scroll past a critical one; the
    session cell's own silhouette glyph.
-3. **The last piece of the engine**: cells positioned at the pointer, which is
+2. **The last piece of the engine**: cells positioned at the pointer, which is
    the remaining user of the full-screen input surface.
 
 The PRD's open question — whether there is a tray cell at all — was answered
@@ -73,6 +67,9 @@ been confirmed by a real press:
   the rows drew it — but the path from a press back to PipeWire has only ever
   been driven from the other end.
 
+- **the Monitors page's drag**, and a press on its Primary switch. The drag
+  was driven by calling the handler's own functions from a timer; a real
+  pointer has never carried a rectangle.
 - **the Keybinds page's presses**: the pencil, the cross that removes a bind,
   the dashed chip, and a row of the picker. Everything *after* a press was
   driven with a synthesised keyboard (see below) — but the press itself came
@@ -1658,6 +1655,42 @@ Super+Alt+K rewrote the one line of `Mod+N`; a filter typed, Enter taking
 "Close window", and Super+Ctrl+Alt+J appended to `config.kdl`; a mid-list edit
 leaving the list where it was. The presses that start each of those came from
 a throwaway timer.
+
+### Settings: Monitors, the last page of five
+
+Every output niri reports, drawn to scale in the area as a rectangle with its
+name and mode on two lines in the middle. A rectangle is carried from where it
+was touched; the edges and centres it can line up with pull it in within
+twelve units of the area, and the line it snapped to is drawn across the area
+for as long as it holds. Let go, and the whole layout is written with its
+top-left at the origin; niri moves the desktop and the rectangles settle on
+what niri then reports. A drop that overlaps another monitor goes back, saying
+so. Below: the chosen monitor — shared with the Structure page — whether niri
+focuses it at startup, and its scale.
+
+- **The niri configuration is one service now.** `services/NiriConfig.qml`
+  owns the files — reading every include, watching them, validating before
+  writing, one write at a time — and `Keybinds` and `Monitors` are views on
+  it. The scanner is `services/niri-config.js`, with output sections beside
+  binds.
+- **Two sources for a monitor.** Where it is and what mode it runs come from
+  `niri msg --json outputs`, asked again after every write and whenever the
+  screens change; what was *asked for* comes from the `output` sections.
+- **niri does not merge `output` sections.** This machine has `DP-1` in both
+  `config.kdl` and `outputs.kdl`; a position is written into every section
+  that names the output, by connector or by make-model-serial. An output with
+  no section gets one, beside the last section there is.
+- **"Primary" is `focus-at-startup`**, niri's only notion of one: set on the
+  chosen output, taken off every other.
+- Known limit: the area's scale is frozen while a rectangle is carried, so a
+  rectangle dragged past the area's edge is cut off until it is dropped and
+  the area refits.
+
+Verified against a scratch copy of the configuration: the services from
+`probe.qml`; positions written into both `DP-1` sections, primary moved and
+taken off again; and a drag driven from a timer — HDMI-A-1 carried to the right
+of DP-1 snapped to both its right edge and its top, drew both guides, and wrote
+`position x=3440 y=0` into the one line it had.
 
 ## Phase 1 — Service porting
 

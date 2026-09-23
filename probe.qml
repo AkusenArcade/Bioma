@@ -75,6 +75,7 @@ ShellRoot {
     readonly property bool capturingVideo: Capture.recording
     readonly property var keybinds: Keybinds.binds
     readonly property bool keybindsReady: Keybinds.ready
+    readonly property var monitors: Monitors.outputs
     readonly property var niriActions: Keybinds.actions
 
     function line(label, value) {
@@ -333,14 +334,25 @@ ShellRoot {
     function probeKeybinds() {
         console.log("── Keybinds ──────────────────────────────────────");
         line("ready", root.keybindsReady);
-        line("files", Keybinds.paths.length);
-        for (const path of Keybinds.paths)
-            line("  " + path.split("/").pop(), Keybinds.texts[path] === null ? "unreadable" : "read");
+        line("files", NiriConfig.paths.length);
+        for (const path of NiriConfig.paths)
+            line("  " + path.split("/").pop(), NiriConfig.texts[path] === null ? "unreadable" : "read");
         line("binds", root.keybinds.length);
         line("shadowed", root.keybinds.filter(b => b.shadowed).length);
         for (const bind of root.keybinds.slice(0, 4).concat(root.keybinds.slice(-3)))
             line("  " + bind.caps.join(" "), bind.label);
         line("actions", root.niriActions.length + " without arguments");
+    }
+
+    function probeMonitors() {
+        console.log("── Monitors ──────────────────────────────────────");
+        for (const o of root.monitors) {
+            line(o.name, `${o.width}×${o.height} at ${o.x},${o.y}  ×${o.scale}`
+                 + `  ${o.modeWidth}×${o.modeHeight}@${o.refresh.toFixed(1)}${o.primary ? "  primary" : ""}`);
+            for (const section of o.sections)
+                line("  section", section.file.split("/").pop()
+                     + (section.position ? `  position ${section.position.x},${section.position.y}` : "  no position"));
+        }
     }
 
     function probeBluetooth() {
@@ -478,6 +490,7 @@ ShellRoot {
             probeVitals();
             probeTray();
             probeKeybinds();
+            probeMonitors();
             probeCapture();
             console.log("──────────────────────────────────────────────────");
             Qt.exit(0);

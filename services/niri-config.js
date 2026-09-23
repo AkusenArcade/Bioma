@@ -1,12 +1,13 @@
 .pragma library
 
-// Reading and rewriting niri's `binds` blocks as text.
+// Reading and rewriting niri's configuration as text: its `binds` block and
+// its `output` sections, the two things Bioma's settings write.
 //
 // The configuration belongs to niri and to whoever wrote it, so it is never
 // parsed into a model and printed back: that would lose every comment, every
 // blank line and every choice of spelling in a file Bioma does not own. It is
 // scanned for positions instead — where each bind's key is, where each bind
-// starts and ends, where the block closes — and an edit replaces exactly that
+// starts and ends, where a block closes — and an edit replaces exactly that
 // span of text and nothing around it.
 //
 // This file is plain JavaScript with no QML in it, so the scanner can be run
@@ -17,7 +18,9 @@
 //   - the same key twice in one block is an error, compared without case and
 //     without modifier order (`Shift+Mod+x` is `Mod+Shift+X`),
 //   - across files it is not: includes are positional, and a bind written
-//     later overrides the same key written earlier.
+//     later overrides the same key written earlier,
+//   - `output` sections are not merged at all: two sections naming one
+//     output are both kept, so a position is written into every one of them.
 
 // ---- Tokens ----------------------------------------------------------------
 //
@@ -229,11 +232,12 @@ function parseNodes(tokens, at, nested) {
     return { "nodes": nodes, "next": i };
 }
 
-// ---- What a file says about binds -----------------------------------------
+// ---- What a file says ---------------------------------------------------------
 
-// Scan one file: the includes in the order they appear, and the one `binds`
-// block with every bind in it. `items` interleaves the two, because the order
-// between them is what decides which of two binds on one key wins.
+// Scan one file: its includes, its binds and its outputs, in the order they
+// appear, and the one `binds` block. `items` interleaves them, because the
+// order between an include and a bind is what decides which of two binds on
+// one key wins.
 function scan(text) {
     const top = parseNodes(tokenize(text), 0, false).nodes;
     const items = [];
@@ -246,6 +250,11 @@ function scan(text) {
         if (node.name === "include" && node.args.length > 0) {
             items.push({ "kind": "include", "path": node.args[node.args.length - 1].value,
                          "optional": node.props.optional === "true" || node.props.optional === "#true" });
+            continue;
+        }
+
+        if (node.name === "output" && node.args.length > 0 && node.children) {
+            items.push(outputOf(node));
             continue;
         }
 
@@ -483,23 +492,7 @@ function withAdded(text, block, entry, lastBind) {
         return text + tail + "\nbinds {\n    " + entry + "\n}\n";
     }
 
-    let indent = "    ";
-    if (lastBind) {
-        let s = lastBind.start;
-        while (s > 0 && text[s - 1] !== "\n") s--;
-        const lead = /^[ \t]*/.exec(text.slice(s, lastBind.start))[0];
-        if (lead.length > 0)
-            indent = lead;
-    }
-
-    let at = block.close;
-    let back = at;
-    while (back > 0 && (text[back - 1] === " " || text[back - 1] === "\t")) back--;
-
-    if (back > 0 && text[back - 1] === "\n")
-        return text.slice(0, back) + indent + entry + "\n" + text.slice(back);
-
-    return text.slice(0, at) + "\n" + indent + entry + "\n" + text.slice(at);
+    return withChild(text, block, entry, lastBind);
 }
 
 // The block alone, as niri would read it: what gets validated before a file
@@ -508,4 +501,96 @@ function withAdded(text, block, entry, lastBind) {
 function blockOf(text) {
     const found = scan(text).block;
     return found ? text.slice(found.start, found.end) + "\n" : "";
+}
+
+// ---- Outputs --------------------------------------------------------------------
+
+function outputOf(node) {
+    const children = node.children.nodes.filter(child => !child.dropped);
+    const named = name => children.find(child => child.name === name) || null;
+    const position = named("position");
+    return {
+        "kind": "output",
+        "name": node.args[0].value,
+        "start": node.start,
+        "end": node.end,
+        "open": node.children.open,
+        "close": node.children.close,
+        "children": children,
+        "off": named("off") !== null,
+        "primary": named("focus-at-startup") !== null,
+        "position": position ? {
+            "start": position.start,
+            "end": position.end,
+            "x": Number(position.props.x),
+            "y": Number(position.props.y)
+        } : null
+    };
+}
+
+// Whether a section names this output. niri accepts the connector or the
+// monitor's make, model and serial, and compares without case.
+function names(output, connector, description) {
+    const wanted = String(output.name).toLowerCase();
+    return wanted === String(connector).toLowerCase()
+        || (description.length > 0 && wanted === String(description).toLowerCase());
+}
+
+// A child line goes at the end of a section, indented like the children
+// already in it.
+function withChild(text, block, entry, lastChild) {
+    let indent = "    ";
+    if (lastChild) {
+        let s = lastChild.start;
+        while (s > 0 && text[s - 1] !== "\n") s--;
+        const lead = /^[ \t]*/.exec(text.slice(s, lastChild.start))[0];
+        if (lead.length > 0)
+            indent = lead;
+    }
+
+    let back = block.close;
+    while (back > 0 && (text[back - 1] === " " || text[back - 1] === "\t")) back--;
+
+    if (back > 0 && text[back - 1] === "\n")
+        return text.slice(0, back) + indent + entry + "\n" + text.slice(back);
+
+    return text.slice(0, block.close) + "\n" + indent + entry + "\n" + text.slice(block.close);
+}
+
+function positionLine(x, y) {
+    return "position x=" + Math.round(x) + " y=" + Math.round(y);
+}
+
+// The position replaced where it is written, or added when it is not.
+function withPosition(text, output, x, y) {
+    const entry = positionLine(x, y);
+    if (output.position)
+        return text.slice(0, output.position.start) + entry + text.slice(output.position.end);
+    return withChild(text, output, entry, output.children[output.children.length - 1] || null);
+}
+
+// A flag — a child with no value, like `focus-at-startup` — set or cleared.
+function withFlag(text, output, flag, on) {
+    const present = output.children.find(child => child.name === flag) || null;
+    if (on && !present)
+        return withChild(text, output, flag, output.children[output.children.length - 1] || null);
+    if (!on && present)
+        return without(text, present);
+    return text;
+}
+
+// A section for an output the configuration does not mention yet.
+function withOutput(text, name, x, y) {
+    const tail = text.length === 0 || text.endsWith("\n") ? "" : "\n";
+    return text + tail + "\noutput " + quote(name) + " {\n    " + positionLine(x, y) + "\n}\n";
+}
+
+// Every output section of a file on its own — what is validated before the
+// file is written, for the same reason the binds block is.
+function outputsText(text) {
+    const out = [];
+    for (const item of scan(text).items)
+        if (item.kind === "output")
+            out.push(text.slice(item.start, item.end));
+    return out.join("\n") + "\n";
 }
