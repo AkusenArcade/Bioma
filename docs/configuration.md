@@ -182,7 +182,7 @@ the cell exists.
 | `visibility.shortcut` | For `invoked`. |
 | `min_width` | Below it the cell prefers not to appear rather than appear illegible. A generous minimum also stops small content changes producing motion. Omitted, the cell's own floor from `cells/Registry.qml` applies; this raises it, and the band's percentage has to cover the sum. |
 | `width` | An **object**, not a bare number — `{ "elastic": true, "max_percent": 25 }` — so a per-cell weight stays possible later. |
-| `options` | Per-cell domain settings. |
+| `options` | Per-cell domain settings. The clock takes `format` (`24h` \| `12h`), vitals `gpu`, and notifications `show`: `all` (the default — urgent first), `urgent` or `ordinary`. Two notification cells in a column, `urgent` above `ordinary`, are how the ordinary ones keep going past a critical one that does not leave by itself. |
 
 Confirm and dwell are asymmetric on purpose: appear promptly, leave slowly.
 

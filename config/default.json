@@ -262,9 +262,19 @@
       "anchor": "top-right",
       "margins": { "top": 12, "right": 12 },
       "orientation": "vertical",
+      "$comment": "Two notification cells in a column: a critical one sits on top and does not leave by itself, and the ordinary ones keep going past it underneath. One block with no `options.show` shows everything, urgent first.",
       "cells": [
         {
           "type": "notifications",
+          "options": { "show": "urgent" },
+          "enabled": true,
+          "visibility": { "type": "conditional", "enter": 1, "exit": 1, "confirm": 0, "dwell": 400 },
+          "min_width": { "value": 220 },
+          "width": { "max": 300 }
+        },
+        {
+          "type": "notifications",
+          "options": { "show": "ordinary" },
           "enabled": true,
           "visibility": { "type": "conditional", "enter": 1, "exit": 1, "confirm": 0, "dwell": 400 },
           "min_width": { "value": 220 },

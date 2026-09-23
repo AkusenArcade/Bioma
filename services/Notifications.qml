@@ -113,30 +113,42 @@ Singleton {
 
     // Two queues, because one of them has no clock.
     //
-    // A critical notification does not leave by itself, and one cell can show
-    // one thing — so held on the head of the ordinary queue it would stop
-    // every other notification for as long as it went unanswered, which is
-    // the one thing CELLS §10 says must not happen: the others keep going
-    // past it. They cannot go past it *visibly* until this cell can be a
-    // column of cells, which is the vertical tissue's next job; until then
-    // they go to the history rather than into a queue that is not moving.
+    // A critical notification does not leave by itself, so held on the head of
+    // one queue it would stop every other notification for as long as it went
+    // unanswered — the one thing CELLS §10 says must not happen: it sits on
+    // top, and the others keep going past it.
     //
-    // Urgency wins the cell: what is critical is what is on screen.
+    // Going past it has to be *seen*, which takes two cells: a notification
+    // cell's block may say `"show": "urgent"` or `"show": "ordinary"`, and a
+    // column of the two is exactly "one sits on top, the others go past". A
+    // single cell showing everything (`"all"`, the default) gives the urgent
+    // one the cell; the ordinary ones then do not queue behind it — they are
+    // kept, and they are in the history.
     property var queue: []
     property var urgent: []
 
-    readonly property var current: root.urgent.length > 0 ? root.urgent[0]
-                                 : (root.queue.length > 0 ? root.queue[0] : null)
+    readonly property var urgentHead: root.urgent.length > 0 ? root.urgent[0] : null
+    readonly property var ordinaryHead: root.queue.length > 0 ? root.queue[0] : null
+
+    // What a cell showing everything shows. Urgency wins it.
+    readonly property var current: root.urgentHead !== null ? root.urgentHead : root.ordinaryHead
     readonly property int waiting: Math.max(0, root.queue.length - 1) + root.urgent.length
 
     readonly property bool held: root.urgent.length > 0
 
     readonly property bool present: root.current !== null || root.flooding
 
-    // Set by the cell while the pointer is on it. Time does not run while
-    // somebody is reading, and on exit it resumes where it stopped — never
-    // from the start, or a distracted hover would keep a notification alive
-    // for ever (PRD §5.2, mandatory here).
+    // How many cells are showing the ordinary queue on its own. With one,
+    // the ordinary ones are seen going past an urgent one, so they keep
+    // queuing and their clock keeps running.
+    property int ordinaryCells: 0
+
+    readonly property bool ordinaryVisible: root.ordinaryCells > 0 || !root.held
+
+    // Set by the cell showing the ordinary head while the pointer is on it.
+    // Time does not run while somebody is reading, and on exit it resumes
+    // where it stopped — never from the start, or a distracted hover would
+    // keep a notification alive for ever (PRD §5.2, mandatory here).
     property bool holding: false
 
     property real remaining: 0
@@ -149,7 +161,6 @@ Singleton {
 
         if (root.isCritical(notification)) {
             root.urgent = root.urgent.concat([notification]);
-            life.stop();
             return;
         }
 
@@ -161,10 +172,8 @@ Singleton {
             return;
         }
 
-        // While something urgent is on the cell the ordinary ones do not
-        // queue behind it: they are kept and they are in the history, and
-        // what is in front of somebody is the thing that matters.
-        if (root.held)
+        // Nobody would see it queue: it is kept, and it is in the history.
+        if (!root.ordinaryVisible)
             return;
 
         root.queue = root.queue.concat([notification]);
@@ -172,77 +181,77 @@ Singleton {
             root.begin();
     }
 
-    // The head of the queue starts its own clock. A critical one has none.
+    // The only clock is the ordinary head's. It runs while that head can be
+    // seen and nobody is reading it, and it keeps what was left when it stops.
     function begin() {
         life.stop();
-        root.remaining = root.dwellFor(root.current);
-        if (root.remaining <= 0)
-            return;
-        root.startedAt = Date.now();
-        life.interval = root.remaining;
-        life.start();
+        root.remaining = root.ordinaryHead ? root.dwellFor(root.ordinaryHead) : 0;
+        root.pace();
     }
 
-    function advance() {
-        life.stop();
-        if (root.urgent.length > 0)
-            root.urgent = root.urgent.slice(1);
-        else
-            root.queue = root.queue.slice(1);
+    function pace() {
+        const run = root.ordinaryHead !== null && root.ordinaryVisible && !root.holding
+                    && root.remaining > 0;
+        if (run && !life.running) {
+            root.startedAt = Date.now();
+            life.interval = root.remaining;
+            life.start();
+        } else if (!run && life.running) {
+            root.remaining = Math.max(0, life.interval - (Date.now() - root.startedAt));
+            life.stop();
+        }
+    }
 
-        if (root.current !== null)
-            root.begin();
-        else
+    onHoldingChanged: root.pace()
+    onOrdinaryVisibleChanged: root.pace()
+
+    // Take one notification off whichever queue holds it.
+    function advance(notification) {
+        if (root.urgent.includes(notification)) {
+            root.urgent = root.urgent.filter(n => n !== notification);
+        } else if (root.queue.includes(notification)) {
+            const wasHead = root.queue[0] === notification;
+            root.queue = root.queue.filter(n => n !== notification);
+            if (wasHead)
+                root.begin();
+        }
+
+        if (root.queue.length === 0)
             root.collapsed = 0;
     }
 
     // Leaving by itself is not the same as being dismissed: a notification
     // that expires stays in the history and the sender is told it expired,
-    // while one the user closes is closed.
+    // while one the user closes is closed. Only the ordinary head expires.
     function expire() {
-        const notification = root.current;
-        root.advance();
-        if (notification)
-            notification.expire();
+        const notification = root.ordinaryHead;
+        if (!notification)
+            return;
+        root.advance(notification);
+        notification.expire();
     }
 
-    function dismiss() {
+    // The one named, or what a cell showing everything shows.
+    function dismiss(notification) {
+        const which = notification !== undefined && notification !== null ? notification : root.current;
         // A count is dismissed too: the flood is what the cell is saying, so
         // closing the cell has to be able to close that.
-        if (!root.current) {
+        if (!which) {
             root.collapsed = 0;
             return;
         }
-        const notification = root.current;
-        root.advance();
-        notification.dismiss();
+        root.advance(which);
+        which.dismiss();
     }
 
-    function invoke(action) {
+    function invoke(action, notification) {
         action?.invoke();
-        root.dismiss();
+        root.dismiss(notification);
     }
 
     Timer {
         id: life
         onTriggered: root.expire()
-    }
-
-    onHoldingChanged: {
-        if (!root.current)
-            return;
-        if (root.holding) {
-            if (life.running) {
-                root.remaining = Math.max(0, life.interval - (Date.now() - root.startedAt));
-                life.stop();
-            }
-            return;
-        }
-        if (root.remaining > 0) {
-            root.startedAt = Date.now();
-            life.interval = root.remaining;
-            life.start();
-        }
     }
 
     // ── The history ──────────────────────────────────────────────────────

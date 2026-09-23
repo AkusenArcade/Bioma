@@ -17,12 +17,12 @@ structure page, and a run of engine defects that only a pointer could find.
 
 What is left, in the order it is worth taking:
 
-1. **What CELLS left open in the cells already drawn.** Sinestesia on a narrow
-   screen and reduced motion (the band becomes a single bar rather than
-   stopping); whether a long window title scrolls on hover; the audio cell's
+1. **What CELLS left open in the cells already drawn.** The audio cell's
    invoked form, which §05 draws as the capsule alone with no thread; the
-   notification column, so ordinary ones can scroll past a critical one; the
-   session cell's own silhouette glyph.
+   session cell's own silhouette glyph. Sinestesia on a narrow screen and
+   reduced motion wait, by Akusen's call on 2026-09-23. A long window title
+   was never open: §01 says ellipsis, never scrolling — scrolling on hover is
+   the track title's, in Sinestesia.
 2. **The last piece of the engine**: cells positioned at the pointer, which is
    the remaining user of the full-screen input surface.
 
@@ -1655,6 +1655,30 @@ Super+Alt+K rewrote the one line of `Mod+N`; a filter typed, Enter taking
 "Close window", and Super+Ctrl+Alt+J appended to `config.kdl`; a mid-list edit
 leaving the list where it was. The presses that start each of those came from
 a throwaway timer.
+
+### A critical notification sits on top, and the others go past it
+
+The notification cell takes `options.show`: `all` (as before), `urgent` or
+`ordinary`. Two of them in a column, urgent above ordinary, are the "column of
+cells" §10 asks for, and `config/default.json`'s floating column is now that.
+
+- **The only clock is the ordinary head's.** It runs while that head can be
+  seen and nobody is reading it; the pointer on the urgent cell does not stop
+  the ordinary ones going past.
+- **With one `all` cell nothing changes**: urgency wins the cell and ordinary
+  ones arriving meanwhile go to the history, because nobody would see them
+  queue. The service knows which case it is in by counting the cells showing
+  `ordinary`.
+- Dismissing names the notification — the close button and the middle click
+  close what *their* cell shows, not whatever is at the head of a queue.
+
+Verified with `XDG_CONFIG_HOME` pointed at a scratch copy of the configuration
+and `notify-send`: a critical one held the top cell while a normal one expired
+under it after eight seconds and a low one took its place.
+
+Found on the way, not changed: Akusen's override puts a notification cell on
+DP-1's top membrane, and the default floating column is inherited as well, so
+every notification is shown twice on the primary monitor.
 
 ### Settings: Monitors, the last page of five
 

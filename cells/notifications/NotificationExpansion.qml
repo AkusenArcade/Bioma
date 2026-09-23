@@ -24,7 +24,7 @@ Item {
     readonly property real factor: metrics.factor
 
     readonly property bool history: root.cell ? root.cell.history : false
-    readonly property var shout: Notifications.current
+    readonly property var shout: root.cell ? root.cell.shout : Notifications.current
 
     readonly property real panelWidth: 340 * factor
     readonly property real padding: 14 * factor
@@ -214,7 +214,7 @@ Item {
                         }
 
                         TapHandler {
-                            onTapped: Notifications.invoke(act.modelData)
+                            onTapped: Notifications.invoke(act.modelData, root.shout)
                         }
                     }
                 }

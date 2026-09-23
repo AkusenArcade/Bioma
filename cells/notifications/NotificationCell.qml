@@ -29,12 +29,44 @@ Cell {
     paddingLeading: 10 * metrics.factor
     paddingTrailing: 14 * metrics.factor
 
-    readonly property var shout: Notifications.current
-    readonly property bool flooding: Notifications.flooding && Notifications.current === null
+    // Which notifications this cell shows (`options.show`). One cell shows
+    // everything, the urgent one first. Two — `"urgent"` above `"ordinary"`,
+    // in a column —
+    // are how the ordinary ones are seen going past a critical one that sits
+    // on top and does not leave by itself (CELLS §10). Adding the second is
+    // one config block.
+    readonly property string show: {
+        const wanted = root.option("show", "all");
+        return wanted === "urgent" || wanted === "ordinary" ? wanted : "all";
+    }
+
+    readonly property var shout: root.show === "urgent" ? Notifications.urgentHead
+                               : root.show === "ordinary" ? Notifications.ordinaryHead
+                               : Notifications.current
+
+    // A flood is a count of ordinary ones; the urgent cell never says it.
+    readonly property bool flooding: root.show !== "urgent" && Notifications.flooding
+                                     && root.shout === null
+
+    // Counted by the service while it shows the ordinary queue on its own —
+    // and a block rewritten in place can change that.
+    property bool counted: false
+
+    function recount() {
+        const ordinary = root.show === "ordinary";
+        if (ordinary === root.counted)
+            return;
+        Notifications.ordinaryCells += ordinary ? 1 : -1;
+        root.counted = ordinary;
+    }
+
+    onShowChanged: root.recount()
+    Component.onCompleted: root.recount()
+    Component.onDestruction: if (root.counted) Notifications.ordinaryCells--
 
     // A cell exists when it has something to say, and this one has something
     // to say only when something happened.
-    condition: Notifications.present ? 1 : 0
+    condition: root.shout !== null || root.flooding ? 1 : 0
 
     // Urgency is an outline, never a fill: a red surface would make the text
     // unreadable and the shell look broken, and the outline is where Bioma
@@ -82,10 +114,15 @@ Cell {
     // `touched`, not `hovered`: the body and the actions hang *below* the
     // pill, and reaching them means leaving it. Closing on that is closing
     // the thing the pointer was on its way to.
-    onTouchedChanged: {
-        Notifications.holding = root.touched;
-        root.settle();
-    }
+    // The pointer stops the only clock there is — the ordinary head's — and
+    // only from the cell that is showing it: reading a critical one is no
+    // reason for the others to stop going past.
+    readonly property bool reading: root.touched && root.shout !== null
+                                    && root.shout === Notifications.ordinaryHead
+
+    onReadingChanged: Notifications.holding = root.reading
+
+    onTouchedChanged: root.settle()
 
     onHistoryChanged: root.settle()
     onShoutChanged: root.settle()
@@ -101,7 +138,7 @@ Cell {
     // the shell: the gesture that acts without opening anything. It is the
     // whole pill, which is why it is the cell's and not the content's.
     acceptsMiddle: true
-    onMiddleTapped: Notifications.dismiss()
+    onMiddleTapped: Notifications.dismiss(root.shout)
 
     expansion: Component {
         Loader {
@@ -214,7 +251,7 @@ Cell {
             anchors.fill: parent
             anchors.margins: -4 * root.metrics.factor
             hoverEnabled: true
-            onClicked: Notifications.dismiss()
+            onClicked: Notifications.dismiss(root.shout)
         }
     }
 }
