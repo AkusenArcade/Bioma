@@ -1,4 +1,6 @@
-# Bioma
+<h1 align="center">
+  <img src="docs/media/logo.png" width="240" alt="Bioma — A Living Shell">
+</h1>
 
 A Wayland desktop shell built as independent, living surfaces rather than a bar.
 
@@ -179,7 +181,8 @@ config/            default.json + palettes/
 assets/icons/      the 33 glyphs, at runtime
 docs/              bioma-prd.md — the specification
 docs/design/       the visual specification: style guide, cells, tokens, mockups
-docs/media/        the screenshots in this file (tools/showcase takes them)
+docs/media/        the logo, and the screenshots in this file (tools/showcase
+                   takes them)
 tools/             development tools
 ```
 
