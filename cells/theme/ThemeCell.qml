@@ -45,6 +45,15 @@ Cell {
     // opened, like every other cell with an expansion: the glyph of its domain
     // and its name, in the technical voice. The palette is still on screen —
     // the second capsule holds the same seven roles, larger.
+    // Conditional, it is there for a moment after the palette changes — a new
+    // wallpaper coloured by matugen, a palette chosen — so the change is seen
+    // where it is made. The targets, not the animated roles: those move on
+    // every frame of the crossing.
+    readonly property string paletteSignature: [Theme.backgroundTarget, Theme.primaryTarget,
+                                                 Theme.secondaryTarget, Theme.textTarget].join()
+    onPaletteSignatureChanged: root.pulse()
+    condition: root.pulsing ? 1 : 0
+
     headerTitle: "THEME"
     headerMark: Component {
         Icon {

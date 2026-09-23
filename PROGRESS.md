@@ -1679,6 +1679,22 @@ been over it, then five seconds.
   grammar's figures into the block, which froze a condition at whatever it
   meant that day. They write `type` now, and switching drops copied figures.
 
+Four more, proposed and kept the same day: the theme for five seconds after
+the palette changes (its *targets*, not the animated roles that move every
+frame); the utility for five seconds after a screenshot — Bioma's own, or
+niri's, which `services/Niri.qml` now hears as `ScreenshotCaptured`; the
+session while a restart is due, which on this machine is exactly when the
+running kernel's `/usr/lib/modules/<release>` is gone, watched rather than
+polled; and the dock while the desktop is showing, the active workspace on its
+monitor empty.
+
+The theme was driven: a palette switched in a scratch configuration brought the
+cell up wearing the new swatches, and it went five seconds later. The restart
+check was run headless (false, the modules are there) and its watcher tried on
+a scratch directory removed under it. The dock's test is headless too: both
+active workspaces have windows, so it is away. niri's screenshot event was not
+driven — a screenshot writes a file and takes the clipboard.
+
 Verified in a scratch configuration with the six cells conditional: nothing on
 screen after start; the audio dial came up on a one-percent nudge with `wpctl`
 and went five seconds later; vitals came up with every core busy, the CPU dot

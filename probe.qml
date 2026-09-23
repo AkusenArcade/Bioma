@@ -76,6 +76,8 @@ ShellRoot {
     readonly property var keybinds: Keybinds.binds
     readonly property bool keybindsReady: Keybinds.ready
     readonly property var monitors: Monitors.outputs
+    readonly property bool restartDue: Session.restartDue
+    readonly property string kernelRelease: Session.release
     readonly property var niriActions: Keybinds.actions
 
     function line(label, value) {
@@ -344,6 +346,17 @@ ShellRoot {
         line("actions", root.niriActions.length + " without arguments");
     }
 
+    function probeConditions() {
+        console.log("── Conditions ────────────────────────────────────");
+        line("kernel", root.kernelRelease);
+        line("restart due", root.restartDue);
+        for (const screen of Quickshell.screens) {
+            const workspace = Niri.activeWorkspaceForOutput(screen.name);
+            const count = workspace ? Niri.windowsOnWorkspace(workspace.id).length : -1;
+            line("desktop " + screen.name, `${count === 0}  (${count} windows on the active workspace)`);
+        }
+    }
+
     function probeMonitors() {
         console.log("── Monitors ──────────────────────────────────────");
         for (const o of root.monitors) {
@@ -491,6 +504,7 @@ ShellRoot {
             probeTray();
             probeKeybinds();
             probeMonitors();
+            probeConditions();
             probeCapture();
             console.log("──────────────────────────────────────────────────");
             Qt.exit(0);

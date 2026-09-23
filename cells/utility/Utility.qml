@@ -38,6 +38,20 @@ Cell {
     // word for a cell that only captures, and the wrong one for a cell expected
     // to grow other functions — a title that has to be renamed when it does is
     // the wrong title. Akusen's call, 2026-09-22.
+    // Conditional, it is there for a moment after a screenshot is taken —
+    // by Bioma's own capture or by niri's — as the sign that it was.
+    Connections {
+        target: Capture
+        function onCaptured() { root.pulse(); }
+    }
+
+    Connections {
+        target: Niri
+        function onScreenshotCaptured() { root.pulse(); }
+    }
+
+    condition: root.pulsing ? 1 : 0
+
     headerTitle: "UTILITY"
     headerMarkSize: iconSize
     headerMark: Component {

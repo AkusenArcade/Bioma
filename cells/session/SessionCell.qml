@@ -28,6 +28,10 @@ Cell {
 
     // ---- Open ---------------------------------------------------------------
 
+    // Conditional, it is there while the machine wants a restart: the kernel
+    // it is running has been replaced on disk.
+    condition: Session.restartDue ? 1 : 0
+
     headerTitle: "SESSION"
     headerMarkSize: 20 * metrics.factor
     headerMark: Component {

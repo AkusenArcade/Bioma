@@ -20,6 +20,10 @@ import Quickshell.Io
 Singleton {
     id: root
 
+    // A screenshot niri took itself — its own screenshot UI, or a bind to
+    // `screenshot-screen` — with the path it was saved to, if it was saved.
+    signal screenshotCaptured(string path)
+
     // ── Connection ───────────────────────────────────────────────────────
 
     readonly property string socketPath: Quickshell.env("NIRI_SOCKET") ?? ""
@@ -290,6 +294,9 @@ Singleton {
         case "ConfigLoaded":
             if (data.failed === true)
                 console.warn("Niri: config reload failed");
+            break;
+        case "ScreenshotCaptured":
+            root.screenshotCaptured(data.path ?? "");
             break;
         }
     }

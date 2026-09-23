@@ -22,6 +22,35 @@ import qs.core
 Singleton {
     id: root
 
+    // ── Whether the machine wants a restart ─────────────────────────────
+    //
+    // After a kernel update the running kernel's modules are no longer on
+    // disk — pacman replaces `/usr/lib/modules/<release>` with the new one —
+    // and the next module it needs to load it will not find. So a restart is
+    // due exactly when the running release's directory is gone. Watched, not
+    // polled: the file is removed and the watcher says so.
+
+    FileView {
+        id: releaseFile
+        path: "/proc/sys/kernel/osrelease"
+        blockLoading: true
+    }
+
+    readonly property string release: releaseFile.text().trim()
+
+    property bool modulesPresent: true
+
+    FileView {
+        path: root.release.length > 0 ? `/usr/lib/modules/${root.release}/pkgbase` : ""
+        watchChanges: true
+        printErrors: false
+        onLoaded: root.modulesPresent = true
+        onLoadFailed: root.modulesPresent = false
+        onFileChanged: reload()
+    }
+
+    readonly property bool restartDue: root.release.length > 0 && !root.modulesPresent
+
     // ── Who ──────────────────────────────────────────────────────────────
 
     readonly property string login: Quickshell.env("USER") ?? ""

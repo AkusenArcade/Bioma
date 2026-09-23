@@ -71,9 +71,9 @@ Singleton {
         "vitals": ["always", "conditional"],
         "sinestesia": ["conditional"],
         "audio": ["always", "conditional", "invoked"],
-        "utility": ["always", "invoked"],
-        "theme": ["always", "invoked"],
-        "session": ["always", "invoked"],
+        "utility": ["always", "conditional"],
+        "theme": ["always", "conditional"],
+        "session": ["always", "conditional"],
         "dock": ["always", "conditional"],
         "notifications": ["conditional"],
         "connectivity": ["always", "conditional"],
@@ -152,6 +152,12 @@ Singleton {
         // and goes is not the machine being in trouble.
         "vitals": { "enter": 0.8, "exit": 0.75, "confirm": 1000, "dwell": 3000 },
         "audio": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 5000 },
+        // Proposed on the same day and kept: the theme after the palette
+        // changes, the utility after a screenshot, the session while a restart
+        // is due, the dock while the desktop is showing.
+        "theme": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 5000 },
+        "utility": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 5000 },
+        "session": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 0 },
         "window_title": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 200 },
         "sinestesia": { "enter": 0.02, "exit": 0.005, "confirm": 200, "dwell": 4000 },
         "recording": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 0 },

@@ -204,7 +204,11 @@ What `conditional` means is the cell's own, from `cells/Registry.qml`:
 | `audio` | five seconds after the volume or the mute changes |
 | `connectivity` | five seconds after something connects that was not connected: the wire, a wireless network, a Bluetooth device |
 | `tray` | from an item changing state until the pointer has been over the cell, then five seconds |
-| `window_title`, `sinestesia`, `notifications`, `recording`, `dock` | a window has the focus, sound is playing, something was said, a capture is running, there are windows |
+| `theme` | five seconds after the palette changes |
+| `utility` | five seconds after a screenshot, Bioma's own or niri's |
+| `session` | while a restart is due: the running kernel's modules are gone from disk |
+| `dock` | while the desktop is showing — the active workspace on its monitor has no windows |
+| `window_title`, `sinestesia`, `notifications`, `recording` | a window has the focus, sound is playing, something was said, a capture is running |
 
 The five seconds are the dwell, so a block may set its own (`visibility.dwell`),
 and the pointer on the cell holds it. Nothing that happens in the first

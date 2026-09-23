@@ -181,9 +181,17 @@ Cell {
     readonly property bool divided: root.pinned.length > 0 && root.loose.length > 0
     readonly property int count: root.pinned.length + root.loose.length
 
-    // A cell exists when it has something to say: with nothing kept and
-    // nothing running there is no dock, and the tissue closes over it.
-    condition: root.count
+    // Conditional, it is there when the desktop is: the active workspace on
+    // this monitor has no windows, so nothing it could cover is there — and it
+    // has something to hold, or there is no dock at all.
+    readonly property bool desktopShowing: {
+        Niri.workspaceList;
+        Niri.windows;
+        const workspace = Niri.activeWorkspaceForOutput(root.output);
+        return workspace ? Niri.windowsOnWorkspace(workspace.id).length === 0 : false;
+    }
+
+    condition: root.count > 0 && root.desktopShowing ? 1 : 0
 
     contentWidth: root.count > 0
         ? root.count * iconSize + (root.count - 1) * pitch + (root.divided ? dividerRoom : 0)
