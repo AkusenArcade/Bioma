@@ -1656,6 +1656,33 @@ Super+Alt+K rewrote the one line of `Mod+N`; a filter typed, Enter taking
 leaving the list where it was. The presses that start each of those came from
 a throwaway timer.
 
+### The clock, opened
+
+Nothing in CELLS draws it; the style guide leaves the clues — a city's name
+above a Spectral clock, `Europe/Rome` and `UTC+2` as metadata, month names in
+Spectral — and Akusen asked for a calendar, other places, and a timer with an
+alarm. The month hangs from the cell; other places on a thread to one side, the
+timer and the alarm on a thread to the other. The cell keeps the time when it
+opens rather than becoming a header that says CLOCK.
+
+- **The month**: six weeks from the Monday before the first, so the grid never
+  changes height; today on the primary disc; chevrons turn it, the name brings
+  today back.
+- **Other places**: the city in Spectral 700 above its time, the offset and
+  `TOMORROW`/`YESTERDAY` beside it; a field finds a zone among the system's and
+  adds it, a cross on hover removes one. QML has no time zones, so
+  `services/Time.qml` asks `TZ=… date +%z` when the list changes and every half
+  hour, and draws the rest from the machine's clock.
+- **Timer and alarm**, in `services/Time.qml` so they outlive the panel: presets,
+  the wheel on the figure, start, pause, reset; the alarm's hour and minute
+  turned by the wheel, and a switch. They end in a critical notification and the
+  freedesktop alarm sound. While a timer runs, the small dial beside the time
+  shows what is left of it instead of the minute.
+
+Verified in a scratch configuration: the three panels with three places,
+Tokyo and Sydney marked tomorrow; "lond" finding London; a four-second timer
+counting down on the dial and ending in the critical "Timer" notification.
+
 ### The on-screen display
 
 The first of the features after the build order (Akusen's list, 2026-09-23).

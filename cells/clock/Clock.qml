@@ -3,6 +3,7 @@ import Quickshell
 import qs.core
 import qs.structure
 import qs.components
+import qs.services
 
 // The time. One of the two things the shell says at rest — a clock that only
 // appears on hover is not a clock — and human language, so it is set in the
@@ -30,6 +31,33 @@ Cell {
 
     // Conditional, it is there when the hour strikes, for that minute.
     condition: clock.minutes === 0 ? 1 : 0
+
+    // ---- Open -----------------------------------------------------------------
+    //
+    // Opened, the month hangs from it, with other places on one side and a
+    // timer and an alarm on the other. It keeps the time rather than becoming
+    // a header that says CLOCK: the time is its own title.
+
+    // Whether a place is being typed into, which is the one time it needs the
+    // keyboard.
+    property bool typing: false
+    wantsKeyboard: root.open && root.typing
+    onOpenChanged: if (!root.open) root.typing = false
+
+    expansion: Component {
+        Loader {
+            id: expansionLoader
+            source: Qt.resolvedUrl("ClockExpansion.qml")
+            onLoaded: {
+                item.cell = root;
+                item.metrics = Qt.binding(() => root.metrics);
+            }
+
+            function shapes() {
+                return expansionLoader.item ? expansionLoader.item.shapes() : [];
+            }
+        }
+    }
 
     readonly property string reading: {
         const hours = root.twentyFourHour
@@ -59,8 +87,9 @@ Cell {
             anchors.verticalCenter: parent.verticalCenter
             width: 17 * root.metrics.factor
             height: 17 * root.metrics.factor
-            // The minute, filling and starting again empty.
-            fraction: clock.seconds / 60
+            // The minute, filling and starting again empty — or, while a
+            // timer runs, what is left of it, emptying.
+            fraction: Time.running ? Time.fractionLeft : clock.seconds / 60
         }
     }
 }
