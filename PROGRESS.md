@@ -17,13 +17,14 @@ structure page, and a run of engine defects that only a pointer could find.
 
 What is left, in the order it is worth taking:
 
-1. **What CELLS left open in the cells already drawn.** The session cell's
-   own silhouette glyph. Sinestesia on a narrow screen and
-   reduced motion wait, by Akusen's call on 2026-09-23. A long window title
-   was never open: §01 says ellipsis, never scrolling — scrolling on hover is
-   the track title's, in Sinestesia.
-2. **The last piece of the engine**: cells positioned at the pointer, which is
+1. **The last piece of the engine**: cells positioned at the pointer, which is
    the remaining user of the full-screen input surface.
+
+What CELLS left open in the cells already drawn is closed, except Sinestesia
+on a narrow screen and under reduced motion, which wait by Akusen's call
+(2026-09-23), and the system-wide OSD, which is one of the features that come
+after. A long window title was never open: §01 says ellipsis, never scrolling —
+scrolling on hover is the track title's, in Sinestesia.
 
 The PRD's open question — whether there is a tray cell at all — was answered
 yes on 2026-09-22, and it is built; see below.
@@ -1654,6 +1655,16 @@ Super+Alt+K rewrote the one line of `Mod+N`; a filter typed, Enter taking
 "Close window", and Super+Ctrl+Alt+J appended to `config.kdl`; a mid-list edit
 leaving the list where it was. The presses that start each of those came from
 a throwaway timer.
+
+### The silhouette, for a session with no picture
+
+`components/Portrait.qml` draws what the design page draws when there is no
+avatar: a head and the top half of a disc for shoulders, in the rim colour at
+0.55 and 0.45, on the page's 64-unit grid and cut by the same round mask as a
+picture. It is not an interface icon — it is filled and it only ever lives in
+this well — so it is drawn here rather than added to the icon set. Checked
+with the avatar forced off by a throwaway patch: the 30 px cell and the 88 px
+expansion both match `08-session-expanded`.
 
 ### The audio cell, summoned, is the capsule
 
