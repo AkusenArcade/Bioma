@@ -188,7 +188,11 @@ Singleton {
     // In the order of gravity the design lists them in: what undoes itself
     // first, what closes programs last.
 
-    readonly property var lockCommand: Config.get("session.lock", ["loginctl", "lock-session"])
+    // Empty until a locker is set. Bioma has no lock screen of its own yet, and
+    // `loginctl lock-session` with nothing listening locks nothing: a LOCK that
+    // does nothing is worse than one that says it is not there (Akusen,
+    // 2026-09-23 — until Bioma's own lock screen exists).
+    readonly property var lockCommand: Config.get("session.lock", [])
     readonly property var suspendCommand: Config.get("session.suspend", ["systemctl", "suspend"])
     readonly property var restartCommand: Config.get("session.restart", ["systemctl", "reboot"])
     readonly property var shutdownCommand: Config.get("session.shutdown", ["systemctl", "poweroff"])
@@ -209,6 +213,12 @@ Singleton {
 
     // The three that close programs. The other two undo themselves with a
     // movement of the mouse, and asking about those is noise.
+    // Whether an action has a command to run at all.
+    function available(action) {
+        const command = root.commands[action];
+        return !!command && command.length > 0;
+    }
+
     function confirms(action) {
         return action === "restart" || action === "shutdown" || action === "logout";
     }
@@ -226,6 +236,8 @@ Singleton {
     // Asked for, and not yet confirmed. A second call with the same action
     // carries it out; with a different one it moves the question.
     function ask(action) {
+        if (!root.available(action))
+            return;
         if (!root.confirms(action)) {
             root.run(action);
             return;

@@ -185,9 +185,9 @@ answers `qs -p /path/to/Bioma/shell.qml ipc call cell toggle <name>`, so any
 key can be given to any cell from the Keybinds page. Escape, or a press
 anywhere else, closes what is open.
 
-**Bioma has no lock screen.** The System cell's Lock runs `session.lock`, which
-is `loginctl lock-session` by default. It locks the screen only if a locker is
-installed and listening, such as hyprlock or swaylock with an idle daemon.
+**Bioma has no lock screen yet.** The System cell's LOCK stays unavailable until
+`session.lock` in `~/.config/bioma/override.json` names a locker, for example
+`["hyprlock"]` or `["swaylock", "-f"]`.
 
 ## Running
 

@@ -106,7 +106,7 @@
 
   "session": {
     "$comment": "Each command is a list: the program and its arguments. None of these is universal — a lock screen is a choice, systemd is not the only init, and leaving the session is a different sentence on every compositor.",
-    "lock": ["loginctl", "lock-session"],
+    "lock": [],
     "suspend": ["systemctl", "suspend"],
     "restart": ["systemctl", "reboot"],
     "shutdown": ["systemctl", "poweroff"],

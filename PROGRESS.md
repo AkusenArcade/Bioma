@@ -1664,6 +1664,16 @@ Super+Alt+K rewrote the one line of `Mod+N`; a filter typed, Enter taking
 leaving the list where it was. The presses that start each of those came from
 a throwaway timer.
 
+### LOCK is unavailable until there is a lock screen
+
+`session.lock` defaulted to `loginctl lock-session`, which locks nothing without
+a locker listening, and this machine has none now that Noctalia is gone. At his
+request the row is disabled until Bioma's own lock screen exists. The default is
+now `[]`. `Session.available` says whether an action has a command. The System
+cell draws a row without one at 0.38, the same way the utility cell draws a
+capture source it cannot use, and neither a press nor its number key runs it.
+Setting `session.lock` to a locker brings the row back.
+
 ### A saved capture says where it went
 
 From his list ("Dopo aver fatto screenshot con utility bioma, generare notifica
@@ -2474,6 +2484,16 @@ plan rather than an implementation detail:
   instant after binding, so a function that *gates an action* on one silently
   does nothing. Properties display state; they do not decide whether to call the
   backend (§15.1).
+- **Two of §2's exclusions were lifted by Akusen on 2026-09-23.**
+  - Third-party theming: the theme cell now sets the desktop's icon theme and
+    cursor, and its application templates carry the palette to other programs'
+    configuration.
+  - The lock screen: decided, and planned for the week after. Its triggers
+    are the key and the System cell's LOCK, before suspend, and after an idle
+    time. Its content is the wallpaper blurred, the clock, the account and the
+    password field. Until it exists, `session.lock` is empty and LOCK is shown
+    unavailable, because `loginctl lock-session` with no locker listening
+    locked nothing.
 - Prisma's Wi-Fi signal bars were wrong — `signalStrength` is 0–1, not 0–100 —
   which is worth knowing as a measure of how much of Prisma to trust on sight
   (§15.2).

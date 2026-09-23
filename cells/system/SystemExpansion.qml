@@ -323,13 +323,18 @@ Item {
 
                     readonly property bool asking: Session.pending === row.modelData.key
 
+                    // A command with nothing configured to run is shown as not
+                    // there, the way a capture source that cannot be done is:
+                    // offered and then refused would be worse.
+                    readonly property bool available: Session.available(row.modelData.key)
+
                     width: commands.width - root.panelPadding * 2
                     height: root.rowHeight
 
                     // The command, standing down while its own question is up.
                     Item {
                         anchors.fill: parent
-                        opacity: row.asking ? 0 : 1
+                        opacity: row.asking ? 0 : row.available ? 1 : 0.38
                         visible: opacity > 0
 
                         Behavior on opacity { NumberAnimation { duration: Timing.contentFade } }
@@ -412,6 +417,7 @@ Item {
                         }
 
                         TapHandler {
+                            enabled: row.available
                             onTapped: Session.ask(row.modelData.key)
                         }
                     }
