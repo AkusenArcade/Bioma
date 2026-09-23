@@ -1,0 +1,83 @@
+#!/usr/bin/env python3
+# Keep what was copied, for Bioma's clipboard cell.
+#
+#     wl-paste --watch clip store <dir>
+#
+# wl-paste runs this once for every change of the clipboard. It saves what is
+# there now — text, or an image — into <dir>, one file per copy, and prints one
+# line of JSON describing it for the shell to read:
+#
+#     {"file": …, "mime": …, "hash": …, "preview": …, "time": …, "bytes": …}
+#
+# Nothing marked sensitive is kept: password managers say so through
+# wl-clipboard's CLIPBOARD_STATE, and a cleared clipboard is not an entry.
+import hashlib
+import json
+import os
+import subprocess
+import sys
+import time
+
+LIMIT = 20 * 1024 * 1024
+
+
+def types():
+    try:
+        out = subprocess.run(["wl-paste", "--list-types"], capture_output=True, text=True, timeout=2)
+        return [line.strip() for line in out.stdout.splitlines() if line.strip()]
+    except Exception:
+        return []
+
+
+def store(directory):
+    sys.stdin.buffer.read()  # what wl-paste handed over; the type is chosen below
+    if os.environ.get("CLIPBOARD_STATE", "data") != "data":
+        return
+
+    offered = types()
+    if "x-kde-passwordManagerHint" in offered:
+        return
+
+    images = [t for t in offered if t.startswith("image/")]
+    texts = [t for t in offered if t.startswith("text/plain")]
+    if images and not texts:
+        mime = "image/png" if "image/png" in images else images[0]
+    elif texts:
+        mime = "text/plain;charset=utf-8" if "text/plain;charset=utf-8" in texts else texts[0]
+    elif images:
+        mime = images[0]
+    else:
+        return
+
+    data = subprocess.run(["wl-paste", "--no-newline", "--type", mime], capture_output=True, timeout=5).stdout
+    if not data or len(data) > LIMIT:
+        return
+
+    os.makedirs(directory, mode=0o700, exist_ok=True)
+    stamp = int(time.time() * 1000)
+    path = os.path.join(directory, str(stamp))
+    with open(path, "wb") as handle:
+        handle.write(data)
+    os.chmod(path, 0o600)
+
+    preview = ""
+    if mime.startswith("text/"):
+        text = data[:600].decode("utf-8", errors="replace")
+        preview = " ".join(text.split())[:200]
+
+    print(json.dumps({
+        "file": path,
+        "mime": mime,
+        "hash": hashlib.sha1(data).hexdigest(),
+        "preview": preview,
+        "time": stamp,
+        "bytes": len(data),
+    }), flush=True)
+
+
+if __name__ == "__main__":
+    if len(sys.argv) == 3 and sys.argv[1] == "store":
+        store(sys.argv[2])
+    else:
+        print("usage: clip store <dir>", file=sys.stderr)
+        sys.exit(1)

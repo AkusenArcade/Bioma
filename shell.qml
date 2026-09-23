@@ -201,6 +201,7 @@ ShellRoot {
     readonly property bool proxyOn: Proxy.on
     readonly property string osdKind: Osd.kind
     readonly property bool alarmOn: Time.alarm.on === true
+    readonly property int clipboardKept: Clipboard.entries.length
 
     //
     // Volume, brightness and the transport keys act on the machine without

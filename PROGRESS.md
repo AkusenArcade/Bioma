@@ -1656,6 +1656,34 @@ Super+Alt+K rewrote the one line of `Mod+N`; a filter typed, Enter taking
 leaving the list where it was. The presses that start each of those came from
 a throwaway timer.
 
+### The clipboard cell
+
+A seventeenth cell, `clipboard`: what was copied, kept, and put back with a
+press. At rest it is its glyph — the history is somebody's text, and the
+membrane does not read it out; conditional, it is there for five seconds after
+a copy. Open: a filter, then the copies newest first — text as its first words
+in Spectral, an image as itself, small — with how long ago in Orbitron; a press
+restores one, a cross drops one, CLEAR (asked twice) drops them all. It is
+placed nowhere by default, so a key brings it up in the middle of the screen.
+
+- **Bioma's own history**, Akusen's choice over cliphist: one `wl-paste --watch`
+  for the life of the shell runs `scripts/clip`, which saves each copy as a
+  file (mode 600, in a 700 directory under `~/.cache/bioma/clipboard`) and
+  prints a line of JSON. What a password manager marks sensitive
+  (`CLIPBOARD_STATE`, `x-kde-passwordManagerHint`) is never saved; the same
+  content copied again moves up rather than being kept twice; the list is
+  capped at `clipboard.history`.
+- One copy can reach the watcher twice, a millisecond apart, and the second
+  file is never in the list — so after every change the directory is swept of
+  whatever the list does not name.
+- `clipboard.svg` joins the icon set.
+
+Verified on the desktop: two texts, an image and a repeated command copied —
+four entries, the repeat once at the top, the image as a thumbnail, the long
+text on two lines; a restored entry back on the clipboard and at the top; the
+directory's files matching the list after the sweep. The test copies were
+cleared afterwards; Akusen's clipboard itself was overwritten by them.
+
 ### Session becomes System
 
 Where the machine's description belongs was Akusen's question — vitals or
