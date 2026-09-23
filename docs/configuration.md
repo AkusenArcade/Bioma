@@ -111,6 +111,13 @@ from the same wallpaper give two different desktops. The theme cell offers it,
 and writes `source`, `palette` and `matugen.scheme` back into the override layer
 as they are chosen.
 
+`theme.templates` lists the applications the palette is carried to, by
+template id (`config/templates/builtin.toml`): by default `niri`, `gtk3`,
+`gtk4`, `qt`, `alacritty`, `btop`, `cava`. The theme cell's APPS capsule
+writes it. Taking an id out undoes that template: the rendered file is removed
+and the application's config unhooked. niri's template also sets the windows'
+corner radius from `appearance.radius` — 20 px at 100 %.
+
 ### `timing`
 
 The single named timing set. No duration is written anywhere else. `speed`

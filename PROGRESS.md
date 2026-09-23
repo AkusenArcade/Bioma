@@ -21,7 +21,8 @@ Nothing in the build order is left, and the first list of features after it
 is done too (2026-09-23): the on-screen display, the opened clock, Bluetooth
 search and pairing, VPN profiles set up from the panel, a proxy that follows
 the networks, the session cell become System with the machine's description,
-and the clipboard cell. Each has its section below.
+and the clipboard cell. Since then the palette reaches niri and the
+applications (the palette, outside the shell). Each has its section below.
 
 What those left unverified, because nothing here could drive it: pairing a real
 Bluetooth device, a VPN that actually connects, a proxy switched through by a
@@ -1662,6 +1663,57 @@ Super+Alt+K rewrote the one line of `Mod+N`; a filter typed, Enter taking
 "Close window", and Super+Ctrl+Alt+J appended to `config.kdl`; a mid-list edit
 leaving the list where it was. The presses that start each of those came from
 a throwaway timer.
+
+### The palette, outside the shell
+
+Akusen asked for the theme to reach the rest of the desktop, the way Noctalia's
+template page does: niri's colours, niri's window corners following the RADIUS
+slider (20 px at 100 %, in proportion below), and the applications' own
+configuration.
+
+- **The templates are Noctalia's**, vendored under `config/templates/` with
+  their licence and Bioma's changes listed in its README. Every rendered file
+  is `bioma.*`, never `noctalia.*`, so the two shells' hooks never touch each
+  other's files; niri's is `bioma-theme.kdl`, since `bioma.kdl` is the repo's own
+  include and upstream's pattern would have matched it.
+- **The colours are named as matugen names them**, and `services/Templates.qml`
+  derives all 51 names from the palette's four targets the way the shell derives
+  its own surfaces. The terminal's red, green and yellow are the state roles, so
+  they carry the same meaning in the terminal as in the shell. One set of
+  templates serves both a matugen palette and a Bioma one.
+- `scripts/themes` renders every enabled template and writes a file only when it
+  changed. It runs a hook only for a changed file, a template just switched on,
+  or one whose hook failed last time, so starting the shell does not make every
+  terminal reload.
+- Qt gets a hook of its own: qt5ct and qt6ct read only the scheme their config
+  names, so the hook points them at the rendered one.
+- btop and cava, with no config yet, get a config holding only the theme line
+  instead of an error.
+- **In the theme cell, APPS** is a button beside the palette dropdown. It calls
+  up a panel with every application in the catalogue as a chip:
+  - lit when on;
+  - dimmed, and unable to switch on, when not installed;
+  - red, with the reason under it, when its hook failed.
+
+  The panel is born from the button and opens where the dropdown's list
+  opens, so the two take turns: asking for one puts the other away. At
+  first it was fixed, a third capsule. Akusen asked for it to be called up
+  instead, since it is set once and should not stand in the dropdown's way.
+- On by default: niri, GTK 3, GTK 4, Qt, Alacritty, btop, cava
+  (`theme.templates`).
+
+Verified on the desktop:
+- niri's config gained `include "bioma-theme.kdl"` last and still validates.
+  The windows took the primary border and the 20 px corner.
+- gtk.css imports `bioma.css`, including through Noctalia's symlinked file (GTK
+  accepts an import after the rules, checked).
+- Alacritty imports its theme; qt5ct/qt6ct point at the scheme; btop and cava
+  are set to `bioma`.
+- APPS opened, then the dropdown opened in its place, with the list now born
+  under the dropdown, which is no longer the capsule's centre.
+
+The originals of the configs the hooks touched are in
+`~/.cache/bioma-template-backup-1790180862`.
 
 ### The clipboard cell
 

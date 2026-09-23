@@ -196,12 +196,14 @@ ShellRoot {
 
     // And the services that act by themselves, with nothing on screen reading
     // them: the proxy that follows the networks, the display that answers a
-    // key, the timer and alarm that ring. Unbound, they would start only when
-    // their panel was first opened.
+    // key, the timer and alarm that ring, the palette carried to the
+    // applications. Unbound, they would start only when their panel was first
+    // opened.
     readonly property bool proxyOn: Proxy.on
     readonly property string osdKind: Osd.kind
     readonly property bool alarmOn: Time.alarm.on === true
     readonly property int clipboardKept: Clipboard.entries.length
+    readonly property string templatesSignature: Templates.signature
 
     //
     // Volume, brightness and the transport keys act on the machine without

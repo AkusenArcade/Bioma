@@ -1,0 +1,230 @@
+#!/usr/bin/env python3
+# Render Bioma's palette into other applications' configuration.
+#
+#     themes list                  the catalogue, as JSON, with what is installed
+#     themes render                reads a JSON request on stdin (below), renders
+#                                  every template it names, runs their hooks
+#     themes undo <id>             unhooks one template and removes its file
+#
+# The request:
+#
+#     {"colors": {"primary": "#b9de6b", …}, "mode": "dark",
+#      "vars": {"window_radius": 20}, "enabled": ["niri", "gtk3", …],
+#      "force": ["niri"]}
+#
+# The templates and their hooks are Noctalia's (config/templates/README.md).
+# A template is written only when what it renders differs from what is on disk,
+# and its hook runs only then or when it is in `force` — so starting the shell
+# does not make every terminal reload its colours.
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tomllib
+
+HERE = os.path.dirname(os.path.realpath(__file__))
+TEMPLATES = os.path.join(os.path.dirname(HERE), "config", "templates")
+
+# What says an application is here: a program on the PATH, or its config dir.
+PRESENCE = {
+    "alacritty": ["alacritty"], "btop": ["btop"], "cava": ["cava"], "emacs": ["emacs"],
+    "foot": ["foot"], "ghostty": ["ghostty"], "helix": ["hx", "helix"], "kitty": ["kitty"],
+    "labwc": ["labwc"], "niri": ["niri"], "hyprland": ["Hyprland", "hyprland"],
+    "mango": ["mango"], "scroll": ["scroll"], "sway": ["sway"], "umbriel": ["umbriel"],
+    "starship": ["starship"], "wezterm": ["wezterm"],
+    "qt": ["qt5ct", "qt6ct", "@qt5ct", "@qt6ct"],
+    "kcolorscheme": ["plasma-apply-colorscheme", "@kdeglobals"],
+    "gtk3": ["@gtk-3.0"], "gtk4": ["@gtk-4.0"],
+}
+
+
+def config_home():
+    return os.environ.get("XDG_CONFIG_HOME") or os.path.join(os.environ["HOME"], ".config")
+
+
+def data_home():
+    return os.environ.get("XDG_DATA_HOME") or os.path.join(os.environ["HOME"], ".local", "share")
+
+
+def installed(template_id):
+    for mark in PRESENCE.get(template_id, []):
+        if mark.startswith("@"):
+            if os.path.exists(os.path.join(config_home(), mark[1:])):
+                return True
+        elif shutil.which(mark):
+            return True
+    return False
+
+
+def catalogue():
+    with open(os.path.join(TEMPLATES, "builtin.toml"), "rb") as handle:
+        return tomllib.load(handle)
+
+
+def expand(path):
+    return (path.replace("$XDG_CONFIG_HOME", config_home())
+                .replace("$XDG_DATA_HOME", data_home())
+                .replace("~", os.environ["HOME"], 1 if path.startswith("~") else 0))
+
+
+def hook_command(text, mode):
+    return text.replace("{{ config_dir }}", TEMPLATES).replace("{{ mode }}", mode)
+
+
+def run(command):
+    result = subprocess.run(["bash", "-c", command], capture_output=True, text=True, timeout=60)
+    return result.returncode, (result.stdout or "").strip(), (result.stderr or "").strip()
+
+
+def outputs(entry, mode):
+    if "output_path_dynamic" in entry:
+        code, out, _ = run(hook_command(entry["output_path_dynamic"], mode))
+        return [expand(out.splitlines()[-1])] if code == 0 and out else []
+    paths = entry.get("output_path", [])
+    if isinstance(paths, str):
+        paths = [paths]
+    return [expand(p) for p in paths]
+
+
+def source(entry, mode):
+    if "input_path_dynamic" in entry:
+        code, out, _ = run(hook_command(entry["input_path_dynamic"], mode))
+        return out.splitlines()[-1] if code == 0 and out else None
+    return os.path.normpath(os.path.join(TEMPLATES, entry["input_path"]))
+
+
+def darken(hex_colour, amount):
+    value = hex_colour.lstrip("#")
+    r, g, b = (int(value[i:i + 2], 16) for i in (0, 2, 4))
+    f = max(0.0, 1.0 - amount)
+    return "#{:02x}{:02x}{:02x}".format(int(r * f), int(g * f), int(b * f))
+
+
+def formatted(hex_colour, form):
+    value = hex_colour.lstrip("#")[:6]
+    if form == "hex":
+        return "#" + value
+    if form == "hex_stripped":
+        return value
+    if form == "rgb_csv":
+        return ",".join(str(int(value[i:i + 2], 16)) for i in (0, 2, 4))
+    return "#" + value
+
+
+COLOUR = re.compile(r"\{\{\s*colors\.([a-z_]+)\.([a-z_]+)\.([a-z_]+)\s*(?:\|\s*([a-z_]+)\s*([0-9.]+))?\s*\}\}")
+BIOMA = re.compile(r"\{\{\s*bioma\.([a-z_]+)\s*\}\}")
+
+
+def render(text, colors, variables, missing):
+    def colour(match):
+        name, _mode, form, fil, amount = match.groups()
+        hex_colour = colors.get(name)
+        if hex_colour is None:
+            missing.add(name)
+            hex_colour = colors.get("primary", "#888888")
+        if fil == "darken":
+            hex_colour = darken(hex_colour, float(amount))
+        return formatted(hex_colour, form)
+
+    text = COLOUR.sub(colour, text)
+    return BIOMA.sub(lambda m: str(variables.get(m.group(1), "")), text)
+
+
+def list_command():
+    data = catalogue()
+    out = []
+    for template_id, meta in data.get("catalog", {}).items():
+        if template_id not in data.get("templates", {}):
+            continue
+        out.append({"id": template_id, "name": meta.get("name", template_id),
+                    "category": meta.get("category", ""), "installed": installed(template_id)})
+    out.sort(key=lambda t: (t["category"], t["name"].lower()))
+    print(json.dumps(out))
+
+
+def render_command():
+    request = json.load(sys.stdin)
+    data = catalogue()
+    colors = {k: v for k, v in request.get("colors", {}).items()}
+    mode = request.get("mode", "dark")
+    variables = request.get("vars", {})
+    force = set(request.get("force", []))
+    report = []
+
+    # Every file first, every hook after: a hook may read more than its own
+    # file — GTK's rewrites both gtk.css files, and ran once too early for the
+    # second — and one command shared by two templates runs once.
+    hooks = []
+    for template_id in request.get("enabled", []):
+        entry = data.get("templates", {}).get(template_id)
+        if entry is None:
+            continue
+        outcome = {"id": template_id, "ok": True, "changed": False, "error": ""}
+        report.append(outcome)
+        try:
+            path = source(entry, mode)
+            if not path or not os.path.exists(path):
+                raise RuntimeError("no template to render")
+            with open(path, encoding="utf-8") as handle:
+                template = handle.read()
+            missing = set()
+            text = render(template, colors, variables, missing)
+            if missing:
+                outcome["error"] = "unknown colours: " + ", ".join(sorted(missing))
+            for target in outputs(entry, mode):
+                current = None
+                if os.path.exists(target):
+                    with open(target, encoding="utf-8", errors="replace") as handle:
+                        current = handle.read()
+                if current != text:
+                    os.makedirs(os.path.dirname(target), exist_ok=True)
+                    with open(target, "w", encoding="utf-8") as handle:
+                        handle.write(text)
+                    outcome["changed"] = True
+            if outcome["changed"] or template_id in force:
+                if "post_hook" in entry:
+                    hooks.append((hook_command(entry["post_hook"], mode), outcome))
+                if entry.get("post_action") == "kde-color-scheme" and shutil.which("plasma-apply-colorscheme"):
+                    hooks.append(("plasma-apply-colorscheme bioma", outcome))
+        except Exception as error:  # one template failing does not stop the others
+            outcome["ok"] = False
+            outcome["error"] = str(error)
+
+    done = {}
+    for command, outcome in hooks:
+        if command not in done:
+            code, _, err = run(command)
+            done[command] = (code, err)
+        code, err = done[command]
+        if code != 0:
+            outcome["ok"] = False
+            outcome["error"] = err.splitlines()[-1] if err else f"hook exited {code}"
+
+    print(json.dumps(report))
+
+
+def undo_command(template_id):
+    data = catalogue()
+    entry = data.get("templates", {}).get(template_id)
+    if entry is None:
+        return
+    if "undo_hook" in entry:
+        run(hook_command(entry["undo_hook"], "dark"))
+    for target in outputs(entry, "dark"):
+        if os.path.exists(target):
+            os.remove(target)
+    print(json.dumps({"id": template_id, "undone": True}))
+
+
+if __name__ == "__main__":
+    if len(sys.argv) == 2 and sys.argv[1] == "list":
+        list_command()
+    elif len(sys.argv) == 2 and sys.argv[1] == "render":
+        render_command()
+    elif len(sys.argv) == 3 and sys.argv[1] == "undo":
+        undo_command(sys.argv[2])
+    else:
+        print("usage: themes list | render | undo <id>", file=sys.stderr)
+        sys.exit(1)

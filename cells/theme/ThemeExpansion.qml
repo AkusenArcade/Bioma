@@ -19,6 +19,12 @@ import qs.services
 // changes what it lists: matugen's calculation methods, or the names of Bioma's
 // own palettes.
 //
+// Beside the dropdown, APPS calls up the applications the palette is carried to
+// outside the shell — niri, the toolkits, the terminals (services/Templates.qml).
+// It is asked for rather than always there: it is a setting made once, not a
+// choice made every time the theme changes, and it opens where the dropdown's
+// list opens, so the two take turns.
+//
 // See docs/design/CELLS.md §07.
 Item {
     id: root
@@ -67,6 +73,15 @@ Item {
     readonly property real capsuleY: upward ? 0 : carouselHeight + gap
     readonly property real carouselNear: upward ? carouselY + carouselHeight : carouselY
     readonly property real capsuleNear: upward ? capsuleY + capsuleHeight : capsuleY
+
+    // The dropdown and APPS share a row centred in the palette capsule. Both
+    // widths are the controls' own — text and padding — which do not change
+    // while the capsule grows, so each control's centre is arithmetic.
+    readonly property real controlSpacing: 8 * factor
+    readonly property real paletteCentreX: capsuleWidth + gap + capsuleWidth / 2
+    readonly property real controlsWidth: dropdown.width + controlSpacing + appsButton.width
+    readonly property real dropdownCentreX: paletteCentreX - controlsWidth / 2 + dropdown.width / 2
+    readonly property real appsButtonCentreX: paletteCentreX + controlsWidth / 2 - appsButton.width / 2
 
     // Orbitron 12 for the dropdown is CELLS.md §07's own figure, and the
     // controls beside it are the same voice at the same size: a segmented
@@ -154,8 +169,10 @@ Item {
             capsules.easing.bezierCurve = root.cell.open ? Timing.easeOpenFlat
                                                      : Timing.easeClose;
             capsules.start();
-            if (!root.cell.open)
+            if (!root.cell.open) {
                 root.listing = false;
+                root.appsOpen = false;
+            }
         }
     }
 
@@ -551,50 +568,91 @@ Item {
 
             // One place to learn: the dropdown never moves and never changes
             // shape, only what it lists.
-            Item {
-                id: dropdown
+            Row {
+                id: controls
 
                 anchors.horizontalCenter: parent.horizontalCenter
-                width: chosenText.width + 12 * root.factor * 2 + 7 * root.factor + chevron.width
-                height: root.dropdownHeight
+                spacing: root.controlSpacing
 
-                Rectangle {
-                    anchors.fill: parent
-                    radius: Metrics.radiusFor(height, root.metrics)
-                    color: "transparent"
-                    border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
-                    border.color: Theme.line
-                    antialiasing: true
+                Item {
+                    id: dropdown
+
+                    width: chosenText.width + 12 * root.factor * 2 + 7 * root.factor + chevron.width
+                    height: root.dropdownHeight
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: Metrics.radiusFor(height, root.metrics)
+                        color: "transparent"
+                        border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+                        border.color: Theme.line
+                        antialiasing: true
+                    }
+
+                    Row {
+                        anchors.centerIn: parent
+                        spacing: 7 * root.factor
+
+                        Text {
+                            id: chosenText
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: root.chosenLabel
+                            color: Theme.text
+                            font: Qt.font({
+                                "family": Typography.technical,
+                                "pixelSize": root.fontControl,
+                                "weight": Typography.weightLabel,
+                                "letterSpacing": Typography.tracking(root.fontControl, 0.04)
+                            })
+                        }
+
+                        Icon {
+                            id: chevron
+                            anchors.verticalCenter: parent.verticalCenter
+                            name: "chevron-down"
+                            width: 9 * root.factor
+                            height: width
+                            colour: Qt.alpha(Theme.text, 0.6)
+                        }
+                    }
+
+                    TapHandler { onTapped: root.listing = !root.listing }
                 }
 
-                Row {
-                    anchors.centerIn: parent
-                    spacing: 7 * root.factor
+                // Lit while its capsule is out: the same mark a lit pill makes
+                // everywhere else in the shell.
+                Item {
+                    id: appsButton
+
+                    width: appsText.implicitWidth + 12 * root.factor * 2
+                    height: root.dropdownHeight
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: Metrics.radiusFor(height, root.metrics)
+                        color: root.appsOpen ? Qt.alpha(Theme.primary, 0.16) : "transparent"
+                        border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+                        border.color: root.appsOpen ? Theme.primary
+                                    : appsHover.hovered ? Theme.text : Theme.line
+                        antialiasing: true
+                    }
 
                     Text {
-                        id: chosenText
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: root.chosenLabel
-                        color: Theme.text
+                        id: appsText
+                        anchors.centerIn: parent
+                        text: "APPS"
+                        color: root.appsOpen ? Theme.text : Theme.textMuted
                         font: Qt.font({
                             "family": Typography.technical,
                             "pixelSize": root.fontControl,
                             "weight": Typography.weightLabel,
-                            "letterSpacing": Typography.tracking(root.fontControl, 0.04)
+                            "letterSpacing": Typography.tracking(root.fontControl, Typography.labelTracking)
                         })
                     }
 
-                    Icon {
-                        id: chevron
-                        anchors.verticalCenter: parent.verticalCenter
-                        name: "chevron-down"
-                        width: 9 * root.factor
-                        height: width
-                        colour: Qt.alpha(Theme.text, 0.6)
-                    }
+                    HoverHandler { id: appsHover }
+                    TapHandler { onTapped: root.appsOpen = !root.appsOpen }
                 }
-
-                TapHandler { onTapped: root.listing = !root.listing }
             }
         }
     }
@@ -606,6 +664,10 @@ Item {
     // a press inside it is not a press outside the cell.
 
     property bool listing: false
+
+    // The list and the APPS capsule open in the same place, so asking for one
+    // puts the other away.
+    onListingChanged: if (root.listing) root.appsOpen = false
 
     // Closing the list when the source changes under it, so a matugen method
     // never stands open over a list of Bioma palettes.
@@ -648,7 +710,7 @@ Item {
         // It opens away from the composition, which on a membrane at the bottom
         // of the screen means upwards: opening downwards there would lay the
         // list over the carousel.
-        readonly property real originX: root.capsuleWidth + root.gap + root.capsuleWidth / 2
+        readonly property real originX: root.dropdownCentreX
         readonly property real originY: root.capsuleY + (root.upward ? root.dropdownTop
                                                                      : root.dropdownBottom)
 
@@ -712,6 +774,133 @@ Item {
         }
     }
 
+    // ---- Where the palette goes ---------------------------------------------
+
+    property bool appsOpen: false
+
+    onAppsOpenChanged: if (root.appsOpen) root.listing = false
+
+    property real appsGrowth: root.appsOpen ? 1 : 0
+
+    onAppsGrowthChanged: if (root.cell) root.cell.shapesSettling()
+
+    Behavior on appsGrowth {
+        NumberAnimation {
+            duration: root.appsOpen ? Timing.grow : Timing.close
+            easing.type: Easing.Bezier
+            easing.bezierCurve: root.appsOpen ? Timing.easeOpen : Timing.easeClose
+        }
+    }
+
+    readonly property real appsPadding: 14 * factor
+
+    // What failed, said once under the chips: the first template that did not
+    // render, with the reason its program gave.
+    readonly property var failed: {
+        for (const entry of Templates.catalogue)
+            if (Templates.isOn(entry.id) && Templates.failures[entry.id] !== undefined)
+                return { "name": entry.name, "error": Templates.failures[entry.id] };
+        return null;
+    }
+
+    Panel {
+        id: apps
+
+        metrics: root.metrics
+        radius: root.metrics.radiusWell
+        padding: root.appsPadding
+        fixedWidth: root.carouselWidth
+        growth: root.appsGrowth
+        contentReady: root.appsGrowth > 0.999
+        visible: root.appsGrowth > 0
+
+        // Born from the button's own edge and settled clear of the capsule,
+        // away from the composition — the same place and the same rule as the
+        // dropdown's list, which is why the two take turns.
+        anchorX: 0
+        anchorY: root.upward ? root.capsuleY - 8 * root.factor - targetHeight
+                             : root.capsuleY + root.capsuleHeight + 8 * root.factor
+        nodeX: root.appsButtonCentreX
+        nodeY: root.capsuleY + (root.upward ? root.dropdownTop : root.dropdownBottom)
+
+        Column {
+            width: root.carouselWidth - root.appsPadding * 2
+            spacing: 10 * root.factor
+
+            Flow {
+                width: parent.width
+                spacing: 6 * root.factor
+
+                Repeater {
+                    model: Templates.catalogue
+
+                    delegate: AppChip {
+                        required property var modelData
+                        entry: modelData
+                    }
+                }
+            }
+
+            Text {
+                width: parent.width
+                visible: root.failed !== null
+                text: root.failed ? `${root.failed.name}: ${root.failed.error}` : ""
+                color: Theme.alert
+                elide: Text.ElideRight
+                horizontalAlignment: Text.AlignHCenter
+                font.family: Typography.technical
+                font.pixelSize: root.metrics.fontMeta
+            }
+        }
+    }
+
+    // One application. Lit when the palette goes to it; an application that is
+    // not on this machine is dimmed and cannot be switched on — only off, if it
+    // was on before it went.
+    component AppChip: Item {
+        id: chip
+
+        property var entry: ({})
+
+        readonly property bool on: Templates.isOn(chip.entry.id)
+        readonly property bool here: chip.entry.installed === true
+        readonly property bool alert: chip.on && Templates.failures[chip.entry.id] !== undefined
+
+        width: chipText.implicitWidth + 24 * root.factor
+        height: 24 * root.factor
+        opacity: chip.here || chip.on ? 1 : 0.35
+
+        Rectangle {
+            anchors.fill: parent
+            radius: Metrics.radiusFor(height, root.metrics)
+            antialiasing: true
+            color: chip.on ? Qt.alpha(chip.alert ? Theme.alert : Theme.primary, 0.16) : "transparent"
+            border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+            border.color: chip.alert ? Theme.alert : chip.on ? Theme.primary
+                        : chipHover.hovered && tap.enabled ? Theme.text : Theme.line
+        }
+
+        Text {
+            id: chipText
+            anchors.centerIn: parent
+            text: chip.entry.name || ""
+            color: chip.alert ? Theme.alert : chip.on ? Theme.text : Theme.textMuted
+            font: Qt.font({
+                "family": Typography.technical,
+                "pixelSize": root.metrics.fontMeta,
+                "letterSpacing": Typography.tracking(root.metrics.fontMeta, Typography.labelTracking)
+            })
+        }
+
+        HoverHandler { id: chipHover }
+
+        TapHandler {
+            id: tap
+            enabled: chip.here || chip.on
+            onTapped: Templates.setOn(chip.entry.id, !chip.on)
+        }
+    }
+
     // What the membrane has to mask and blur: the surfaces, never the threads.
     function shapes() {
         const out = [
@@ -721,6 +910,8 @@ Item {
         ];
         if (root.listGrowth > 0)
             out.push({ "item": list, "radius": list.radius });
+        if (root.appsGrowth > 0)
+            out.push({ "item": apps, "radius": apps.radius });
         return out;
     }
 }

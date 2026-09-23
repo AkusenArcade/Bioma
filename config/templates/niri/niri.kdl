@@ -1,0 +1,40 @@
+layout {
+
+    focus-ring {
+        active-color   "{{colors.primary.default.hex}}"
+        inactive-color "{{colors.surface.default.hex}}"
+        urgent-color   "{{colors.error.default.hex}}"
+    }
+
+    border {
+        active-color   "{{colors.primary.default.hex}}"
+        inactive-color "{{colors.surface.default.hex}}"
+        urgent-color   "{{colors.error.default.hex}}"
+    }
+
+
+    tab-indicator {
+        active-color   "{{colors.primary.default.hex}}"
+        inactive-color "{{colors.primary_container.default.hex}}"
+        urgent-color   "{{colors.error.default.hex}}"
+    }
+
+    insert-hint {
+        color "{{colors.primary.default.hex}}80"
+    }
+}
+
+recent-windows {
+    highlight {
+        active-color "{{colors.primary.default.hex}}"
+        urgent-color "{{colors.error.default.hex}}"
+    }
+}
+
+// Bioma: the windows take the shell's corner radius — 20 px at 100 % of the
+// RADIUS slider in the settings cell, and in proportion below it. Written last
+// in the file that is included last, so it overrides a radius set earlier.
+window-rule {
+    geometry-corner-radius {{bioma.window_radius}}
+    clip-to-geometry true
+}
