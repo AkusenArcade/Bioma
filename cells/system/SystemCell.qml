@@ -16,7 +16,7 @@ import qs.services
 Cell {
     id: root
 
-    domain: "session"
+    domain: "system"
 
     // The avatar is the whole content, and it is round like the window title's
     // icon, so the padding is what makes the cell square around it.
@@ -32,7 +32,7 @@ Cell {
     // it is running has been replaced on disk.
     condition: Session.restartDue ? 1 : 0
 
-    headerTitle: "SESSION"
+    headerTitle: "SYSTEM"
     headerMarkSize: 20 * metrics.factor
     headerMark: Component {
         Icon {
@@ -59,7 +59,7 @@ Cell {
     expansion: Component {
         Loader {
             id: expansionLoader
-            source: Qt.resolvedUrl("SessionExpansion.qml")
+            source: Qt.resolvedUrl("SystemExpansion.qml")
             onLoaded: {
                 item.cell = root;
                 item.metrics = Qt.binding(() => root.metrics);

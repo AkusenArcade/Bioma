@@ -77,6 +77,7 @@ ShellRoot {
     readonly property bool keybindsReady: Keybinds.ready
     readonly property var monitors: Monitors.outputs
     readonly property bool restartDue: Session.restartDue
+    readonly property var machineRows: Machine.rows
     readonly property string kernelRelease: Session.release
     readonly property var niriActions: Keybinds.actions
 
@@ -350,6 +351,8 @@ ShellRoot {
         console.log("── Conditions ────────────────────────────────────");
         line("kernel", root.kernelRelease);
         line("restart due", root.restartDue);
+        for (const row of root.machineRows)
+            line("  " + row.label, row.value);
         for (const screen of Quickshell.screens) {
             const workspace = Niri.activeWorkspaceForOutput(screen.name);
             const count = workspace ? Niri.windowsOnWorkspace(workspace.id).length : -1;
@@ -485,6 +488,7 @@ ShellRoot {
     Component.onCompleted: {
         SystemMonitor.listProcesses = true;
         Keybinds.askActions();
+        Machine.ask();
     }
 
     Timer {

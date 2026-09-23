@@ -170,7 +170,7 @@ Item {
         const copy = JSON.parse(JSON.stringify(root.bands));
         if (change(copy) === false)
             return;
-        Config.set("membranes", copy);
+        Config.set("membranes", Registry.renamed(copy));
     }
 
     // ---- Floating tissues --------------------------------------------------
@@ -215,7 +215,7 @@ Item {
         const copy = JSON.parse(JSON.stringify(root.floats));
         if (change(copy) === false)
             return;
-        Config.set("floating", copy);
+        Config.set("floating", Registry.renamed(copy));
     }
 
     // **Where a floating tissue is, is which slot it is.** The nine anchors
@@ -589,11 +589,11 @@ Item {
                 continue;
             for (const tissue of (block.tissues || []))
                 for (const entry of (tissue.cells || []))
-                    out.push(entry.type);
+                    out.push(Registry.canonical(entry.type));
         }
         for (const f of root.floatsHere)
             for (const entry of (f.block.cells || []))
-                out.push(entry.type);
+                out.push(Registry.canonical(entry.type));
         return out;
     }
 

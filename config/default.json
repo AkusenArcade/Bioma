@@ -224,7 +224,7 @@
               "min_width": { "value": 40 }
             },
             {
-              "type": "session",
+              "type": "system",
               "enabled": true,
               "visibility": { "type": "always", "shortcut": "Mod+Escape" },
               "min_width": { "value": 40 }

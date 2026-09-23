@@ -53,8 +53,8 @@ binds {
         spawn "qs" "-p" "/home/akusen/Documents/Development/Bioma/shell.qml" "ipc" "call" "cell" "toggle" "settings"
     }
 
-    Mod+Alt+Escape hotkey-overlay-title="Bioma: session" {
-        spawn "qs" "-p" "/home/akusen/Documents/Development/Bioma/shell.qml" "ipc" "call" "cell" "toggle" "session"
+    Mod+Alt+Escape hotkey-overlay-title="Bioma: system" {
+        spawn "qs" "-p" "/home/akusen/Documents/Development/Bioma/shell.qml" "ipc" "call" "cell" "toggle" "system"
     }
 
     // ---- The keys that are not cells ------------------------------------

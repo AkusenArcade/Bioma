@@ -23,7 +23,7 @@ Singleton {
         "sinestesia": "sinestesia/Sinestesia.qml",
         "audio": "audio/AudioCell.qml",
         "connectivity": "connectivity/Connectivity.qml",
-        "session": "session/SessionCell.qml",
+        "system": "system/SystemCell.qml",
         "dock": "dock/Dock.qml",
         "notifications": "notifications/NotificationCell.qml",
         "launcher": "launcher/Launcher.qml",
@@ -42,7 +42,7 @@ Singleton {
         "audio": "Audio",
         "utility": "Utility",
         "theme": "Theme",
-        "session": "Session",
+        "system": "System",
         "dock": "Dock",
         "notifications": "Notifications",
         "connectivity": "Connectivity",
@@ -52,7 +52,34 @@ Singleton {
         "tray": "Tray"
     })
 
+    // Old names for cells that were renamed. A block that still says the old
+    // one works; the settings cell writes the new one whenever it writes a
+    // list. `session` became `system` on 2026-09-23, when the account and the
+    // ways to leave were joined by the machine's own description.
+    readonly property var aliases: ({ "session": "system" })
+
+    function canonical(type) {
+        return root.aliases[type] || type;
+    }
+
+    // A membrane or floating list with every old name replaced, for the pages
+    // that write the layout back.
+    function renamed(list) {
+        const walk = cells => {
+            for (const entry of (cells || []))
+                if (entry && entry.type)
+                    entry.type = root.canonical(entry.type);
+        };
+        for (const block of (list || [])) {
+            walk(block.cells);
+            for (const tissue of (block.tissues || []))
+                walk(tissue.cells);
+        }
+        return list;
+    }
+
     function nameOf(type) {
+        type = root.canonical(type);
         return root.names[type] || type;
     }
 
@@ -73,7 +100,7 @@ Singleton {
         "audio": ["always", "conditional", "invoked"],
         "utility": ["always", "conditional"],
         "theme": ["always", "conditional"],
-        "session": ["always", "conditional"],
+        "system": ["always", "conditional"],
         "dock": ["always", "conditional"],
         "notifications": ["conditional"],
         "connectivity": ["always", "conditional"],
@@ -101,7 +128,7 @@ Singleton {
         "audio": 40,
         "utility": 40,
         "theme": 120,
-        "session": 40,
+        "system": 40,
         "dock": 52,
         "notifications": 220,
         "connectivity": 64,
@@ -112,6 +139,7 @@ Singleton {
     })
 
     function minimumOf(type) {
+        type = root.canonical(type);
         const value = root.minimums[type];
         return value === undefined ? 24 : value;
     }
@@ -153,11 +181,11 @@ Singleton {
         "vitals": { "enter": 0.8, "exit": 0.75, "confirm": 1000, "dwell": 3000 },
         "audio": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 5000 },
         // Proposed on the same day and kept: the theme after the palette
-        // changes, the utility after a screenshot, the session while a restart
+        // changes, the utility after a screenshot, the system while a restart
         // is due, the dock while the desktop is showing.
         "theme": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 5000 },
         "utility": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 5000 },
-        "session": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 0 },
+        "system": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 0 },
         "window_title": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 200 },
         "sinestesia": { "enter": 0.02, "exit": 0.005, "confirm": 200, "dwell": 4000 },
         "recording": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 0 },
@@ -172,11 +200,13 @@ Singleton {
     readonly property var defaultGrammar: ({ "enter": 1, "exit": 1, "confirm": 0, "dwell": 2000 })
 
     function grammarOf(type) {
+        type = root.canonical(type);
         const own = root.grammar[type];
         return own === undefined ? root.defaultGrammar : own;
     }
 
     function allows(type, kind) {
+        type = root.canonical(type);
         const list = root.visibilities[type];
         return list === undefined || list.indexOf(kind) >= 0;
     }
@@ -184,6 +214,7 @@ Singleton {
     property var cache: ({})
 
     function component(type) {
+        type = root.canonical(type);
         const file = root.files[type];
         if (!file) {
             console.info(`Bioma: cell "${type}" is declared in the configuration but not implemented yet`);

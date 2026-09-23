@@ -109,7 +109,7 @@ Drawn, and verified on screen against the design handoff.
 | `structure/Visibility.qml` | **Exercised at last** — the window title appears and disappears with focus. |
 | `components/` | `Rim`, `Ring`, `DashedRing`, `Disc`, `Dial`, `Gauge`, `Slider`, `Switch`, `Strength`, `Portrait`, `Icon`, `LightGradient`, `Thread`, `Panel`, `Well`, `Band`, `Sweep`, `Segmented`, `WorkspaceBars`, `Vital`. |
 | `structure/InputSurface.qml` + `core/Focus.qml` | The full-screen surface of PRD §8, and the register of what is open. Built; the press path still needs a human to click. |
-| `cells/clock`, `cells/window_title`, `cells/workspaces`, `cells/vitals`, `cells/theme`, `cells/utility`, `cells/recording`, `cells/sinestesia`, `cells/audio`, `cells/connectivity`, `cells/session`, `cells/dock`, `cells/notifications`, `cells/launcher`, `cells/settings` | Fifteen cells. Vitals opens into pods, threads and the process list; theme into the wallpaper carousel and the two palette capsules; utility into the capture panel, and generates the recording cell. |
+| `cells/clock`, `cells/window_title`, `cells/workspaces`, `cells/vitals`, `cells/theme`, `cells/utility`, `cells/recording`, `cells/sinestesia`, `cells/audio`, `cells/connectivity`, `cells/system`, `cells/dock`, `cells/notifications`, `cells/launcher`, `cells/settings` | Fifteen cells. Vitals opens into pods, threads and the process list; theme into the wallpaper carousel and the two palette capsules; utility into the capture panel, and generates the recording cell. |
 | `structure/SelectionSurface.qml` | Bioma's own selection rectangle, over the whole desktop, in place of `slurp`. Up only while a region is being asked for, and it holds the keyboard for that long so Escape means cancel. |
 | `components/Segmented.qml` | The segmented control, shared: the theme cell's source switch and the utility cell's three kinds are the same object. |
 | `core/Config.qml` write-back | `Config.set` writes one key into the override layer. Brought forward from phase 5 because the theme cell has to keep a choice. |
@@ -1655,6 +1655,32 @@ Super+Alt+K rewrote the one line of `Mod+N`; a filter typed, Enter taking
 "Close window", and Super+Ctrl+Alt+J appended to `config.kdl`; a mid-list edit
 leaving the list where it was. The presses that start each of those came from
 a throwaway timer.
+
+### Session becomes System
+
+Where the machine's description belongs was Akusen's question — vitals or
+session — and the answer was neither as they stood: vitals is load, and moves;
+the description is identity, and is read, like the account beside it. So the
+session cell is now **System**: the account capsule above, the five ways to
+leave below, and on a thread beside them, opening toward the middle of the
+screen, what the machine is — host, system, kernel, niri, CPU, each GPU,
+memory, disk, uptime. The restart row says DUE while the restart the cell's
+condition watches for is due.
+
+- The type is `system`; `session` stays an alias everywhere a type is read —
+  the layout, the IPC call, the keybind — and the settings pages write the new
+  name whenever they write a list (`Registry.canonical`, `Registry.renamed`).
+  Akusen's override still says `session` and works.
+- `services/Machine.qml` reads the kernel's files and asks `lspci`, `df` and
+  niri once, the first time the panel opens; the uptime is read again each
+  minute while it is open. Two lessons on the way: a binding on a FileView's
+  `text()` is not told when the file loads — the facts are set in `onLoaded` —
+  and an expansion is handed its cell after the cell has opened, so what starts
+  with the panel starts in `onCellChanged`.
+
+Verified from `ipc call cell toggle session` — the old name — on the running
+desktop: the SYSTEM header, the account and the commands, and ten facts, among
+them the RX 9070 and the Raphael integrated graphics.
 
 ### A proxy that follows the networks
 

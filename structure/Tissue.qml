@@ -252,7 +252,7 @@ Item {
             // place while its neighbour goes keeps its instance too.
             let kept = null;
             for (let i = 0; i < spare.length; i++) {
-                if (spare[i].domain === entry.type) {
+                if (spare[i].domain === Registry.canonical(entry.type)) {
                     kept = spare[i];
                     spare.splice(i, 1);
                     break;

@@ -187,6 +187,7 @@ Singleton {
     // 2026-09-22, and it is the one that makes the floating form free: nothing
     // has to be declared twice.
     function invoke(domain, output) {
+        domain = Registry.canonical(domain);
         const cell = root.cellFor(domain, output);
         if (cell) {
             // Asking twice puts it away: open, it closes; there because it was
@@ -226,6 +227,7 @@ Singleton {
     }
 
     function retire(domain, output) {
+        domain = Registry.canonical(domain);
         const cell = root.cellFor(domain, output);
         if (cell) {
             cell.open = false;

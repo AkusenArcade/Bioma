@@ -46,14 +46,14 @@ Item {
             for (let t = 0; t < tissues.length; t++) {
                 const cells = tissues[t].cells || [];
                 for (let c = 0; c < cells.length; c++)
-                    if (cells[c].type === type)
+                    if (Registry.canonical(cells[c].type) === type)
                         return { "list": "membranes", "m": m, "t": t, "c": c, "entry": cells[c] };
             }
         }
         for (let f = 0; f < root.floats.length; f++) {
             const cells = root.floats[f].cells || [];
             for (let c = 0; c < cells.length; c++)
-                if (cells[c].type === type)
+                if (Registry.canonical(cells[c].type) === type)
                     return { "list": "floating", "m": f, "t": -1, "c": c, "entry": cells[c] };
         }
         return null;
@@ -93,7 +93,7 @@ Item {
                 const groups = list === "membranes" ? (copy[i].tissues || []) : [copy[i]];
                 for (const group of groups) {
                     for (const entry of (group.cells || [])) {
-                        if (entry.type !== type)
+                        if (Registry.canonical(entry.type) !== type)
                             continue;
                         entry.visibility = root.ruled(entry.visibility, kind, type);
                         touched = true;
@@ -102,7 +102,7 @@ Item {
             }
 
             if (touched)
-                Config.set(list, copy);
+                Config.set(list, Registry.renamed(copy));
         }
     }
 

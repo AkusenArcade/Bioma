@@ -5,8 +5,11 @@ import qs.core
 import qs.components
 import qs.services
 
-// The session, opened: who is logged in above, and the five ways to leave
-// below, in increasing order of gravity.
+// The system, opened: who is logged in above, the five ways to leave below in
+// increasing order of gravity, and beside them, on a thread, what the machine
+// is — its name, what it runs, what it is made of, how long it has been up.
+// The machine's description opens toward the middle of the screen, away from
+// the edge the cell sits at.
 //
 // The confirmation is the row. No dialog arrives from outside and nothing is
 // covered: the row that was pressed becomes the question, and the alert colour
@@ -54,7 +57,14 @@ Item {
     readonly property real panelY: upward ? 0 : capsuleHeight + gap
     readonly property real capsuleNear: upward ? capsuleY + capsuleHeight : capsuleY
 
-    implicitWidth: Math.max(capsuleWidth, panelWidth)
+    // The machine, beside the commands.
+    readonly property real infoWidth: 340 * factor
+    readonly property bool infoLeft: root.cell ? root.cell.origin === "end" : false
+    readonly property real columnX: root.infoLeft ? root.infoWidth + root.gap : 0
+    readonly property real infoX: root.infoLeft ? 0 : root.panelWidth + root.gap
+    readonly property real columnCentre: root.columnX + root.capsuleWidth / 2
+
+    implicitWidth: Math.max(capsuleWidth, panelWidth) + gap + infoWidth
     implicitHeight: capsuleHeight + gap + panelHeight
 
     width: implicitWidth
@@ -65,11 +75,13 @@ Item {
     property real cascade: 0
 
     function stage(index) {
-        return Timing.stage(root.cascade, index, 2);
+        return Timing.stage(root.cascade, index, 4);
     }
 
     readonly property real linkProgress: stage(0)
     readonly property real panelProgress: stage(1)
+    readonly property real sideProgress: stage(2)
+    readonly property real infoProgress: stage(3)
 
     Connections {
         target: root.cell
@@ -100,11 +112,16 @@ Item {
         easing.bezierCurve: Timing.easeOpenFlat
     }
 
+    // The expansion is made when the cell is already open and handed the cell
+    // after that, so this — not the opening — is where it starts: the cascade,
+    // the keys, and asking the machine what it is.
     onCellChanged: {
         if (root.cell && root.cell.open) {
             cascade.to = 1;
             cascade.restart();
             keys.forceActiveFocus();
+            Machine.ask();
+            Machine.watching = true;
         }
     }
 
@@ -157,9 +174,9 @@ Item {
         growth: root.cell ? root.cell.panelGrowth : 0
         contentReady: root.cell ? root.cell.panelReady : false
 
-        anchorX: 0
+        anchorX: root.columnX
         anchorY: root.capsuleY
-        nodeX: root.width / 2
+        nodeX: root.columnCentre
         nodeY: root.capsuleNear
 
         Item {
@@ -271,7 +288,7 @@ Item {
         progress: root.linkProgress
         width: implicitWidth
         height: Math.max(0, descent.footY - descent.headY)
-        x: root.width / 2 - width / 2
+        x: root.columnCentre - width / 2
         y: descent.headY
     }
 
@@ -287,9 +304,9 @@ Item {
         growth: root.panelProgress
         contentReady: root.panelProgress > 0.999
 
-        anchorX: 0
+        anchorX: root.columnX
         anchorY: root.panelY
-        nodeX: root.width / 2
+        nodeX: root.columnCentre
         nodeY: root.upward ? commands.anchorY + root.panelHeight : commands.anchorY
 
         Column {
@@ -342,6 +359,25 @@ Item {
                                 "weight": Typography.weightValue,
                                 "letterSpacing": Typography.tracking(root.metrics.fontSecondary,
                                                                      0.04)
+                            })
+                        }
+
+                        // The machine wants this one: the kernel it runs has
+                        // been replaced on disk. Said beside the command it
+                        // asks for, which is also why the cell appeared.
+                        Text {
+                            anchors.right: parent.right
+                            anchors.rightMargin: 40 * root.factor
+                            anchors.verticalCenter: parent.verticalCenter
+                            visible: row.modelData.key === "restart" && Session.restartDue
+                            text: "DUE"
+                            color: Theme.primary
+                            font: Qt.font({
+                                "family": Typography.technical,
+                                "pixelSize": root.metrics.fontMeta,
+                                "weight": Typography.weightValue,
+                                "letterSpacing": Typography.tracking(root.metrics.fontMeta,
+                                                                     Typography.labelTracking)
                             })
                         }
 
@@ -492,11 +528,106 @@ Item {
         }
     }
 
+    // ---- The machine ---------------------------------------------------------
+
+    Connections {
+        target: root.cell
+        function onOpenChanged() {
+            if (root.cell.open)
+                Machine.ask();
+            Machine.watching = root.cell.open;
+        }
+    }
+
+    Component.onDestruction: Machine.watching = false
+
+    Thread {
+        vertical: false
+        progress: root.sideProgress
+        width: root.gap
+        height: implicitHeight
+        x: root.infoLeft ? root.infoWidth : root.panelWidth
+        y: root.panelY + root.panelHeight / 2 - height / 2
+    }
+
+    Panel {
+        id: machine
+
+        metrics: root.metrics
+        padding: root.panelPadding + 4 * root.factor
+        targetWidth: root.infoWidth
+        targetHeight: root.panelHeight
+        growth: root.infoProgress
+        contentReady: root.infoProgress > 0.999
+
+        anchorX: root.infoX
+        anchorY: root.panelY
+        nodeX: root.infoLeft ? root.infoWidth : root.infoX
+        nodeY: root.panelY + root.panelHeight / 2
+
+        Column {
+            anchors.fill: parent
+            anchors.topMargin: 2 * root.factor
+
+            Repeater {
+                model: Machine.rows
+
+                delegate: Item {
+                    id: fact
+
+                    required property var modelData
+
+                    width: parent.width
+                    height: Math.min(24 * root.factor,
+                                     (machine.height - (root.panelPadding + 4 * root.factor) * 2)
+                                     / Math.max(1, Machine.rows.length))
+
+                    // What it is, in the machine's voice; its value in the
+                    // voice it is written in — a name is language, a figure
+                    // is the machine counting.
+                    Text {
+                        id: factLabel
+                        anchors.left: parent.left
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 70 * root.factor
+                        text: fact.modelData.label
+                        color: Theme.textFaint
+                        font: Qt.font({
+                            "family": Typography.technical,
+                            "pixelSize": root.metrics.fontMeta,
+                            "letterSpacing": Typography.tracking(root.metrics.fontMeta,
+                                                                 Typography.labelTracking)
+                        })
+                    }
+
+                    Text {
+                        anchors.left: factLabel.right
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        elide: Text.ElideRight
+                        text: fact.modelData.value
+                        color: Theme.text
+                        font: fact.modelData.human
+                              ? Qt.font({ "family": Typography.expressive,
+                                          "pixelSize": root.metrics.fontSecondary })
+                              : Typography.tabular(Qt.font({
+                                    "family": Typography.technical,
+                                    "pixelSize": root.metrics.fontMeta,
+                                    "letterSpacing": Typography.tracking(root.metrics.fontMeta,
+                                                                         Typography.labelTracking)
+                                }))
+                    }
+                }
+            }
+        }
+    }
+
     // What the membrane has to mask and blur: the surfaces, never the threads.
     function shapes() {
         return [
             { "item": identity, "radius": identity.radius },
-            { "item": commands, "radius": commands.radius }
+            { "item": commands, "radius": commands.radius },
+            { "item": machine, "radius": machine.radius }
         ];
     }
 }
