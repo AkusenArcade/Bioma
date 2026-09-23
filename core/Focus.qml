@@ -53,11 +53,14 @@ Singleton {
     // itself never opened in the first place — the launcher is the panel —
     // and the way such a cell leaves is by no longer being asked for.
     function dismiss() {
-        if (!root.cell)
+        // Held here, because closing it releases it: `root.cell` is already
+        // null by the line after `open = false`.
+        const cell = root.cell;
+        if (!cell)
             return;
-        root.cell.open = false;
-        if (root.cell.visibility.invocable)
-            root.cell.visibility.invoked = false;
+        cell.open = false;
+        if (cell.visibility.invocable)
+            cell.visibility.invoked = false;
     }
 
     // ---- Cells that answer to a name ---------------------------------------
