@@ -121,7 +121,20 @@ PanelWindow {
         return false;
     }
 
-    focusable: anyKeyboard
+    // And exclusively, while a cell is taking the keys rather than asking for
+    // them — a combination being recorded has to reach the field, not the
+    // window the pointer happens to be over.
+    readonly property bool anyTaking: {
+        for (const tissue of root.tissues)
+            for (const cell of tissue.cells)
+                if (cell.open && cell.takesKeyboard)
+                    return true;
+        return false;
+    }
+
+    WlrLayershell.keyboardFocus: anyTaking ? WlrKeyboardFocus.Exclusive
+                               : anyKeyboard ? WlrKeyboardFocus.OnDemand
+                               : WlrKeyboardFocus.None
 
     // ---- Auto-hide ---------------------------------------------------------
 

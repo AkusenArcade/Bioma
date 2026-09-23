@@ -358,6 +358,14 @@ reads `config.kdl`, finds `include` directives, scans each included file in
 sequence and locates whichever one holds the top-level `binds` block. That is
 the part nobody enjoys writing twice.
 
+**Resolved 2026-09-23** in `services/Keybinds.qml` + `services/niri-binds.js`,
+written fresh rather than ported: the include-following is kept, and it now
+walks *every* file rather than stopping at the first block, because binds are
+spread over several of them here. The parser is replaced by a scanner that
+records positions, so an edit replaces one bind's span of text and never
+rebuilds the block — multi-line binds and comments survive. Reading goes
+through `FileView` like the rest of Bioma; the double-fire has not shown up.
+
 ### 5.3 Everything that spawns `sh -c "echo $HOME"`
 
 Five services resolve the home directory by starting a shell at startup and

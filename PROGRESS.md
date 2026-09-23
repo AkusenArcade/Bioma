@@ -3,13 +3,13 @@
 Where the work stands. `services/INVENTORY.md` holds the detail and the
 reasoning; this is the short version and the list of what is *not* done.
 
-Last worked: 2026-09-22.
+Last worked: 2026-09-23.
 
 ## Where to pick up
 
 Phases 0 to 4 are done and phase 6 with them: the engine, ten services, and
 fifteen cells — the last of them notifications, with the bus taken off Noctalia,
-and the launcher in both its forms. Phase 5 is three pages of five.
+and the launcher in both its forms. Phase 5 is four pages of five.
 
 Akusen has been driving the whole shell by hand since 2026-09-22, and most of
 what is written below the fold came out of that: the settings cell, the
@@ -17,12 +17,12 @@ structure page, and a run of engine defects that only a pointer could find.
 
 What is left, in the order it is worth taking:
 
-1. **Settings, the last two pages.** **Keybinds** — added, edited and removed,
-   the combination recorded by pressing it rather than typed — and
-   **Monitors**, dragged and snapped, with the name and mode on two lines
-   inside each rectangle. Both write **niri's own configuration** rather than
-   Bioma's, which is why they were left for last: the shell edits a file it
-   does not own, and has to leave everything else in it untouched.
+1. **Settings, the last page: Monitors**, dragged and snapped, with the name
+   and mode on two lines inside each rectangle. It writes **niri's own
+   configuration** rather than Bioma's, like Keybinds before it: the shell
+   edits a file it does not own, and has to leave everything else in it
+   untouched. `services/niri-binds.js` is the way that was done for binds —
+   scan for positions, replace one span, validate before writing.
 2. **What CELLS left open in the cells already drawn.** Sinestesia on a narrow
    screen and reduced motion (the band becomes a single bar rather than
    stopping); whether a long window title scrolls on hover; the audio cell's
@@ -72,6 +72,11 @@ been confirmed by a real press:
   applications were given three different volumes and one of them muted, and
   the rows drew it — but the path from a press back to PipeWire has only ever
   been driven from the other end.
+
+- **the Keybinds page's presses**: the pencil, the cross that removes a bind,
+  the dashed chip, and a row of the picker. Everything *after* a press was
+  driven with a synthesised keyboard (see below) — but the press itself came
+  from a throwaway timer.
 
 The way to verify anything visual here is a temporary `Timer` that sets
 `open = true` a couple of seconds after start, then `grim` for a frame or a
@@ -1604,6 +1609,55 @@ removed and lit again in the same frame — an empty band at 25 %, which is what
 Akusen kept finding. The slot's handler now stands aside when the pointer is on
 the cross. The removal path itself was never at fault; a throwaway timer
 calling `clear()` took the band out and left it out.
+
+### Settings: Keybinds, the fourth page of five
+
+Every bind niri reads, in the order it reads them, one row each: what it does
+and the keys that do it, drawn as keycaps. The pencil turns the keycaps into a
+field that listens; the next key pressed with its modifiers is the new
+combination and is written at once. A taken one is refused in the field, in
+the alert colour, saying by what. Escape leaves the bind as it was, and the
+cross that replaces the pencil removes it. The dashed chip opens a picker on a
+thread — the cells first, then every niri action that needs no argument, asked
+of niri itself — with a filter at its top; what is chosen arrives at the end
+of the list, already listening for its keys.
+
+- **niri's files are edited as text, never re-printed.** `services/niri-binds.js`
+  is a small KDL scanner that finds positions — where a bind's key is, where a
+  bind starts and ends, where the block closes — and an edit replaces exactly
+  that span. Comments, blank lines and spelling survive; a removed bind takes
+  its own comment line and one blank line with it. It is plain JavaScript and
+  was tested with node against copies of the real files.
+- **Each bind is written back into the file it came from**, following
+  `include` the way niri does (positional; the later bind wins, and an
+  overridden one is listed faint). New binds go into `config.kdl`'s own block,
+  created at its end if it has none.
+- **Nothing is written that niri would refuse.** The resulting `binds` block is
+  piped to `niri validate -c /dev/stdin` first; niri's own objection — "invalid
+  key: Foo" — is what the footer says. niri watches every included file and
+  reloads by itself.
+- **The combination is read by position where Qt reads it by symbol.** niri
+  names keys by their unshifted keysym, so `Mod+Shift+1`; Qt reports `!`. The
+  digit row and the punctuation come from the scan code, which on Wayland is
+  the xkb keycode.
+- **Recording takes the keyboard, it does not ask for it.** A new
+  `Cell.takesKeyboard` makes the membrane `Exclusive` rather than
+  `OnDemand`: under focus-follows-mouse an on-demand surface loses the keys the
+  moment the pointer crosses a window, and a hand reaching for a modifier moves
+  the mouse. `ShortcutInhibitor` holds niri's own binds back for as long as the
+  field listens, or pressing a taken combination would do what it is taken for.
+- **The list is a `ScriptModel`.** A ListView handed a new array starts again
+  from the top, and every edit is a new array.
+- Giving a cell a key marks every declaration of it `invocable`, as the Cells
+  page writes visibility: a key that opens nothing is not a setting.
+
+Verified with a keyboard synthesised through `/dev/uinput` (python `evdev`) and
+the shell restarted with `NIRI_CONFIG` on a scratch copy of the configuration:
+Super+V refused as Clipboard Manager; Super+Shift+1 recorded as `1`;
+Super+Alt+K rewrote the one line of `Mod+N`; a filter typed, Enter taking
+"Close window", and Super+Ctrl+Alt+J appended to `config.kdl`; a mid-list edit
+leaving the list where it was. The presses that start each of those came from
+a throwaway timer.
 
 ## Phase 1 — Service porting
 

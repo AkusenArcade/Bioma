@@ -213,6 +213,14 @@ Item {
     // wants presses leaves this alone.
     property bool wantsKeyboard: false
 
+    // Whether the keyboard is being **taken**, not only asked for: a field
+    // that is recording a key combination has to hear the next press wherever
+    // the pointer has wandered, and under focus-follows-mouse an on-demand
+    // surface loses the keys the moment the pointer crosses a window. While
+    // this holds the membrane asks for the keyboard exclusively; it should hold
+    // for as long as the listening lasts and not a moment longer.
+    property bool takesKeyboard: false
+
     // While it is **expanded**, not while it is open: the composition hangs
     // off this pill, and a pill that snapped back to its contracted width the
     // moment the cell was closed dragged everything still on screen sideways

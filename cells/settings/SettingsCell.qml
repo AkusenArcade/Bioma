@@ -60,7 +60,13 @@ Cell {
     // everywhere: asked for over the panel, not because something is open.
     property bool panelHovered: false
 
-    wantsKeyboard: root.open && root.panelHovered
+    // A page that is listening for keys or taking a filter keeps the keyboard
+    // whether or not the pointer is over the panel: a hand reaching for a
+    // modifier moves the mouse as often as not.
+    property bool holdsKeys: false
+
+    wantsKeyboard: root.open && (root.panelHovered || root.holdsKeys)
+    takesKeyboard: root.open && root.holdsKeys
 
     onOpenChanged: if (!root.open) root.panelHovered = false
 

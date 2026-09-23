@@ -73,6 +73,9 @@ ShellRoot {
     readonly property string captureFolder: Capture.folder
     readonly property bool capturing: Capture.busy
     readonly property bool capturingVideo: Capture.recording
+    readonly property var keybinds: Keybinds.binds
+    readonly property bool keybindsReady: Keybinds.ready
+    readonly property var niriActions: Keybinds.actions
 
     function line(label, value) {
         console.log(("  " + label + "                      ").slice(0, 24) + value);
@@ -327,6 +330,19 @@ ShellRoot {
         }
     }
 
+    function probeKeybinds() {
+        console.log("── Keybinds ──────────────────────────────────────");
+        line("ready", root.keybindsReady);
+        line("files", Keybinds.paths.length);
+        for (const path of Keybinds.paths)
+            line("  " + path.split("/").pop(), Keybinds.texts[path] === null ? "unreadable" : "read");
+        line("binds", root.keybinds.length);
+        line("shadowed", root.keybinds.filter(b => b.shadowed).length);
+        for (const bind of root.keybinds.slice(0, 4).concat(root.keybinds.slice(-3)))
+            line("  " + bind.caps.join(" "), bind.label);
+        line("actions", root.niriActions.length + " without arguments");
+    }
+
     function probeBluetooth() {
         console.log("── Bluetooth ─────────────────────────────────────");
         if (!Bluetooth.available) {
@@ -441,7 +457,10 @@ ShellRoot {
                         + `  at ${s.x},${s.y}`);
     }
 
-    Component.onCompleted: SystemMonitor.listProcesses = true
+    Component.onCompleted: {
+        SystemMonitor.listProcesses = true;
+        Keybinds.askActions();
+    }
 
     Timer {
         interval: root.settleMs
@@ -458,6 +477,7 @@ ShellRoot {
             probeBluetooth();
             probeVitals();
             probeTray();
+            probeKeybinds();
             probeCapture();
             console.log("──────────────────────────────────────────────────");
             Qt.exit(0);
