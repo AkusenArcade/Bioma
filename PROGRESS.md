@@ -1656,6 +1656,32 @@ Super+Alt+K rewrote the one line of `Mod+N`; a filter typed, Enter taking
 leaving the list where it was. The presses that start each of those came from
 a throwaway timer.
 
+### VPN, set up from the panel
+
+A third well in connectivity, VPN: one row per profile NetworkManager keeps
+(OpenVPN and WireGuard), each with its own switch, and a lock in the contracted
+cell while one is up — a tunnel is a connection like the others. "+ PROFILE"
+opens a form in the well: the provider's `.ovpn` chosen through the system's
+file chooser, the user name, the password, IMPORT. Removing a profile asks
+first, the row becoming the question, because it takes its credentials with it.
+Noctalia lists and toggles profiles made elsewhere; here they are made here,
+which is what Akusen asked for.
+
+- `services/Vpn.qml` reads `nmcli` — profiles and active states — again on every
+  burst from one `nmcli monitor` kept for the life of the shell. Nothing polls.
+- The import is `nmcli connection import`; the credentials go through
+  `scripts/vpn`, which takes the password **on stdin** and hands it to
+  NetworkManager over D-Bus (libnm), stored with the profile
+  (`password-flags 0`). An argument would have been readable by any process
+  through `/proc` while nmcli ran.
+
+Verified against NetworkManager with throwaway profiles pointing at a
+documentation address: the script stored `username = bob`, `password = hunter2`,
+`password-flags = 0`; the form imported a second profile with its credentials
+and the list showed both; switching one on failed as it had to, with
+NetworkManager's own reason under the list. Both profiles and their CA files
+were deleted afterwards.
+
 ### Bluetooth: searching and pairing
 
 The devices well learns to look. A SEARCH pill beside its switch starts

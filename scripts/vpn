@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+# Give a NetworkManager VPN profile its user name and password.
+#
+#     vpn credentials <uuid>        reads the user name and the password from
+#                                   stdin, one per line
+#
+# The password never appears on a command line — an argument is readable by any
+# process on the machine through /proc for as long as the command runs — so it
+# arrives on stdin and goes to NetworkManager over D-Bus, where it is stored in
+# the profile (password-flags 0: saved by NetworkManager, no agent asked).
+#
+# Bioma's connectivity cell runs this after `nmcli connection import`; it is a
+# script rather than an nmcli call only because nmcli takes secrets as
+# arguments.
+import sys
+
+import gi
+gi.require_version("NM", "1.0")
+from gi.repository import NM, GLib
+
+
+def fail(message):
+    print(message, file=sys.stderr)
+    sys.exit(1)
+
+
+def credentials(uuid):
+    lines = sys.stdin.read().split("\n")
+    user = lines[0] if lines else ""
+    password = lines[1] if len(lines) > 1 else ""
+
+    client = NM.Client.new(None)
+    remote = client.get_connection_by_uuid(uuid)
+    if remote is None:
+        fail(f"No profile {uuid}")
+
+    vpn = remote.get_setting_vpn()
+    if vpn is None:
+        fail("That profile is not a VPN")
+
+    if user:
+        vpn.add_data_item("username", user)
+        vpn.set_property(NM.SETTING_VPN_USER_NAME, user)
+    if password:
+        vpn.add_data_item("password-flags", "0")
+        vpn.add_secret("password", password)
+
+    loop = GLib.MainLoop()
+    outcome = {}
+
+    def done(connection, result):
+        try:
+            connection.commit_changes_finish(result)
+            outcome["ok"] = True
+        except GLib.Error as error:
+            outcome["error"] = error.message
+        loop.quit()
+
+    remote.commit_changes_async(True, None, done)
+    loop.run()
+    if "error" in outcome:
+        fail(outcome["error"])
+
+
+if __name__ == "__main__":
+    if len(sys.argv) == 3 and sys.argv[1] == "credentials":
+        credentials(sys.argv[2])
+    else:
+        fail("usage: vpn credentials <uuid>")

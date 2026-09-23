@@ -51,6 +51,9 @@ Cell {
             out.push("wifi");
         if (Bluetooth.anyConnected)
             out.push("wireless-link");
+        // A tunnel up is a connection too, and the one most worth seeing.
+        if (Vpn.anyActive)
+            out.push("lock");
         return out;
     }
 
@@ -65,6 +68,8 @@ Cell {
             out.push("wifi:" + Network.ssid);
         for (const device of Bluetooth.connectedDevices)
             out.push("bluetooth:" + device.address);
+        for (const profile of Vpn.active)
+            out.push("vpn:" + profile.uuid);
         return out;
     }
 

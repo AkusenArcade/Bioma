@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Dialogs
 import Quickshell
 import qs.core
 import qs.components
@@ -118,7 +119,40 @@ Item {
                                                   root.asked !== null ? root.askedExtra : 0)
     readonly property real deviceHeight: wellHeight(Bluetooth.enabled ? devices.length : 0, 0)
 
-    readonly property real contentHeight: wellSpacing + wifiHeight + deviceHeight
+    // The VPN well holds its profiles, or — while one is being added — the
+    // form that adds it.
+    readonly property real formHeight: 4 * root.fieldHeight + 5 * 8 * factor
+                                       + (Vpn.error.length > 0 ? root.errorHeight : 0)
+    readonly property real vpnHeight: root.adding
+        ? root.wellPadding * 2 + root.headerHeight + root.formHeight
+        : wellHeight(Vpn.profiles.length, root.chipRoom
+                     + (Vpn.error.length > 0 ? root.errorHeight : 0))
+    readonly property real chipRoom: 34 * factor
+
+    readonly property real contentHeight: wellSpacing * 2 + wifiHeight + deviceHeight + vpnHeight
+
+    // ---- Adding a VPN profile ------------------------------------------------
+
+    property bool adding: false
+    property url chosenFile: ""
+    property string confirming: ""
+
+    onAddingChanged: {
+        if (root.cell)
+            root.cell.asking = root.adding;
+        if (root.adding) {
+            root.chosenFile = "";
+            userField.text = "";
+            passwordField.text = "";
+            Vpn.error = "";
+        }
+    }
+
+    Connections {
+        target: Vpn
+        function onImported() { root.adding = false; }
+    }
+
 
     implicitWidth: contentWidth
     implicitHeight: contentHeight
@@ -649,5 +683,369 @@ Item {
                 }
             }
         }
+
+        // ---- VPN -------------------------------------------------------------
+        //
+        // One row per profile NetworkManager keeps, each with its own switch:
+        // several may exist and each goes up alone. Removing one asks first —
+        // the row becomes the question, as the session's commands do — since
+        // a removed profile takes its credentials with it.
+
+        Well {
+            id: vpnWell
+
+            metrics: root.metrics
+            inset: root.wellInset
+            width: parent.width
+            height: root.vpnHeight
+
+            Text {
+                x: root.wellInset
+                y: root.wellPadding
+                height: root.headerHeight
+                verticalAlignment: Text.AlignVCenter
+                text: "VPN"
+                color: Theme.textMuted
+                font: Qt.font({
+                    "family": Typography.technical,
+                    "pixelSize": root.metrics.fontLabel,
+                    "weight": Typography.weightLabel,
+                    "letterSpacing": Typography.tracking(root.metrics.fontLabel,
+                                                         Typography.labelTracking)
+                })
+            }
+
+            // The profiles.
+            Column {
+                visible: !root.adding
+                x: root.wellInset
+                y: root.wellPadding + root.headerHeight
+                width: vpnWell.width - root.wellInset * 2
+
+                Repeater {
+                    model: Vpn.profiles
+
+                    delegate: Item {
+                        id: profileRow
+
+                        required property var modelData
+
+                        readonly property bool up: profileRow.modelData.state === "activated"
+                        readonly property bool moving: Vpn.working === profileRow.modelData.uuid
+                                                       || (profileRow.modelData.state.length > 0 && !profileRow.up)
+                        readonly property bool asked: root.confirming === profileRow.modelData.uuid
+
+                        width: parent.width
+                        height: root.rowHeight
+
+                        Icon {
+                            id: shield
+                            anchors.left: parent.left
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 16 * root.factor
+                            height: width
+                            name: "lock"
+                            gradient: profileRow.up
+                            colour: Theme.textMuted
+                        }
+
+                        Text {
+                            anchors.left: shield.right
+                            anchors.leftMargin: 12 * root.factor
+                            anchors.right: controls.left
+                            anchors.rightMargin: 10 * root.factor
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: profileRow.asked ? "Remove this profile?" : profileRow.modelData.name
+                            elide: Text.ElideRight
+                            color: profileRow.asked ? Theme.alert : Theme.text
+                            font.family: Typography.expressive
+                            font.pixelSize: root.metrics.fontSecondary
+                        }
+
+                        Row {
+                            id: controls
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 10 * root.factor
+
+                            // Asking: the answer and the way back.
+                            VpnPill {
+                                visible: profileRow.asked
+                                label: "REMOVE"
+                                alert: true
+                                onPressed: {
+                                    root.confirming = "";
+                                    Vpn.remove(profileRow.modelData);
+                                }
+                            }
+
+                            VpnPill {
+                                visible: profileRow.asked
+                                label: "KEEP"
+                                onPressed: root.confirming = ""
+                            }
+
+                            Text {
+                                visible: !profileRow.asked
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: profileRow.moving ? "Working" : profileRow.up ? "Connected" : ""
+                                color: Theme.textMuted
+                                font.family: Typography.technical
+                                font.pixelSize: root.metrics.fontMeta
+                            }
+
+                            Item {
+                                visible: !profileRow.asked && profileHover.hovered
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: 16 * root.factor
+                                height: width
+
+                                Icon {
+                                    anchors.centerIn: parent
+                                    width: 9 * root.factor
+                                    height: width
+                                    name: "close"
+                                    colour: removeHover.hovered ? Theme.alert : Theme.textMuted
+                                }
+
+                                HoverHandler { id: removeHover }
+                                TapHandler { onTapped: root.confirming = profileRow.modelData.uuid }
+                            }
+
+                            Switch {
+                                visible: !profileRow.asked
+                                anchors.verticalCenter: parent.verticalCenter
+                                factor: root.factor
+                                on: profileRow.up
+                                settling: profileRow.moving
+                                onToggled: value => Vpn.toggle(profileRow.modelData, value)
+                            }
+                        }
+
+                        HoverHandler { id: profileHover }
+                    }
+                }
+
+                Text {
+                    visible: Vpn.profiles.length === 0
+                    width: parent.width
+                    height: root.rowHeight
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    text: "No profiles"
+                    color: Theme.textMuted
+                    font.family: Typography.expressive
+                    font.pixelSize: root.metrics.fontSecondary
+                }
+
+                Text {
+                    visible: Vpn.error.length > 0
+                    width: parent.width
+                    height: root.errorHeight
+                    verticalAlignment: Text.AlignVCenter
+                    elide: Text.ElideRight
+                    text: Vpn.error
+                    color: Theme.alert
+                    font.family: Typography.expressive
+                    font.pixelSize: root.metrics.fontMeta
+                }
+
+                Item {
+                    width: parent.width
+                    height: root.chipRoom
+
+                    VpnPill {
+                        anchors.left: parent.left
+                        anchors.verticalCenter: parent.verticalCenter
+                        label: "+ PROFILE"
+                        dashed: true
+                        onPressed: root.adding = true
+                    }
+                }
+            }
+
+            // Adding one: the file a provider hands out, and the user name
+            // and password it expects. The password field says the keyboard
+            // is borrowed; the password leaves by stdin and is not kept here.
+            Column {
+                visible: root.adding
+                x: root.wellInset
+                y: root.wellPadding + root.headerHeight
+                width: vpnWell.width - root.wellInset * 2
+                spacing: 8 * root.factor
+
+                Item {
+                    width: parent.width
+                    height: root.fieldHeight
+
+                    VpnPill {
+                        id: choose
+                        anchors.left: parent.left
+                        anchors.verticalCenter: parent.verticalCenter
+                        label: "CHOOSE FILE"
+                        onPressed: ovpnPicker.open()
+                    }
+
+                    Text {
+                        anchors.left: choose.right
+                        anchors.leftMargin: 10 * root.factor
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        elide: Text.ElideMiddle
+                        text: root.chosenFile.toString().length > 0
+                              ? decodeURIComponent(root.chosenFile.toString().split("/").pop())
+                              : "an .ovpn file"
+                        color: root.chosenFile.toString().length > 0 ? Theme.text : Theme.textFaint
+                        font.family: Typography.expressive
+                        font.pixelSize: root.metrics.fontSecondary
+                    }
+                }
+
+                VpnField {
+                    id: userField
+                    placeholder: "User name"
+                }
+
+                VpnField {
+                    id: passwordField
+                    placeholder: "Password"
+                    secret: true
+                    onAccepted: importButton.pressed()
+                }
+
+                Text {
+                    visible: Vpn.error.length > 0
+                    width: parent.width
+                    height: root.errorHeight
+                    elide: Text.ElideRight
+                    text: Vpn.error
+                    color: Theme.alert
+                    font.family: Typography.expressive
+                    font.pixelSize: root.metrics.fontMeta
+                }
+
+                Row {
+                    spacing: 8 * root.factor
+
+                    VpnPill {
+                        id: importButton
+                        label: Vpn.busy ? "IMPORTING" : "IMPORT"
+                        lit: root.chosenFile.toString().length > 0 && !Vpn.busy
+                        onPressed: {
+                            if (root.chosenFile.toString().length === 0 || Vpn.busy)
+                                return;
+                            Vpn.importProfile(root.chosenFile, userField.text, passwordField.text);
+                            passwordField.text = "";
+                        }
+                    }
+
+                    VpnPill {
+                        label: "CANCEL"
+                        onPressed: root.adding = false
+                    }
+                }
+            }
+
+            FileDialog {
+                id: ovpnPicker
+                title: "Choose a VPN profile"
+                nameFilters: ["OpenVPN profiles (*.ovpn *.conf)"]
+                onAccepted: root.chosenFile = ovpnPicker.selectedFile
+            }
+        }
+    }
+
+    component VpnPill: Item {
+        id: pill
+
+        property string label: ""
+        property bool lit: false
+        property bool alert: false
+        property bool dashed: false
+        signal pressed
+
+        width: pillText.implicitWidth + 24 * root.factor
+        height: 24 * root.factor
+
+        DashedSlot {
+            anchors.fill: parent
+            visible: pill.dashed
+            radius: Metrics.radiusFor(parent.height, root.metrics)
+        }
+
+        Rectangle {
+            anchors.fill: parent
+            visible: !pill.dashed
+            radius: Metrics.radiusFor(height, root.metrics)
+            antialiasing: true
+            color: pill.lit ? Qt.alpha(Theme.primary, 0.16)
+                 : pill.alert && pillHover.hovered ? Qt.alpha(Theme.alert, 0.16) : "transparent"
+            border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+            border.color: pill.alert ? Theme.alert : pill.lit ? Theme.primary
+                        : pillHover.hovered ? Theme.text : Theme.line
+        }
+
+        Text {
+            id: pillText
+            anchors.centerIn: parent
+            text: pill.label
+            color: pill.alert ? Theme.alert : pill.lit ? Theme.text : Theme.textMuted
+            font: Qt.font({
+                "family": Typography.technical,
+                "pixelSize": root.metrics.fontMeta,
+                "letterSpacing": Typography.tracking(root.metrics.fontMeta, Typography.labelTracking)
+            })
+        }
+
+        HoverHandler { id: pillHover }
+        TapHandler { onTapped: pill.pressed() }
+    }
+
+    component VpnField: Item {
+        id: field
+
+        property string placeholder: ""
+        property bool secret: false
+        property alias text: input.text
+        signal accepted
+
+        width: parent ? parent.width : 0
+        height: root.fieldHeight
+
+        Rectangle {
+            anchors.fill: parent
+            radius: Metrics.radiusFor(height, root.metrics)
+            color: "transparent"
+            border.width: Metrics.crisp(input.activeFocus ? 1.5 : Metrics.rimWidth, Screen.devicePixelRatio)
+            border.color: input.activeFocus ? Theme.primary : Theme.line
+            antialiasing: true
+        }
+
+        TextInput {
+            id: input
+            anchors.left: parent.left
+            anchors.leftMargin: 16 * root.factor
+            anchors.right: parent.right
+            anchors.rightMargin: 16 * root.factor
+            anchors.verticalCenter: parent.verticalCenter
+            echoMode: field.secret ? TextInput.Password : TextInput.Normal
+            passwordCharacter: "•"
+            color: Theme.text
+            font.family: Typography.expressive
+            font.pixelSize: root.metrics.fontSecondary
+            clip: true
+            onAccepted: field.accepted()
+            Keys.onEscapePressed: root.adding = false
+
+            Text {
+                visible: input.text.length === 0
+                anchors.verticalCenter: parent.verticalCenter
+                text: field.placeholder
+                color: Theme.textFaint
+                font: input.font
+            }
+        }
+
+        TapHandler { onTapped: input.forceActiveFocus() }
     }
 }
