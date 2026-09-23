@@ -112,6 +112,19 @@ binds {
         spawn "@BIOMA@/scripts/key" "media-stop"
     }
 
+    // A screenshot without opening anything: Print draws a region with
+    // Bioma's own rectangle, Mod+Print takes the whole monitor the keyboard is
+    // on. Both go to the screenshots folder and the clipboard, like the
+    // utility cell's. They replace niri's own `Print { screenshot; }`, because
+    // this file is included after it.
+    Print hotkey-overlay-title="Bioma: screenshot of a region" {
+        spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "capture" "region"
+    }
+
+    Mod+Print hotkey-overlay-title="Bioma: screenshot of the screen" {
+        spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "capture" "screen"
+    }
+
     // The launcher has no place of its own: asked for, it is built in the
     // middle of the screen the keyboard is pointed at.
     Mod+Space hotkey-overlay-title="Bioma: launcher" {

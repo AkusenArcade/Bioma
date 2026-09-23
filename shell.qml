@@ -283,6 +283,26 @@ ShellRoot {
         }
     }
 
+    // A screenshot straight from a key, without opening the utility cell and
+    // without changing what it remembers: a region, drawn with Bioma's own
+    // rectangle, or the whole monitor the keyboard is pointed at. The file
+    // and the clipboard are the same as the cell's.
+    IpcHandler {
+        target: "capture"
+
+        function region(): string {
+            Capture.pendingAction = "still";
+            Capture.selectRegion();
+            return "region";
+        }
+
+        function screen(): string {
+            Capture.pendingAction = "still";
+            Capture.captureOutput(Niri.focusedOutput);
+            return Niri.focusedOutput;
+        }
+    }
+
     // TODO Phase 3: the last user of the input surface — cells positioned at
     // the pointer, which need the pointer position it is the only way to learn.
 

@@ -1681,6 +1681,13 @@ una release beta 1.0"). Before tagging, what would have stopped anybody else:
   changes nothing. Tested on a scratch configuration, then on Akusen's.
   - The font check first reported both fonts missing when both were installed:
     `grep -q` under `pipefail` makes a found font read as absent.
+- **Direct screenshot keys** (his request, while the release was being
+  prepared): `Print` for a region and `Mod+Print` for the whole monitor, through
+  a new IPC target, `capture` (`region`, `screen`). Neither changes what the
+  utility cell remembers. They are in the template, where they replace niri's
+  own `Print { screenshot; }`, and in his copy. Verified with synthetic keys:
+  Mod+Print saved a file, Print raised the selection veil, and Escape took it
+  down.
 - **The README** now lists every requirement the scripts actually call, has an
   Install section and a table of the default keys, and says plainly that Bioma
   has no lock screen.
