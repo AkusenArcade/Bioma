@@ -41,6 +41,14 @@ binds {
         spawn "qs" "-p" "/home/akusen/Documents/Development/Bioma/shell.qml" "ipc" "call" "cell" "toggle" "utility"
     }
 
+    Mod+Alt+K hotkey-overlay-title="Bioma: keyboard" {
+        spawn "qs" "-p" "/home/akusen/Documents/Development/Bioma/shell.qml" "ipc" "call" "cell" "toggle" "keyboard"
+    }
+
+    // The next layout, straight from niri: the keyboard cell shows which one
+    // it is, when it is placed conditional.
+    Mod+Shift+Space hotkey-overlay-title="Next keyboard layout" { switch-layout "next"; }
+
     Mod+Alt+T hotkey-overlay-title="Bioma: theme" {
         spawn "qs" "-p" "/home/akusen/Documents/Development/Bioma/shell.qml" "ipc" "call" "cell" "toggle" "theme"
     }

@@ -45,6 +45,18 @@ surface. Bioma draws its own wallpaper on a layer surface of its own, so that
 backdrop is a flat colour — and the cells come out as slabs you can see nothing
 through, which is exactly how this was found.
 
+Besides that one, Bioma writes files of its own next to `config.kdl`, and adds
+their `include` line to the end of it the first time:
+
+| File | Written by | What it sets |
+|---|---|---|
+| `bioma-theme.kdl` | the palette's niri template | focus ring, borders and the windows' corner radius |
+| `bioma-keyboard.kdl` | the keyboard cell | `input.keyboard.xkb` layout and variant |
+
+Each is included last on purpose. niri merges most sections property by
+property and the later file wins, so a file like this overrides only what it
+names and leaves the rest of the section where the user set it.
+
 ## Structural terms
 
 - **membrane** — one edge of one monitor. Tissues anchored to it share its
@@ -255,6 +267,7 @@ what a cell displays. A cell's own settings live in its `options`.
 | `clock.zones` | The other places the opened clock shows, as IANA zones (`Asia/Tokyo`). The clock cell adds and removes them itself. |
 | `clock.timer` / `clock.alarm` | The timer's last length in seconds, and the alarm as `{ "hour", "minute", "on" }`. Both are written by the clock cell; they end in a critical notification and the freedesktop alarm sound. |
 | `proxy.profiles` / `proxy.mode` | Proxy profiles — `{ "id", "name", "type": "http" \| "socks5", "host", "port", "noProxy", "triggers": [{ "kind": "vpn", "uuid" } \| { "kind": "wifi", "ssid" } \| { "kind": "wired" }] }` — and which is on: `auto` (the first whose trigger matches), `off`, or a profile's id. Written by the connectivity cell. The one on is set as the desktop's proxy (`org.gnome.system.proxy`) and handed to the programs the shell starts as `http_proxy` and the rest. With no profiles the shell leaves the desktop's proxy alone. |
+| `keyboard.layouts` | The layouts the keyboard cell has set, as `[{ "layout": "it", "variant": "" }]`, in order — the first is the one niri starts with. Absent until the list is first changed from the cell; until then the layouts are whatever the system and niri's configuration already say. Written to niri as `bioma-keyboard.kdl`. |
 | `clipboard.history` | How many copies the clipboard cell keeps (50). Kept in `~/.cache/bioma/clipboard`, private to the user, while the shell runs; what a password manager marks sensitive is never kept. |
 | `dock.pinned` | The applications the dock keeps, by desktop entry id, in the order they are shown. Empty is a legitimate setting: with nothing kept the dock is a window list. |
 | `session.lock` / `session.suspend` / `session.restart` / `session.shutdown` / `session.logout` | Each is a list — the program and its arguments. None of the five is universal: a lock screen is a choice, systemd is not the only init, and leaving the session is a different sentence on every compositor. The defaults are `loginctl lock-session`, `systemctl suspend|reboot|poweroff` and `niri msg action quit -s`. |

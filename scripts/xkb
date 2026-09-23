@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+# The keyboard layouts this machine knows, and the one it starts with.
+#
+#     xkb list       every layout and variant, as JSON:
+#                    [{"layout": "it", "variant": "", "name": "Italian"}, …]
+#     xkb system     what the system configures (localed), as JSON:
+#                    [{"layout": "us", "variant": "alt-intl"}]
+#
+# The names are xkeyboard-config's own, the same ones niri reports for the
+# layouts it has loaded, which is how a loaded layout is matched back to its
+# codes.
+import json
+import subprocess
+import sys
+
+RULES = "/usr/share/X11/xkb/rules/evdev.lst"
+
+
+def catalogue():
+    out = []
+    section = None
+    with open(RULES, encoding="utf-8") as handle:
+        for raw in handle:
+            line = raw.rstrip("\n")
+            if line.startswith("! "):
+                section = line[2:].strip()
+                continue
+            if not line.strip():
+                continue
+            code, _, rest = line.strip().partition(" ")
+            rest = rest.strip()
+            if section == "layout":
+                out.append({"layout": code, "variant": "", "name": rest})
+            elif section == "variant":
+                parent, _, name = rest.partition(":")
+                out.append({"layout": parent.strip(), "variant": code, "name": name.strip()})
+    return out
+
+
+def system():
+    try:
+        text = subprocess.run(["localectl", "status"], capture_output=True, text=True, timeout=5).stdout
+    except (OSError, subprocess.SubprocessError):
+        text = ""
+    values = {}
+    for line in text.splitlines():
+        key, _, value = line.partition(":")
+        values[key.strip()] = value.strip()
+    layouts = [l for l in values.get("X11 Layout", "us").split(",") if l] or ["us"]
+    variants = values.get("X11 Variant", "").split(",")
+    return [{"layout": l, "variant": variants[i] if i < len(variants) else ""}
+            for i, l in enumerate(layouts)]
+
+
+if __name__ == "__main__":
+    command = sys.argv[1] if len(sys.argv) > 1 else ""
+    if command == "list":
+        print(json.dumps(catalogue()))
+    elif command == "system":
+        print(json.dumps(system()))
+    else:
+        print("usage: xkb list | system", file=sys.stderr)
+        sys.exit(1)

@@ -1664,6 +1664,41 @@ Super+Alt+K rewrote the one line of `Mod+N`; a filter typed, Enter taking
 leaving the list where it was. The presses that start each of those came from
 a throwaway timer.
 
+### The keyboard cell
+
+This is from Akusen's list of new ideas, 2026-09-23 (from his notes: "Switcher
+layout tastiera con keybind e cellula"). The eighteenth cell, `keyboard`:
+
+- **At rest** it shows the layout's code (US, IT) in the machine's voice.
+- **Always or conditional** is his choice from the Cells page. Conditional, it
+  is there for five seconds after the layout changes.
+- **Open**, it lists the layouts niri has loaded, with the active one marked by
+  a dot. A press switches to a layout, and a cross removes one (never the
+  last). Typing in the field turns the list into the catalogue, all 598 layouts
+  and variants, filtered by name or code. A press or Enter adds the one found.
+- **Keys:** `Mod+Alt+K` opens it. `Mod+Shift+Space` switches to the next
+  layout, straight from niri.
+- **Where the layouts are written:**
+  - The cell writes the list to `keyboard.layouts`.
+  - `scripts/niri-include keyboard` turns it into
+    `~/.config/niri/bioma-keyboard.kdl`, but only after `niri validate` has
+    accepted it, and only if it changed.
+  - The same script adds the `include` line to the end of `config.kdl` once.
+  - niri merges sections property by property, so the file overrides only the
+    xkb layout and variant.
+  - Until the list is first changed from the cell, nothing is written.
+- **Services:**
+  - `services/Keyboard.qml` matches niri's layout names back to their codes
+    through `scripts/xkb list`, which reads xkeyboard-config's `evdev.lst`.
+  - Its headless probe is in `probe.qml`.
+
+Verified on the desktop. The panel opened in the middle of DP-1 with the field
+focused. Typing "italian" and pressing Enter loaded a second layout in niri.
+`switch-layout` moved to it and back. The cross on the Italian row removed it,
+and niri was left with the original layout only. Not yet seen: the cell on a
+membrane, always or conditional. It is placed nowhere until he puts it
+somewhere from the Structure page.
+
 ### Dismissing the last notification with the history open
 
 Akusen's report: with the history open, the cross took only the title off the

@@ -57,6 +57,7 @@ something is, never **how hard** it is working.
 | `error.svg` | beside the reason, in the alert colour, under the field that refused the input |
 | `clock.svg` | ring plus minute pie |
 | `clipboard.svg` | the clipboard cell: what was copied, kept |
+| `keyboard.svg` | the keyboard cell's header: the layout, and switching it |
 | `brightness.svg` | the sun in the middle of the brightness display's dial |
 
 ## QML

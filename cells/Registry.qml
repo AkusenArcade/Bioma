@@ -29,7 +29,8 @@ Singleton {
         "launcher": "launcher/Launcher.qml",
         "settings": "settings/SettingsCell.qml",
         "tray": "tray/TrayCell.qml",
-        "clipboard": "clipboard/ClipboardCell.qml"
+        "clipboard": "clipboard/ClipboardCell.qml",
+        "keyboard": "keyboard/KeyboardCell.qml"
     })
 
     // What a cell is called when it is spoken about rather than drawn — the
@@ -51,7 +52,8 @@ Singleton {
         "launcher": "Launcher",
         "settings": "Settings",
         "tray": "Tray",
-        "clipboard": "Clipboard"
+        "clipboard": "Clipboard",
+        "keyboard": "Keyboard"
     })
 
     // Old names for cells that were renamed. A block that still says the old
@@ -110,7 +112,8 @@ Singleton {
         "launcher": ["always", "invoked"],
         "settings": ["always", "invoked"],
         "tray": ["conditional", "always"],
-        "clipboard": ["always", "conditional"]
+        "clipboard": ["always", "conditional"],
+        "keyboard": ["always", "conditional"]
     })
 
     // The narrowest a cell can be and still be itself, in logical units at
@@ -139,7 +142,8 @@ Singleton {
         "launcher": 40,
         "settings": 40,
         "tray": 40,
-        "clipboard": 40
+        "clipboard": 40,
+        "keyboard": 48
     })
 
     function minimumOf(type) {
@@ -198,7 +202,9 @@ Singleton {
         "notifications": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 400 },
         "tray": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 5000 },
         // For a moment after a copy, as the sign that it was kept.
-        "clipboard": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 5000 }
+        "clipboard": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 5000 },
+        // For five seconds after the layout changes, saying which it is now.
+        "keyboard": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 5000 }
     })
 
     // Boolean, appearing promptly and leaving slowly, for a domain with

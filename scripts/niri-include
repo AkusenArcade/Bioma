@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Write one of Bioma's own niri files and make sure niri reads it.
+#
+#     niri-include NAME < body.kdl
+#
+# The body goes to $niri_dir/bioma-NAME.kdl, but only after niri has accepted it
+# on its own (`niri validate`) and only if it differs from what is there. Then
+# `include "bioma-NAME.kdl"` is appended to config.kdl, once. It is appended
+# last on purpose: niri merges most sections property by property and the later
+# file wins, so what Bioma sets here overrides the same property set earlier and
+# leaves everything else in the section alone.
+#
+# Prints nothing on success; niri's reason on stderr and exit 1 when refused.
+set -euo pipefail
+
+name="${1:?usage: niri-include NAME < body.kdl}"
+config="${NIRI_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/niri/config.kdl}"
+dir="$(dirname "$(readlink -f "$config")")"
+file="$dir/bioma-$name.kdl"
+line="include \"bioma-$name.kdl\""
+
+body="$(cat)"
+
+if ! printf '%s\n' "$body" | niri validate -c /dev/stdin >/dev/null 2>"${TMPDIR:-/tmp}/bioma-niri-include.$$"; then
+    sed 's/\x1b\[[0-9;]*m//g' "${TMPDIR:-/tmp}/bioma-niri-include.$$" | grep -E '×|╰─▶' | tail -1 | sed -E 's/.*(×|╰─▶)\s*//' >&2
+    rm -f "${TMPDIR:-/tmp}/bioma-niri-include.$$"
+    exit 1
+fi
+rm -f "${TMPDIR:-/tmp}/bioma-niri-include.$$"
+
+if [ ! -f "$file" ] || [ "$(cat "$file")" != "$body" ]; then
+    printf '%s\n' "$body" >"$file.tmp.$$"
+    mv "$file.tmp.$$" "$file"
+fi
+
+if ! grep -qE "^[[:space:]]*include[[:space:]]+\"(.*/)?bioma-$name\.kdl\"" "$config"; then
+    printf '\n%s\n' "$line" >>"$(readlink -f "$config")"
+fi

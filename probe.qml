@@ -27,6 +27,8 @@ ShellRoot {
     readonly property var niriWorkspaces: Niri.workspaceList
     readonly property var niriFocused: Niri.focusedWindow
     readonly property var niriLayouts: Niri.windowLayouts
+    readonly property var keyboardLayouts: Keyboard.layouts
+    readonly property int keyboardCatalogue: Keyboard.catalogue.length
     readonly property bool wallpaperLoaded: Wallpaper.loaded
     readonly property string wallpaperPath: Wallpaper.path
     readonly property string wallpaperMode: Wallpaper.mode
@@ -478,6 +480,17 @@ ShellRoot {
             line("last error", Capture.lastError);
     }
 
+    function probeKeyboard() {
+        console.log("── Keyboard ──────────────────────────────────────");
+        console.log(`  catalogue: ${root.keyboardCatalogue} layouts and variants`);
+        console.log(`  current: ${Keyboard.current} (${Keyboard.currentCode}), index ${Keyboard.currentIndex}`);
+        for (const entry of root.keyboardLayouts)
+            console.log(`      ${entry.name}  →  ${entry.layout || "?"}${entry.variant ? "(" + entry.variant + ")" : ""}`);
+        console.log("  would write:");
+        for (const line of Keyboard.kdl(Keyboard.codes().concat([{ "layout": "it", "variant": "" }])).split("\n"))
+            console.log(`      ${line}`);
+    }
+
     function probeScreens() {
         console.log("── Screens ───────────────────────────────────────");
         for (const s of Quickshell.screens)
@@ -510,6 +523,7 @@ ShellRoot {
             probeMonitors();
             probeConditions();
             probeCapture();
+            probeKeyboard();
             console.log("──────────────────────────────────────────────────");
             Qt.exit(0);
         }
