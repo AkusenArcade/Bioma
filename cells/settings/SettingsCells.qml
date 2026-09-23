@@ -106,22 +106,20 @@ Item {
         }
     }
 
-    // A condition needs thresholds, and a block that has only ever been
-    // "always" carries none: without them the enter threshold is zero, every
-    // condition is already met, and "conditional" would mean "always" with
-    // extra words. What the block already says is kept — a cell put back to
-    // conditional comes back to its own grammar, not to a default one.
+    // Only the kind is written. What a condition means — its thresholds, how
+    // long it waits to be believed and how long the cell stays — is the
+    // domain's, in `Registry.grammar`, and figures copied into the block
+    // would freeze it: the next time a condition is redefined, a cell that
+    // was switched here would keep the old one. Switching also drops figures
+    // an earlier version of this page copied in.
     function ruled(existing, kind, type) {
         const rule = Object.assign({}, existing || ({}));
         rule.type = kind;
-
-        if (kind === "conditional") {
-            const grammar = Registry.grammarOf(type);
-            if (rule.enter === undefined) rule.enter = grammar.enter;
-            if (rule.exit === undefined) rule.exit = grammar.exit;
-            if (rule.confirm === undefined) rule.confirm = grammar.confirm;
-            if (rule.dwell === undefined) rule.dwell = grammar.dwell;
-        }
+        delete rule.enter;
+        delete rule.exit;
+        delete rule.confirm;
+        delete rule.dwell;
+        delete rule.invocable;
         return rule;
     }
 

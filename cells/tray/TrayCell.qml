@@ -37,8 +37,27 @@ Cell {
                            root.items.length * glyphSize
                            + Math.max(0, root.items.length - 1) * root.spacing)
 
-    // A cell exists when it has something to say.
-    condition: root.items.length > 0 ? 1 : 0
+    // Conditional, it is there from the moment an item changes state until
+    // the pointer has been over it — somebody has seen it — and then for the
+    // dwell after the pointer leaves.
+    property bool calling: false
+
+    Variants {
+        model: root.items
+
+        Connections {
+            required property var modelData
+            target: modelData
+            function onStatusChanged() {
+                if (root.settled)
+                    root.calling = true;
+            }
+        }
+    }
+
+    onHoveredChanged: if (root.hovered) root.calling = false
+
+    condition: root.calling ? 1 : 0
 
     // Which item's menu is open, if any. The cell opens because an item was
     // asked about, never on its own: a tray that opened as a whole would be

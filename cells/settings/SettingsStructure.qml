@@ -379,20 +379,10 @@ Item {
         });
     }
 
-    // The temporal grammar a new block carries. The catalogue answers what a
-    // condition means for that domain: a window title goes when the focus
-    // does, a sound level takes four seconds to be forgotten.
+    // A new block carries its kind and nothing else: what the condition
+    // means is the domain's (`Registry.grammar`), and stays that way.
     function ruled(kind, type) {
-        const rule = { "type": kind };
-        if (kind !== "conditional")
-            return rule;
-
-        const grammar = Registry.grammarOf(type);
-        rule.enter = grammar.enter;
-        rule.exit = grammar.exit;
-        rule.confirm = grammar.confirm;
-        rule.dwell = grammar.dwell;
-        return rule;
+        return { "type": kind };
     }
 
     function addCell(type) {

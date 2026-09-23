@@ -67,11 +67,17 @@ Cell {
     // keeps its right edge and grows leftwards.
     contentWidth: count * indicator + (count - 1) * pitch
 
-    // Conditional visibility, when it is configured that way, watches the worst
-    // of the vitals rather than any one of them: the cell appears because the
-    // machine is working hard, not because a particular part is.
-    condition: Math.max(SystemMonitor.cpuPercent, SystemMonitor.ramPercent,
-                        showsGpu ? SystemMonitor.gpuPercent : 0) / 100
+    // Conditional, it watches the worst of the vitals rather than any one of
+    // them — the cell appears because one of them is critical, and critical
+    // is the load at which that indicator turns to the alert colour. The
+    // battery's load is how empty it is.
+    readonly property real batteryLevel: SystemMonitor.batteryLevelRaw > 1
+                                         ? SystemMonitor.batteryLevelRaw / 100
+                                         : SystemMonitor.batteryLevelRaw
+
+    condition: Math.max(SystemMonitor.cpuPercent / 100, SystemMonitor.ramPercent / 100,
+                        showsGpu ? SystemMonitor.gpuPercent / 100 : 0,
+                        showsBattery ? 1 - root.batteryLevel : 0)
 
     Row {
         anchors.verticalCenter: parent.verticalCenter

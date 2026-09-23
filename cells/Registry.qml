@@ -65,10 +65,10 @@ Singleton {
     // hidden: seeing that the window title is only ever conditional teaches
     // how the shell is built.
     readonly property var visibilities: ({
-        "clock": ["always", "invoked"],
+        "clock": ["always", "conditional"],
         "window_title": ["conditional"],
-        "workspaces": ["always", "invoked"],
-        "vitals": ["always", "invoked"],
+        "workspaces": ["always", "conditional"],
+        "vitals": ["always", "conditional"],
         "sinestesia": ["conditional"],
         "audio": ["always", "conditional", "invoked"],
         "utility": ["always", "invoked"],
@@ -140,17 +140,25 @@ Singleton {
     //
     // These are the figures `config/default.json` ships; a block that names
     // its own still wins.
+    // Akusen's conditions, 2026-09-23: the clock on the hour, for its minute;
+    // the workspaces, audio and connectivity for five seconds after something
+    // changed; vitals while an indicator is critical; the tray from a change
+    // of state until the pointer has been over it, then five seconds.
     readonly property var grammar: ({
+        "clock": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 0 },
+        "workspaces": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 5000 },
+        // Critical is the alert threshold every indicator is coloured by, with
+        // hysteresis under it and a second to be believed: a spike that comes
+        // and goes is not the machine being in trouble.
+        "vitals": { "enter": 0.8, "exit": 0.75, "confirm": 1000, "dwell": 3000 },
+        "audio": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 5000 },
         "window_title": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 200 },
         "sinestesia": { "enter": 0.02, "exit": 0.005, "confirm": 200, "dwell": 4000 },
         "recording": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 0 },
-        "connectivity": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 1000 },
+        "connectivity": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 5000 },
         "dock": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 400 },
         "notifications": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 400 },
-        // A tray item registers and unregisters as applications come and go;
-        // a second of grace stops a restart from taking the row out and
-        // putting it back.
-        "tray": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 1000 }
+        "tray": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 5000 }
     })
 
     // Boolean, appearing promptly and leaving slowly, for a domain with

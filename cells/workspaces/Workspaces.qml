@@ -34,6 +34,13 @@ Cell {
         return Niri.activeWorkspaceForOutput(root.output);
     }
 
+    // Conditional, it is there for a moment after the workspace changes —
+    // told by its id, because the service hands out a fresh object on every
+    // event and a new object is not a new workspace.
+    readonly property var workspaceId: workspace ? workspace.id : -1
+    onWorkspaceIdChanged: root.pulse()
+    condition: root.pulsing ? 1 : 0
+
     readonly property bool named: workspace && workspace.name
     readonly property string label: workspace ? (workspace.name || String(workspace.idx)) : ""
 

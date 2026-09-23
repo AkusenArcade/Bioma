@@ -62,6 +62,14 @@ Cell {
     Component.onCompleted: if (root.asCapsule)
         root.radius = Qt.binding(() => Metrics.radiusFor(root.capsuleHeight, root.metrics))
 
+    // Conditional, it is there for a moment after the level or the mute
+    // changes — from the wheel, a key, or another program.
+    readonly property real level: Audio.volume
+    readonly property bool silenced: Audio.muted
+    onLevelChanged: root.pulse()
+    onSilencedChanged: root.pulse()
+    condition: root.pulsing ? 1 : 0
+
     readonly property real travel: Math.min(1, Audio.volume)
     readonly property real overflow: Math.max(0, Audio.volume - 1)
 

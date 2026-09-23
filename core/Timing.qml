@@ -67,6 +67,17 @@ Singleton {
     // not answer faster because the shell was asked to move slower.
     readonly property int locate: Config.get("timing.locate", 120)
 
+    // How long an event is held as a condition — long enough for the
+    // visibility's confirm step to see it, and then the dwell carries the
+    // cell. Not an animation, so not scaled.
+    readonly property int pulse: Config.get("timing.pulse", 120)
+
+    // How long after start the shell is learning the state of the machine
+    // rather than watching it change: the services fill in, the volume goes
+    // from nothing to what it is, and none of that is an event a cell should
+    // appear for. Not scaled either.
+    readonly property int settle: Config.get("timing.settle", 3000)
+
     // Wallpaper crossfade. Slower than a palette change: the picture is the
     // whole screen, and anything quick here reads as a flicker rather than a
     // change of scene.

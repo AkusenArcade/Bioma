@@ -194,6 +194,22 @@ the cell exists.
 
 Confirm and dwell are asymmetric on purpose: appear promptly, leave slowly.
 
+What `conditional` means is the cell's own, from `cells/Registry.qml`:
+
+| Cell | Conditional means |
+|---|---|
+| `clock` | the minute the hour strikes |
+| `workspaces` | five seconds after the active workspace changes |
+| `vitals` | while an indicator is critical — its load at the alert threshold, the battery's being how empty it is — believed after a second |
+| `audio` | five seconds after the volume or the mute changes |
+| `connectivity` | five seconds after something connects that was not connected: the wire, a wireless network, a Bluetooth device |
+| `tray` | from an item changing state until the pointer has been over the cell, then five seconds |
+| `window_title`, `sinestesia`, `notifications`, `recording`, `dock` | a window has the focus, sound is playing, something was said, a capture is running, there are windows |
+
+The five seconds are the dwell, so a block may set its own (`visibility.dwell`),
+and the pointer on the cell holds it. Nothing that happens in the first
+`timing.settle` milliseconds after start counts as an event.
+
 Launcher, session menu and settings are not a separate category — they are cells
 whose visibility is `invoked`. The system needs no second model for them.
 

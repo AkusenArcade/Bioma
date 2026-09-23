@@ -86,6 +86,37 @@ Item {
 
     readonly property bool shown: visibility.shown
 
+    // ---- Events ---------------------------------------------------------------
+    //
+    // Most conditions are a state — a window has the focus, audio is playing.
+    // Some are an event: the volume changed, a device connected. A cell whose
+    // condition is an event calls `pulse()` when it happens; the condition is
+    // true for a moment, and the dwell of its grammar is how long the cell
+    // stays — paused while the pointer is on it and resumed where it stopped,
+    // like every other dwell, and a block may set its own. What happens while
+    // the shell is still starting is not an event: see `Timing.settle`.
+    property bool pulsing: false
+    property bool settled: false
+
+    function pulse() {
+        if (!root.settled)
+            return;
+        root.pulsing = true;
+        pulseTimer.restart();
+    }
+
+    Timer {
+        id: pulseTimer
+        interval: Timing.pulse
+        onTriggered: root.pulsing = false
+    }
+
+    Timer {
+        interval: Timing.settle
+        running: true
+        onTriggered: root.settled = true
+    }
+
     // A cell that was holding the shell's attention and then left the screen
     // gives it back. One that opened a panel does this when the panel closes;
     // one whose content is itself has no panel to close, so going is the

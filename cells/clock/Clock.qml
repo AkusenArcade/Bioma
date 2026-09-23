@@ -28,6 +28,9 @@ Cell {
         precision: SystemClock.Seconds
     }
 
+    // Conditional, it is there when the hour strikes, for that minute.
+    condition: clock.minutes === 0 ? 1 : 0
+
     readonly property string reading: {
         const hours = root.twentyFourHour
                       ? clock.hours

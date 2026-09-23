@@ -1656,6 +1656,37 @@ Super+Alt+K rewrote the one line of `Mod+N`; a filter typed, Enter taking
 leaving the list where it was. The presses that start each of those came from
 a throwaway timer.
 
+### What conditional means, cell by cell
+
+Akusen's conditions, 2026-09-23: the clock for the minute the hour strikes;
+workspaces, audio and connectivity for five seconds after a change; vitals while
+an indicator is critical; the tray from a change of state until the pointer has
+been over it, then five seconds.
+
+- **An event is a pulse.** `Cell.pulse()` makes the condition true for
+  `Timing.pulse`, and the dwell of the domain's grammar is how long the cell
+  stays — held while the pointer is on it and resumed where it stopped, and a
+  block may set its own. Nothing in the first `Timing.settle` counts: the
+  services filling in after start are the shell learning the machine, not the
+  machine changing.
+- **Critical is the alert colour.** Vitals watches the worst of CPU, RAM, GPU
+  and the battery's emptiness against `Theme.thresholdAlert`, with hysteresis
+  under it and a second to be believed.
+- The workspace change is told by the workspace's id — the service hands out a
+  new object on every event. Connectivity pulses only for a connection that was
+  not there before; going away is not news.
+- **The pages write only the kind.** Cells and Structure used to copy the
+  grammar's figures into the block, which froze a condition at whatever it
+  meant that day. They write `type` now, and switching drops copied figures.
+
+Verified in a scratch configuration with the six cells conditional: nothing on
+screen after start; the audio dial came up on a one-percent nudge with `wpctl`
+and went five seconds later; vitals came up with every core busy, the CPU dot
+in the alert colour, and went when the load stopped; the workspaces cell came up
+on a flip down and back and went five seconds later. The clock, the tray and
+connectivity were not driven — the hour did not strike, and nothing here can
+make a tray item change state or a device connect on demand.
+
 ### One place per cell per monitor, and every cell answers its key
 
 Akusen's simplification, 2026-09-23. Where a cell is and when it shows are two

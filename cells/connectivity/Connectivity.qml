@@ -54,7 +54,30 @@ Cell {
         return out;
     }
 
-    condition: glyphs.length
+    // Conditional, it is there for a moment when something connects that was
+    // not connected before: the wire, a wireless network — a different one
+    // counts — or a Bluetooth device. Going away is not news.
+    readonly property var connections: {
+        const out = [];
+        if (Network.wiredConnected)
+            out.push("wired:" + Network.wiredName);
+        if (Network.wifiConnected)
+            out.push("wifi:" + Network.ssid);
+        for (const device of Bluetooth.connectedDevices)
+            out.push("bluetooth:" + device.address);
+        return out;
+    }
+
+    property var known: []
+
+    onConnectionsChanged: {
+        const arrived = root.connections.some(key => root.known.indexOf(key) < 0);
+        root.known = root.connections;
+        if (arrived)
+            root.pulse();
+    }
+
+    condition: root.pulsing ? 1 : 0
 
     contentWidth: glyphs.length > 0
         ? glyphs.length * glyphSize + (glyphs.length - 1) * pitch
