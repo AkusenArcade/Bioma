@@ -17,8 +17,15 @@ structure page, and a run of engine defects that only a pointer could find.
 
 What is left, in the order it is worth taking:
 
-Nothing in the build order is left. What comes next is the list of features
-Akusen is keeping for after it — the system-wide OSD among them.
+Nothing in the build order is left, and the first list of features after it
+is done too (2026-09-23): the on-screen display, the opened clock, Bluetooth
+search and pairing, VPN profiles set up from the panel, a proxy that follows
+the networks, the session cell become System with the machine's description,
+and the clipboard cell. Each has its section below.
+
+What those left unverified, because nothing here could drive it: pairing a real
+Bluetooth device, a VPN that actually connects, a proxy switched through by a
+real Wi-Fi network, and the conditions of the tray and connectivity cells.
 
 What CELLS left open in the cells already drawn is closed, except Sinestesia
 on a narrow screen and under reduced motion, which wait by Akusen's call
