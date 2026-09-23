@@ -80,6 +80,7 @@
     "folder": "$HOME/Pictures/Screenshots",
     "video_folder": "$HOME/Videos/Recordings",
     "clipboard": true,
+    "notify": true,
     "ocr_language": "eng",
     "what": "image",
     "from": "screen",

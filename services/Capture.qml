@@ -51,6 +51,34 @@ Singleton {
     signal cancelled
     signal failed(string reason)
 
+    // ── Saying where it went ──────────────────────────────────────────────
+    //
+    // A screenshot or a recording that is saved is announced, with a way to
+    // the folder it went to (Akusen, 2026-09-23). The notification is an
+    // ordinary one — `notify-send`, answered by whichever server owns the bus,
+    // Bioma's own included — and its action is waited for in a process of its
+    // own, so three captures in a row are three notifications that each still
+    // answer. A still carries itself as the notification's picture.
+    readonly property bool announces: Config.get("capture.notify", true)
+
+    function announce(path, video) {
+        if (!root.announces || !path)
+            return;
+        const folder = path.slice(0, path.lastIndexOf("/"));
+        const name = path.split("/").pop();
+        const args = ["notify-send", "--app-name=Bioma",
+                      "--action=open=Open folder",
+                      video ? "--icon=video-x-generic" : `--hint=string:image-path:${path}`,
+                      video ? "Recording saved" : "Screenshot saved",
+                      !video && root.copyToClipboard ? `${name} — also on the clipboard` : name];
+        Quickshell.execDetached(["bash", "-c",
+            'folder="$1"; shift; [ "$("$@")" = open ] && exec xdg-open "$folder"',
+            "announce", folder].concat(args));
+    }
+
+    onCaptured: path => root.announce(path, false)
+    onRecordingSaved: path => root.announce(path, true)
+
     function fail(reason) {
         root.lastError = reason;
         root.busy = false;

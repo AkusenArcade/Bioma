@@ -1664,6 +1664,25 @@ Super+Alt+K rewrote the one line of `Mod+N`; a filter typed, Enter taking
 leaving the list where it was. The presses that start each of those came from
 a throwaway timer.
 
+### A saved capture says where it went
+
+From his list ("Dopo aver fatto screenshot con utility bioma, generare notifica
+push con azione che apre la cartella…, anche dopo aver salvato un video").
+`Capture` announces every saved still and every saved recording through
+`notify-send`, answered by whichever server owns the bus, which is Bioma's
+own:
+- The text is "Screenshot saved" or "Recording saved", with the file's name.
+- A still shows itself as the picture (`image-path`), and says when it is also
+  on the clipboard.
+- The action, "Open folder", runs `xdg-open` on the folder.
+- Each announcement waits for its action in a process of its own, so several
+  captures in a row each keep a working action.
+- `capture.notify` turns it off.
+
+Verified: a screenshot through `capture screen` showed the notification with
+its thumbnail, file name and action. He pressed "Open folder" himself, and
+the folder opened.
+
 ### 1.0.0-beta.1
 
 The first release, 2026-09-23, at Akusen's word ("direi che siamo pronti per

@@ -264,6 +264,7 @@ what a cell displays. A cell's own settings live in its `options`.
 | `brightness.display` | Which DDC display to drive, by connector (`DP-1`) or I²C bus. Empty means the first found. |
 | `capture.what` / `capture.from` | The last pair the utility cell used — `image` \| `video` \| `text`, and `screen` \| `window` \| `region`. Written by the cell itself, so the common case stays one press. |
 | `capture.folder` / `capture.video_folder` | Where stills and recordings are kept. A recording is written to a temporary directory first and moved here only when saved, so a discarded one never appears. |
+| `capture.notify` | Whether a saved screenshot or recording is announced with a notification whose action, "Open folder", opens where it went (true). |
 | `capture.clipboard` | Whether a capture also takes the clipboard. §9.6 wants it; a window capture always does, because the compositor is what produces the image. |
 | `capture.ocr_language` | tesseract language code. |
 | `capture.fps` / `capture.codec` / `capture.bitrate` | H.264 at 60 fps by default, no audio. `fps` is a ceiling: the recorder copies a frame only when the screen changes, so a still screen records at far less. |
