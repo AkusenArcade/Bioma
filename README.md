@@ -87,6 +87,11 @@ changes colour at once.
   <img src="docs/media/theme.webp" width="560" alt="The theme cell: the wallpaper carousel, the palette source, and the palette">
 </p>
 
+A new wallpaper and palette, picked in the theme cell, retint the whole shell as
+it runs:
+
+https://github.com/user-attachments/assets/c816f39e-bda5-46b9-a476-74eb5cc4e5eb
+
 The same palette goes past the shell into the rest of the desktop. It sets
 niri's focus ring and borders, and rounds niri's windows to the shell's radius.
 It also themes GTK, Qt, and the terminals and tools that have a template:
@@ -107,6 +112,11 @@ that block for you.
   <img src="docs/media/settings-structure.webp" width="440" alt="Settings, Structure: bands and floating tissues per monitor">
   <img src="docs/media/settings-appearance.webp" width="330" alt="Settings, Appearance: opacity, radius, spacing, blur, scale and timing">
 </p>
+
+Every change applies as it is made. Here the radius goes from round to square,
+and every cell follows:
+
+https://github.com/user-attachments/assets/b6040d46-5f7f-4733-bbe6-13055976d951
 
 ## Requirements
 
