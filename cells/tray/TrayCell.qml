@@ -167,6 +167,12 @@ Cell {
                     onTapped: root.show(entry.modelData)
                 }
 
+                // A finger opens the menu by holding still.
+                TapHandler {
+                    acceptedDevices: PointerDevice.TouchScreen
+                    onLongPressed: root.show(entry.modelData)
+                }
+
                 TapHandler {
                     acceptedButtons: Qt.MiddleButton
                     acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad

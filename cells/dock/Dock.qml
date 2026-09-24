@@ -490,6 +490,13 @@ Cell {
             onTapped: icon.toggled()
         }
 
+        // A finger asks the same by holding still. A finger that moves first
+        // is dragging, and the handler lets it go before the hold completes.
+        TapHandler {
+            acceptedDevices: PointerDevice.TouchScreen
+            onLongPressed: icon.toggled()
+        }
+
         // Dragging reorders. The handler moves nothing itself — it reports
         // where the pointer is and the row rearranges, so what is on screen
         // during the drag is the order that will be written.
