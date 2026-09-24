@@ -894,6 +894,10 @@ Item {
     TapHandler {
         enabled: root.acceptsMiddle
         acceptedButtons: Qt.MiddleButton
+        // A touch has no button, and Qt hands it to every TapHandler
+        // regardless of `acceptedButtons`: a finger would open the cell and
+        // middle-tap it at once.
+        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
         onTapped: root.middleTapped()
     }
 

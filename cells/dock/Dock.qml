@@ -474,14 +474,19 @@ Cell {
             onTapped: icon.activated()
         }
 
+        // A finger has no buttons, and Qt does not filter a touch by
+        // `acceptedButtons` — without the device filter every tap here would
+        // also launch a second window and toggle the pin.
         TapHandler {
             acceptedButtons: Qt.MiddleButton
+            acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
             onTapped: icon.launched()
         }
 
         // The right button keeps it, or lets it go.
         TapHandler {
             acceptedButtons: Qt.RightButton
+            acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
             onTapped: icon.toggled()
         }
 

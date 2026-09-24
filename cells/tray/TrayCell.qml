@@ -159,13 +159,17 @@ Cell {
                     onTapped: root.press(entry.modelData)
                 }
 
+                // A touch carries no button and Qt passes it to every
+                // TapHandler; only the pointer may ask for the other two.
                 TapHandler {
                     acceptedButtons: Qt.RightButton
+                    acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
                     onTapped: root.show(entry.modelData)
                 }
 
                 TapHandler {
                     acceptedButtons: Qt.MiddleButton
+                    acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
                     onTapped: Tray.secondary(entry.modelData)
                 }
 
