@@ -3,7 +3,7 @@
 Where the work stands. `services/INVENTORY.md` holds the detail and the
 reasoning; this is the short version and the list of what is *not* done.
 
-Last worked: 2026-09-23.
+Last worked: 2026-09-24.
 
 ## Where to pick up
 
@@ -1663,6 +1663,31 @@ Super+Alt+K rewrote the one line of `Mod+N`; a filter typed, Enter taking
 "Close window", and Super+Ctrl+Alt+J appended to `config.kdl`; a mid-list edit
 leaving the list where it was. The presses that start each of those came from
 a throwaway timer.
+
+### A finger is not a right button
+
+His HDMI monitor is a touchscreen, and a tap on a dock icon pinned or unpinned
+it. Qt does not filter a touch point by `acceptedButtons` (a finger has no
+buttons), so one tap reached every `TapHandler` under it:
+- on the dock it raised the application, started a second one and toggled the
+  pin;
+- on the tray it pressed the item, opened its menu and sent the secondary
+  action;
+- on audio and notifications (`structure/Cell.qml`) it opened the cell and
+  middle-tapped it.
+
+Every right- and middle-button handler now takes `acceptedDevices:
+PointerDevice.Mouse | PointerDevice.TouchPad`, and a touch reaches only the
+left one.
+
+What the right button did is now a long press, on the touchscreen only: it
+toggles the pin on the dock and opens the menu on the tray. The threshold is
+Qt's, 0.8 s. A finger that moves before then starts a drag instead, so
+reordering the dock by touch still works.
+
+Verified: a synthetic uinput touch held for 1.5 s unpinned a dock icon, and
+still did with up to 3 px of jitter. The same hold opened a tray menu. Then he
+tried both with his own finger, and they worked.
 
 ### LOCK is unavailable until there is a lock screen
 
