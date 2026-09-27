@@ -101,8 +101,12 @@ Cell {
     // it, and the dial is still where the wheel is aimed.
     replacesContent: !root.asCapsule
 
-    // Summoned, it arrives as the capsule and the wells wait for a press.
-    opensOnArrival: !root.asCapsule
+    // Summoned, it arrives whole: the capsule with the wells already hanging
+    // from it. It used to arrive as the capsule alone, with the wells waiting
+    // for a press — which on screen was the volume display and nothing more,
+    // and summoning is meant to change where the cell is born, not what it
+    // does (CELLS §05; Akusen, 2026-09-27).
+    opensOnArrival: true
 
     // Closing the wells does not end the summoning: the capsule is still
     // there because it was asked for, and it keeps the attention so that a
