@@ -45,6 +45,9 @@ cost an error in prototype. **Read this before writing the first QML component, 
 - Content enters **after** the shape is at size, with opacity plus 4 px upward. Text is never
   scaled.
 - Animations are **reversible from wherever they are**, never queued.
+- **An open cell does not narrow.** When its content at rest is wider than its header, it keeps
+  the width it had and the header sits in the middle of it; a cell that shrank on opening moved
+  out from under the pointer that had just pressed it, and its neighbours with it.
 - Radii have a limit: never beyond half the smaller dimension, and the inner radius never goes
   below zero.
 

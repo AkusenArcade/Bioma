@@ -308,6 +308,21 @@ Item {
     readonly property real contentRoom: width - leadingInset - trailingInset
     readonly property bool headerNamed: root.contentRoom >= root.headerWidth - 0.5
 
+    // An open cell does not narrow. A cell whose content at rest is wider than
+    // its header — a track beside the band, a long window title — used to
+    // shrink to the header as it opened, and the pill ran away from under the
+    // pointer that had just pressed it while its neighbours closed in
+    // (Akusen, 2026-09-25, on Sinestesia). So it keeps the width it had when
+    // it opened, for as long as the header shows, and the header sits in the
+    // middle of it. A cell narrower than its header still grows to it.
+    property real heldWidth: 0
+    property real restWidth: 0
+    onWidthChanged: if (!showsHeader) restWidth = width
+    onShowsHeaderChanged: if (!showsHeader) heldWidth = 0
+
+    readonly property real headerSlack: heldWidth > 0 && headerNamed
+                                        ? Math.max(0, (contentRoom - headerWidth) / 2) : 0
+
     // ---- Size --------------------------------------------------------------
 
     // Side padding around the contracted content. Symmetrical by default; a
@@ -335,7 +350,8 @@ Item {
 
     readonly property real contractedHeight: bodyHeight
     readonly property real contractedWidth: {
-        const natural = Math.max(minWidth, askedWidth + leadingInset + trailingInset);
+        const natural = Math.max(minWidth, askedWidth + leadingInset + trailingInset,
+                                 showsHeader ? heldWidth : 0);
         return maxWidth > 0 ? Math.min(natural, maxWidth) : natural;
     }
 
@@ -600,13 +616,13 @@ Item {
 
             // Against the leading cap when the name is beside it, and in the
             // middle of the cell when it is alone.
-            x: root.headerNamed ? root.leadingInset
+            x: root.headerNamed ? root.leadingInset + root.headerSlack
                                 : Math.max(0, (root.width - width) / 2)
         }
 
         Text {
             anchors.verticalCenter: parent.verticalCenter
-            x: root.leadingInset + root.headerMarkRoom
+            x: root.leadingInset + root.headerSlack + root.headerMarkRoom
             visible: root.headerNamed
             text: root.headerTitle
             color: Theme.text
@@ -785,6 +801,12 @@ Item {
 
     onOpenChanged: {
         root.engage();
+
+        // The header is already showing by now, so the width is the one
+        // last seen at rest. Reopened while still closing, it keeps the one
+        // it had.
+        if (open && heldWidth === 0)
+            heldWidth = restWidth;
 
         // One cell at a time: opening this one closes whatever was open, and a
         // press anywhere the shell does not claim closes this one.
