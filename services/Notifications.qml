@@ -154,6 +154,20 @@ Singleton {
     property real remaining: 0
     property real startedAt: 0
 
+    // What is left of the head's time, as a fraction, drained continuously
+    // while the clock runs and still while it does not — the cell draws it as
+    // the clock's face emptying. `lifetime` is the whole of it; 0 means this
+    // head has no clock at all.
+    property real lifetime: 0
+    property real left: 0
+
+    NumberAnimation {
+        id: draining
+        target: root
+        property: "left"
+        to: 0
+    }
+
     function receive(notification) {
         notification.tracked = true;
 
@@ -185,7 +199,10 @@ Singleton {
     // seen and nobody is reading it, and it keeps what was left when it stops.
     function begin() {
         life.stop();
+        draining.stop();
         root.remaining = root.ordinaryHead ? root.dwellFor(root.ordinaryHead) : 0;
+        root.lifetime = root.remaining;
+        root.left = root.remaining > 0 ? 1 : 0;
         root.pace();
     }
 
@@ -196,9 +213,13 @@ Singleton {
             root.startedAt = Date.now();
             life.interval = root.remaining;
             life.start();
+            draining.duration = root.remaining;
+            draining.restart();
         } else if (!run && life.running) {
             root.remaining = Math.max(0, life.interval - (Date.now() - root.startedAt));
             life.stop();
+            draining.stop();
+            root.left = root.lifetime > 0 ? root.remaining / root.lifetime : 0;
         }
     }
 

@@ -44,6 +44,38 @@ Cell {
                                : root.show === "ordinary" ? Notifications.ordinaryHead
                                : Notifications.current
 
+    // What is drawn: the notification being said, or — once it has gone and
+    // the cell is on its way out — the last one, kept until the cell has
+    // faded. Emptied the moment it went, the text vanished first and the
+    // capsule shrank round a bell before it left on its own (Akusen,
+    // 2026-09-27); kept, the two leave together, as every cell does. Not
+    // called `shown`: that is the Cell's own word for being on screen, and
+    // the tissue reads it.
+    //
+    // A copy of what it said, not the notification: one that expires is
+    // destroyed by the server a frame later, and a reference to it reads
+    // empty.
+    function snapshot(notification) {
+        return {
+            "line": notification.summary || notification.appName || "",
+            "icon": Notifications.iconFor(notification),
+            "critical": Notifications.isCritical(notification)
+        };
+    }
+
+    property var held: null
+    readonly property var displayed: root.shout !== null ? root.snapshot(root.shout) : root.held
+
+    onDisplayedChanged: if (root.shout !== null) root.held = root.displayed
+
+    // Let go once the cell has faded to nothing. Not on `visible`: that
+    // drops for a frame as the fade begins, before the fade itself holds it
+    // up, and clearing there emptied the text at the start of the fade.
+    onOpacityChanged: if (root.opacity === 0) {
+        root.held = null;
+        root.timed = false;
+    }
+
     // A flood is a count of ordinary ones; the urgent cell never says it.
     readonly property bool flooding: root.show !== "urgent" && Notifications.flooding
                                      && root.shout === null
@@ -71,20 +103,37 @@ Cell {
     // Urgency is an outline, never a fill: a red surface would make the text
     // unreadable and the shell look broken, and the outline is where Bioma
     // already puts light.
-    readonly property bool critical: Notifications.isCritical(root.shout)
+    readonly property bool critical: root.displayed ? root.displayed.critical : false
 
     // The title is a line of somebody's language, which is why this cell is
     // the second exception to the silence rule — without it a notification is
     // nothing. A flood is a count instead, and a count is a measurement.
     readonly property string line: root.flooding
         ? `${Notifications.collapsed} notifications`
-        : (root.shout ? (root.shout.summary || root.shout.appName || "") : "")
+        : (root.displayed ? root.displayed.line : "")
 
-    contentWidth: iconSize + spacing + label.implicitWidth + spacing + closeSize
+    // The time left before it goes, drawn as the clock's second hand run
+    // backwards — the disc round the rim with its lit trail behind it, full
+    // when the notification arrives and back at twelve when it goes (Akusen,
+    // 2026-09-27). Only for the notification whose clock this is, and only
+    // while it has one — a critical one never leaves by itself, and a count
+    // is not a message.
+    readonly property bool liveTimed: !root.flooding && root.shout !== null
+                                      && root.shout === Notifications.ordinaryHead
+                                      && Notifications.lifetime > 0
+    // Kept while the cell leaves, like the rest of what it says: a face that
+    // vanished as the notification went would shrink the capsule on its way
+    // out.
+    property bool timed: false
+    onLiveTimedChanged: if (root.shout !== null || root.liveTimed) root.timed = root.liveTimed
+    readonly property real timerSize: 16 * metrics.factor
+    readonly property real timerRoom: root.timed ? root.timerSize + root.spacing : 0
+
+    contentWidth: iconSize + spacing + label.implicitWidth + spacing + timerRoom + closeSize
 
     readonly property real available: Math.max(0, width - paddingLeading - paddingTrailing
                                                  - iconSize - spacing
-                                                 - spacing - closeSize)
+                                                 - spacing - timerRoom - closeSize)
 
     // ---- Time ---------------------------------------------------------------
     //
@@ -193,7 +242,7 @@ Cell {
             width: root.iconSize
             height: width
 
-            readonly property string wanted: root.flooding ? "" : Notifications.iconFor(root.shout)
+            readonly property string wanted: root.flooding || !root.displayed ? "" : root.displayed.icon
 
             // An icon that resolves to a path and then fails to load is worse
             // than none: what is drawn is the loader's own missing-texture
@@ -246,6 +295,20 @@ Cell {
     // a gesture nobody told you about is a notification you cannot put down —
     // the middle button does the same thing, and this is the one you can see.
     // Akusen's call, 2026-09-22.
+    Dial {
+        anchors.right: close.left
+        anchors.rightMargin: root.spacing
+        anchors.verticalCenter: parent.verticalCenter
+        width: root.timerSize
+        height: width
+        visible: root.timed
+        // The orbit alone, no sector. Whole is drawn as just short of whole:
+        // the rim wraps at 1, and a full one would read as empty.
+        fraction: 0
+        orbit: Math.min(Notifications.left, 0.9999)
+        eased: false
+    }
+
     Item {
         id: close
 

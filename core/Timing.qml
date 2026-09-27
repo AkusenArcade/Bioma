@@ -20,6 +20,16 @@ Singleton {
         return Math.round(base * root.speed);
     }
 
+    // A shadow's opacity for a shape at `growth` (0 gone, 1 whole). The shadow
+    // leaves before the shape and arrives after it: it is gone by the time the
+    // shape is half retracted, and comes in over the second half of the
+    // growth. Tied to the growth one for one, the wide blur outlived the
+    // shrinking shape and stood alone in the last frames, a halo with nothing
+    // in it (Akusen, 2026-09-27).
+    function shadowFor(growth) {
+        return Math.max(0, Math.min(1, (growth - 0.5) * 2));
+    }
+
     readonly property int open: scaled(Config.get("timing.open", 250))
     readonly property int close: scaled(Config.get("timing.close", 150))
 

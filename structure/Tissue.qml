@@ -92,8 +92,15 @@ Item {
     // measured itself without it shrank and re-centred around the hole — so
     // the cell, still drawn, was carried somewhere else and disappeared from
     // there. What leaves must leave from where it stood.
+    // A floating tissue also keeps a cell that is still fading out: it has
+    // nothing else to show, and without it the tissue — and the cell with it
+    // — vanished the frame the cell stopped being shown, so a notification
+    // left all at once instead of fading (Akusen, 2026-09-27). A membrane
+    // does not: its neighbours reflow as the cell fades, which is the reflow
+    // the PRD asks for.
     function counts(cell) {
-        return cell && (cell.shown || cell.expanded || cell.leaving);
+        return cell && (cell.shown || cell.expanded || cell.leaving
+                        || (!root.animates && cell.fading));
     }
 
     readonly property real tallest: {
@@ -465,12 +472,43 @@ Item {
     // rather than straight over the blurred desktop, so its declared opacity
     // reads a little heavier than the number says.
 
+    // A floating tissue holds nothing but its cells, so its band leaves with
+    // them: it fades as the last one fades, at the cell's own rate. Left whole,
+    // it stood there, a darker rectangle where the cell had been, until the
+    // tissue went (Akusen, 2026-09-27). A membrane's band is the membrane's,
+    // and stays.
+    readonly property bool holding: {
+        for (const cell of root.cells)
+            if (cell && (cell.placed || cell.expanded || cell.leaving))
+                return true;
+        return false;
+    }
+
+    // Holding something that is not on its way out: what a floating tissue's
+    // shadow follows, so the shadow goes the moment a cell starts to leave —
+    // fading or shrinking — and never outlives it.
+    readonly property bool standing: {
+        for (const cell of root.cells)
+            if (cell && (cell.placed || cell.expanded) && !cell.leaving)
+                return true;
+        return false;
+    }
+
     Rectangle {
         anchors.fill: parent
         color: Qt.alpha(Theme.elevated, root.fillOpacity)
         radius: root.radius
         antialiasing: true
         z: -1
+        opacity: root.animates || root.holding ? 1 : 0
+
+        Behavior on opacity {
+            enabled: !root.animates
+            NumberAnimation {
+                duration: Timing.reflow
+                easing.type: Easing.InOutQuad
+            }
+        }
     }
 
     // What the membrane needs in order to declare its blur region and its input

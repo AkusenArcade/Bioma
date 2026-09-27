@@ -67,7 +67,7 @@ Item {
         spread: 0
         offset.y: 14
         color: Theme.shadow
-        opacity: root.growth
+        opacity: Timing.shadowFor(root.growth)
     }
 
     Rectangle {

@@ -473,6 +473,10 @@ Item {
     visible: placed || expanded || appearance.running || leaving
     opacity: placed || expanded ? 1 : 0
 
+    // Still fading, in or out. A floating tissue counts it, or it hides the
+    // moment its last cell stops being shown and the fade is never seen.
+    readonly property bool fading: appearance.running
+
     // A contracted cell resizes to fit its content, and that is a reflow: it
     // must move at the rate its tissue and its neighbours move at, or the row
     // tears. Expansion no longer touches this — what grows is the panel.

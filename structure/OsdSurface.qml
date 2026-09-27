@@ -85,7 +85,7 @@ PanelWindow {
         blur: 44
         offset.y: 22
         color: Theme.shadowFloat
-        opacity: root.growth
+        opacity: Timing.shadowFor(root.growth)
     }
 
     Panel {

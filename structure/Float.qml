@@ -187,7 +187,7 @@ PanelWindow {
 
     readonly property bool anyShown: {
         for (const cell of tissue.cells)
-            if (cell.placed || cell.expanded || cell.leaving)
+            if (cell.placed || cell.expanded || cell.leaving || cell.fading)
                 return true;
         return false;
     }
@@ -406,9 +406,17 @@ PanelWindow {
         spread: 0
         offset.y: 22
         color: Theme.shadowFloat
-        opacity: tissue.visible && tissue.length > 0 && tissue.opacity > 0 ? 1 : 0
+        // The shadow leaves before the shapes: it follows cells that are
+        // standing, not ones fading or shrinking away, and it goes in the
+        // shortest time the set has — so it is gone while the cell is still
+        // there, instead of lingering as a halo in the last frames (Akusen,
+        // 2026-09-27). One duration both ways: a duration bound to the same
+        // change is read before it, and the fade ran at the slow one.
+        opacity: tissue.standing && tissue.visible && tissue.length > 0 && tissue.opacity > 0 ? 1 : 0
 
-        Behavior on opacity { NumberAnimation { duration: Timing.transition } }
+        Behavior on opacity {
+            NumberAnimation { duration: Timing.contentFade }
+        }
     }
 
     Tissue {

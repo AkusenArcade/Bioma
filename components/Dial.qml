@@ -31,6 +31,16 @@ Item {
     property real orbit: -1
     property color base: Theme.primary
 
+    // Whether a change is eased. A value that steps — the clock's seconds —
+    // is smoothed just enough not to read as a tick. A value that is already
+    // continuous — a notification's time draining frame by frame — is drawn
+    // as it is: eased, every frame restarted the easing from its first
+    // instant and the face never moved at all.
+    property bool eased: true
+    // The orbit on its own: the clock's second hand is continuous, while its
+    // hour sector still steps and is eased.
+    property bool orbitEased: root.eased
+
     implicitWidth: 26
     implicitHeight: 26
 
@@ -63,6 +73,7 @@ Item {
 
         property real target: 0
         property real value: 0
+        property bool eased: true
 
         readonly property NumberAnimation step: NumberAnimation {
             target: follower
@@ -72,7 +83,7 @@ Item {
         }
 
         onTargetChanged: {
-            if (follower.target < follower.value) {
+            if (!follower.eased || follower.target < follower.value) {
                 follower.step.stop();
                 follower.value = follower.target;
             } else {
@@ -86,11 +97,13 @@ Item {
 
     Follower {
         id: sector
+        eased: root.eased
         target: (root.fraction % 1) * 360
     }
 
     Follower {
         id: travel
+        eased: root.orbitEased
         target: root.orbiting ? (root.orbit % 1) * 360 : 0
     }
 
