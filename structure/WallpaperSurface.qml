@@ -3,6 +3,7 @@ import QtQuick.Effects
 import Quickshell
 import Quickshell.Wayland
 import qs.core
+import qs.components
 import qs.services
 
 // The wallpaper for one monitor. One of these per screen, on the Background
@@ -41,7 +42,6 @@ PanelWindow {
     readonly property string screenName: root.screen?.name ?? ""
     readonly property string source: Wallpaper.pathForScreen(screenName)
     readonly property bool spanning: Wallpaper.mode === "span"
-    readonly property var span: spanning ? Wallpaper.spanGeometry(screenName) : null
 
     // Which of the two layers is currently showing.
     property bool showingSecond: false
@@ -83,54 +83,14 @@ PanelWindow {
         anchors.fill: parent
         clip: root.spanning
 
-        readonly property var geometry: root.span
-
-        Image {
-            id: image
-
-            // In span mode the item is the bounding box of every monitor,
-            // shifted so this screen shows its own portion. In every other mode
-            // it simply fills the screen.
-            width: layer.geometry
-                ? layer.width * (layer.geometry.totalWidth / layer.geometry.screenWidth)
-                : layer.width
-            height: layer.geometry
-                ? layer.height * (layer.geometry.totalHeight / layer.geometry.screenHeight)
-                : layer.height
-            x: layer.geometry
-                ? -layer.width * (layer.geometry.offsetX / layer.geometry.screenWidth)
-                : 0
-            y: layer.geometry
-                ? -layer.height * (layer.geometry.offsetY / layer.geometry.screenHeight)
-                : 0
-
-            source: layer.source.length > 0 ? "file://" + layer.source : ""
-            // The box is covered, never stretched: an L of a 3440 × 1440
-            // screen over a 1920 × 1080 one is a 3440 × 2520 box, and a 21:9
-            // photograph forced into that is a photograph squashed by half.
-            // Cropped from the centre, the image keeps its proportions and the
-            // slices still line up across the seam — the same cover-then-slice
-            // the span mode does in Noctalia.
-            fillMode: Wallpaper.fillModeForScreen()
-            asynchronous: true
-            cache: false
-            smooth: true
-
-            // Decode at the size actually needed. A 6000 px photograph on a
-            // 1920 px monitor otherwise costs its full decoded size in memory,
-            // once per screen. The backdrop is blurred anyway, so a quarter of
-            // that is all it needs — and the smooth upscale is the first half
-            // of the blur.
-            readonly property real density: (root.screen?.devicePixelRatio ?? 1) / (root.backdrop ? 4 : 1)
-            sourceSize.width: Math.round(width * density)
-            sourceSize.height: Math.round(height * density)
-
-            onStatusChanged: {
-                if (status === Image.Ready)
-                    layer.ready();
-                else if (status === Image.Error && layer.source.length > 0)
-                    console.warn("Wallpaper: cannot load", layer.source, "on", root.screenName);
-            }
+        WallpaperImage {
+            source: layer.source
+            mode: Wallpaper.mode
+            screen: root.screen
+            // The backdrop is blurred anyway, so a quarter of the pixels is
+            // all it needs.
+            density: root.backdrop ? 0.25 : 1
+            onStatusChanged: if (status === Image.Ready) layer.ready()
         }
     }
 
