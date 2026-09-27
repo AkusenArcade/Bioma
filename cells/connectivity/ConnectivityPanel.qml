@@ -56,6 +56,10 @@ Item {
     Component.onDestruction: {
         Network.scanning = false;
         Bluetooth.discovering = false;
+        // What a printer search found is news for this look at the panel, not
+        // for the next one.
+        Printers.stopSearching();
+        Printers.found = [];
     }
 
     // ---- Asking for a password ---------------------------------------------
@@ -229,6 +233,20 @@ Item {
     readonly property real contentHeight: root.editing !== null
         ? root.proxyHeight
         : wellSpacing * 3 + wifiHeight + deviceHeight + vpnHeight + proxyHeight
+          + (Printers.available ? wellSpacing + printerHeight : 0)
+
+    // ---- Printers --------------------------------------------------------------
+    //
+    // The queues CUPS keeps, then what a search has found that is not one yet.
+
+    readonly property var printerRows: Printers.printers.map(p => ({ "printer": p, "found": false }))
+        .concat(Printers.found.map(p => ({ "printer": p, "found": true })))
+
+    readonly property real printerHeight: wellHeight(printerRows.length,
+                                                     Printers.error.length > 0 ? root.errorHeight : 0)
+
+    // The queue whose removal is being asked about.
+    property string removingPrinter: ""
 
     // ---- Adding a VPN profile ------------------------------------------------
 
@@ -280,6 +298,9 @@ Item {
         property bool searchable: false
         property bool searching: false
 
+        // A family with nothing to turn off has no switch: the printers.
+        property bool switchable: true
+
         signal switched(bool on)
         signal searchToggled
 
@@ -289,8 +310,8 @@ Item {
             id: search
 
             visible: family.searchable && family.on
-            anchors.right: toggle.left
-            anchors.rightMargin: 10 * family.factor
+            anchors.right: family.switchable ? toggle.left : parent.right
+            anchors.rightMargin: family.switchable ? 10 * family.factor : 0
             anchors.verticalCenter: parent.verticalCenter
             width: searchRow.implicitWidth + 20 * family.factor
             height: 22 * family.factor
@@ -350,6 +371,7 @@ Item {
 
         Switch {
             id: toggle
+            visible: family.switchable
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
             factor: family.factor
@@ -1304,6 +1326,231 @@ Item {
                         }
                     }
                 }
+            }
+        }
+
+        // ---- Printers --------------------------------------------------------
+        //
+        // The dot is back, because the choice is exclusive again: one printer
+        // is the one an application prints to unless told otherwise. A row
+        // pressed makes it so. What a search found is said more quietly, and
+        // pressed it becomes a queue — driverless, as every network printer of
+        // the last decade allows. Removing asks first, as the VPN profiles do.
+
+        Well {
+            id: printerWell
+
+            visible: root.editing === null && Printers.available
+
+            metrics: root.metrics
+            inset: root.wellInset
+            width: parent.width
+            height: root.printerHeight
+
+            FamilyHeader {
+                x: root.wellInset
+                y: root.wellPadding
+                width: printerWell.width - root.wellInset * 2
+                metrics: root.metrics
+                factor: root.factor
+                title: "PRINTERS"
+                on: true
+                switchable: false
+                searchable: true
+                searching: Printers.searching
+                onSearchToggled: Printers.searching ? Printers.stopSearching() : Printers.search()
+            }
+
+            Scroller {
+                flick: printerList
+                factor: root.factor
+                x: printerWell.width - width - 4 * root.factor
+            }
+
+            Text {
+                anchors.centerIn: parent
+                anchors.verticalCenterOffset: (root.headerHeight
+                                               - (Printers.error.length > 0 ? root.errorHeight : 0)) / 2
+                visible: root.printerRows.length === 0
+                text: Printers.searching ? "Looking…" : "No printers"
+                color: Theme.textMuted
+                font.family: Typography.expressive
+                font.pixelSize: root.metrics.fontSecondary
+            }
+
+            ListView {
+                id: printerList
+
+                x: root.wellInset
+                y: root.wellPadding + root.headerHeight
+                width: printerWell.width - root.wellInset * 2
+                height: Math.max(1, Math.min(root.printerRows.length, root.shownRows)) * root.rowHeight
+                model: root.printerRows
+                boundsBehavior: Flickable.StopAtBounds
+                clip: true
+
+                delegate: Item {
+                    id: printerRow
+
+                    required property var modelData
+
+                    readonly property var printer: printerRow.modelData.printer
+                    readonly property bool found: printerRow.modelData.found
+                    readonly property bool asked: !printerRow.found
+                                                  && root.removingPrinter === printerRow.printer.queue
+                    readonly property bool busy: Printers.working.length > 0
+                        && Printers.working === (printerRow.found ? printerRow.printer.uri
+                                                                  : printerRow.printer.queue)
+
+                    width: ListView.view.width
+                    height: root.rowHeight
+
+                    // The default, as the Wi-Fi network is marked: a ring, and
+                    // the ring filled for the one that is chosen. A printer
+                    // found is not a choice yet, and has none.
+                    Item {
+                        id: printerMark
+                        anchors.left: parent.left
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 16 * root.factor
+                        height: width
+                        visible: !printerRow.found && !printerRow.asked
+
+                        Ring {
+                            anchors.fill: parent
+                            visible: !printerRow.printer.isDefault
+                            radius: width / 2
+                            thickness: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+                            colour: Theme.line
+                        }
+
+                        Rectangle {
+                            anchors.fill: parent
+                            visible: printerRow.printer.isDefault
+                            radius: width / 2
+                            antialiasing: true
+
+                            gradient: Gradient {
+                                GradientStop { position: 0; color: Theme.gradientTop(Theme.primary) }
+                                GradientStop { position: 1; color: Theme.gradientBottom(Theme.primary) }
+                            }
+                        }
+
+                        Rectangle {
+                            anchors.centerIn: parent
+                            visible: printerRow.printer.isDefault
+                            width: parent.width / 2
+                            height: width
+                            radius: width / 2
+                            color: Theme.background
+                            antialiasing: true
+                        }
+                    }
+
+                    // A printer's name is what its maker or its owner called
+                    // it: human language.
+                    Text {
+                        anchors.left: printerRow.asked ? parent.left : printerMark.right
+                        anchors.leftMargin: printerRow.asked ? 0 : 12 * root.factor
+                        anchors.right: printerControls.left
+                        anchors.rightMargin: 10 * root.factor
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: printerRow.asked ? "Remove this printer?" : printerRow.printer.name
+                        elide: Text.ElideRight
+                        maximumLineCount: 1
+                        color: printerRow.asked ? Theme.alert
+                             : printerRow.found ? Theme.textMuted : Theme.text
+                        font.family: Typography.expressive
+                        font.pixelSize: root.metrics.fontSecondary
+                    }
+
+                    TapHandler {
+                        enabled: !printerRow.asked
+                        onTapped: {
+                            if (printerRow.found)
+                                Printers.add(printerRow.printer);
+                            else
+                                Printers.makeDefault(printerRow.printer);
+                        }
+                    }
+
+                    Row {
+                        id: printerControls
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 10 * root.factor
+
+                        PanelPill {
+                            visible: printerRow.asked
+                            label: "REMOVE"
+                            alert: true
+                            onPressed: {
+                                root.removingPrinter = "";
+                                Printers.remove(printerRow.printer);
+                            }
+                        }
+
+                        PanelPill {
+                            visible: printerRow.asked
+                            label: "KEEP"
+                            onPressed: root.removingPrinter = ""
+                        }
+
+                        // The machine's word for the state, in the technical
+                        // voice. Idle says nothing: a printer waiting is the
+                        // ordinary case.
+                        Text {
+                            visible: !printerRow.asked && !(printerRow.hovered && !printerRow.found)
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: printerRow.busy ? "Working"
+                                : printerRow.found ? "Add"
+                                : printerRow.printer.state === "printing" ? "Printing"
+                                : printerRow.printer.state === "stopped" ? "Paused"
+                                : printerRow.printer.jobs > 0 ? "Queued"
+                                : ""
+                            color: Theme.textMuted
+                            font.family: Typography.technical
+                            font.pixelSize: root.metrics.fontMeta
+                        }
+
+                        // Removing a queue: the cross under the pointer, in
+                        // place of the state it covers.
+                        Item {
+                            visible: !printerRow.asked && !printerRow.found && printerRow.hovered
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 18 * root.factor
+                            height: width
+
+                            Icon {
+                                anchors.centerIn: parent
+                                width: 9 * root.factor
+                                height: width
+                                name: "close"
+                                colour: printerRemoveHover.hovered ? Theme.alert : Theme.textMuted
+                            }
+
+                            HoverHandler { id: printerRemoveHover }
+                            TapHandler { onTapped: root.removingPrinter = printerRow.printer.queue }
+                        }
+                    }
+
+                    readonly property bool hovered: printerHover.hovered
+                    HoverHandler { id: printerHover }
+                }
+            }
+
+            Text {
+                visible: Printers.error.length > 0
+                x: root.wellInset
+                y: printerList.y + printerList.height
+                width: printerWell.width - root.wellInset * 2
+                height: root.errorHeight
+                verticalAlignment: Text.AlignVCenter
+                elide: Text.ElideRight
+                text: Printers.error
+                color: Theme.alert
+                font.family: Typography.expressive
+                font.pixelSize: root.metrics.fontMeta
             }
         }
     }

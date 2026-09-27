@@ -1,0 +1,144 @@
+#!/usr/bin/env bash
+# CUPS, for the connectivity cell's printer well.
+#
+#     printers watch            make sure CUPS announces its changes on D-Bus,
+#                               then print a line for every announcement, for
+#                               as long as it runs
+#     printers state            the queues, the default and the jobs, one
+#                               tab-separated record per line
+#     printers find [seconds]   the IPP printers on the network, from DNS-SD
+#     printers add <uri> <name> a driverless queue for a printer found
+#     printers remove <queue>
+#     printers default <queue>  this user's default, as lpoptions keeps it
+#
+# CUPS tells nobody anything unless it is asked to: `watch` creates a
+# subscription whose recipient is `dbus://`, and cupsd then emits
+# org.cups.cupsd.Notifier signals on the system bus when a queue or a job
+# changes. The subscription has no lease — it outlives the shell and is found
+# again on the next start rather than made twice. Nothing polls.
+#
+# Adding, removing and the system's queues need the rights CUPS gives the
+# `SystemGroup` (sys and wheel on Arch); the default is per user and needs none.
+set -euo pipefail
+export LC_ALL=C
+
+server="ipp://localhost/"
+
+# ipptool reads its request from a file; bash hands it one without a temporary.
+subscribed() {
+    ipptool -c "$server" /dev/stdin <<'EOF' 2>/dev/null | grep -q '^dbus://'
+{
+  OPERATION Get-Subscriptions
+  GROUP operation-attributes-tag
+  ATTR charset attributes-charset utf-8
+  ATTR naturalLanguage attributes-natural-language en
+  ATTR uri printer-uri $uri
+  ATTR name requesting-user-name $user
+  ATTR boolean my-subscriptions true
+  STATUS successful-ok
+  STATUS client-error-not-found
+  DISPLAY notify-recipient-uri
+}
+EOF
+}
+
+subscribe() {
+    ipptool -q "$server" /dev/stdin <<'EOF'
+{
+  OPERATION Create-Printer-Subscriptions
+  GROUP operation-attributes-tag
+  ATTR charset attributes-charset utf-8
+  ATTR naturalLanguage attributes-natural-language en
+  ATTR uri printer-uri $uri
+  ATTR name requesting-user-name $user
+  GROUP subscription-attributes-tag
+  ATTR uri notify-recipient-uri dbus://
+  ATTR keyword notify-events printer-added,printer-deleted,printer-state-changed,printer-config-changed,job-created,job-completed,job-state-changed
+  ATTR integer notify-lease-duration 0
+  STATUS successful-ok
+}
+EOF
+}
+
+case "${1:-}" in
+watch)
+    subscribed || subscribe
+    # dbus-monitor complains that it may only eavesdrop, then does; the
+    # complaint is not news.
+    exec dbus-monitor --system "type='signal',interface='org.cups.cupsd.Notifier'" 2>/dev/null
+    ;;
+
+state)
+    # default <queue>
+    # printer <queue> <idle|printing|stopped> <description> <device uri>
+    # job <id> <queue>
+    #
+    # The queues come from one IPP request rather than from `lpstat -p`/`-v`:
+    # those browse DNS-SD for a second each before answering, and only the
+    # local queues are wanted. printer-info goes last because it is the one
+    # field a human wrote, and the only one that may hold a comma.
+    lpstat -d 2>/dev/null | sed -n 's/^system default destination: /default\t/p' || true
+    ipptool -c "$server" /dev/stdin <<'EOF' 2>/dev/null | tail -n +2 |
+{
+  OPERATION CUPS-Get-Printers
+  GROUP operation-attributes-tag
+  ATTR charset attributes-charset utf-8
+  ATTR naturalLanguage attributes-natural-language en
+  ATTR name requesting-user-name $user
+  ATTR keyword requested-attributes printer-name,printer-state,device-uri,printer-info
+  STATUS successful-ok
+  STATUS client-error-not-found
+  DISPLAY printer-name
+  DISPLAY printer-state
+  DISPLAY device-uri
+  DISPLAY printer-info
+}
+EOF
+    while IFS=, read -r queue status uri info; do
+        [ -n "$queue" ] || continue
+        [ "$status" = processing ] && status=printing
+        # ipptool quotes a field with a comma in it, and writes a quote
+        # inside it as \\\".
+        if [ "${info:0:1}" = '"' ]; then
+            quote='\\\"'
+            info="${info:1:${#info}-2}"; info="${info//"$quote"/\"}"
+        fi
+        printf 'printer\t%s\t%s\t%s\t%s\n' "$queue" "$status" "${info:-$queue}" "$uri"
+    done || true
+    # Every job not yet finished, anyone's: the machine is printing either way.
+    lpstat -o 2>/dev/null | awk '{ id = $1; queue = id; sub(/-[0-9]+$/, "", queue); printf "job\t%s\t%s\n", id, queue }' || true
+    ;;
+
+find)
+    # found <uri> <name> <uuid>, one per printer: plain IPP where it is offered,
+    # since a printer that answers both answers the same.
+    timeout $(( ${2:-4} + 2 )) ippfind -T "${2:-4}" _ipp._tcp _ipps._tcp \
+        --exec printf 'found\t%s\t%s\t%s\n' '{service_uri}' '{txt_ty}' '{txt_UUID}' ';' 2>/dev/null \
+        | sort -t $'\t' -k4,4 -k2,2 | awk -F '\t' '!seen[$4 != "" ? $4 : $2]++' || true
+    ;;
+
+add)
+    uri="${2:?uri}"
+    name="${3:-printer}"
+    # A queue name is letters, digits and underscores; the name stays as the
+    # description, which is what the well shows.
+    queue="$(printf '%s' "$name" | tr -cs 'A-Za-z0-9_-' '_' | sed 's/^_*//; s/_*$//')"
+    queue="${queue:-printer}"
+    base="$queue"; n=2
+    while lpstat -p "$queue" >/dev/null 2>&1; do queue="${base}_$n"; n=$((n + 1)); done
+    lpadmin -p "$queue" -D "$name" -E -v "$uri" -m everywhere
+    ;;
+
+remove)
+    lpadmin -x "${2:?queue}"
+    ;;
+
+default)
+    lpoptions -d "${2:?queue}" >/dev/null
+    ;;
+
+*)
+    sed -n '2,13p' "$0" >&2
+    exit 2
+    ;;
+esac

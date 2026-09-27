@@ -5,7 +5,8 @@ import qs.components
 import qs.structure
 import qs.services
 
-// Ethernet, Wi-Fi and the wireless devices — one glyph per live connection.
+// Ethernet, Wi-Fi and the wireless devices — one glyph per live connection,
+// and the printer while it prints.
 //
 // The only cell that **composes itself**: its width says how many connections
 // there are without writing a number, which is the reason it is not a single
@@ -54,6 +55,10 @@ Cell {
         // A tunnel up is a connection too, and the one most worth seeing.
         if (Vpn.anyActive)
             out.push("lock");
+        // A printer is not a connection, but a job going out to it is traffic
+        // with an end, and the only time a printer has something to say.
+        if (Printers.printing)
+            out.push("printer");
         return out;
     }
 
@@ -70,6 +75,8 @@ Cell {
             out.push("bluetooth:" + device.address);
         for (const profile of Vpn.active)
             out.push("vpn:" + profile.uuid);
+        for (const queue of Printers.printingQueues)
+            out.push("printer:" + queue);
         return out;
     }
 

@@ -65,6 +65,9 @@ ShellRoot {
     readonly property var btDevices: Bluetooth.devices
     readonly property var btConnected: Bluetooth.connectedDevices
     readonly property bool btEnabled: Bluetooth.enabled
+    readonly property var printers: Printers.printers
+    readonly property var printJobs: Printers.jobs
+    readonly property var printersFound: Printers.found
     readonly property real cpuPercent: SystemMonitor.cpuPercent
     readonly property real cpuClock: SystemMonitor.cpuClock
     readonly property real ramPercent: SystemMonitor.ramPercent
@@ -500,6 +503,20 @@ ShellRoot {
         console.log(`  names: ${Looks.nameOf(Looks.icons, "breeze-dark")}, ${Looks.nameOf(Looks.cursors, "Adwaita")}`);
     }
 
+    function probePrinters() {
+        console.log("── Printers ──────────────────────────────────────");
+        line("available", Printers.available);
+        line("default", Printers.defaultQueue || "none");
+        for (const p of root.printers)
+            console.log(`    ${p.isDefault ? "●" : "○"} ${p.name}  [${p.queue}]  ${p.state}, ${p.jobs} jobs  ${p.uri}`);
+        line("printing", Printers.printing + (Printers.printing ? `  on ${Printers.printingQueues.join(", ")}` : ""));
+        line("found, not queued", root.printersFound.length);
+        for (const f of root.printersFound)
+            console.log(`      ${f.name}  ${f.uri}`);
+        if (Printers.error.length > 0)
+            line("error", Printers.error);
+    }
+
     function probeScreens() {
         console.log("── Screens ───────────────────────────────────────");
         for (const s of Quickshell.screens)
@@ -511,6 +528,7 @@ ShellRoot {
         SystemMonitor.listProcesses = true;
         Keybinds.askActions();
         Machine.ask();
+        Printers.search();
     }
 
     Timer {
@@ -526,6 +544,7 @@ ShellRoot {
             probeBrightness();
             probeNetwork();
             probeBluetooth();
+            probePrinters();
             probeVitals();
             probeTray();
             probeKeybinds();
