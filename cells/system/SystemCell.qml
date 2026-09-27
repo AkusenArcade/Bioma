@@ -50,7 +50,14 @@ Cell {
     // vitals, which asks only over its own panel — five rows and a question
     // are a short moment, and while it lasts the window title says which cell
     // has the focus rather than going out.
+    //
+    // Taken, not asked for. An on-demand surface gets the keys only when the
+    // pointer crosses it or a press lands on it: opened by its shortcut the
+    // cell had neither, and under focus-follows-mouse it lost them the moment
+    // the pointer drifted onto a window — so the numbers went to whatever was
+    // behind (Akusen, 2026-09-25).
     wantsKeyboard: open
+    takesKeyboard: open
 
     // A question left on screen is a question asked again next time. Closing
     // the cell withdraws it.
