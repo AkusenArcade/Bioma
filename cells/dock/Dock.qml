@@ -27,8 +27,9 @@ Cell {
     readonly property real dividerWidth: Metrics.crisp(1, Screen.devicePixelRatio)
     readonly property real dividerRoom: dividerWidth + 12 * metrics.factor
 
-    paddingLeading: 12 * metrics.factor
-    paddingTrailing: 12 * metrics.factor
+    // Icons sit closer to the cap than a line of text does.
+    paddingLeading: (root.count > 0 ? 12 : 16) * metrics.factor
+    paddingTrailing: (root.count > 0 ? 12 : 16) * metrics.factor
 
     // ---- What it holds -------------------------------------------------------
 
@@ -195,7 +196,25 @@ Cell {
 
     contentWidth: root.count > 0
         ? root.count * iconSize + (root.count - 1) * pitch + (root.divided ? dividerRoom : 0)
-        : iconSize
+        : hint.implicitWidth
+
+    // ---- Empty -----------------------------------------------------------------
+    //
+    // Nothing kept and nothing running. Conditional, the dock has nothing to
+    // say and is not there; kept on screen by choice, an empty pill would be a
+    // shape nobody can read, so it says how to fill it (Akusen, 2026-09-25).
+    // A sentence addressed to a person, so the human voice, and muted: it is
+    // a hint, not a state.
+    Text {
+        id: hint
+
+        anchors.verticalCenter: parent.verticalCenter
+        visible: root.count === 0
+        text: "Launch an app and right click on the icon to pin it"
+        color: Theme.textMuted
+        font.family: Typography.expressive
+        font.pixelSize: root.metrics.fontSecondary
+    }
 
     // ---- Doing things --------------------------------------------------------
 
@@ -271,6 +290,7 @@ Cell {
 
         anchors.verticalCenter: parent.verticalCenter
         spacing: root.pitch
+        visible: root.count > 0
 
         // The kept group places its own icons rather than being laid out: one
         // of them has to be able to leave the row and follow the pointer.
