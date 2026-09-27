@@ -111,8 +111,21 @@ remembered() {
     [ -r "$state" ] && cat "$state" || printf 'bioma\n'
 }
 
+# Noctalia appends `include "noctalia.kdl"` to niri's config every time it
+# starts. Last in the file, its colours win over Bioma's bioma-theme.kdl, and
+# after one round trip the focus ring stayed Noctalia's teal under Bioma
+# (Akusen, 2026-09-28). Coming back to Bioma takes the line out again; niri
+# reloads by itself, and Noctalia puts it back when it is chosen.
+drop_noctalia_theme() {
+    local config="${NIRI_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/niri/config.kdl}"
+    [ -f "$config" ] || return 0
+    grep -q '^[[:space:]]*include[[:space:]]\+"noctalia\.kdl"[[:space:]]*$' "$config" || return 0
+    sed -i '/^[[:space:]]*include[[:space:]]\+"noctalia\.kdl"[[:space:]]*$/d' "$config"
+}
+
 to_bioma() {
     stop_noctalia
+    drop_noctalia_theme
     start_bioma
     remember bioma
     echo "bioma"
@@ -134,7 +147,7 @@ case "${1-status}" in
     start)
         case "$(remembered)" in
             noctalia) start_noctalia ;;
-            *)        start_bioma ;;
+            *)        drop_noctalia_theme; start_bioma ;;
         esac
         ;;
     status|"")
