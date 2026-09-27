@@ -70,6 +70,16 @@ ShellRoot {
         return path;
     }
 
+    // The shell's appearance is the lock's too: palette, faces, timing,
+    // radius and opacity arrive through the same singletons, and the density
+    // is the one the Appearance page sets on every membrane at once.
+    readonly property string density: {
+        for (const membrane of Config.get("membranes", []))
+            if (membrane.scale)
+                return membrane.scale;
+        return "normal";
+    }
+
     // The clock says the time the way the clock cell does, wherever that cell
     // is placed.
     readonly property bool twentyFourHour: {

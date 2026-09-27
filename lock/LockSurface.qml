@@ -25,7 +25,7 @@ WlSessionLockSurface {
     required property var lockState
 
     readonly property bool active: root.screen && root.lockState.active === root.screen.name
-    readonly property var metrics: Metrics.step("normal")
+    readonly property var metrics: Metrics.step(root.lockState.density)
     readonly property real factor: metrics.factor
 
     color: Theme.background
@@ -245,7 +245,10 @@ WlSessionLockSurface {
             id: badge
 
             readonly property real portrait: 76 * root.factor
-            readonly property real radius: width / 2
+            // The System cell's radius, which follows the Appearance page:
+            // round at 100 %, squarer below it. The portrait inside stays a
+            // circle, as it does in the cell.
+            readonly property real radius: Metrics.radiusFor(height, root.metrics)
 
             anchors.horizontalCenter: parent.horizontalCenter
             width: portrait * (Metrics.cellHeight / 30)
@@ -287,7 +290,8 @@ WlSessionLockSurface {
             font.pixelSize: Math.round(20 * root.factor)
         }
 
-        Item { width: 1; height: 24 * root.factor }
+        // Two shapes apart by the shell's own gap between shapes.
+        Item { width: 1; height: root.metrics.gap }
 
         // ---- The field ---------------------------------------------------------
 
@@ -311,7 +315,8 @@ WlSessionLockSurface {
                 anchors.fill: parent
                 radius: Metrics.radiusFor(height, root.metrics)
                 antialiasing: true
-                color: Qt.alpha(Theme.lift(Theme.background, -0.01), 0.72)
+                color: Qt.alpha(Theme.lift(Theme.background, -0.01),
+                                Config.get("cell.opacity", 0.72))
                 border.width: Metrics.crisp(1.5, Screen.devicePixelRatio)
                 border.color: root.lockState.failed ? Theme.alert
                             : secret.activeFocus ? Theme.primary
