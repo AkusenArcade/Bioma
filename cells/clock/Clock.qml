@@ -87,9 +87,12 @@ Cell {
             anchors.verticalCenter: parent.verticalCenter
             width: 17 * root.metrics.factor
             height: 17 * root.metrics.factor
-            // The minute, filling and starting again empty — or, while a
-            // timer runs, what is left of it, emptying.
-            fraction: Time.running ? Time.fractionLeft : clock.seconds / 60
+            // The hour, filling and starting again empty — or, while a
+            // timer runs, what is left of it, emptying. And round the rim,
+            // the minute: the disc is the second hand.
+            fraction: Time.running ? Time.fractionLeft
+                                   : (clock.minutes * 60 + clock.seconds) / 3600
+            orbit: clock.seconds / 60
         }
     }
 }

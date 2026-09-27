@@ -173,7 +173,7 @@ WlSessionLockSurface {
 
     SystemClock {
         id: clock
-        precision: SystemClock.Minutes
+        precision: SystemClock.Seconds
     }
 
     // What the keypad's keys mean with num lock off, read as the figures
@@ -206,18 +206,33 @@ WlSessionLockSurface {
 
         // The time is the clock's, and the clock is a human thing: the
         // expressive voice, with tabular figures so the minute does not move
-        // the line.
-        Text {
+        // the line. Beside it, the clock cell's own face — the hour filling,
+        // the minute going round — as tall as the figures.
+        Row {
             anchors.horizontalCenter: parent.horizontalCenter
+            spacing: Math.round(time.font.pixelSize * 0.22)
             opacity: root.arrived(0)
             transform: Translate { y: (1 - root.arrived(0)) * 4 * root.factor }
-            text: root.time
-            color: Theme.text
-            font: Typography.tabular(Qt.font({
-                "family": Typography.expressive,
-                "pixelSize": Math.round(112 * root.factor),
-                "weight": Typography.weightValue
-            }))
+
+            Text {
+                id: time
+                anchors.verticalCenter: parent.verticalCenter
+                text: root.time
+                color: Theme.text
+                font: Typography.tabular(Qt.font({
+                    "family": Typography.expressive,
+                    "pixelSize": Math.round(112 * root.factor),
+                    "weight": Typography.weightValue
+                }))
+            }
+
+            Dial {
+                anchors.verticalCenter: parent.verticalCenter
+                width: Math.round(time.font.pixelSize * 0.62)
+                height: width
+                fraction: (clock.minutes * 60 + clock.seconds) / 3600
+                orbit: clock.seconds / 60
+            }
         }
 
         Text {
