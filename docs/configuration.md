@@ -115,7 +115,8 @@ track metadata, notification body); `technical` carries machine measurement
 ### `theme`
 
 `source` is `matugen` or `manual`; `palette` names a file in
-`config/palettes/`. A palette declares only the four interface roles —
+`config/palettes/`. Bioma ships `manual` with the `default` palette: its own
+wallpaper and its own colours, until the theme cell is asked for others. A palette declares only the four interface roles —
 `background`, `text`, `primary`, `secondary`. Light or dark is inferred from the
 background's luminance, never configured.
 
@@ -268,7 +269,7 @@ what a cell displays. A cell's own settings live in its `options`.
 | `capture.clipboard` | Whether a capture also takes the clipboard. §9.6 wants it; a window capture always does, because the compositor is what produces the image. |
 | `capture.ocr_language` | tesseract language code. |
 | `capture.fps` / `capture.codec` / `capture.bitrate` | H.264 at 60 fps by default, no audio. `fps` is a ceiling: the recorder copies a frame only when the screen changes, so a still screen records at far less. |
-| `wallpaper.folder` | Where the theme cell's carousel looks for images. A human writes this one, so `~` and `$HOME` are expanded. |
+| `wallpaper.folder` | Where the theme cell's carousel looks for images. A human writes this one, so `~` and `$HOME` are expanded. Until an image is chosen, Bioma shows its own, `assets/wallpapers/bioma-forest.jpg`, on the desktop, the lock screen and the greeter. |
 | `wallpaper.thumbnails` | Whether a small copy of each image is cached under `~/.cache/bioma/thumbnails` and shown instead of the image. Off, the carousel reads the photographs themselves — slower on the first look at a large folder, and the same cell. Needs ImageMagick; without it the service falls back to the images by itself. |
 | `timing.welcome` | How long the greeter's welcome — the name, "Welcome to" and the logotype — stays before the screen fades to black and the session starts. A dwell, so `speed` does not touch it. |
 | `timing.welcome_open` / `welcome_stagger` / `welcome_fade` | The welcome's own pace: how long each of its lines takes to open, how far apart they start, and how long the screen takes to go dark. Slower than the rest of the shell on purpose; `speed` scales them. |

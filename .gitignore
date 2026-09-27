@@ -19,3 +19,6 @@ config/override.json
 # Prisma snapshot: reference material, kept out of history by default.
 # Remove this line if the snapshot should travel with the repository.
 prisma-pack/
+
+# Raw output of docs/design/wallpaper/nb_wallpaper.py
+docs/design/wallpaper/nb_wallpaper/

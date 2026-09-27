@@ -37,6 +37,14 @@ Singleton {
     property string mode: "fill"
     property var perMonitorPaths: ({})     // { "DP-1": "/path/img.jpg", … }
 
+    // Shown until an image is chosen, so a first session opens on a picture
+    // and not on a black screen. Bioma's own, drawn for it — see
+    // docs/design/wallpaper/. `path` stays what the user chose, empty here,
+    // so the fallback is never written into their state.
+    readonly property string fallback:
+        Qt.resolvedUrl("../assets/wallpapers/bioma-forest.jpg").toString().replace("file://", "")
+    readonly property string current: root.path.length > 0 ? root.path : root.fallback
+
     // Where to look when the theme cell offers a choice of images. Written by
     // a human in the config file, so it may well carry a `~` or a `$HOME`.
     readonly property string folder: root.expand(Config.get("wallpaper.folder",
@@ -61,7 +69,7 @@ Singleton {
     function pathForScreen(screenName) {
         if (root.mode === "per_monitor" && root.perMonitorPaths[screenName])
             return root.perMonitorPaths[screenName];
-        return root.path;
+        return root.current;
     }
 
     function fillModeForScreen() {
@@ -115,7 +123,8 @@ Singleton {
 
     property bool loaded: false
 
-    onPathChanged: { root.imageChanged(root.path); root.scheduleSave(); }
+    onCurrentChanged: root.imageChanged(root.current)
+    onPathChanged: root.scheduleSave()
     onModeChanged: root.scheduleSave()
     onPerMonitorPathsChanged: root.scheduleSave()
 
@@ -152,6 +161,10 @@ Singleton {
                 console.warn("Wallpaper: state file is not valid JSON —", error.message);
             }
         }
+        // A saved image announces itself by changing `current`; the fallback
+        // was there from the start and would never be announced at all.
+        if (!root.loaded && root.path.length === 0)
+            root.imageChanged(root.current);
         root.loaded = true;
     }
 

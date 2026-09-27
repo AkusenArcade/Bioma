@@ -31,10 +31,15 @@ Item {
 
     readonly property string wallpaperMode: root.wallpaper.mode || "fill"
 
+    // The wallpaper service's fallback, for a state that names no image. The
+    // greeter resolves it inside its own copy of the shell.
+    readonly property string fallback:
+        Qt.resolvedUrl("../assets/wallpapers/bioma-forest.jpg").toString().replace("file://", "")
+
     function wallpaperFor(screenName) {
         const perMonitor = root.wallpaper.perMonitorPaths || {};
         let path = root.wallpaperMode === "per_monitor" && perMonitor[screenName]
-                 ? perMonitor[screenName] : (root.wallpaper.path || "");
+                 ? perMonitor[screenName] : (root.wallpaper.path || root.fallback);
         if (path.startsWith("~/"))
             path = Quickshell.env("HOME") + path.slice(1);
         return path;

@@ -182,7 +182,7 @@ Singleton {
     // ---- Source ---------------------------------------------------------
 
     // "matugen" | "manual"
-    readonly property string source: Config.get("theme.source", "matugen")
+    readonly property string source: Config.get("theme.source", "manual")
     readonly property string manualPalette: Config.get("theme.palette", "default")
 
     // matugen writes this file through a template; the shell watches it and

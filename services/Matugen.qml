@@ -25,7 +25,7 @@ import qs.core
 Singleton {
     id: root
 
-    readonly property bool enabled: Config.get("theme.source", "matugen") === "matugen"
+    readonly property bool enabled: Config.get("theme.source", "manual") === "matugen"
 
     // dark | light | smart — which mode the template's `default` resolves to.
     readonly property string variant: Config.get("theme.matugen.variant", "dark")
@@ -143,6 +143,6 @@ Singleton {
 
     // Regenerate when the variant or scheme is changed from settings, using
     // whatever image is current.
-    onVariantChanged: root.generate(Wallpaper.path)
-    onSchemeChanged: root.generate(Wallpaper.path)
+    onVariantChanged: root.generate(Wallpaper.current)
+    onSchemeChanged: root.generate(Wallpaper.current)
 }

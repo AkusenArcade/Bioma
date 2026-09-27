@@ -24,7 +24,7 @@
   },
 
   "theme": {
-    "source": "matugen",
+    "source": "manual",
     "palette": "default",
     "matugen": {
       "variant": "dark",
