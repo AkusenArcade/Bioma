@@ -188,6 +188,7 @@ Then start it with `scripts/shell bioma`, or log in again. The first start uses
 | `Mod+Shift+Space` | the next keyboard layout |
 | `Print` | a screenshot of a region, drawn with Bioma's own rectangle |
 | `Mod+Print` | a screenshot of the monitor the keyboard is on |
+| `Shift+Print` | stop a recording, wherever the utility cell is |
 | `Mod+Alt+B` | switch between Bioma and the other shell |
 
 The volume, brightness and media keys go to Bioma too. Every other cell also

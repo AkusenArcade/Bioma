@@ -125,6 +125,13 @@ binds {
         spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "capture" "screen"
     }
 
+    // A recording can be stopped without finding the utility cell: it may be
+    // crowded off a narrow membrane, or on another monitor. Stopped, it still
+    // asks whether to keep the file.
+    Shift+Print hotkey-overlay-title="Bioma: stop recording" {
+        spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "capture" "stop"
+    }
+
     // The launcher has no place of its own: asked for, it is built in the
     // middle of the screen the keyboard is pointed at.
     Mod+Space hotkey-overlay-title="Bioma: launcher" {
