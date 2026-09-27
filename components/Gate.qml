@@ -129,11 +129,11 @@ Item {
     property real kept: 0
     property real greeting: 0
     property real dark: 0
-    readonly property real greetingSpan: Timing.open + 3 * root.stagger
+    readonly property real greetingSpan: Timing.welcomeOpen + 3 * Timing.welcomeStagger
 
     function greeted(index) {
-        const elapsed = root.greeting * root.greetingSpan - index * root.stagger;
-        const linear = Math.max(0, Math.min(1, elapsed / Timing.open));
+        const elapsed = root.greeting * root.greetingSpan - index * Timing.welcomeStagger;
+        const linear = Math.max(0, Math.min(1, elapsed / Timing.welcomeOpen));
         return 1 - Math.pow(1 - linear, 3);
     }
 
@@ -146,11 +146,12 @@ Item {
             value: 1
         }
 
+        // Not the quick close of the lock: the rest steps back to make room.
         NumberAnimation {
             target: root
             property: "cascade"
             to: 0
-            duration: Timing.close
+            duration: Timing.open
         }
 
         NumberAnimation {
@@ -162,13 +163,13 @@ Item {
 
         PauseAnimation { duration: Timing.welcome }
 
-        // As slow as the picture arrived: the screen is seen to darken, not
+        // Slower than the picture arrived: the screen is seen to darken, not
         // to go out.
         NumberAnimation {
             target: root
             property: "dark"
             to: 1
-            duration: Timing.wallpaper
+            duration: Timing.welcomeFade
             easing.type: Easing.InOutQuad
         }
 

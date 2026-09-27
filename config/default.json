@@ -52,7 +52,10 @@
     "content_fade": 120,
     "loader": 1200,
     "wallpaper": 600,
-    "welcome": 900
+    "welcome": 900,
+    "welcome_open": 450,
+    "welcome_stagger": 100,
+    "welcome_fade": 1000
   },
 
   "wallpaper": {

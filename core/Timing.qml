@@ -86,6 +86,14 @@ Singleton {
     // enough to be read once. A dwell too, so the speed setting leaves it alone.
     readonly property int welcome: Config.get("timing.welcome", 900)
 
+    // The welcome's own pace, slower than the shell's: it is a moment that
+    // happens once per session, not a response to a hand. Each line opens over
+    // `welcomeOpen`, the next starting `welcomeStagger` after it, and the
+    // screen darkens over `welcomeFade` (Akusen, 2026-09-27: "softer").
+    readonly property int welcomeOpen: scaled(Config.get("timing.welcome_open", 450))
+    readonly property int welcomeStagger: scaled(Config.get("timing.welcome_stagger", 100))
+    readonly property int welcomeFade: scaled(Config.get("timing.welcome_fade", 1000))
+
     // Wallpaper crossfade. Slower than a palette change: the picture is the
     // whole screen, and anything quick here reads as a flicker rather than a
     // change of scene.
