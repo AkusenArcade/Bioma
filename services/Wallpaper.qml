@@ -43,7 +43,12 @@ Singleton {
     // so the fallback is never written into their state.
     readonly property string fallback:
         Qt.resolvedUrl("../assets/wallpapers/bioma-forest.jpg").toString().replace("file://", "")
-    readonly property string current: root.path.length > 0 ? root.path : root.fallback
+    // Nothing until the saved state has been read: shown before it, the
+    // fallback came up at every start and the chosen picture faded in over it
+    // a moment later — two wallpapers, one after the other (Akusen,
+    // 2026-09-28).
+    readonly property string current: root.path.length > 0 ? root.path
+                                    : root.loaded ? root.fallback : ""
 
     // Where to look when the theme cell offers a choice of images. Written by
     // a human in the config file, so it may well carry a `~` or a `$HOME`.
@@ -161,10 +166,8 @@ Singleton {
                 console.warn("Wallpaper: state file is not valid JSON —", error.message);
             }
         }
-        // A saved image announces itself by changing `current`; the fallback
-        // was there from the start and would never be announced at all.
-        if (!root.loaded && root.path.length === 0)
-            root.imageChanged(root.current);
+        // `current` changes as this lands — to the saved image, or to the
+        // fallback — and that change is what announces it.
         root.loaded = true;
     }
 
