@@ -85,8 +85,10 @@ Cell {
 
         Dial {
             anchors.verticalCenter: parent.verticalCenter
-            width: 17 * root.metrics.factor
-            height: 17 * root.metrics.factor
+            // The size of the vitals' indicators, so the clock's face and the
+            // graphics card's satellite are one size on the membrane.
+            width: 26 * root.metrics.factor
+            height: 26 * root.metrics.factor
             // The hour, filling and starting again empty — or, while a
             // timer runs, what is left of it, emptying. And round the rim,
             // the minute: the disc is the second hand.

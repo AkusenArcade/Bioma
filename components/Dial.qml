@@ -18,8 +18,10 @@ import qs.components
 // disc moves because a second passed, never at a rate chosen to look alive.
 //
 // The geometry is drawn in a 64-unit box and scaled to whatever the dial is
-// given, so the 17 px face of the contracted cell and the large one beside
-// the lock screen's time are the same drawing.
+// given, so the face of the contracted cell and the large one beside the lock
+// screen's time are the same drawing. It is the graphics card's satellite
+// drawing — track at r 24, stroke 1.5, disc 12 across — so at the same box the
+// two are the same size on the membrane (Akusen, 2026-09-27).
 Item {
     id: root
 
@@ -29,8 +31,8 @@ Item {
     property real orbit: -1
     property color base: Theme.primary
 
-    implicitWidth: 17
-    implicitHeight: 17
+    implicitWidth: 26
+    implicitHeight: 26
 
     readonly property real size: Math.min(width, height)
     readonly property real unit: size / 64
@@ -38,11 +40,12 @@ Item {
     readonly property real centreY: height / 2
 
     readonly property bool orbiting: root.orbit >= 0
-    readonly property real trackRadius: 27 * unit
-    readonly property real stroke: Metrics.crisp(Math.max(Metrics.thread, 3 * unit), Screen.devicePixelRatio)
-    readonly property real discRadius: Math.max(1.4, 5 * unit)
-    // Inside the rim with a clear gap, so the two never read as one shape.
-    readonly property real sectorRadius: root.orbiting ? 15 * unit : 32 * unit
+    readonly property real trackRadius: 24 * unit
+    readonly property real stroke: Math.max(Metrics.crisp(1.5 * unit, Screen.devicePixelRatio), 1.5 * unit)
+    readonly property real discRadius: 6 * unit
+    // Inside the rim with a clear gap past the disc, so the two never read as
+    // one shape.
+    readonly property real sectorRadius: root.orbiting ? 13 * unit : 32 * unit
 
     // ---- Following the values ----------------------------------------------------
     //
