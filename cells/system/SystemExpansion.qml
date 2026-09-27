@@ -464,68 +464,21 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             spacing: 8 * root.factor
 
-                            Item {
-                                width: cancelText.implicitWidth + 24 * root.factor
-                                height: 26 * root.factor
-
-                                Rectangle {
-                                    anchors.fill: parent
-                                    radius: Metrics.radiusFor(height, root.metrics)
-                                    color: "transparent"
-                                    border.width: Metrics.crisp(Metrics.rimWidth,
-                                                                Screen.devicePixelRatio)
-                                    border.color: Theme.line
-                                    antialiasing: true
-                                }
-
-                                Text {
-                                    id: cancelText
-                                    anchors.centerIn: parent
-                                    text: "Cancel"
-                                    color: Theme.text
-                                    font.family: Typography.expressive
-                                    font.pixelSize: root.metrics.fontSecondary
-                                }
-
-                                TapHandler {
-                                    onTapped: Session.cancel()
-                                }
+                            Choice {
+                                metrics: root.metrics
+                                label: "Cancel"
+                                onActivated: Session.cancel()
                             }
 
                             // The one filled surface in the shell that is not
                             // primary. It is filled because it is the thing
                             // that acts, and it is alert because of what it
                             // does — and it is the only place either is true.
-                            Item {
-                                width: actText.implicitWidth + 24 * root.factor
-                                height: 26 * root.factor
-
-                                Rectangle {
-                                    anchors.fill: parent
-                                    radius: Metrics.radiusFor(height, root.metrics)
-                                    antialiasing: true
-
-                                    gradient: Gradient {
-                                        GradientStop { position: 0; color: Theme.gradientTop(Theme.alert) }
-                                        GradientStop { position: 1; color: Theme.gradientBottom(Theme.alert) }
-                                    }
-                                }
-
-                                Text {
-                                    id: actText
-                                    anchors.centerIn: parent
-                                    text: `${row.modelData.label.charAt(0)}${row.modelData.label.slice(1).toLowerCase()}`
-                                    color: Theme.background
-                                    font: Qt.font({
-                                        "family": Typography.expressive,
-                                        "pixelSize": root.metrics.fontSecondary,
-                                        "weight": Typography.weightTitle
-                                    })
-                                }
-
-                                TapHandler {
-                                    onTapped: Session.confirm()
-                                }
+                            Choice {
+                                metrics: root.metrics
+                                label: `${row.modelData.label.charAt(0)}${row.modelData.label.slice(1).toLowerCase()}`
+                                kind: "alert"
+                                onActivated: Session.confirm()
                             }
                         }
                     }

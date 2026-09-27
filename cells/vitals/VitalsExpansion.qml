@@ -550,50 +550,19 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 8 * root.factor
 
-                    Item {
-                        width: cancelText.width + 24 * root.factor
-                        height: 32 * root.factor
-
-                        Text {
-                            id: cancelText
-                            anchors.centerIn: parent
-                            text: "Cancel"
-                            color: Theme.text
-                            font.family: Typography.expressive
-                            font.pixelSize: root.metrics.fontSecondary
-                        }
-
-                        TapHandler { onTapped: root.pendingKill = -1 }
+                    Choice {
+                        metrics: root.metrics
+                        label: "Cancel"
+                        onActivated: root.pendingKill = -1
                     }
 
-                    Item {
-                        width: closeText.width + 28 * root.factor
-                        height: 32 * root.factor
-
-                        Rectangle {
-                            anchors.fill: parent
-                            radius: Metrics.radiusFor(height, root.metrics)
-                            antialiasing: true
-                            gradient: Gradient {
-                                GradientStop { position: 0; color: Theme.gradientTop(Theme.alert) }
-                                GradientStop { position: 1; color: Theme.gradientBottom(Theme.alert) }
-                            }
-                        }
-
-                        Text {
-                            id: closeText
-                            anchors.centerIn: parent
-                            text: "Close"
-                            color: Theme.background
-                            font.family: Typography.expressive
-                            font.pixelSize: root.metrics.fontSecondary
-                        }
-
-                        TapHandler {
-                            onTapped: {
-                                SystemMonitor.terminate(root.pendingKill);
-                                root.pendingKill = -1;
-                            }
+                    Choice {
+                        metrics: root.metrics
+                        label: "Close"
+                        kind: "alert"
+                        onActivated: {
+                            SystemMonitor.terminate(root.pendingKill);
+                            root.pendingKill = -1;
                         }
                     }
                 }

@@ -34,7 +34,6 @@ Cell {
     readonly property real stopSize: 26 * metrics.factor
     readonly property real spacing: 11 * metrics.factor
     readonly property int fontTime: Math.round(14 * metrics.factor)
-    readonly property int fontButton: Math.round(12 * metrics.factor)
 
     paddingLeading: 16 * metrics.factor
     // The question ends in a control, and a control sits closer to the cap than
@@ -164,53 +163,6 @@ Cell {
     // directory until the answer arrives, so "discard" can mean the file never
     // existed.
 
-    component Choice: Item {
-        id: choice
-
-        property string label: ""
-        property bool primary: false
-
-        width: text.implicitWidth + 24 * root.metrics.factor
-        height: 26 * root.metrics.factor
-
-        // Two shapes rather than one with a conditional fill: a Gradient is a
-        // declared object, not a value to switch between.
-        Rectangle {
-            anchors.fill: parent
-            visible: !choice.primary
-            radius: Metrics.radiusFor(height, root.metrics)
-            color: "transparent"
-            border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
-            border.color: Theme.line
-            antialiasing: true
-        }
-
-        Rectangle {
-            anchors.fill: parent
-            visible: choice.primary
-            radius: Metrics.radiusFor(height, root.metrics)
-            antialiasing: true
-
-            gradient: Gradient {
-                GradientStop { position: 0; color: Theme.gradientTop(Theme.primary) }
-                GradientStop { position: 1; color: Theme.gradientBottom(Theme.primary) }
-            }
-        }
-
-        Text {
-            id: text
-            anchors.centerIn: parent
-            text: choice.label
-            color: choice.primary ? Theme.background : Qt.alpha(Theme.text, 0.72)
-            font: Qt.font({
-                "family": Typography.technical,
-                "pixelSize": root.fontButton,
-                "weight": choice.primary ? Typography.weightTitle : Typography.weightLabel,
-                "letterSpacing": Typography.tracking(root.fontButton, 0.04)
-            })
-        }
-    }
-
     Row {
         id: question
 
@@ -228,15 +180,17 @@ Cell {
 
         Choice {
             anchors.verticalCenter: parent.verticalCenter
+            metrics: root.metrics
             label: "Discard"
-            TapHandler { onTapped: Capture.discardRecording() }
+            onActivated: Capture.discardRecording()
         }
 
         Choice {
             anchors.verticalCenter: parent.verticalCenter
+            metrics: root.metrics
             label: "Save"
-            primary: true
-            TapHandler { onTapped: Capture.saveRecording() }
+            kind: "primary"
+            onActivated: Capture.saveRecording()
         }
     }
 }

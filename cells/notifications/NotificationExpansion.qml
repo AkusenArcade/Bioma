@@ -185,37 +185,18 @@ Item {
                 Repeater {
                     model: root.actions
 
-                    delegate: Item {
+                    // An action's label was written by the application, but
+                    // it is still a command: the technical voice, like every
+                    // other button.
+                    delegate: Choice {
                         id: act
 
                         required property var modelData
 
-                        width: actText.implicitWidth + 28 * root.factor
+                        metrics: root.metrics
+                        label: act.modelData.text || act.modelData.identifier
                         height: root.actionHeight
-
-                        Rectangle {
-                            anchors.fill: parent
-                            radius: Metrics.radiusFor(height, root.metrics)
-                            color: "transparent"
-                            border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
-                            border.color: Theme.line
-                            antialiasing: true
-                        }
-
-                        // An action's label was written by the application, so
-                        // it is human language whatever it says.
-                        Text {
-                            id: actText
-                            anchors.centerIn: parent
-                            text: act.modelData.text || act.modelData.identifier
-                            color: Theme.text
-                            font.family: Typography.expressive
-                            font.pixelSize: root.metrics.fontSecondary
-                        }
-
-                        TapHandler {
-                            onTapped: Notifications.invoke(act.modelData, root.shout)
-                        }
+                        onActivated: Notifications.invoke(act.modelData, root.shout)
                     }
                 }
             }

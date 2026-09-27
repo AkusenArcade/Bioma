@@ -273,6 +273,11 @@ centre for horizontal threads, cap centre for vertical ones.
   them the interface looks broken rather than restrained.
 - The selected pill carries the primary gradient; the track and the well stay flat. A selected
   control is not a surface and does not take the rim.
+- A **button's label is in Orbitron**, whoever wrote it — a notification's actions are named by
+  the application and are still commands. The question beside a button is addressed to a person
+  and stays in Spectral; the answers are not. Every button is `components/Choice.qml`: an outline
+  for the way back, the primary gradient for the choice that keeps something, the alert gradient
+  only on the one that loses it.
 - **Errors live where they happened.** A field that rejects what it received turns its outline
   to the alert colour and carries a line with the reason underneath, in Spectral: no dialog, no
   notification. And it **does not clear itself** — making someone retype is a punishment, not

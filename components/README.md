@@ -20,3 +20,7 @@ Expected early residents:
 - **Scroller** — the bar beside a list that is longer than its room. It exists
   only while the list is moving; a list that fits shows nothing. Four cells had
   written it out by hand before it was one file.
+- **Choice** — the button: a label in Orbitron in a 26 px capsule, outlined,
+  primary or alert. The confirmations of vitals, system and recording and a
+  notification's actions all use it; two of them had drifted into Spectral
+  while each was written by hand.

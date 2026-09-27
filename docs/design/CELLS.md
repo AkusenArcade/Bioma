@@ -488,7 +488,7 @@ own. Past the queue cap: the cell becomes a count and defers to the history. Dwe
 cell disappears and the tissue closes — the timer resumes where it stopped, not from the start.
 
 **On hover** — application in Orbitron, title and body in Spectral, and the actions the
-notification carries. While the pointer is there, time does not run.
+notification carries, in Orbitron like every button. While the pointer is there, time does not run.
 
 **Expanded** — history, grouped by application, most recent first. **Do not disturb** lives
 here.
