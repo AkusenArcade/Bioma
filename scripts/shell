@@ -23,18 +23,62 @@ state="$state_dir/shell"
 
 bioma_pattern="qs -p $here/shell.qml"
 
-bioma_running() { pgrep -f -- "$bioma_pattern" >/dev/null 2>&1; }
+# Every live process running Bioma's shell. Quickshell's own list is asked
+# first, by config path, because it is the only thing that knows an instance
+# its crash handler relaunched: that one runs as a bare `/usr/bin/quickshell`,
+# with no arguments for a pattern to find. The lock screen and the greeter run
+# other files and are never among them.
+bioma_pids() {
+    {
+        qs list --all 2>/dev/null | awk -v want="$here/shell.qml" '
+            /^Instance/     { pid = "" }
+            /Process ID:/   { pid = $3 }
+            /Config path:/  { sub(/^[ \t]*Config path:[ \t]*/, ""); if ($0 == want && pid != "") print pid }'
+        pgrep -f -- "$bioma_pattern" 2>/dev/null || true
+    } | sort -u | while read -r pid; do
+        stat="$(ps -o stat= -p "$pid" 2>/dev/null | cut -c1)"
+        if [ -n "$stat" ] && [ "$stat" != Z ]; then echo "$pid"; fi
+    done
+}
+
+bioma_running() { [ -n "$(bioma_pids)" ]; }
 noctalia_running() { pgrep -x noctalia >/dev/null 2>&1; }
 
+# Asked to stop, Bioma sometimes crashes on its way out — a Qt Repeater torn
+# down in the wrong order — and Quickshell's crash handler starts it again a
+# moment later. So stopping is not over when the process exits; it is over
+# when nothing of Bioma has come back for a second and a half. Whatever does
+# come back is killed outright: a relaunch has nothing to save, and no second
+# teardown to crash in. Without this, the other shell started beside a Bioma
+# nobody could see was there.
 stop_bioma() {
-    bioma_running || return 0
-    pkill -f -- "$bioma_pattern" || true
-    # The bus name is handed over on exit, and the next shell registers on the
-    # release — so the wait is not politeness, it is the handover.
-    for _ in $(seq 1 40); do
-        bioma_running || return 0
+    local first pids pid quiet=0
+    first="$(bioma_pids)"
+    [ -n "$first" ] || return 0
+    # shellcheck disable=SC2086
+    kill -TERM $first 2>/dev/null || true
+    for _ in $(seq 1 60); do
         sleep 0.1
+        pids="$(bioma_pids)"
+        if [ -z "$pids" ]; then
+            quiet=$((quiet + 1))
+            # The bus name is handed over on exit, and the next shell
+            # registers on the release — so the wait is the handover.
+            [ "$quiet" -ge 15 ] && return 0
+            continue
+        fi
+        quiet=0
+        for pid in $pids; do
+            case " $(echo $first) " in
+                *" $pid "*) ;;                          # still leaving
+                *) kill -KILL "$pid" 2>/dev/null || true ;;  # came back
+            esac
+        done
     done
+    # Past six seconds whatever is left is not leaving by itself.
+    pids="$(bioma_pids)"
+    # shellcheck disable=SC2086
+    [ -z "$pids" ] || kill -KILL $pids 2>/dev/null || true
 }
 
 stop_noctalia() {
