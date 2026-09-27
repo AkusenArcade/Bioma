@@ -400,7 +400,8 @@ appears only here, on the button that performs the action.
   themselves with a movement of the mouse: asking would be noise.
 - Numbers 1 to 5 run the matching command while the cell is open. Whoever opens this cell is
   often already using the keyboard, and the second time round there is nothing left to read.
-- Lock is delegated to an external lock screen, for now.
+- Lock is Bioma's own lock screen, a process of its own (`lock.qml`); if it fails, hyprlock takes
+  over.
 - Changing the avatar opens the system file picker. It is the only action in the cell that is
   not about the session but about identity, which is why it sits on the avatar.
 

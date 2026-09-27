@@ -143,6 +143,7 @@ Linux (CachyOS). Package names below are Arch's.
 | PipeWire | `pipewire` | audio, and the alarm's sound |
 | UPower | `upower` | the battery, on a laptop |
 | pciutils, libnotify | `pciutils`, `libnotify` | the graphics card in the System cell; timer and alarm notifications |
+| hyprlock or swaylock | `hyprlock`, `swaylock` | the fallback lock screen, which takes over if Bioma's own fails. Without one, a lock screen that fails leaves only the TTY way back in |
 | Spectral, Orbitron | `ttf-spectral`, AUR `ttf-orbitron` | the two voices, expressive and technical. Declared as roles, so their absence degrades rather than breaks. Both are SIL OFL, and the Google Fonts families dropped into `~/.local/share/fonts` work too |
 
 ## Install
@@ -189,6 +190,7 @@ Then start it with `scripts/shell bioma`, or log in again. The first start uses
 | `Print` | a screenshot of a region, drawn with Bioma's own rectangle |
 | `Mod+Print` | a screenshot of the monitor the keyboard is on |
 | `Shift+Print` | stop a recording, wherever the utility cell is |
+| `Mod+Alt+L` | lock the session |
 | `Mod+Alt+B` | switch between Bioma and the other shell |
 
 The volume, brightness and media keys go to Bioma too. Every other cell also
@@ -196,9 +198,39 @@ answers `qs -p /path/to/Bioma/shell.qml ipc call cell toggle <name>`, so any
 key can be given to any cell from the Keybinds page. Escape, or a press
 anywhere else, closes what is open.
 
-**Bioma has no lock screen yet.** The System cell's LOCK stays unavailable until
-`session.lock` in `~/.config/bioma/override.json` names a locker, for example
-`["hyprlock"]` or `["swaylock", "-f"]`.
+### The lock screen
+
+Bioma's lock screen is `lock.qml`, a process of its own, so a shell that
+falls over does not take the lock with it. It shows the wallpaper blurred, the
+time and date, who is logged in and the password field, on the screen the
+keyboard is on. It locks when asked — `Mod+Alt+L`, the System cell's LOCK, or
+anything that runs `loginctl lock-session` — before a suspend, and after a time
+idle, set on the Session page of the settings cell.
+
+The password is checked by PAM with Bioma's own file, `assets/pam/bioma-lock`:
+`pam_unix` alone, without the failure counter `login` has, so mistyping at the
+lock screen never locks the account.
+
+`scripts/lock` starts it and stands guard. If the lock does not take within
+five seconds, or dies while it holds the screens, hyprlock (or swaylock) takes
+over with a plain field. The worst case is a plainer lock screen.
+
+#### If the lock screen fails
+
+If neither is installed, or both fail, niri keeps the screens locked, red, with
+nothing to type into. Nothing is lost; the way back is a text console:
+
+1. Press `Ctrl+Alt+F2` and log in.
+2. Start a lock screen on the running session, then return to it with
+   `Ctrl+Alt+F1` and type the password:
+
+   ```sh
+   WAYLAND_DISPLAY=wayland-1 hyprlock
+   ```
+
+   niri's socket is usually `wayland-1`; `ls /run/user/$(id -u)` shows it.
+
+   Or, to end the session instead: `niri msg --socket "$(ls /run/user/$(id -u)/niri.wayland-1.*.sock)" action quit -s`.
 
 ## Running
 

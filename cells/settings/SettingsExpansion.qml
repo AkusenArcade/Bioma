@@ -41,7 +41,8 @@ Item {
         { "key": "structure", "label": "STRUCTURE", "width": 644 },
         { "key": "cells", "label": "CELLS", "width": 560 },
         { "key": "monitors", "label": "MONITORS", "width": 720 },
-        { "key": "keybinds", "label": "KEYBINDS", "width": 560 }
+        { "key": "keybinds", "label": "KEYBINDS", "width": 560 },
+        { "key": "session", "label": "SESSION", "width": 540 }
     ]
 
     readonly property string chosen: root.cell ? root.cell.category : "appearance"
@@ -242,6 +243,8 @@ Item {
                         return Qt.resolvedUrl("SettingsMonitors.qml");
                     if (root.chosen === "keybinds")
                         return Qt.resolvedUrl("SettingsKeybinds.qml");
+                    if (root.chosen === "session")
+                        return Qt.resolvedUrl("SettingsSession.qml");
                     return "";
                 }
 

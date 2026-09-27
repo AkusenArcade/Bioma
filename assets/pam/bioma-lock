@@ -1,0 +1,7 @@
+# PAM configuration for Bioma's lock screen.
+#
+# The password alone, checked by pam_unix through its setuid helper, so the
+# lock screen needs no privilege of its own. Deliberately not `include login`:
+# login counts failures with pam_faillock, and three mistyped passwords at a
+# lock screen would shut its owner out of the session for ten minutes.
+auth required pam_unix.so

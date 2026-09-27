@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+# Lock the session with Bioma's lock screen, and make sure it stays locked.
+#
+#     lock          lock now; nothing happens if a lock is already up
+#
+# Everything that locks goes through here: Mod+Alt+L, the System cell's LOCK
+# (through `loginctl lock-session`, which the shell hears), the idle timeout
+# and the lock before a suspend.
+#
+# A lock screen that fails shuts its owner out of their own session, so this
+# script is its guard. It watches two ways of failing:
+#
+#   - the lock never takes: `lock.qml` did not load, or the compositor
+#     refused it. logind's LockedHint, which the lock sets once every screen is
+#     covered, is not set within five seconds;
+#   - the lock dies while it holds the screens: niri keeps the outputs locked
+#     and red, with nobody left to type a password into.
+#
+# Either way hyprlock takes over (swaylock if there is no hyprlock), so the
+# worst case is a plainer lock screen, never no way back in. If even that is
+# missing, see README → "If the lock screen fails".
+set -u
+
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+lock_pattern="qs -p $here/lock.qml"
+
+# One lock at a time: a second press of the key while locked is not a second
+# lock screen.
+if pgrep -f -- "$lock_pattern" >/dev/null 2>&1 || pgrep -x hyprlock >/dev/null 2>&1 \
+        || pgrep -x swaylock >/dev/null 2>&1; then
+    exit 0
+fi
+
+fallback() {
+    if command -v hyprlock >/dev/null 2>&1; then
+        exec hyprlock -c "$here/assets/hyprlock/fallback.conf"
+    elif command -v swaylock >/dev/null 2>&1; then
+        exec swaylock --color 10140e
+    fi
+    echo "bioma lock: no fallback locker (hyprlock or swaylock) is installed" >&2
+    exit 1
+}
+
+session="$(busctl call org.freedesktop.login1 /org/freedesktop/login1 \
+    org.freedesktop.login1.Manager GetSession s auto 2>/dev/null | cut -d'"' -f2)"
+
+hint() {
+    [ -n "$session" ] || return 1
+    busctl get-property org.freedesktop.login1 "$session" \
+        org.freedesktop.login1.Session LockedHint 2>/dev/null | grep -q true
+}
+
+set_hint() {
+    [ -n "$session" ] && busctl call org.freedesktop.login1 "$session" \
+        org.freedesktop.login1.Session SetLockedHint b "$1" >/dev/null 2>&1
+}
+
+# Nothing is locked yet, whatever a lock that died earlier left behind: the
+# flag has to mean this lock, or the check below would pass on its own.
+set_hint false
+
+qs -p "$here/lock.qml" >/dev/null 2>&1 &
+pid=$!
+
+# Without logind there is no flag to wait for; the lock is trusted to have
+# taken, and the second check still stands.
+if [ -n "$session" ]; then
+    for _ in $(seq 1 50); do
+        hint && break
+        kill -0 "$pid" 2>/dev/null || break
+        sleep 0.1
+    done
+    if ! hint; then
+        kill "$pid" 2>/dev/null
+        fallback
+    fi
+fi
+
+# 0 is the one ending that is not a failure: the password was right and the
+# lock took itself down. Anything else — a crash, a kill — left niri holding
+# the screens locked with nobody to answer.
+wait "$pid"
+status=$?
+[ "$status" -eq 0 ] && exit 0
+fallback

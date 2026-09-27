@@ -211,6 +211,7 @@ ShellRoot {
     readonly property bool alarmOn: Time.alarm.on === true
     readonly property int clipboardKept: Clipboard.entries.length
     readonly property string templatesSignature: Templates.signature
+    readonly property bool sessionLocked: Locker.locked
 
     //
     // Volume, brightness and the transport keys act on the machine without

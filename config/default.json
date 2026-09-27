@@ -106,11 +106,17 @@
 
   "session": {
     "$comment": "Each command is a list: the program and its arguments. None of these is universal — a lock screen is a choice, systemd is not the only init, and leaving the session is a different sentence on every compositor.",
-    "lock": [],
+    "lock": ["loginctl", "lock-session"],
     "suspend": ["systemctl", "suspend"],
     "restart": ["systemctl", "reboot"],
     "shutdown": ["systemctl", "poweroff"],
     "logout": ["niri", "msg", "action", "quit", "-s"]
+  },
+
+  "lock": {
+    "$comment": "Bioma's lock screen: lock.qml, started and guarded by scripts/lock. It locks when asked (session.lock, Mod+Alt+L), before a suspend, and after idle_minutes without input (0 never). If it fails, hyprlock or swaylock takes over.",
+    "idle_minutes": 10,
+    "before_sleep": true
   },
 
   "vitals": {

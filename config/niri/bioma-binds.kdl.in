@@ -138,6 +138,14 @@ binds {
         spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "cell" "toggle" "launcher"
     }
 
+    // Not a cell either: the lock screen, which is a process of its own.
+    // The script is called directly rather than through the shell, so the
+    // key locks even when the shell is down; it also stands guard, and puts
+    // hyprlock on the screens if Bioma's lock fails.
+    Mod+Alt+L hotkey-overlay-title="Bioma: lock" {
+        spawn "@BIOMA@/scripts/lock"
+    }
+
     // Not a cell: the shell itself. One of the two runs at a time, because
     // one program per session may own the notification bus — see
     // `scripts/shell` for the other one it switches to.

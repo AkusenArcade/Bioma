@@ -188,11 +188,12 @@ Singleton {
     // In the order of gravity the design lists them in: what undoes itself
     // first, what closes programs last.
 
-    // Empty until a locker is set. Bioma has no lock screen of its own yet, and
-    // `loginctl lock-session` with nothing listening locks nothing: a LOCK that
-    // does nothing is worse than one that says it is not there (Akusen,
-    // 2026-09-23 — until Bioma's own lock screen exists).
-    readonly property var lockCommand: Config.get("session.lock", [])
+    // Asking logind, which is the machine's own way of saying "lock": the
+    // shell hears it and starts Bioma's lock screen (services/Locker.qml), and
+    // so would any locker listening for it. Emptied, LOCK is shown
+    // unavailable — a LOCK that does nothing is worse than one that says it is
+    // not there.
+    readonly property var lockCommand: Config.get("session.lock", ["loginctl", "lock-session"])
     readonly property var suspendCommand: Config.get("session.suspend", ["systemctl", "suspend"])
     readonly property var restartCommand: Config.get("session.restart", ["systemctl", "reboot"])
     readonly property var shutdownCommand: Config.get("session.shutdown", ["systemctl", "poweroff"])

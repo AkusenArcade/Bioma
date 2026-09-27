@@ -2524,12 +2524,27 @@ plan rather than an implementation detail:
   - Third-party theming: the theme cell now sets the desktop's icon theme and
     cursor, and its application templates carry the palette to other programs'
     configuration.
-  - The lock screen: decided, and planned for the week after. Its triggers
-    are the key and the System cell's LOCK, before suspend, and after an idle
-    time. Its content is the wallpaper blurred, the clock, the account and the
-    password field. Until it exists, `session.lock` is empty and LOCK is shown
-    unavailable, because `loginctl lock-session` with no locker listening
-    locked nothing.
+  - The lock screen, built on 2026-09-27. Its triggers are the key and the
+    System cell's LOCK, before suspend, and after an idle time. Its content is
+    the wallpaper blurred, the clock, the account and the password field.
+    - **It is a process of its own**, `lock.qml`, because a lock screen that
+      fails shuts its owner out, and the shell is the larger program. It is
+      started by `scripts/lock`. The script waits for logind's LockedHint and
+      watches the exit code, and it puts hyprlock (or swaylock) on the screens
+      if the lock never takes or dies while locked. All three failures were
+      provoked in a nested niri: a kill, a broken `lock.qml`, and the
+      compositor keeping the outputs locked for the fallback.
+    - LOCK runs `loginctl lock-session`, and `services/Locker.qml` hears the
+      `Lock` signal. The same service holds a delay inhibitor, so a suspend
+      waits for the lock, and runs the idle timer.
+    - PAM uses Bioma's own file with `pam_unix` alone. `login` would add
+      `pam_faillock`, and three mistakes at a lock screen would lock the
+      account.
+    - niri 26.04 applies `numlock` only when it starts. Every reload of the
+      keymap turns it off, and no configuration turns it back on; a layout
+      written by the keyboard cell is such a reload. This was measured on the
+      keyboard LEDs. So the lock's field reads the keypad as figures whether
+      num lock is on or not.
 - Prisma's Wi-Fi signal bars were wrong — `signalStrength` is 0–1, not 0–100 —
   which is worth knowing as a measure of how much of Prisma to trust on sight
   (§15.2).
