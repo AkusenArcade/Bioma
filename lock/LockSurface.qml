@@ -14,8 +14,11 @@ import qs.services
 // Two fields would be two places to type into and one of them deaf; a press on
 // another screen moves everything there, because that is where the hand is.
 //
-// Nothing moves on its own. The composition fades in once, as the lock takes
-// hold; after that the only change is the minute.
+// Nothing moves on its own once it is there. It arrives from the desktop it
+// covers — the photograph lock.qml took a moment before, blurring and
+// dissolving into the wallpaper — and the composition follows, one element
+// after the next; it leaves the same way backwards, onto the same picture.
+// Between the two the only change is the minute.
 WlSessionLockSurface {
     id: root
 
@@ -26,6 +29,85 @@ WlSessionLockSurface {
     readonly property real factor: metrics.factor
 
     color: Theme.background
+
+    // ---- Arriving and leaving -----------------------------------------------------
+
+    // 0 is the desktop as it was, sharp; 1 is the wallpaper blurred and
+    // veiled. The blur, the photograph and the veil all follow this one value.
+    property real dissolve: 0
+
+    // The composition, one element after another: each takes `Timing.open`,
+    // the next one starting `stagger` after it.
+    property real cascade: 0
+    readonly property int stagger: Timing.stagger * 3
+    readonly property int steps: 5
+    readonly property real cascadeSpan: Timing.open + (steps - 1) * stagger
+
+    // How far element `index` has arrived, eased out: it starts quickly and
+    // settles, like every opening in the shell.
+    function arrived(index) {
+        const elapsed = root.cascade * root.cascadeSpan - index * root.stagger;
+        const linear = Math.max(0, Math.min(1, elapsed / Timing.open));
+        return 1 - Math.pow(1 - linear, 3);
+    }
+
+    SequentialAnimation {
+        id: arrival
+        running: true
+
+        ParallelAnimation {
+            // The wallpaper's own crossfade, and its curve: slow at both ends,
+            // so the desktop is seen to melt rather than to vanish.
+            NumberAnimation {
+                target: root
+                property: "dissolve"
+                to: 1
+                duration: Timing.wallpaper
+                easing.type: Easing.InOutQuad
+            }
+
+            SequentialAnimation {
+                PauseAnimation { duration: Timing.open }
+                NumberAnimation {
+                    target: root
+                    property: "cascade"
+                    to: 1
+                    duration: root.cascadeSpan
+                }
+            }
+        }
+    }
+
+    // Leaving: the composition goes quickly, last element first, then the
+    // picture clears back to the desktop. lock.qml unlocks when both are done.
+    SequentialAnimation {
+        id: departure
+
+        NumberAnimation {
+            target: root
+            property: "cascade"
+            to: 0
+            duration: Timing.close
+        }
+
+        NumberAnimation {
+            target: root
+            property: "dissolve"
+            to: 0
+            duration: Timing.open
+            easing.type: Easing.InOutQuad
+        }
+    }
+
+    Connections {
+        target: root.lockState
+        function onLeavingChanged() {
+            if (!root.lockState.leaving)
+                return;
+            arrival.stop();
+            departure.start();
+        }
+    }
 
     // ---- Behind ------------------------------------------------------------------
 
@@ -44,7 +126,7 @@ WlSessionLockSurface {
         layer.enabled: true
         layer.effect: MultiEffect {
             blurEnabled: true
-            blur: 1.0
+            blur: root.dissolve
             blurMax: 64
             autoPaddingEnabled: false
         }
@@ -55,6 +137,22 @@ WlSessionLockSurface {
             screen: root.screen
             density: 0.25
         }
+
+        // The desktop as it was, over the wallpaper, until the dissolve takes
+        // it. Loaded before the first frame, or the lock would open on the
+        // wallpaper and then flash to the desktop.
+        Image {
+            x: root.bleed
+            y: root.bleed
+            width: root.width
+            height: root.height
+            opacity: 1 - root.dissolve
+            visible: opacity > 0 && status === Image.Ready
+            source: root.screen ? "file://" + root.lockState.captureFor(root.screen.name) : ""
+            asynchronous: false
+            cache: false
+            fillMode: Image.Stretch
+        }
     }
 
     // The veil: the picture is a place, not something to look at, and the
@@ -62,6 +160,7 @@ WlSessionLockSurface {
     Rectangle {
         anchors.fill: parent
         color: Qt.alpha(Theme.background, 0.45)
+        opacity: root.dissolve
     }
 
     // A press anywhere on a screen that does not hold the field brings it here.
@@ -103,26 +202,15 @@ WlSessionLockSurface {
         anchors.verticalCenterOffset: -root.height * 0.06
 
         visible: root.active
-        opacity: 0
         spacing: 0
-
-        Component.onCompleted: arrival.start()
-
-        NumberAnimation {
-            id: arrival
-            target: composition
-            property: "opacity"
-            to: 1
-            duration: Timing.open
-            easing.type: Easing.Bezier
-            easing.bezierCurve: Timing.easeOpenFlat
-        }
 
         // The time is the clock's, and the clock is a human thing: the
         // expressive voice, with tabular figures so the minute does not move
         // the line.
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
+            opacity: root.arrived(0)
+            transform: Translate { y: (1 - root.arrived(0)) * 4 * root.factor }
             text: root.time
             color: Theme.text
             font: Typography.tabular(Qt.font({
@@ -134,6 +222,8 @@ WlSessionLockSurface {
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
+            opacity: root.arrived(1)
+            transform: Translate { y: (1 - root.arrived(1)) * 4 * root.factor }
             text: clock.date.toLocaleDateString(Qt.locale("en_GB"), "dddd d MMMM").toUpperCase()
             color: Theme.textMuted
             font: Qt.font({
@@ -160,6 +250,8 @@ WlSessionLockSurface {
             anchors.horizontalCenter: parent.horizontalCenter
             width: portrait * (Metrics.cellHeight / 30)
             height: width
+            opacity: root.arrived(2)
+            transform: Translate { y: (1 - root.arrived(2)) * 4 * root.factor }
 
             Rectangle {
                 anchors.fill: parent
@@ -187,6 +279,8 @@ WlSessionLockSurface {
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
+            opacity: root.arrived(3)
+            transform: Translate { y: (1 - root.arrived(3)) * 4 * root.factor }
             text: Session.fullName
             color: Theme.text
             font.family: Typography.expressive
@@ -200,14 +294,18 @@ WlSessionLockSurface {
         Item {
             id: field
 
+            // It grows from its middle to its width, as a capsule opens into
+            // a panel: animated in width, never scaled, so the outline and the
+            // curve of its caps stay what they are.
+            readonly property real grown: root.arrived(4)
+
             anchors.horizontalCenter: parent.horizontalCenter
-            width: 300 * root.factor
+            width: height + (300 * root.factor - height) * field.grown
             height: 44 * root.factor
 
             // Waiting on PAM, the field says so by stepping back rather than
             // by a spinner: nothing here moves without a value behind it.
-            opacity: root.lockState.checking ? 0.6 : 1
-            Behavior on opacity { NumberAnimation { duration: Timing.transition } }
+            opacity: Math.min(field.grown * 2, 1) * (root.lockState.checking ? 0.6 : 1)
 
             Rectangle {
                 anchors.fill: parent
@@ -222,9 +320,13 @@ WlSessionLockSurface {
                 Behavior on border.color { ColorAnimation { duration: Timing.transition } }
             }
 
+            // What is inside comes in once the shape is nearly at size.
+            readonly property real inside: Math.max(0, (field.grown - 0.7) / 0.3)
+
             Text {
                 anchors.centerIn: parent
                 visible: secret.text.length === 0
+                opacity: field.inside
                 text: "Password"
                 color: Theme.textMuted
                 font.family: Typography.expressive
@@ -235,6 +337,7 @@ WlSessionLockSurface {
                 id: secret
 
                 anchors.fill: parent
+                opacity: field.inside
                 anchors.leftMargin: 20 * root.factor
                 anchors.rightMargin: 20 * root.factor
                 verticalAlignment: TextInput.AlignVCenter

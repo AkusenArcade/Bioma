@@ -32,6 +32,9 @@ ShellRoot {
 
     property string password: ""
     property bool checking: false
+    // The password was right and the lock is on its way out: the surfaces
+    // play their departure, and the session unlocks when it is over.
+    property bool leaving: false
     property bool failed: false
     property string reason: ""
 
@@ -80,12 +83,62 @@ ShellRoot {
         return true;
     }
 
+    // ---- The desktop, as it was -------------------------------------------------
+    //
+    // The lock does not cut to itself. A moment before it takes the screens,
+    // each one is photographed, and the first frame of the lock is that
+    // photograph: the desktop as it was, which then blurs and dissolves into
+    // the wallpaper behind the composition. Leaving, it goes back the same way
+    // and the session unlocks onto the picture it came from — so the eye sees
+    // one movement in and one out, never a cut.
+    //
+    // `grim`, a process, rather than a live capture inside the lock: a
+    // screencopy view held by a surface that goes away has crashed Quickshell
+    // before, and a lock screen is the one place that must not. Without grim
+    // the lock starts from the wallpaper, sharp, which is the next best thing.
+    //
+    // The photographs are the screen's contents, so they live in the runtime
+    // directory — memory, readable only by the user — and are removed when
+    // the lock ends, and again when the next one starts.
+    readonly property string captureDirectory:
+        `${Quickshell.env("XDG_RUNTIME_DIR") || "/tmp"}/bioma-lock`
+
+    function captureFor(screenName) {
+        return `${root.captureDirectory}/${screenName}.png`;
+    }
+
+    Process {
+        running: true
+        command: ["sh", "-c",
+            'umask 077; d="$1"; shift; rm -rf "$d"; mkdir -p "$d"; '
+            + 'command -v grim >/dev/null || exit 0; '
+            + 'for o in "$@"; do grim -l 0 -o "$o" "$d/$o.png" & done; wait',
+            "capture", root.captureDirectory,
+            ...Quickshell.screens.map(screen => screen.name)]
+        onExited: root.begin()
+    }
+
+    // Never later than this, however long the photographs take: a lock that
+    // waits on a screenshot is a lock that is late.
+    Timer {
+        id: captureGuard
+        running: true
+        interval: Timing.open
+        onTriggered: root.begin()
+    }
+
+    function begin() {
+        captureGuard.stop();
+        if (!lock.locked && !root.leaving)
+            lock.locked = true;
+    }
+
     // ---- The lock -------------------------------------------------------------
 
     WlSessionLock {
         id: lock
 
-        locked: true
+        locked: false
 
         // Everything is on screen and the compositor says so: the session is
         // locked in the sense logind means, and whoever is waiting on it —
@@ -102,8 +155,17 @@ ShellRoot {
         }
     }
 
+    // The composition goes quickly, then the picture clears back to the
+    // desktop; the session unlocks once both have.
+    Timer {
+        id: departure
+        interval: Timing.close + Timing.open
+        onTriggered: lock.locked = false
+    }
+
     function finish() {
         root.hint(false);
+        Quickshell.execDetached(["rm", "-rf", root.captureDirectory]);
         // A beat for the compositor to take the surfaces down before the
         // process that owns them goes.
         quitLater.start();
@@ -134,7 +196,8 @@ ShellRoot {
             root.checking = false;
             if (result === PamResult.Success) {
                 root.failed = false;
-                lock.locked = false;
+                root.leaving = true;
+                departure.start();
                 return;
             }
             root.failed = true;

@@ -2540,6 +2540,15 @@ plan rather than an implementation detail:
     - PAM uses Bioma's own file with `pam_unix` alone. `login` would add
       `pam_faillock`, and three mistakes at a lock screen would lock the
       account.
+    - It arrives from the desktop it covers. `grim` photographs each screen
+      just before the lock takes them, which takes 22–46 ms here and is capped
+      at `Timing.open`. The photograph blurs and dissolves into the veiled
+      wallpaper over `Timing.wallpaper`, with the wallpaper's own InOutQuad,
+      and the composition follows in a cascade: opacity plus 4 px, and the
+      field growing in width from its middle. Leaving plays it backwards and
+      unlocks onto the same photograph, so the real desktop replaces a
+      picture of itself. The photographs live in `$XDG_RUNTIME_DIR` and are
+      removed on unlock.
     - niri 26.04 applies `numlock` only when it starts. Every reload of the
       keymap turns it off, and no configuration turns it back on; a layout
       written by the keyboard cell is such a reload. This was measured on the
