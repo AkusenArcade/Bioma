@@ -287,8 +287,9 @@ ShellRoot {
 
     // A screenshot straight from a key, without opening the utility cell and
     // without changing what it remembers: a region, drawn with Bioma's own
-    // rectangle, or the whole monitor the keyboard is pointed at. The file
-    // and the clipboard are the same as the cell's.
+    // rectangle, the whole monitor the keyboard is pointed at, or the window
+    // that has the focus. The file and the clipboard are the same as the
+    // cell's.
     IpcHandler {
         target: "capture"
 
@@ -302,6 +303,12 @@ ShellRoot {
             Capture.pendingAction = "still";
             Capture.captureOutput(Niri.focusedOutput);
             return Niri.focusedOutput;
+        }
+
+        function window(): string {
+            Capture.pendingAction = "still";
+            Capture.captureWindow(Niri.focusedWindow ? Niri.focusedWindow.id : 0);
+            return Niri.focusedTitle;
         }
 
         // A recording can always be stopped, whatever the layout shows: the

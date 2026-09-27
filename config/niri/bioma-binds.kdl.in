@@ -114,15 +114,20 @@ binds {
 
     // A screenshot without opening anything: Print draws a region with
     // Bioma's own rectangle, Mod+Print takes the whole monitor the keyboard is
-    // on. Both go to the screenshots folder and the clipboard, like the
-    // utility cell's. They replace niri's own `Print { screenshot; }`, because
-    // this file is included after it.
+    // on, Alt+Print the window that has the focus. All go to the screenshots
+    // folder and the clipboard, like the utility cell's. They replace niri's
+    // own `Print { screenshot; }` and `Alt+Print { screenshot-window; }`,
+    // because this file is included after them.
     Print hotkey-overlay-title="Bioma: screenshot of a region" {
         spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "capture" "region"
     }
 
     Mod+Print hotkey-overlay-title="Bioma: screenshot of the screen" {
         spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "capture" "screen"
+    }
+
+    Alt+Print hotkey-overlay-title="Bioma: screenshot of the window" {
+        spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "capture" "window"
     }
 
     // A recording can be stopped without finding the utility cell: it may be
