@@ -65,11 +65,13 @@ Cell {
         }
     }
 
+    // The cell's only content, so it wears the light gradient, as every
+    // contracted glyph does.
     Icon {
         anchors.centerIn: parent
         width: root.glyphSize
         height: width
         name: "clipboard"
-        colour: Theme.textMuted
+        gradient: true
     }
 }

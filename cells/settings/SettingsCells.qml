@@ -20,6 +20,10 @@ import qs.cells
 // A cell that is in no tissue at all has neither answer — both need somewhere
 // to be — and its row says it is reached by keybind only.
 //
+// What "conditional" means is different for every cell, so each row can say
+// it: the question mark beside the choice opens the sentence under the row,
+// grown out of it, one row at a time. The sentences are the Registry's.
+//
 // See docs/design/CELLS.md §12.
 Item {
     id: root
@@ -29,6 +33,13 @@ Item {
     readonly property real factor: metrics.factor
     readonly property real listRow: 38 * factor
     readonly property real indexWidth: 26 * factor
+
+    // The row whose condition is being read, by type.
+    property string explained: ""
+
+    readonly property real helpSize: 18 * factor
+    readonly property real notePadding: 10 * factor
+    readonly property real noteGap: 6 * factor
 
     readonly property var bands: Config.get("membranes", [])
     readonly property var floats: Config.get("floating", [])
@@ -144,8 +155,32 @@ Item {
             required property var modelData
             required property int index
 
+            readonly property bool open: root.explained === row.modelData.type
+            readonly property string condition: Registry.conditionOf(row.modelData.type)
+
+            // 0 closed, 1 open: the note under the row grows by height from
+            // the row itself, and its words arrive once it is there.
+            property real growth: row.open ? 1 : 0
+            Behavior on growth {
+                NumberAnimation {
+                    duration: row.open ? Timing.grow : Timing.close
+                    easing.type: Easing.Bezier
+                    easing.bezierCurve: row.open ? Timing.easeOpen : Timing.easeClose
+                }
+            }
+
+            readonly property real noteHeight: noteText.implicitHeight + root.notePadding * 2
+
+            // The row's own line, which everything in it is centred on while
+            // the note grows under it.
+            Item {
+                id: line
+                width: parent.width
+                height: root.listRow
+            }
+
             width: ListView.view.width
-            height: root.listRow
+            height: root.listRow + (root.noteGap + row.noteHeight) * row.growth
 
             // The number is the machine counting, so it is tabular and faint:
             // it is there to make the list countable, not to be read.
@@ -153,7 +188,7 @@ Item {
                 id: ordinal
 
                 anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
+                anchors.verticalCenter: line.verticalCenter
                 width: root.indexWidth
                 text: String(row.index + 1).padStart(2, "0")
                 color: Theme.textFaint
@@ -165,9 +200,9 @@ Item {
 
             Text {
                 anchors.left: ordinal.right
-                anchors.right: choice.left
+                anchors.right: help.left
                 anchors.rightMargin: 12 * root.factor
-                anchors.verticalCenter: parent.verticalCenter
+                anchors.verticalCenter: line.verticalCenter
                 text: row.modelData.name
                 elide: Text.ElideRight
                 color: row.modelData.placed ? Theme.text : Theme.textMuted
@@ -178,9 +213,10 @@ Item {
             // Placed nowhere, it has no rest state to choose — it is there
             // when it is asked for, and that is what the row says.
             Text {
+                id: keybindOnly
                 anchors.right: parent.right
                 anchors.rightMargin: 6 * root.factor
-                anchors.verticalCenter: parent.verticalCenter
+                anchors.verticalCenter: line.verticalCenter
                 visible: !row.modelData.placed
                 text: "KEYBIND ONLY"
                 color: Theme.textFaint
@@ -192,11 +228,48 @@ Item {
                 })
             }
 
+            // The question: what "conditional" means for this one.
+            Item {
+                id: help
+
+                anchors.right: row.modelData.placed ? choice.left : keybindOnly.left
+                anchors.rightMargin: 10 * root.factor
+                anchors.verticalCenter: line.verticalCenter
+                width: root.helpSize
+                height: width
+                visible: row.condition.length > 0
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: width / 2
+                    antialiasing: true
+                    color: row.open ? Qt.alpha(Theme.primary, 0.16) : "transparent"
+                    border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+                    border.color: row.open ? Theme.primary : helpHover.hovered ? Theme.text : Theme.line
+                }
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "?"
+                    color: row.open || helpHover.hovered ? Theme.text : Theme.textMuted
+                    font: Qt.font({
+                        "family": Typography.technical,
+                        "pixelSize": root.metrics.fontMeta,
+                        "weight": Typography.weightLabel
+                    })
+                }
+
+                HoverHandler { id: helpHover }
+                TapHandler {
+                    onTapped: root.explained = row.open ? "" : row.modelData.type
+                }
+            }
+
             Segmented {
                 id: choice
 
                 anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
+                anchors.verticalCenter: line.verticalCenter
 
                 metrics: root.metrics
                 fontSize: root.metrics.fontMeta
@@ -215,6 +288,32 @@ Item {
                 ]
 
                 onChose: key => root.apply(row.modelData.type, key)
+            }
+
+            // The note: a well under the row, as tall as the growth allows,
+            // with the sentence arriving once it is whole.
+            Well {
+                x: ordinal.width
+                y: root.listRow + root.noteGap * row.growth
+                width: parent.width - ordinal.width
+                height: row.noteHeight * row.growth
+                visible: row.growth > 0
+                metrics: root.metrics
+                inset: 10 * root.factor
+
+                Text {
+                    id: noteText
+                    x: root.notePadding
+                    y: root.notePadding
+                    width: parent.width - root.notePadding * 2
+                    text: row.condition
+                    wrapMode: Text.WordWrap
+                    opacity: row.growth > 0.999 ? 1 : 0
+                    Behavior on opacity { NumberAnimation { duration: Timing.contentFade } }
+                    color: Theme.textMuted
+                    font.family: Typography.expressive
+                    font.pixelSize: root.metrics.fontSecondary
+                }
             }
         }
     }

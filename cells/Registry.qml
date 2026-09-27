@@ -54,6 +54,35 @@ Singleton {
         "keyboard": "Keyboard"
     })
 
+    // When each cell is there by itself, said the way the settings cell's
+    // Cells page explains it. What the condition *is* lives in the cell; this
+    // is the sentence about it, and it is kept beside the name so a new cell
+    // brings both in the same line of work.
+    readonly property var conditions: ({
+        "clock": "When the hour strikes, for that minute.",
+        "window_title": "While a window has the focus. With none, there is no title to show.",
+        "workspaces": "For five seconds after the workspace changes.",
+        "vitals": "While the processor, the memory, the graphics card or the battery is past its alert level, and three seconds after it comes back.",
+        "sinestesia": "While sound is playing, and four seconds after it stops.",
+        "audio": "For five seconds after the volume changes or the sound is muted.",
+        "utility": "For five seconds after a screenshot, and for as long as a recording runs and waits to be kept.",
+        "theme": "For five seconds after the palette changes.",
+        "system": "While a restart is due: the kernel was updated and the one running is no longer installed.",
+        "dock": "While the desktop is showing — no windows on this monitor's workspace — and it has something to hold.",
+        "notifications": "When a notification arrives, and while many arrive at once.",
+        "connectivity": "For five seconds after something connects: the wire, a Wi-Fi network, a Bluetooth device, a VPN, or a print starting.",
+        "launcher": "Never by itself: it comes when its keybind asks for it.",
+        "settings": "Never by itself: it comes when its keybind asks for it.",
+        "tray": "From the moment an application's icon changes state until the pointer has been over it, then five seconds.",
+        "clipboard": "For five seconds after something is copied.",
+        "keyboard": "For five seconds after the keyboard layout changes."
+    })
+
+    function conditionOf(type) {
+        type = root.canonical(type);
+        return root.conditions[type] || "";
+    }
+
     // Old names for cells that were renamed. A block that still says the old
     // one works; the settings cell writes the new one whenever it writes a
     // list. `session` became `system` on 2026-09-23, when the account and the
@@ -153,7 +182,7 @@ Singleton {
         "settings": 40,
         "tray": 40,
         "clipboard": 40,
-        "keyboard": 48
+        "keyboard": 76
     })
 
     function minimumOf(type) {

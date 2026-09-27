@@ -8,8 +8,9 @@ import qs.services
 // The keyboard's layout: which one is on, switching it, and which ones there
 // are.
 //
-// At rest it is the layout's code — US, IT — in the machine's voice, the way
-// the workspace number is: a name the system gives, not a sentence. Whether it
+// At rest it is its glyph and the layout's code — US, IT — in the machine's
+// voice, the way the workspace number is: a name the system gives, not a
+// sentence. The glyph says what the code is a code of (Akusen, 2026-09-27). Whether it
 // is always there or only for a moment after the layout changes is the Cells
 // page's choice, like every cell's (Akusen, 2026-09-23); conditional is for the
 // person who switches rarely and wants to be told when it happened.
@@ -23,10 +24,11 @@ Cell {
     domain: "keyboard"
 
     readonly property real glyphSize: 20 * metrics.factor
+    readonly property real glyphGap: 8 * metrics.factor
 
     paddingLeading: 12 * metrics.factor
-    paddingTrailing: 12 * metrics.factor
-    contentWidth: Math.max(code.implicitWidth, glyphSize)
+    paddingTrailing: 14 * metrics.factor
+    contentWidth: glyphSize + glyphGap + code.implicitWidth
 
     Connections {
         target: Keyboard
@@ -67,9 +69,21 @@ Cell {
         }
     }
 
+    Icon {
+        id: glyph
+        anchors.left: parent.left
+        anchors.verticalCenter: parent.verticalCenter
+        width: root.glyphSize
+        height: width
+        name: "keyboard"
+        gradient: true
+    }
+
     Text {
         id: code
-        anchors.centerIn: parent
+        anchors.left: glyph.right
+        anchors.leftMargin: root.glyphGap
+        anchors.verticalCenter: parent.verticalCenter
         text: Keyboard.currentCode
         color: Theme.text
         font: Qt.font({
