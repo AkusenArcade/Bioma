@@ -82,6 +82,10 @@ Singleton {
     // A dwell, not an animation, so the speed setting leaves it alone.
     readonly property int osd: Config.get("timing.osd", 1500)
 
+    // How long the greeter's welcome stays before the screen goes dark: long
+    // enough to be read once. A dwell too, so the speed setting leaves it alone.
+    readonly property int welcome: Config.get("timing.welcome", 900)
+
     // Wallpaper crossfade. Slower than a palette change: the picture is the
     // whole screen, and anything quick here reads as a flicker rather than a
     // change of scene.

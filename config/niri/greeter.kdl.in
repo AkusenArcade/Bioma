@@ -20,6 +20,12 @@ hotkey-overlay {
     skip-at-startup
 }
 
+// Between the greeter going and this compositor ending there is a frame or two
+// with no surface on screen; it is black, as the welcome ends.
+layout {
+    background-color "black"
+}
+
 prefer-no-csd
 
 spawn-sh-at-startup "BIOMA_GREETER_DIR=@GREETER@ qs -p @GREETER@/shell/greeter.qml; niri msg action quit --skip-confirmation"

@@ -19,6 +19,12 @@ import qs.core
 // picture, and the composition follows, one element after the next; it leaves
 // the same way backwards. Between the two the only change is the minute.
 //
+// The greeter leaves differently (`welcomes`): the person stays — the
+// portrait and the name — while the rest goes, "Welcome to" and the logotype
+// open out from under the name, and then the whole screen fades to black.
+// What follows it is the session's compositor starting on a black screen, so
+// the handover has no seam (Akusen, 2026-09-27).
+//
 // `gate` is the state it reads and writes:
 //
 //   active            the screen that holds the field
@@ -27,6 +33,8 @@ import qs.core
 //   fullName, avatar, hasAvatar, avatarFailed()
 //   wallpaperFor(screenName), wallpaperMode, density, twentyFourHour
 //   captureFor(screenName)   optional: a photograph to start from
+//   entered()         optional: called when a welcome has faded to black —
+//                     by every screen, so the owner acts on the first
 Item {
     id: root
 
@@ -36,6 +44,9 @@ Item {
     // Whether a press on another screen brings the field there. The lock
     // allows it; the greeter keeps it on the primary screen.
     property bool movable: true
+    // Whether leaving welcomes the person in, rather than clearing back to
+    // the desktop. The greeter's way: there is no desktop behind it yet.
+    property bool welcomes: false
 
     readonly property bool active: root.screen && root.gate.active === root.screen.name
     readonly property var metrics: Metrics.step(root.gate.density)
@@ -112,13 +123,70 @@ Item {
         }
     }
 
+    // Welcoming: the portrait and the name are kept while the rest goes; the
+    // welcome opens under the name, one line after the next, stays long
+    // enough to be read, and the screen fades to black.
+    property real kept: 0
+    property real greeting: 0
+    property real dark: 0
+    readonly property real greetingSpan: Timing.open + 3 * root.stagger
+
+    function greeted(index) {
+        const elapsed = root.greeting * root.greetingSpan - index * root.stagger;
+        const linear = Math.max(0, Math.min(1, elapsed / Timing.open));
+        return 1 - Math.pow(1 - linear, 3);
+    }
+
+    SequentialAnimation {
+        id: welcome
+
+        PropertyAction {
+            target: root
+            property: "kept"
+            value: 1
+        }
+
+        NumberAnimation {
+            target: root
+            property: "cascade"
+            to: 0
+            duration: Timing.close
+        }
+
+        NumberAnimation {
+            target: root
+            property: "greeting"
+            to: 1
+            duration: root.greetingSpan
+        }
+
+        PauseAnimation { duration: Timing.welcome }
+
+        // As slow as the picture arrived: the screen is seen to darken, not
+        // to go out.
+        NumberAnimation {
+            target: root
+            property: "dark"
+            to: 1
+            duration: Timing.wallpaper
+            easing.type: Easing.InOutQuad
+        }
+
+        ScriptAction {
+            script: if (root.gate.entered) root.gate.entered()
+        }
+    }
+
     Connections {
         target: root.gate
         function onLeavingChanged() {
             if (!root.gate.leaving)
                 return;
             arrival.stop();
-            departure.start();
+            if (root.welcomes)
+                welcome.start();
+            else
+                departure.start();
         }
     }
 
@@ -281,10 +349,12 @@ Item {
             readonly property real radius: Metrics.radiusFor(height, root.metrics)
 
             anchors.horizontalCenter: parent.horizontalCenter
+            readonly property real shown: Math.max(root.arrived(2), root.kept)
+
             width: portrait * (Metrics.cellHeight / 30)
             height: width
-            opacity: root.arrived(2)
-            transform: Translate { y: (1 - root.arrived(2)) * 4 * root.factor }
+            opacity: shown
+            transform: Translate { y: (1 - badge.shown) * 4 * root.factor }
 
             Rectangle {
                 anchors.fill: parent
@@ -311,9 +381,13 @@ Item {
         Item { width: 1; height: 14 * root.factor }
 
         Text {
+            id: fullName
+
+            readonly property real shown: Math.max(root.arrived(3), root.kept)
+
             anchors.horizontalCenter: parent.horizontalCenter
-            opacity: root.arrived(3)
-            transform: Translate { y: (1 - root.arrived(3)) * 4 * root.factor }
+            opacity: shown
+            transform: Translate { y: (1 - fullName.shown) * 4 * root.factor }
             text: root.gate.fullName
             color: Theme.text
             font.family: Typography.expressive
@@ -450,6 +524,51 @@ Item {
 
             Behavior on opacity { NumberAnimation { duration: Timing.transition } }
         }
+    }
+
+    // ---- The welcome ---------------------------------------------------------
+
+    // Where the field was, and from the name down: each line comes in from
+    // just above, as if let out of the name.
+    Column {
+        anchors.horizontalCenter: parent.horizontalCenter
+        y: composition.y + field.y
+
+        visible: root.active && root.greeting > 0
+        spacing: 0
+
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            opacity: root.greeted(0)
+            transform: Translate { y: (1 - root.greeted(0)) * -4 * root.factor }
+            text: "Welcome to"
+            color: Theme.textMuted
+            font.family: Typography.expressive
+            font.pixelSize: Math.round(18 * root.factor)
+        }
+
+        Item { width: 1; height: 20 * root.factor }
+
+        Logotype {
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: implicitWidth
+            height: implicitHeight
+            markHeight: Math.round(112 * root.factor)
+            markShown: root.greeted(1)
+            nameShown: root.greeted(2)
+            lineShown: root.greeted(3)
+            travel: -4 * root.factor
+        }
+    }
+
+    // The dark the welcome ends in. Plain black, not the palette's background:
+    // it is the colour of the screen between the greeter's compositor and the
+    // session's, which is no colour at all.
+    Rectangle {
+        anchors.fill: parent
+        color: "black"
+        opacity: root.dark
+        visible: opacity > 0
     }
 
     // The field on this screen takes the keys whenever this becomes the screen

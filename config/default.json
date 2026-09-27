@@ -51,7 +51,8 @@
     "notification": 5000,
     "content_fade": 120,
     "loader": 1200,
-    "wallpaper": 600
+    "wallpaper": 600,
+    "welcome": 900
   },
 
   "wallpaper": {

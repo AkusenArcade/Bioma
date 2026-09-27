@@ -126,19 +126,24 @@ ShellRoot {
             Greetd.cancelSession();
         }
 
-        // The password was right. The composition goes and the picture clears
-        // to the wallpaper, sharp — which is what the session opens on — and
-        // only then is the session started.
+        // The password was right. The gate welcomes the person in and fades
+        // to black, and only then is the session started: it opens on a black
+        // screen, so that is where the greeter ends.
         function onReadyToLaunch() {
             root.checking = false;
             root.leaving = true;
-            departure.start();
         }
     }
 
-    Timer {
-        id: departure
-        interval: Timing.close + Timing.open
-        onTriggered: Greetd.launch(root.session, [], true)
+    property bool launched: false
+
+    // Called by every screen's gate once the welcome is dark. The first one
+    // starts the session; not waiting on the primary one means a greeter with
+    // no focused output still lets the person in.
+    function entered() {
+        if (root.launched)
+            return;
+        root.launched = true;
+        Greetd.launch(root.session, [], true);
     }
 }

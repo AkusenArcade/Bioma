@@ -28,6 +28,7 @@ PanelWindow {
         gate: root.greeterState
         screen: root.screen
         movable: false
+        welcomes: true
     }
 
     onVisibleChanged: if (root.visible) gate.focusField()
