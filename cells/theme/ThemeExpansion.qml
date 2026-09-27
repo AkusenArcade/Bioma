@@ -944,15 +944,14 @@ Item {
         contentReady: root.listGrowth > 0.999
         visible: root.listGrowth > 0
 
-        // It opens away from the composition, past its last capsule, which on
-        // a membrane at the bottom of the screen means upwards: opening
-        // downwards there would lay the list over the carousel. It is born
-        // from the edge of the control that asked for it and settles clear of
-        // the composition: two glass surfaces over each other read as one
-        // misdrawn shape rather than as two.
+        // A list belongs to its dropdown: it is born from the control's edge
+        // and settles just past it, over whatever capsule lies beyond, rather
+        // than past the whole composition where it reads as nobody's
+        // (Akusen, 2026-09-27). Away from the cell, like the composition: on
+        // a membrane at the bottom of the screen that means upwards.
         anchorX: Math.max(0, Math.min(root.carouselWidth - targetWidth, root.listOriginX - targetWidth / 2))
-        anchorY: root.upward ? root.desktopY - 8 * root.factor - targetHeight
-                             : root.desktopY + root.desktopHeight + 8 * root.factor
+        anchorY: root.upward ? root.listOriginY - 8 * root.factor - targetHeight
+                             : root.listOriginY + 8 * root.factor
         nodeX: root.listOriginX
         nodeY: root.listOriginY
 
