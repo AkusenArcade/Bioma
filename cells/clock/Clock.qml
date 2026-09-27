@@ -29,6 +29,11 @@ Cell {
         precision: SystemClock.Seconds
     }
 
+    // The second hand, continuous: see components/MinuteHand.qml.
+    MinuteHand {
+        id: hand
+    }
+
     // Conditional, it is there when the hour strikes, for that minute.
     condition: clock.minutes === 0 ? 1 : 0
 
@@ -94,7 +99,8 @@ Cell {
             // the minute: the disc is the second hand.
             fraction: Time.running ? Time.fractionLeft
                                    : (clock.minutes * 60 + clock.seconds) / 3600
-            orbit: clock.seconds / 60
+            orbit: hand.value
+            orbitEased: false
         }
     }
 }

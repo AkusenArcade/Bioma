@@ -260,6 +260,11 @@ Item {
         precision: SystemClock.Seconds
     }
 
+    // The second hand, continuous: see MinuteHand.qml.
+    MinuteHand {
+        id: hand
+    }
+
     // What the keypad's keys mean with num lock off, read as the figures
     // printed on them.
     readonly property var keypad: ({
@@ -315,7 +320,8 @@ Item {
                 width: Math.round(time.font.pixelSize * 0.62)
                 height: width
                 fraction: (clock.minutes * 60 + clock.seconds) / 3600
-                orbit: clock.seconds / 60
+                orbit: hand.value
+                orbitEased: false
             }
         }
 
