@@ -1,0 +1,40 @@
+#!/bin/sh
+# What greetd runs, as the `greeter` user: a minimal niri holding Bioma's
+# greeter, which ends when the greeter has handed over to the session.
+#
+#     [default_session]
+#     command = "/var/lib/bioma-greeter/live/shell/scripts/greeter-session"
+#     user = "greeter"
+#
+# It runs from the copy scripts/greeter-sync keeps — this file is part of it —
+# and points the greeter's configuration, data and fonts there, so the greeter
+# reads the user's own appearance through the ordinary paths.
+#
+# The log goes to /tmp/bioma-greeter.log, because a greeter that does not come
+# up has nowhere else to say why.
+set -eu
+
+live="$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)"
+
+export BIOMA_GREETER_DIR="$live"
+export XDG_CONFIG_HOME="$live/config"
+export XDG_DATA_HOME="$live/data"
+export XDG_CACHE_HOME="/tmp/bioma-greeter-cache-$(id -u)"
+export XDG_STATE_HOME="/tmp/bioma-greeter-state-$(id -u)"
+
+# greetd's PAM session may not give the greeter a runtime directory.
+if [ -z "${XDG_RUNTIME_DIR:-}" ] || [ ! -w "${XDG_RUNTIME_DIR:-/nonexistent}" ]; then
+    XDG_RUNTIME_DIR="/tmp/bioma-greeter-runtime-$(id -u)"
+    export XDG_RUNTIME_DIR
+fi
+mkdir -p "$XDG_RUNTIME_DIR" "$XDG_CACHE_HOME" "$XDG_STATE_HOME"
+chmod 700 "$XDG_RUNTIME_DIR"
+unset WAYLAND_DISPLAY
+
+exec >>/tmp/bioma-greeter.log 2>&1
+echo "=== bioma greeter $(date -Iseconds) from $live ==="
+
+if command -v dbus-run-session >/dev/null 2>&1; then
+    exec dbus-run-session -- niri -c "$live/niri.kdl"
+fi
+exec niri -c "$live/niri.kdl"

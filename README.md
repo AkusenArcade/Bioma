@@ -232,6 +232,48 @@ nothing to type into. Nothing is lost; the way back is a text console:
 
    Or, to end the session instead: `niri msg --socket "$(ls /run/user/$(id -u)/niri.wayland-1.*.sock)" action quit -s`.
 
+### The greeter
+
+Bioma can also greet you before you log in. The greeter is the lock screen's
+composition, with greetd checking the password: the same wallpaper and mode
+(span included), palette, faces, appearance and clock. The field is on the
+primary monitor only, the one `focus-at-startup` marks in niri's outputs.
+
+The greeter runs as the `greeter` user and cannot read your home, so it runs
+from a copy. The shell keeps that copy current by itself: the configuration,
+the wallpaper, the palette, the monitors, the keyboard layout, the cursor and
+your picture. It needs greetd, and three steps with sudo, once:
+
+1. A directory you write and the greeter reads:
+
+   ```sh
+   sudo install -d -m 2750 -o "$USER" -g greeter /var/lib/bioma-greeter
+   scripts/greeter-sync
+   ```
+
+2. Keep the current greeter's configuration as the way back:
+
+   ```sh
+   sudo cp /etc/greetd/config.toml /etc/greetd/config.toml.before-bioma
+   ```
+
+3. Point greetd at Bioma's greeter, in `/etc/greetd/config.toml`:
+
+   ```toml
+   [default_session]
+   command = "/var/lib/bioma-greeter/live/shell/scripts/greeter-session"
+   user = "greeter"
+   ```
+
+It takes effect at the next login screen. If the greeter does not come up, it
+writes why to `/tmp/bioma-greeter.log`. To go back, log in on a text console
+(`Ctrl+Alt+F2`) and restore the old configuration:
+
+```sh
+sudo cp /etc/greetd/config.toml.before-bioma /etc/greetd/config.toml
+sudo systemctl restart greetd
+```
+
 ## Running
 
 ```sh

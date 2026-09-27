@@ -2520,6 +2520,21 @@ plan rather than an implementation detail:
   that names it is passed over and dropped the next time the settings cell
   writes the layout — and `qs ipc call capture stop` stops a recording from
   anywhere.
+- **Bioma has a greeter** (Akusen, 2026-09-24; built 2026-09-27), against PRD
+  §2 like the lock screen. It is the lock's composition, `components/Gate.qml`,
+  on overlay surfaces, with greetd in place of PAM (`greeter.qml`). Only the
+  primary screen holds the field. It runs as `greeter`, which cannot read the
+  home, so it runs from a copy in `/var/lib/bioma-greeter`. That directory is
+  the user's, group `greeter`, setgid, and `scripts/greeter-sync` swaps a new
+  copy in whole. `services/GreeterSync.qml` re-syncs when a source changes:
+  the layers, wallpaper state and images, palette, fonts in the home, niri's
+  outputs (for span), keyboard and cursor, the avatar. XDG_CONFIG_HOME points
+  into the copy, so the greeter reads the user's appearance through the
+  ordinary paths.
+  - Noctalia's greeter syncs through pkexec and asks for an admin password
+    every time; the group-readable directory needs sudo once.
+  - `scripts/greeter-session` starts a minimal niri; the niri ends when the
+    greeter hands over.
 - **Two of §2's exclusions were lifted by Akusen on 2026-09-23.**
   - Third-party theming: the theme cell now sets the desktop's icon theme and
     cursor, and its application templates carry the palette to other programs'

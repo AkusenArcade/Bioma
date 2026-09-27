@@ -1,0 +1,25 @@
+// The compositor under Bioma's greeter. Written by scripts/greeter-sync, with
+// @GREETER@ replaced by where the greeter's copy lives; do not edit the copy.
+//
+// It lays the screens out as the session does, types on the same keyboard
+// layout and shows the same cursor — those three are the user's own niri
+// files, copied — and it does nothing else: no keys, no windows, no startup
+// hint. It ends when the greeter ends, which is when the session starts.
+
+include "@GREETER@/niri/outputs.kdl"
+include "@GREETER@/niri/bioma-keyboard.kdl"
+include "@GREETER@/niri/bioma-cursor.kdl"
+
+input {
+    keyboard {
+        numlock
+    }
+}
+
+hotkey-overlay {
+    skip-at-startup
+}
+
+prefer-no-csd
+
+spawn-sh-at-startup "BIOMA_GREETER_DIR=@GREETER@ qs -p @GREETER@/shell/greeter.qml; niri msg action quit --skip-confirmation"

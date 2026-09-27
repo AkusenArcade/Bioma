@@ -1,0 +1,157 @@
+#!/usr/bin/env bash
+# Keep the greeter's copy of the desktop up to date.
+#
+#     greeter-sync [directory]     default: $BIOMA_GREETER_DIR, or /var/lib/bioma-greeter
+#
+# The greeter runs as the `greeter` user before anyone is logged in, and cannot
+# read anybody's home. So it runs from a copy, kept in a directory the user
+# writes and the greeter reads — owned by the user, group `greeter`, setgid, so
+# everything written into it is readable by that group:
+#
+#     sudo install -d -m 2750 -o "$USER" -g greeter /var/lib/bioma-greeter
+#
+# The copy holds, under `live/`:
+#
+#   shell/         greeter.qml and the parts of Bioma it imports
+#   config/bioma/  the configuration layers, the wallpaper's state and the
+#                  palette — XDG_CONFIG_HOME points here, so the greeter reads
+#                  the user's own appearance through the ordinary paths
+#   wallpapers/    the images the wallpaper state names
+#   data/fonts/    Bioma's two faces, when they are installed in the home
+#   niri/          the outputs, the keyboard and the cursor, so the greeter's
+#                  niri lays the screens out as the session does — a spanned
+#                  wallpaper has to cross the same seam — and the password is
+#                  typed on the same layout
+#   niri.kdl       the greeter's compositor configuration
+#   user.json      who to greet, and the session to start
+#   avatar         their picture
+#
+# It is built beside the old one and swapped in whole, so a greeter starting
+# during a sync sees one copy or the other, never half of each. The shell runs
+# this by itself when any of it changes (services/GreeterSync.qml).
+set -euo pipefail
+
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+dest="${1:-${BIOMA_GREETER_DIR:-/var/lib/bioma-greeter}}"
+config="${XDG_CONFIG_HOME:-$HOME/.config}"
+
+if [ ! -d "$dest" ] || [ ! -w "$dest" ]; then
+    echo "greeter-sync: $dest is not a directory this user can write." >&2
+    echo "Create it once with:  sudo install -d -m 2750 -o \"$USER\" -g greeter $dest" >&2
+    exit 1
+fi
+
+# Readable by the directory's group, and by nobody else.
+umask 027
+
+next="$dest/next"
+live="$dest/live"
+rm -rf "$next"
+mkdir -p "$next"/{shell,config/bioma/generated,wallpapers,data/fonts,niri}
+
+# ---- The shell ----------------------------------------------------------------
+
+mkdir -p "$next/shell/cells" "$next/shell/config" "$next/shell/scripts"
+cp -r "$here/core" "$here/components" "$here/greeter" "$here/assets" "$next/shell/"
+cp "$here/greeter.qml" "$next/shell/"
+cp "$here/cells/Registry.qml" "$next/shell/cells/"
+cp "$here/config/default.json" "$next/shell/config/"
+cp -r "$here/config/palettes" "$next/shell/config/"
+cp "$here/scripts/greeter-session" "$next/shell/scripts/"
+
+# ---- The configuration ----------------------------------------------------------
+
+for file in override.json generated/palette.json; do
+    if [ -f "$config/bioma/$file" ]; then
+        cp "$config/bioma/$file" "$next/config/bioma/$file"
+    fi
+done
+
+# The wallpaper's state, with its images copied and its paths pointed at the
+# copies, and everything the greeter needs to know about the user.
+python3 - "$config/bioma/wallpaper.json" "$next" "$live" "$USER" <<'PY'
+import json, os, pwd, shutil, sys
+
+state_path, next_dir, live_dir, login = sys.argv[1:5]
+home = os.path.expanduser("~")
+
+def expand(path):
+    if path.startswith("~/"):
+        return home + path[1:]
+    if path.startswith("$HOME"):
+        return home + path[5:]
+    return path
+
+copied = {}
+def copy_image(path):
+    path = expand(path)
+    if not path or not os.path.isfile(path):
+        return ""
+    if path not in copied:
+        name = f"{len(copied)}-{os.path.basename(path)}"
+        shutil.copyfile(path, os.path.join(next_dir, "wallpapers", name))
+        copied[path] = os.path.join(live_dir, "wallpapers", name)
+    return copied[path]
+
+try:
+    state = json.load(open(state_path))
+except (OSError, ValueError):
+    state = {}
+
+out = {"mode": state.get("mode", "fill"), "path": copy_image(state.get("path", ""))}
+out["perMonitorPaths"] = {name: copy_image(p) for name, p in (state.get("perMonitorPaths") or {}).items()}
+json.dump(out, open(os.path.join(next_dir, "config/bioma/wallpaper.json"), "w"), indent=2)
+
+# Who. The full name is the first field of GECOS, as the System cell shows it.
+entry = pwd.getpwnam(login)
+full_name = entry.pw_gecos.split(",")[0].strip() or login
+
+avatar = ""
+for candidate in (f"/var/lib/AccountsService/icons/{login}",
+                  os.path.join(home, ".face"), os.path.join(home, ".face.icon")):
+    if os.path.isfile(candidate):
+        shutil.copyfile(candidate, os.path.join(next_dir, "avatar"))
+        avatar = "avatar"
+        break
+
+# The session the user is in now is the one to start: niri's own launcher.
+json.dump({"login": login, "fullName": full_name, "avatar": avatar,
+           "session": ["niri-session"]},
+          open(os.path.join(next_dir, "user.json"), "w"), indent=2)
+PY
+
+# ---- The faces ----------------------------------------------------------------------
+
+# Only the ones installed in the home: a system font the greeter already has.
+for family in Spectral Orbitron; do
+    fc-list : family file 2>/dev/null | grep -i ": *$family" | cut -d: -f1 | while read -r file; do
+        case "$file" in
+            "$HOME"/*) cp "$file" "$next/data/fonts/" ;;
+        esac
+    done
+done
+
+# ---- The compositor ------------------------------------------------------------------
+
+niri_config="$config/niri"
+for part in outputs.kdl bioma-keyboard.kdl bioma-cursor.kdl; do
+    target="$next/niri/$part"
+    if [ -f "$niri_config/$part" ]; then
+        cp "$niri_config/$part" "$target"
+    else
+        : > "$target"
+    fi
+done
+
+sed -e "s|@GREETER@|$live|g" "$here/config/niri/greeter.kdl.in" > "$next/niri.kdl"
+
+# The directory's group reads everything; the setgid bit already gave it the
+# group.
+chmod -R g+rX "$next"
+
+# ---- Swap ------------------------------------------------------------------------------
+
+rm -rf "$dest/old"
+[ -d "$live" ] && mv "$live" "$dest/old"
+mv "$next" "$live"
+rm -rf "$dest/old"

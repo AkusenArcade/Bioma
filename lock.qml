@@ -4,6 +4,7 @@ import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Services.Pam
 import qs.core
+import qs.components
 import qs.services
 import qs.lock
 
@@ -29,7 +30,7 @@ ShellRoot {
     // The screen the keyboard is on. niri hands the keys to the lock surface
     // of the focused output, so that is where the field has to be; asked
     // once, at start, and moved by a press on another screen.
-    property string active: ""
+    property string active: scenery.focusedOutput
 
     property string password: ""
     property bool checking: false
@@ -47,58 +48,16 @@ ShellRoot {
     readonly property bool hasAvatar: Session.hasAvatar
     function avatarFailed() { Session.avatarFailed(); }
 
-    // The wallpaper as the shell last left it, read from the shell's own
-    // state file. Read, never written, and without the wallpaper service: that
-    // one scans the library and makes thumbnails, which is no work for a lock
-    // screen to be doing.
-    FileView {
-        id: wallpaperState
-        path: `${Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config"}/bioma/wallpaper.json`
-        blockLoading: true
-        printErrors: false
+    // The wallpaper, its mode, the density and the clock's format, read from
+    // where the shell left them.
+    GateScenery {
+        id: scenery
     }
 
-    readonly property var wallpaper: {
-        try {
-            return JSON.parse(wallpaperState.text()) || {};
-        } catch (error) {
-            return {};
-        }
-    }
-
-    readonly property string wallpaperMode: root.wallpaper.mode || "fill"
-
-    function wallpaperFor(screenName) {
-        const perMonitor = root.wallpaper.perMonitorPaths || {};
-        let path = root.wallpaperMode === "per_monitor" && perMonitor[screenName]
-                 ? perMonitor[screenName] : (root.wallpaper.path || "");
-        if (path.startsWith("~/"))
-            path = Quickshell.env("HOME") + path.slice(1);
-        return path;
-    }
-
-    // The shell's appearance is the lock's too: palette, faces, timing,
-    // radius and opacity arrive through the same singletons, and the density
-    // is the one the Appearance page sets on every membrane at once.
-    readonly property string density: {
-        for (const membrane of Config.get("membranes", []))
-            if (membrane.scale)
-                return membrane.scale;
-        return "normal";
-    }
-
-    // The clock says the time the way the clock cell does, wherever that cell
-    // is placed.
-    readonly property bool twentyFourHour: {
-        const lists = [Config.get("membranes", []), Config.get("floating", [])];
-        for (const list of lists)
-            for (const block of list)
-                for (const group of (block.tissues || [block]))
-                    for (const cell of (group.cells || []))
-                        if (cell.type === "clock" && cell.options && cell.options.format)
-                            return cell.options.format === "24h";
-        return true;
-    }
+    readonly property string wallpaperMode: scenery.wallpaperMode
+    function wallpaperFor(screenName) { return scenery.wallpaperFor(screenName); }
+    readonly property string density: scenery.density
+    readonly property bool twentyFourHour: scenery.twentyFourHour
 
     // ---- The desktop, as it was -------------------------------------------------
     //
@@ -253,25 +212,5 @@ ShellRoot {
             + "org.freedesktop.login1.Manager GetSession s auto | cut -d'\"' -f2) && "
             + "busctl call org.freedesktop.login1 \"$s\" org.freedesktop.login1.Session "
             + `SetLockedHint b ${locked}`]);
-    }
-
-    // ---- Where the keyboard is ------------------------------------------------
-
-    Process {
-        running: true
-        command: ["niri", "msg", "--json", "focused-output"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                try {
-                    const output = JSON.parse(text);
-                    if (output && output.name)
-                        root.active = output.name;
-                } catch (error) {
-                    // Not niri, or not answering: the first screen will do.
-                }
-                if (root.active.length === 0 && Quickshell.screens.length > 0)
-                    root.active = Quickshell.screens[0].name;
-            }
-        }
     }
 }

@@ -212,6 +212,7 @@ ShellRoot {
     readonly property int clipboardKept: Clipboard.entries.length
     readonly property string templatesSignature: Templates.signature
     readonly property bool sessionLocked: Locker.locked
+    readonly property bool greeterSynced: GreeterSync.synced
 
     //
     // Volume, brightness and the transport keys act on the machine without
