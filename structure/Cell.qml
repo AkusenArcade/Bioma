@@ -121,7 +121,18 @@ Item {
     // gives it back. One that opened a panel does this when the panel closes;
     // one whose content is itself has no panel to close, so going is the
     // whole of it.
-    onShownChanged: if (!shown) Focus.released(root)
+    //
+    // And a cell that goes while it is open closes on the way out. Being open
+    // holds it on screen, but not against everything — a notification that
+    // empties has nothing left to hold — and an expansion left hanging from a
+    // cell that is no longer there has no pill to close it from.
+    onShownChanged: {
+        if (shown)
+            return;
+        if (open)
+            open = false;
+        Focus.released(root);
+    }
 
     // Every cell can be asked for by name, and stops being reachable when it
     // goes. The register is what a shortcut reaches; see `core/Focus.qml`,
@@ -773,6 +784,8 @@ Item {
     }
 
     onOpenChanged: {
+        root.engage();
+
         // One cell at a time: opening this one closes whatever was open, and a
         // press anywhere the shell does not claim closes this one.
         if (open) {
@@ -930,8 +943,15 @@ Item {
     // the pointer still on it looked like. A cell that empties says so.
     property bool engaging: true
 
+    // An open cell is being interacted with wherever the pointer is: the
+    // hand may be on the keyboard, or on its way back to a control. Sinestesia
+    // showed why — pausing the track from its own panel silences the signal
+    // the cell exists on, and the pointer had only to leave the panel for the
+    // cell to go from under its expansion, which stayed on screen with nothing
+    // to close it (Akusen, 2026-09-25). Closed, the dwell resumes where it
+    // stopped, and the cell leaves then.
     function engage() {
-        root.visibility.interacting = root.touched && root.engaging;
+        root.visibility.interacting = (root.touched || root.open) && root.engaging;
     }
 
     onEngagingChanged: root.engage()
