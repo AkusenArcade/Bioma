@@ -50,6 +50,10 @@ Singleton {
 
     readonly property string wiredInterface: wiredDevice?.name ?? ""
     readonly property string wiredName: wiredDevice?.network?.name ?? ""
+    // The profile NetworkManager connected the wire with, by its own name
+    // ("Wired connection 1"). `wiredName` is the interface's, which Quickshell
+    // gives a wired network as its name.
+    readonly property string wiredProfile: wiredDevice?.network?.nmSettings?.[0]?.id ?? ""
     readonly property string wiredAddress: wiredDevice?.address ?? ""
     readonly property int wiredSpeed: wiredDevice?.linkSpeed ?? 0  // Mb/s
     readonly property int wiredState: wiredDevice?.state ?? Net.ConnectionState.Unknown

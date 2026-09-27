@@ -11,9 +11,11 @@ import qs.core
 // substituted at load: a theme change repaints the icons with everything else,
 // and a gradient icon gets a real gradient rather than a tinted bitmap.
 //
-// Icons say *what* something is, never how hard it is working: the gradient is
-// for a header, an active control or the only content of a cell, muted text for
-// anything inactive or a fallback, and never a state colour.
+// Icons say *what* something is, and a colour never says how hard it is
+// working: the gradient is for a header, an active control or the only content
+// of a cell, muted text for anything inactive or a fallback, and never a state
+// colour. A live reading may still show in a glyph's extent — the connectivity
+// cell's Wi-Fi arcs are lit as far as the signal reaches.
 Item {
     id: root
 

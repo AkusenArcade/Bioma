@@ -230,9 +230,15 @@ Item {
         : root.wellPadding * 2 + root.headerHeight
           + Math.max(1, Proxy.profiles.length) * root.proxyRow + root.chipRoom
 
+    // The wire has no list and no switch: it is there when it is connected,
+    // and says what it is connected as.
+    readonly property bool wiredShown: Network.wiredConnected
+    readonly property real wiredHeight: root.wellPadding * 2 + root.headerHeight + root.rowHeight
+
     readonly property real contentHeight: root.editing !== null
         ? root.proxyHeight
         : wellSpacing * 3 + wifiHeight + deviceHeight + vpnHeight + proxyHeight
+          + (root.wiredShown ? wellSpacing + wiredHeight : 0)
           + (Printers.available ? wellSpacing + printerHeight : 0)
 
     // ---- Printers --------------------------------------------------------------
@@ -283,6 +289,42 @@ Item {
 
     // ---- Pieces --------------------------------------------------------------
 
+    // A well's name, after the glyph the same family wears in the contracted
+    // cell, so the two can be matched at a glance. The proxies never show
+    // there, and wear a shield of their own so no well stands bare.
+    component SectionTitle: Row {
+        id: section
+
+        property string title: ""
+        property string glyph: ""
+        property var metrics: Metrics.step("normal")
+        property real factor: 1
+
+        spacing: 8 * section.factor
+
+        Icon {
+            anchors.verticalCenter: parent.verticalCenter
+            visible: section.glyph.length > 0
+            width: 14 * section.factor
+            height: width
+            name: section.glyph.length > 0 ? section.glyph : "wifi"
+            gradient: true
+        }
+
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            text: section.title
+            color: Theme.textMuted
+            font: Qt.font({
+                "family": Typography.technical,
+                "pixelSize": section.metrics.fontLabel,
+                "weight": Typography.weightLabel,
+                "letterSpacing": Typography.tracking(section.metrics.fontLabel,
+                                                     Typography.labelTracking)
+            })
+        }
+    }
+
     component FamilyHeader: Item {
         id: family
 
@@ -300,6 +342,9 @@ Item {
 
         // A family with nothing to turn off has no switch: the printers.
         property bool switchable: true
+
+        // The glyph the family wears in the contracted cell.
+        property string glyph: ""
 
         signal switched(bool on)
         signal searchToggled
@@ -355,18 +400,13 @@ Item {
             TapHandler { onTapped: family.searchToggled() }
         }
 
-        Text {
+        SectionTitle {
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
-            text: family.title
-            color: Theme.textMuted
-            font: Qt.font({
-                "family": Typography.technical,
-                "pixelSize": family.metrics.fontLabel,
-                "weight": Typography.weightLabel,
-                "letterSpacing": Typography.tracking(family.metrics.fontLabel,
-                                                     Typography.labelTracking)
-            })
+            title: family.title
+            glyph: family.glyph
+            metrics: family.metrics
+            factor: family.factor
         }
 
         Switch {
@@ -387,6 +427,66 @@ Item {
         anchors.fill: parent
         spacing: root.wellSpacing
 
+        // ---- Ethernet --------------------------------------------------------
+        //
+        // First, as its glyph is first in the contracted cell: the wire is the
+        // connection that does not negotiate.
+
+        Well {
+            id: wiredWell
+
+            visible: root.editing === null && root.wiredShown
+
+            metrics: root.metrics
+            inset: root.wellInset
+            width: parent.width
+            height: root.wiredHeight
+
+            SectionTitle {
+                x: root.wellInset
+                y: root.wellPadding + (root.headerHeight - height) / 2
+                title: "ETHERNET"
+                glyph: "ethernet"
+                metrics: root.metrics
+                factor: root.factor
+            }
+
+            Item {
+                x: root.wellInset
+                y: root.wellPadding + root.headerHeight
+                width: wiredWell.width - root.wellInset * 2
+                height: root.rowHeight
+
+                // The link's speed, in the machine's voice.
+                Text {
+                    id: wiredState
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: Network.wiredSpeed >= 1000 ? `${Network.wiredSpeed / 1000} Gb/s`
+                        : Network.wiredSpeed > 0 ? `${Network.wiredSpeed} Mb/s`
+                        : "Connected"
+                    color: Theme.textMuted
+                    font.family: Typography.technical
+                    font.pixelSize: root.metrics.fontMeta
+                }
+
+                // The connection's name, as NetworkManager's profile calls it:
+                // what someone named it, so the human voice.
+                Text {
+                    anchors.left: parent.left
+                    anchors.right: wiredState.left
+                    anchors.rightMargin: 12 * root.factor
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: Network.wiredProfile.length > 0 ? Network.wiredProfile : Network.wiredInterface
+                    elide: Text.ElideRight
+                    maximumLineCount: 1
+                    color: Theme.text
+                    font.family: Typography.expressive
+                    font.pixelSize: root.metrics.fontSecondary
+                }
+            }
+        }
+
         Well {
             id: wifiWell
 
@@ -404,6 +504,7 @@ Item {
                 metrics: root.metrics
                 factor: root.factor
                 title: "WI-FI"
+                glyph: "wifi"
                 on: Network.wifiEnabled
                 settling: !Network.wifiHardwareEnabled
                 onSwitched: value => Network.setWifiEnabled(value)
@@ -636,7 +737,7 @@ Item {
             }
         }
 
-        // ---- Devices ---------------------------------------------------------
+        // ---- Bluetooth -------------------------------------------------------
 
         Well {
             id: deviceWell
@@ -654,7 +755,9 @@ Item {
                 width: deviceWell.width - root.wellInset * 2
                 metrics: root.metrics
                 factor: root.factor
-                title: "DEVICES"
+                // Bluetooth is the only kind of device this well holds.
+                title: "BLUETOOTH"
+                glyph: "wireless-link"
                 on: Bluetooth.enabled
                 settling: Bluetooth.settling
                 searchable: true
@@ -674,7 +777,7 @@ Item {
                 anchors.verticalCenterOffset: root.headerHeight / 2
                 visible: !Bluetooth.enabled || root.devices.length === 0
                 text: !Bluetooth.available ? "No adapter"
-                    : !Bluetooth.enabled ? "Wireless is off"
+                    : !Bluetooth.enabled ? "Bluetooth is off"
                     : Bluetooth.scanning ? "Looking…"
                     : "Nothing paired"
                 color: Theme.textMuted
@@ -826,20 +929,13 @@ Item {
             width: parent.width
             height: root.vpnHeight
 
-            Text {
+            SectionTitle {
                 x: root.wellInset
-                y: root.wellPadding
-                height: root.headerHeight
-                verticalAlignment: Text.AlignVCenter
-                text: "VPN"
-                color: Theme.textMuted
-                font: Qt.font({
-                    "family": Typography.technical,
-                    "pixelSize": root.metrics.fontLabel,
-                    "weight": Typography.weightLabel,
-                    "letterSpacing": Typography.tracking(root.metrics.fontLabel,
-                                                         Typography.labelTracking)
-                })
+                y: root.wellPadding + (root.headerHeight - height) / 2
+                title: "VPN"
+                glyph: "lock"
+                metrics: root.metrics
+                factor: root.factor
             }
 
             // The profiles.
@@ -1094,20 +1190,13 @@ Item {
             width: parent.width
             height: root.proxyHeight
 
-            Text {
+            SectionTitle {
                 x: root.wellInset
-                y: root.wellPadding
-                height: root.headerHeight
-                verticalAlignment: Text.AlignVCenter
-                text: "PROXY"
-                color: Theme.textMuted
-                font: Qt.font({
-                    "family": Typography.technical,
-                    "pixelSize": root.metrics.fontLabel,
-                    "weight": Typography.weightLabel,
-                    "letterSpacing": Typography.tracking(root.metrics.fontLabel,
-                                                         Typography.labelTracking)
-                })
+                y: root.wellPadding + (root.headerHeight - height) / 2
+                title: "PROXY"
+                glyph: "shield"
+                metrics: root.metrics
+                factor: root.factor
             }
 
             PanelPill {
@@ -1354,6 +1443,7 @@ Item {
                 metrics: root.metrics
                 factor: root.factor
                 title: "PRINTERS"
+                glyph: "printer"
                 on: true
                 switchable: false
                 searchable: true

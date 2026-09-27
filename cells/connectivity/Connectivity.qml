@@ -105,9 +105,36 @@ Cell {
     headerTitle: "CONNECTIVITY"
     headerMarkSize: glyphSize
     headerMark: Component {
-        Icon {
+        Glyph {
             anchors.fill: parent
             name: root.leadGlyph
+        }
+    }
+
+    // The Wi-Fi glyph carries the signal: the arcs the strength reaches are
+    // lit, the rest are drawn dim, in the same four steps as the bars in the
+    // panel — the dot alone, then one, two and three arcs. A live reading in
+    // the glyph's extent, never a figure and never a state colour: a weak
+    // signal is not past any threshold (Akusen, 2026-09-27).
+    readonly property int wifiArcs: Network.signalBars >= 4 ? 3 : Math.max(0, Network.signalBars - 1)
+
+    component Glyph: Item {
+        id: glyph
+
+        required property string name
+
+        readonly property bool wifi: glyph.name === "wifi"
+
+        Icon {
+            anchors.fill: parent
+            visible: glyph.wifi && root.wifiArcs < 3
+            name: "wifi"
+            colour: Theme.line
+        }
+
+        Icon {
+            anchors.fill: parent
+            name: glyph.wifi && root.wifiArcs < 3 ? `wifi-signal-${root.wifiArcs}` : glyph.name
             gradient: true
         }
     }
@@ -152,13 +179,12 @@ Cell {
         Repeater {
             model: root.glyphs
 
-            delegate: Icon {
+            delegate: Glyph {
                 required property string modelData
 
                 name: modelData
                 width: root.glyphSize
                 height: width
-                gradient: true
             }
         }
     }
