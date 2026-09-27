@@ -4,6 +4,7 @@ import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Services.Pam
 import qs.core
+import qs.services
 import qs.lock
 
 // Bioma's lock screen — a second entry point, and a process of its own.
@@ -39,6 +40,12 @@ ShellRoot {
     property string reason: ""
 
     // ---- What it shows ---------------------------------------------------------
+
+    // Who is logged in, for the threshold.
+    readonly property string fullName: Session.fullName
+    readonly property url avatar: Session.avatar
+    readonly property bool hasAvatar: Session.hasAvatar
+    function avatarFailed() { Session.avatarFailed(); }
 
     // The wallpaper as the shell last left it, read from the shell's own
     // state file. Read, never written, and without the wallpaper service: that
