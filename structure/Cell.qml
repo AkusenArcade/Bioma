@@ -160,8 +160,13 @@ Item {
     // matters: the recording cell doubles in width to ask whether to save, and
     // on a narrow membrane that question was the first thing to be dropped —
     // the one cell in the shell that must be answerable.
+    //
+    // And a cell that is always there can be in the middle of something too:
+    // the utility cell counts a recording and then asks what to do with it,
+    // and says so with `busy`.
+    property bool busy: false
     readonly property int precedence: open ? 2
-                                     : visibility.type === "conditional" ? 1 : 0
+                                     : busy || visibility.type === "conditional" ? 1 : 0
 
     property real cellOpacity: Config.get("cell.opacity", 0.72)
     property bool blur: Config.get("cell.blur", true)

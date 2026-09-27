@@ -3,6 +3,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import qs.cells
 
 // Layered configuration.
 //
@@ -57,6 +58,17 @@ Singleton {
         return out;
     }
 
+    // The layout as the shell reads it today: old names replaced and retired
+    // cells dropped, so no page ever shows a cell that cannot exist. Copied
+    // rather than edited in place, because the override document shares its
+    // arrays with the merged values and is left as it was written.
+    function current(merged) {
+        for (const key of ["membranes", "floating"])
+            if (Array.isArray(merged[key]))
+                merged[key] = Registry.renamed(JSON.parse(JSON.stringify(merged[key])));
+        return merged;
+    }
+
     function parse(text, label) {
         if (!text)
             return undefined;
@@ -75,7 +87,7 @@ Singleton {
 
         const override = parse(overrideFile.text(), "override.json");
         root.overrideValues = override || ({});
-        root.values = root.merge(base, override);
+        root.values = root.current(root.merge(base, override));
         root.ready = true;
         root.reloaded();
     }

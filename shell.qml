@@ -301,6 +301,16 @@ ShellRoot {
             Capture.captureOutput(Niri.focusedOutput);
             return Niri.focusedOutput;
         }
+
+        // A recording can always be stopped, whatever the layout shows: the
+        // utility cell may be crowded out, or not on any membrane at all.
+        // Stopped, it still asks whether to keep the file.
+        function stop(): string {
+            if (!Capture.recording)
+                return "not recording";
+            Capture.stopRecording();
+            return "stopped";
+        }
     }
 
     // TODO Phase 3: the last user of the input surface — cells positioned at

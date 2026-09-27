@@ -19,7 +19,6 @@ Singleton {
         "vitals": "vitals/Vitals.qml",
         "theme": "theme/ThemeCell.qml",
         "utility": "utility/Utility.qml",
-        "recording": "recording/Recording.qml",
         "sinestesia": "sinestesia/Sinestesia.qml",
         "audio": "audio/AudioCell.qml",
         "connectivity": "connectivity/Connectivity.qml",
@@ -48,7 +47,6 @@ Singleton {
         "dock": "Dock",
         "notifications": "Notifications",
         "connectivity": "Connectivity",
-        "recording": "Recording",
         "launcher": "Launcher",
         "settings": "Settings",
         "tray": "Tray",
@@ -66,18 +64,32 @@ Singleton {
         return root.aliases[type] || type;
     }
 
-    // A membrane or floating list with every old name replaced, for the pages
-    // that write the layout back.
+    // Cells that were folded into another and no longer exist on their own.
+    // A block that still names one is passed over without a word — the
+    // configuration that has it is not wrong, only older — and the settings
+    // cell drops it whenever it writes a list. `recording` joined `utility` on
+    // 2026-09-27: a layout without it had no way to stop a recording.
+    readonly property var retired: ["recording"]
+
+    function isRetired(type) {
+        return root.retired.indexOf(type) >= 0;
+    }
+
+    // A membrane or floating list with every old name replaced and every
+    // retired cell dropped, for the pages that write the layout back.
     function renamed(list) {
         const walk = cells => {
             for (const entry of (cells || []))
                 if (entry && entry.type)
                     entry.type = root.canonical(entry.type);
+            return (cells || []).filter(entry => !(entry && root.isRetired(entry.type)));
         };
         for (const block of (list || [])) {
-            walk(block.cells);
+            if (block.cells)
+                block.cells = walk(block.cells);
             for (const tissue of (block.tissues || []))
-                walk(tissue.cells);
+                if (tissue.cells)
+                    tissue.cells = walk(tissue.cells);
         }
         return list;
     }
@@ -90,7 +102,7 @@ Singleton {
     // Which visibilities a cell can actually wear. Every cell can be invoked —
     // a shortcut opens it whatever it is — so this is about whether it exists
     // *without* being invoked: a window title with no window has nothing to
-    // say, and a recording that is not running is not a cell.
+    // say, and a sound that is not playing is not a cell.
     //
     // The settings cell shows the ones a cell cannot have dimmed rather than
     // hidden: seeing that the window title is only ever conditional teaches
@@ -108,7 +120,6 @@ Singleton {
         "dock": ["always", "conditional"],
         "notifications": ["conditional"],
         "connectivity": ["always", "conditional"],
-        "recording": ["conditional"],
         "launcher": ["always", "invoked"],
         "settings": ["always", "invoked"],
         "tray": ["conditional", "always"],
@@ -138,7 +149,6 @@ Singleton {
         "dock": 52,
         "notifications": 220,
         "connectivity": 64,
-        "recording": 40,
         "launcher": 40,
         "settings": 40,
         "tray": 40,
@@ -158,7 +168,7 @@ Singleton {
     function roomFor(cells, metrics) {
         const wanted = [];
         for (const entry of (cells || [])) {
-            if (!entry || entry.enabled === false)
+            if (!entry || entry.enabled === false || root.isRetired(entry.type))
                 continue;
             const declared = entry.min_width && entry.min_width.value !== undefined
                            ? entry.min_width.value : root.minimumOf(entry.type);
@@ -169,7 +179,8 @@ Singleton {
 
     // The temporal grammar a domain's condition means when its block does not
     // say. A conditional cell is not conditional in the abstract: a window
-    // title goes when the focus does, a recording goes the moment it stops, a
+    // title goes when the focus does, the system cell the moment a restart is
+    // no longer due, a
     // sound level needs a fraction of a second to be believed and four to be
     // forgotten. Leaving them all at one generic figure made the window title
     // sit there for two seconds with nothing to name — Akusen, 2026-09-22.
@@ -196,7 +207,6 @@ Singleton {
         "system": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 0 },
         "window_title": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 200 },
         "sinestesia": { "enter": 0.02, "exit": 0.005, "confirm": 200, "dwell": 4000 },
-        "recording": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 0 },
         "connectivity": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 5000 },
         "dock": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 400 },
         "notifications": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 400 },
@@ -228,6 +238,8 @@ Singleton {
     function component(type) {
         type = root.canonical(type);
         const file = root.files[type];
+        if (!file && root.isRetired(type))
+            return null;
         if (!file) {
             console.info(`Bioma: cell "${type}" is declared in the configuration but not implemented yet`);
             return null;

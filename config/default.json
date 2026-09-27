@@ -183,12 +183,6 @@
               "options": { "gpu": true, "process_sort": "ram" }
             },
             {
-              "type": "recording",
-              "enabled": true,
-              "visibility": { "type": "conditional", "enter": 1, "exit": 1, "confirm": 0, "dwell": 0 },
-              "min_width": { "value": 40 }
-            },
-            {
               "type": "utility",
               "enabled": true,
               "visibility": { "type": "always", "shortcut": "Mod+P" },

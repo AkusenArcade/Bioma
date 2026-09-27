@@ -117,7 +117,7 @@ Drawn, and verified on screen against the design handoff.
 | `structure/Visibility.qml` | **Exercised at last** — the window title appears and disappears with focus. |
 | `components/` | `Rim`, `Ring`, `DashedRing`, `Disc`, `Dial`, `Gauge`, `Slider`, `Switch`, `Strength`, `Portrait`, `Icon`, `LightGradient`, `Thread`, `Panel`, `Well`, `Band`, `Sweep`, `Segmented`, `WorkspaceBars`, `Vital`. |
 | `structure/InputSurface.qml` + `core/Focus.qml` | The full-screen surface of PRD §8, and the register of what is open. Built; the press path still needs a human to click. |
-| `cells/clock`, `cells/window_title`, `cells/workspaces`, `cells/vitals`, `cells/theme`, `cells/utility`, `cells/recording`, `cells/sinestesia`, `cells/audio`, `cells/connectivity`, `cells/system`, `cells/dock`, `cells/notifications`, `cells/launcher`, `cells/settings` | Fifteen cells. Vitals opens into pods, threads and the process list; theme into the wallpaper carousel and the two palette capsules; utility into the capture panel, and generates the recording cell. |
+| `cells/clock`, `cells/window_title`, `cells/workspaces`, `cells/vitals`, `cells/theme`, `cells/utility`, `cells/sinestesia`, `cells/audio`, `cells/connectivity`, `cells/system`, `cells/dock`, `cells/notifications`, `cells/launcher`, `cells/settings` | Fourteen cells. Vitals opens into pods, threads and the process list; theme into the wallpaper carousel and the two palette capsules; utility into the capture panel, and counts a recording itself. |
 | `structure/SelectionSurface.qml` | Bioma's own selection rectangle, over the whole desktop, in place of `slurp`. Up only while a region is being asked for, and it holds the keyboard for that long so Escape means cancel. |
 | `components/Segmented.qml` | The segmented control, shared: the theme cell's source switch and the utility cell's three kinds are the same object. |
 | `core/Config.qml` write-back | `Config.set` writes one key into the override layer. Brought forward from phase 5 because the theme cell has to keep a choice. |
@@ -319,10 +319,11 @@ so the dismissal itself is verified by hand.
   across two outputs is not possible: the pointer leaves the surface it started
   on. `slurp` has the same limit for the same reason, and the region grim wants
   is one output's anyway.
-- **The recording cell is conditional on the file, not on the recorder.** It
+- **The recording shape is conditional on the file, not on the recorder.** It
   stands while `wl-screenrec` runs and stays for the question afterwards,
   because the file it is asking about is the one it just made. When the answer
-  arrives the condition lapses and the cell leaves on its own.
+  arrives the utility cell goes back to its icon. (It was a cell of its own
+  until 2026-09-27; see the decisions at the end.)
 
 - **A composition is ordered from the cell outwards, not top to bottom.** A
   single panel already handled both edges — `structure/Cell.qml` computes its
@@ -2509,6 +2510,16 @@ plan rather than an implementation detail:
   instant after binding, so a function that *gates an action* on one silently
   does nothing. Properties display state; they do not decide whether to call the
   backend (§15.1).
+- **The recording cell joined the utility cell on 2026-09-27** (Akusen). PRD
+  §8 and CELLS §06 made recording a cell of its own, so it could be stopped
+  without going through whoever started it; but a layout that did not declare
+  that cell had no way to stop a recording at all. The utility cell now counts
+  and asks itself. What the separate cell protected still holds: only the stop
+  control stops, and the rest of the pill opens the panel, so a screenshot can
+  be taken while the recording runs. `recording` is a retired type — a block
+  that names it is passed over and dropped the next time the settings cell
+  writes the layout — and `qs ipc call capture stop` stops a recording from
+  anywhere.
 - **Two of §2's exclusions were lifted by Akusen on 2026-09-23.**
   - Third-party theming: the theme cell now sets the desktop's icon theme and
     cursor, and its application templates carry the palette to other programs'

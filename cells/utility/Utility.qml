@@ -11,10 +11,17 @@ import qs.services
 // shows its icon and nothing else — no figure, no state colour, because it
 // measures nothing.
 //
-// It is also the only cell that generates another one. A recording has a
-// duration, and what has a duration needs a cell to say so; this one stays put
-// and available while `cells/recording` counts. If it changed shape instead,
-// taking a screenshot during a recording would have become impossible.
+// While it records, it is the recording. It used to generate a cell of its
+// own for that, and a layout without that cell had no way to stop a recording
+// at all (Akusen, 2026-09-27). So the count and the stop are here now, and so
+// is the question that follows. What the separate cell was protecting still
+// holds: only the stop stops; the rest of the pill opens the panel as ever, so
+// a screenshot can still be taken while the recording runs.
+//
+// The dot is the one place in the shell where the alert colour says no load at
+// all. Here the machine really is measuring something — it is writing to disk —
+// and that has to be visible from the other side of the room. It beats once per
+// counted second, so the movement is the count and not a decoration.
 //
 // See docs/design/CELLS.md §06.
 Cell {
@@ -25,10 +32,37 @@ Cell {
     // The icon is the whole content, so the padding is what makes the cell
     // square: 20 between two tens.
     readonly property real iconSize: 20 * metrics.factor
-    // A square around its glyph. What the cell wears when it opens keeps its
-    // own margins, which the engine works out from the header's mark.
-    paddingLeading: 10 * metrics.factor
-    paddingTrailing: 10 * metrics.factor
+
+    // ---- Which of its three shapes -------------------------------------------
+
+    readonly property bool recording: Capture.recording
+    // Recording, then the question. The cell stands for both, because the file
+    // it is asking about is the one it just made.
+    readonly property bool confirming: !Capture.recording && Capture.pendingVideo.length > 0
+    readonly property bool idle: !root.recording && !root.confirming
+
+    // Something is happening, and it must not be what a narrow tissue drops.
+    busy: !root.idle
+
+    readonly property real dotSize: 9 * metrics.factor
+    readonly property real stopSize: 26 * metrics.factor
+    readonly property real spacing: 11 * metrics.factor
+    readonly property int fontTime: Math.round(14 * metrics.factor)
+
+    // A square around its glyph at rest. Counting, the figure keeps the
+    // margins a figure keeps; asking, the question ends in a control, and a
+    // control sits closer to the cap than a figure does: the pill's own curve
+    // is the margin. What the cell wears when it opens keeps its own margins,
+    // which the engine works out from the header's mark.
+    paddingLeading: (root.idle ? 10 : 16) * metrics.factor
+    paddingTrailing: (root.idle ? 10 : root.confirming ? 6 : 16) * metrics.factor
+
+    readonly property string elapsed: {
+        const total = Capture.elapsed;
+        const minutes = Math.floor(total / 60);
+        const seconds = total % 60;
+        return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+    }
 
     // Open, the cell becomes the title of the panel it opened: the glyph of its
     // domain and its name, in the technical voice, like every other cell with
@@ -50,7 +84,11 @@ Cell {
         function onScreenshotCaptured() { root.pulse(); }
     }
 
-    condition: root.pulsing ? 1 : 0
+    condition: root.pulsing || !root.idle ? 1 : 0
+
+    // The question is the whole pill, and its answers are in it: a press there
+    // is an answer, never an opening.
+    opensOnTap: root.confirming ? false : hasPanel
 
     headerTitle: "UTILITY"
     headerMarkSize: iconSize
@@ -62,7 +100,9 @@ Cell {
         }
     }
 
-    contentWidth: iconSize
+    contentWidth: root.confirming ? question.implicitWidth
+                : root.recording ? counter.implicitWidth
+                : iconSize
 
     replacesContent: true
 
@@ -76,9 +116,13 @@ Cell {
     // Video is the recorder's, and it cannot record a window: `wl-screenrec`
     // takes an output or a region and nothing else. Text is `tesseract` over a
     // captured region, and a window has no region here — niri reports no window
-    // position, so the compositor captures it by id. A pair that cannot be done
+    // position, so the compositor captures it by id. And there is one recorder:
+    // a second recording while one runs, or while the last one waits for its
+    // answer, would take the file being asked about. A pair that cannot be done
     // is shown as unavailable rather than offered and then refused.
     function supports(what, from) {
+        if (what === "video" && !root.idle)
+            return false;
         if (from !== "window")
             return true;
         return what === "image";
@@ -86,10 +130,161 @@ Cell {
 
     Icon {
         anchors.centerIn: parent
+        visible: root.idle
         name: "capture"
         width: root.iconSize
         height: width
         gradient: true
+    }
+
+    // ---- While it records ---------------------------------------------------
+
+    Row {
+        id: counter
+
+        anchors.verticalCenter: parent.verticalCenter
+        spacing: root.spacing
+        visible: root.recording
+
+        Item {
+            anchors.verticalCenter: parent.verticalCenter
+            width: root.dotSize * 1.6
+            height: width
+
+            Rectangle {
+                id: dot
+
+                property real size: root.dotSize
+
+                anchors.centerIn: parent
+                width: dot.size
+                height: dot.size
+                radius: width / 2
+                antialiasing: true
+
+                gradient: Gradient {
+                    GradientStop { position: 0; color: Theme.gradientTop(Theme.alert) }
+                    GradientStop { position: 1; color: Theme.gradientBottom(Theme.alert) }
+                }
+            }
+
+            // One beat per second counted. Width and height rather than a
+            // scale, like every other growth in the shell.
+            SequentialAnimation {
+                id: beat
+
+                NumberAnimation {
+                    target: dot
+                    property: "size"
+                    to: root.dotSize * 1.45
+                    duration: Timing.grow
+                    easing.type: Easing.OutQuad
+                }
+
+                NumberAnimation {
+                    target: dot
+                    property: "size"
+                    to: root.dotSize
+                    duration: Timing.transition
+                    easing.type: Easing.InOutQuad
+                }
+            }
+
+            Connections {
+                target: Capture
+                function onElapsedChanged() {
+                    if (Capture.recording)
+                        beat.restart();
+                }
+            }
+        }
+
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            text: root.elapsed
+            color: Theme.text
+            font: Typography.tabular(Qt.font({
+                "family": Typography.technical,
+                "pixelSize": root.fontTime,
+                "weight": Typography.weightLabel,
+                "letterSpacing": Typography.tracking(root.fontTime, Typography.labelTracking)
+            }))
+        }
+
+        // The stop control, in the colour of what it stops. It takes the
+        // press for itself, or the same press would stop the recording and
+        // open the panel.
+        Item {
+            anchors.verticalCenter: parent.verticalCenter
+            width: root.stopSize
+            height: width
+
+            Rectangle {
+                anchors.fill: parent
+                radius: width / 2
+                color: "transparent"
+                border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+                border.color: Qt.alpha(Theme.alert, 0.55)
+                antialiasing: true
+            }
+
+            Rectangle {
+                anchors.centerIn: parent
+                width: 10 * root.metrics.factor
+                height: width
+                radius: 2 * root.metrics.factor
+                antialiasing: true
+
+                gradient: Gradient {
+                    GradientStop { position: 0; color: Theme.gradientTop(Theme.alert) }
+                    GradientStop { position: 1; color: Theme.gradientBottom(Theme.alert) }
+                }
+            }
+
+            TapHandler {
+                gesturePolicy: TapHandler.WithinBounds
+                onTapped: Capture.stopRecording()
+            }
+        }
+    }
+
+    // ---- And then asks ------------------------------------------------------
+    //
+    // Save or discard is not a dialog. It grows from the cell that produced the
+    // file, the same way the kill confirmation grows from the process list: the
+    // same question, always in the same place. The video sits in a temporary
+    // directory until the answer arrives, so "discard" can mean the file never
+    // existed.
+
+    Row {
+        id: question
+
+        anchors.verticalCenter: parent.verticalCenter
+        spacing: 12 * root.metrics.factor
+        visible: root.confirming
+
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            text: "Save recording?"
+            color: Theme.text
+            font.family: Typography.expressive
+            font.pixelSize: root.metrics.fontTitle
+        }
+
+        Choice {
+            anchors.verticalCenter: parent.verticalCenter
+            metrics: root.metrics
+            label: "Discard"
+            onActivated: Capture.discardRecording()
+        }
+
+        Choice {
+            anchors.verticalCenter: parent.verticalCenter
+            metrics: root.metrics
+            label: "Save"
+            kind: "primary"
+            onActivated: Capture.saveRecording()
+        }
     }
 
     // ---- Doing it -----------------------------------------------------------

@@ -274,20 +274,22 @@ exist and port when decided.
 
 ## 06 · Utility
 
-*Icon only · no state · generates another cell.*
+*Icon only · no state · counts while it records.*
 
 Screenshots, regions, OCR and recording. The first purely functional cell: at rest it has
-nothing to represent, so it shows only its icon. It is also the only one that **generates
-another**: a recording has a duration, and what has a duration needs a cell to say so.
+nothing to represent, so it shows only its icon. While it records, it is the recording: a
+recording has a duration, and what has a duration needs a cell to say so.
 
 **At rest** — the icon alone. No number, no state colour.
 
 **Expanded** — what is captured on top (Image, Video, Text), where it is captured from below
 (Screen, Window, Region). Two independent choices, never a list of six.
 
-**While recording** — a separate conditional cell with the elapsed time and a stop control. The
-dot pulses in the alert colour, because here the machine really is measuring something: it is
-writing to disk, and that must be visible from across the room.
+**While recording** — the cell itself shows the elapsed time and a stop control, and is present
+even when its visibility is conditional. The dot pulses in the alert colour, because here the
+machine really is measuring something: it is writing to disk, and that must be visible from
+across the room. Only the stop control stops; the rest of the pill still opens the panel, where
+video is unavailable until the recording has been answered.
 
 **On stop** — save or discard. The confirmation grows from the cell itself, like closing a
 process, and the video sits in a temporary directory until it is saved.
@@ -302,17 +304,18 @@ process, and the video sits in a temporary directory until it is saved.
 - Video: no audio, H.264 High Profile, 60 fps, MP4 container.
 - Also invokable: same implementation, two placements.
 
-**Why** — **recording is a cell, not a state of this one.** The capture cell stays put and
-available while recording; if it changed shape you could no longer take a screenshot during a
-recording. General rule, not just here: what has a duration deserves its own cell, because it
-must be stoppable without going through whoever started it.
+**Why** — recording was a cell of its own until 2026-09-27, so that it could be stopped
+without going through whoever started it. But a layout that did not declare that cell had no way
+to stop a recording at all, so the two were joined. What the separate cell protected is kept:
+the stop is its own control and the panel stays reachable, so a screenshot can still be taken
+during a recording. `qs ipc call capture stop` stops one from anywhere.
 
 | Measure | Value | Note |
 |---|---|---|
 | contracted cell | 40 px | icon 20 px, no text |
 | panel | 372 × 154 px | segmented 32 px, buttons 112 × 92 px |
 | mode button | 112 × 92 px | radius 20, icon 28, label 11/500 |
-| recording cell | 40 px | dot 9 px, time in Orbitron 14 tabular |
+| while recording | 40 px | dot 9 px, time in Orbitron 14 tabular |
 | confirmation | 40 px | grows in width from the cell; not a window |
 
 See `IMPLEMENTATION.md` → Capture for even dimensions, physical pixels and window geometry.

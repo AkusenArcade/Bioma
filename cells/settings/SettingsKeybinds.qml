@@ -694,9 +694,6 @@ Item {
         const keep = label => wanted.length === 0 || label.toLowerCase().includes(wanted);
 
         for (const type of Object.keys(Registry.names)) {
-            // The recording cell is made by the capture, not summoned.
-            if (type === "recording")
-                continue;
             const label = Registry.nameOf(type);
             if (!keep(label))
                 continue;
