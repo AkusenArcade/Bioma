@@ -60,7 +60,8 @@
 
   "wallpaper": {
     "folder": "$HOME/Pictures/Wallpapers",
-    "thumbnails": true
+    "thumbnails": true,
+    "picker": "carousel"
   },
 
   "audio": {

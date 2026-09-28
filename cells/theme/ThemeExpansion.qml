@@ -52,6 +52,34 @@ Item {
     readonly property real tilePitch: 10 * factor
     readonly property real tileRadius: Metrics.shaped(10 * factor)
 
+    // The other way of choosing: every image at once, three to a row, each
+    // at the proportion of the middle tile, three rows in view and the rest
+    // a scroll away. The panel keeps the carousel's width and grows down.
+    readonly property bool grid: Config.get("wallpaper.picker", "carousel") === "grid"
+    readonly property int gridColumns: 3
+    readonly property int gridRows: 3
+    readonly property real gridInner: carouselWidth - 20 * factor
+    readonly property real gridTileWidth: (gridInner - tilePitch * (gridColumns - 1)) / gridColumns
+    readonly property real gridTileHeight: gridTileWidth * tileHeight / tileWidth
+    readonly property real gridViewport: gridTileHeight * gridRows + tilePitch * (gridRows - 1)
+    readonly property real gridHeight: gridViewport + 20 * factor
+
+    // Changing the way of choosing is a change of state, so the panel moves
+    // between the two heights at the transition timing, and everything hung
+    // under it follows — it is all placed from this figure.
+    property real pickerHeight: root.grid ? root.gridHeight : root.carouselHeight
+
+    Behavior on pickerHeight {
+        NumberAnimation {
+            duration: Timing.transition
+            easing.type: Easing.Bezier
+            easing.bezierCurve: Timing.easeOpenFlat
+        }
+    }
+
+    // The regions are rectangles read once the shapes stop moving.
+    onPickerHeightChanged: if (root.cell) root.cell.shapesSettling()
+
     readonly property real capsuleWidth: 268 * factor
     readonly property real capsuleHeight: 96 * factor
     readonly property real gap: metrics.gap
@@ -77,9 +105,9 @@ Item {
     readonly property real desktopHeight: desktop.targetHeight
     readonly property real desktopPadding: 20 * factor
     readonly property real carouselY: upward ? desktopHeight + gap + capsuleHeight + gap : 0
-    readonly property real capsuleY: upward ? desktopHeight + gap : carouselHeight + gap
+    readonly property real capsuleY: upward ? desktopHeight + gap : pickerHeight + gap
     readonly property real desktopY: upward ? 0 : capsuleY + capsuleHeight + gap
-    readonly property real carouselNear: upward ? carouselY + carouselHeight : carouselY
+    readonly property real carouselNear: upward ? carouselY + pickerHeight : carouselY
     readonly property real capsuleNear: upward ? capsuleY + capsuleHeight : capsuleY
 
     // Orbitron 12 for the dropdown is CELLS.md §07's own figure, and the
@@ -89,7 +117,7 @@ Item {
     readonly property int fontControl: Math.round(12 * factor)
 
     implicitWidth: carouselWidth
-    implicitHeight: carouselHeight + gap + capsuleHeight + gap + desktopHeight
+    implicitHeight: pickerHeight + gap + capsuleHeight + gap + desktopHeight
 
     width: implicitWidth
     height: implicitHeight
@@ -342,7 +370,7 @@ Item {
 
         metrics: root.metrics
         targetWidth: root.carouselWidth
-        targetHeight: root.carouselHeight
+        targetHeight: root.pickerHeight
         growth: root.cell ? root.cell.panelGrowth : 0
         contentReady: root.cell ? root.cell.panelReady : false
 
@@ -353,7 +381,9 @@ Item {
         nodeX: root.width - (root.cell ? root.cell.width / 2 : 0)
         nodeY: root.carouselNear
 
+        // The grid scrolls under the wheel by itself; the carousel steps.
         WheelHandler {
+            enabled: !root.grid
             acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
             onWheel: event => {
                 if (event.angleDelta.y > 0)
@@ -371,6 +401,10 @@ Item {
             width: root.stripWidth
             height: root.tileHeight
             clip: true
+            opacity: root.grid ? 0 : 1
+            visible: opacity > 0
+
+            Behavior on opacity { NumberAnimation { duration: Timing.contentFade } }
 
             Repeater {
                 model: root.reach * 2 + 1
@@ -398,8 +432,12 @@ Item {
                     // something to bring in; they are outside the strip and
                     // answer nothing.
                     TapHandler {
-                        enabled: Math.abs(place.offset) === 1 && Math.abs(place.position) > 0.5
-                        onTapped: root.slide(place.offset)
+                        enabled: !root.grid && Math.abs(place.offset) === 1
+                                 && Math.abs(place.position) > 0.5
+                        onTapped: point => {
+                            if (!root.onSwitch(point.scenePosition))
+                                root.slide(place.offset);
+                        }
                     }
                 }
             }
@@ -414,6 +452,118 @@ Item {
             font.family: Typography.expressive
             font.pixelSize: root.metrics.fontTitle
         }
+
+        // Built only while it is wanted or still fading: a hundred decoded
+        // thumbnails kept alive behind a carousel would be memory spent on
+        // nothing on screen.
+        Loader {
+            id: gridSlot
+
+            property real shown: root.grid ? 1 : 0
+            Behavior on shown { NumberAnimation { duration: Timing.contentFade } }
+
+            anchors.centerIn: parent
+            width: root.gridInner
+            height: root.gridViewport
+            active: root.grid || gridSlot.shown > 0
+            opacity: gridSlot.shown
+
+            sourceComponent: Item {
+                clip: true
+
+                GridView {
+                    id: gridView
+
+                    // A cell is a tile and the pitch after it, so the last
+                    // column's pitch falls outside the clip, and so does the
+                    // last row's.
+                    width: root.gridInner + root.tilePitch
+                    height: root.gridViewport + root.tilePitch
+                    cellWidth: root.gridTileWidth + root.tilePitch
+                    cellHeight: root.gridTileHeight + root.tilePitch
+                    model: Wallpaper.entries
+                    boundsBehavior: Flickable.StopAtBounds
+                    // Room at the end to scroll the last row out from under
+                    // the switch, which is at the bottom unless the cell
+                    // opened upward.
+                    bottomMargin: root.upward ? 0 : pickerSwitch.height + root.tilePitch
+                    topMargin: root.upward ? pickerSwitch.height + root.tilePitch : 0
+
+                    Component.onCompleted: Qt.callLater(gridView.reveal)
+
+                    // Opened on the one on screen, wherever it is in the list.
+                    function reveal() {
+                        if (Wallpaper.index >= 0)
+                            gridView.positionViewAtIndex(Wallpaper.index, GridView.Contain);
+                    }
+
+                    delegate: Tile {
+                        id: thumb
+
+                        required property string modelData
+                        required property int index
+
+                        readonly property bool current: thumb.index === Wallpaper.index
+
+                        width: root.gridTileWidth
+                        height: root.gridTileHeight
+                        image: thumb.modelData
+                        decode: root.gridTileWidth
+                        lit: thumb.current ? 1 : 0
+                        // The one on screen at full light, like the middle of
+                        // the carousel; the rest brighten under the pointer.
+                        opacity: thumb.current || hover.hovered ? 1 : 0.6
+
+                        Behavior on opacity { NumberAnimation { duration: Timing.contentFade } }
+
+                        HoverHandler { id: hover }
+
+                        TapHandler {
+                            onTapped: point => {
+                                if (!root.onSwitch(point.scenePosition))
+                                    Wallpaper.path = thumb.modelData;
+                            }
+                        }
+                    }
+                }
+
+                Scroller {
+                    flick: gridView
+                    factor: root.factor
+                    x: root.gridInner - width
+                }
+            }
+        }
+
+        // Carousel or grid. In the corner away from the thread, so the
+        // cell's own line never lands on it, and in the same corner in both
+        // ways of choosing: a control that moved when it was used would have
+        // to be found again.
+        Segmented {
+            id: pickerSwitch
+
+            anchors.right: parent.right
+            anchors.bottom: root.upward ? undefined : parent.bottom
+            anchors.top: root.upward ? parent.top : undefined
+            z: 2
+            metrics: root.metrics
+            buttonHeight: 22 * root.factor
+            iconSize: 13 * root.factor
+            iconPadding: 7 * root.factor
+            options: [
+                { "key": "carousel", "icon": "carousel" },
+                { "key": "grid", "icon": "grid" }
+            ]
+            current: root.grid ? "grid" : "carousel"
+            onChose: key => Config.set("wallpaper.picker", key)
+        }
+    }
+
+    // A press on the switch is not a press on the picture under it: the
+    // handlers of both hear it.
+    function onSwitch(scenePoint) {
+        const at = pickerSwitch.mapFromItem(null, scenePoint.x, scenePoint.y);
+        return at.x >= 0 && at.y >= 0 && at.x <= pickerSwitch.width && at.y <= pickerSwitch.height;
     }
 
     // The carousel hangs the source capsule off its own edge, at that capsule's

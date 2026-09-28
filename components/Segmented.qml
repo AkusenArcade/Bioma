@@ -17,6 +17,10 @@ Item {
 
     // [{ "key": "image", "label": "Image" }, …]
     //
+    // Or `"icon"` in place of `"label"`: a glyph from assets/icons, for a
+    // choice between two ways of showing one thing, where the picture of each
+    // is the shorter name (the wallpaper picker's carousel and grid).
+    //
     // An option may carry `"dimmed": true`: it stays in the track, at faint
     // weight, and does not answer a press. A choice a thing cannot make is
     // shown rather than removed — seeing that the window title is only ever
@@ -33,6 +37,8 @@ Item {
     property real buttonPadding: 14 * factor
     property real trackPadding: 3 * factor
     property real spacing: 2 * factor
+    property real iconSize: 14 * factor
+    property real iconPadding: 8 * factor
 
     implicitWidth: track.width
     implicitHeight: track.height
@@ -119,17 +125,32 @@ Item {
 
                     readonly property bool chosen: button.modelData.key === root.current
                     readonly property bool dimmed: button.modelData.dimmed === true
+                    readonly property bool iconic: button.modelData.icon !== undefined
+                    readonly property color ink: button.chosen ? Theme.background
+                                               : button.dimmed ? Theme.textFaint : Theme.textMuted
 
-                    width: label.implicitWidth + root.buttonPadding * 2
+                    width: button.iconic ? root.iconSize + root.iconPadding * 2
+                                         : label.implicitWidth + root.buttonPadding * 2
                     height: root.buttonHeight
 
                     Text {
                         id: label
                         anchors.centerIn: parent
-                        text: button.modelData.label
-                        color: button.chosen ? Theme.background
-                             : button.dimmed ? Theme.textFaint : Theme.textMuted
+                        visible: !button.iconic
+                        text: button.modelData.label || ""
+                        color: button.ink
                         font: root.buttonFont
+                    }
+
+                    Loader {
+                        anchors.centerIn: parent
+                        active: button.iconic
+                        sourceComponent: Icon {
+                            width: root.iconSize
+                            height: width
+                            name: button.modelData.icon
+                            colour: button.ink
+                        }
                     }
 
                     TapHandler {
