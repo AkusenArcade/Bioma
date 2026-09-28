@@ -402,10 +402,23 @@ Item {
         return Math.max(0, free / elastic);
     }
 
+    // What holds a place in the row is what the tissue measured, and nothing
+    // else. A cell closing after its condition has gone is no longer placed,
+    // but its panel is still retracting, so the tissue still counts it — and
+    // laying out only the placed ones slid its neighbours over it while the
+    // band kept its width, leaving the hole on the far side (Akusen,
+    // 2026-09-28). A cell that is only fading is left where it stands: a
+    // membrane has stopped counting it already, and in a floating column its
+    // neighbours close up while it fades, as they always have.
+    function holdsPlace(cell) {
+        return root.placement.cells.indexOf(cell) >= 0
+            && (cell.placed || cell.expanded || cell.leaving);
+    }
+
     function relayout() {
         let offset = padding;
         for (const cell of root.cells) {
-            if (!cell.placed)
+            if (!root.holdsPlace(cell))
                 continue;
 
             cell.grantedWidth = root.grantFor(cell);
