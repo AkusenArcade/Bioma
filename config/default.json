@@ -17,6 +17,10 @@
     "opacity": 0.50,
     "padding": 2
   },
+  "scrim": {
+    "opacity": 0.85,
+    "reach": 1.6
+  },
 
   "fonts": {
     "expressive": "Spectral",

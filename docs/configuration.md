@@ -105,6 +105,17 @@ outline around each cell and never a rule drawn between two of them: it follows
 the tissue's own radius, and the only places it shows are the margin around the
 cells and the gap between them.
 
+### `scrim`
+
+Behind a membrane that reserves no space — every auto-hiding one, and a fixed
+one that does not reserve — a veil of the palette's background runs from the
+screen's edge to nothing, while the membrane is out, so its cells are read
+against it rather than against the window underneath. `scrim.opacity` (0.85) is
+its strength, held whole across the band to its inner edge, and 0 switches it
+off; `scrim.reach` (1.6) is where it has faded to nothing, in multiples of the
+membrane's own thickness, so the fade itself runs over the part past 1. It takes no pointer and is
+never blurred.
+
 ### `fonts`
 
 Declared as roles, not names, so a machine without the intended faces degrades

@@ -212,6 +212,83 @@ PanelWindow {
         onTriggered: if (!root.anyOpen) root.revealed = false
     }
 
+    // ---- The scrim ---------------------------------------------------------
+    //
+    // A membrane that reserves nothing lies over the windows, and its cells
+    // were read against whatever a window drew under them. While it is out,
+    // the light behind it is taken down: the palette's background, from the
+    // screen's edge to nothing a little past the band (Akusen, 2026-09-28).
+    // The background rather than black, so a light palette gets a light veil —
+    // a dark one under pale cells would make them harder to read, not easier —
+    // and the animated role rather than a copy, so it retints with the rest.
+    // It darkens, it does not glow; it takes no pointer, because the input
+    // mask is built from the cells, and it is not blurred, because blur is
+    // declared for the cells alone.
+    readonly property bool overWindows: !root.reserving
+    readonly property real scrimOpacity: Math.max(0, Math.min(1, Config.get("scrim.opacity", 0.85)))
+    readonly property real scrimReach: root.strip * Math.max(1, Config.get("scrim.reach", 1.6))
+
+    Rectangle {
+        id: scrim
+
+        visible: root.overWindows && root.scrimOpacity > 0 && opacity > 0
+        opacity: root.revealed ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: Timing.open; easing.type: Easing.InOutQuad } }
+
+        width: root.horizontal ? root.width : root.scrimReach
+        height: root.horizontal ? root.scrimReach : root.height
+        x: root.edge === "right" ? root.width - width : 0
+        y: root.edge === "bottom" ? root.height - height : 0
+
+        // From the edge inward, whichever edge that is. Nearly whole across
+        // the band itself, where the cells are read, and fading only past it:
+        // falling evenly from the edge, it was already half gone behind the
+        // cells and did little for them (Akusen, 2026-09-28).
+        readonly property bool fromStart: root.edge === "top" || root.edge === "left"
+        readonly property real band: Math.min(1, root.strip / root.scrimReach)
+
+        function at(depth) {
+            return scrim.fromStart ? depth : 1 - depth;
+        }
+
+        // Whole across the band, right to its inner edge, and then gone
+        // quickly: what the veil is for is the cells, and past them it only
+        // dimmed the window (Akusen, 2026-09-28). The fade eases out rather
+        // than falling in a straight line — a linear ramp ends in a visible
+        // edge where it meets nothing — leaving the band gently and settling
+        // into nothing gently, over eight steps.
+        readonly property real held: root.scrimOpacity
+
+        function fadeAt(step) {
+            return scrim.band + (1 - scrim.band) * step / 8;
+        }
+
+        function fadeColour(step) {
+            const t = step / 8;
+            return Qt.alpha(Theme.background, scrim.held * (1 - t * t * (3 - 2 * t)));
+        }
+
+        gradient: Gradient {
+            orientation: root.horizontal ? Gradient.Vertical : Gradient.Horizontal
+            GradientStop {
+                position: scrim.at(0)
+                color: Qt.alpha(Theme.background, root.scrimOpacity)
+            }
+            GradientStop {
+                position: scrim.at(scrim.band)
+                color: Qt.alpha(Theme.background, scrim.held)
+            }
+            GradientStop { position: scrim.at(scrim.fadeAt(1)); color: scrim.fadeColour(1) }
+            GradientStop { position: scrim.at(scrim.fadeAt(2)); color: scrim.fadeColour(2) }
+            GradientStop { position: scrim.at(scrim.fadeAt(3)); color: scrim.fadeColour(3) }
+            GradientStop { position: scrim.at(scrim.fadeAt(4)); color: scrim.fadeColour(4) }
+            GradientStop { position: scrim.at(scrim.fadeAt(5)); color: scrim.fadeColour(5) }
+            GradientStop { position: scrim.at(scrim.fadeAt(6)); color: scrim.fadeColour(6) }
+            GradientStop { position: scrim.at(scrim.fadeAt(7)); color: scrim.fadeColour(7) }
+            GradientStop { position: scrim.at(scrim.fadeAt(8)); color: scrim.fadeColour(8) }
+        }
+    }
+
     // The whole content slides out; nothing on the membrane has a hiding rule
     // of its own.
     Item {
