@@ -227,20 +227,27 @@ PanelWindow {
             Behavior on y { NumberAnimation { duration: Timing.open; easing.type: Easing.InOutQuad } }
         }
 
-        // Over the **count**, not over the list: a Repeater given a new array
-        // rebuilds every delegate, and a tissue rebuilt is every cell in it
-        // rebuilt. The configuration hands out a fresh array on every change,
-        // so the delegates read their own entry out of it instead and only a
-        // band appearing or disappearing costs a rebuild.
+        // Over the tissues' **places**, not over the list: a Repeater given a
+        // new array rebuilds every delegate, and a tissue rebuilt is every
+        // cell in it rebuilt. Over the count it was only a band appearing or
+        // disappearing that cost a rebuild — but every band after it moved
+        // into the delegate before it, so removing the left band rebuilt the
+        // right one, and the settings cell open in it closed under the press
+        // that removed the band (Akusen, 2026-09-28). Each delegate is kept
+        // for as long as its place is in the list, and reads its own entry
+        // out of the configuration by that place.
+        ListModel { id: places }
+
         Repeater {
             id: tissueRepeater
-            model: root.tissuesConfig.length
+            model: places
 
             delegate: Tissue {
                 id: tissue
                 required property int index
+                required property string place
 
-                readonly property var modelData: root.tissuesConfig[tissue.index] || ({})
+                readonly property var modelData: root.entryAt(tissue.place)
 
                 metrics: root.metrics
                 cellsConfig: modelData.cells || []
@@ -272,7 +279,51 @@ PanelWindow {
         }
     }
 
+    // A tissue's place: its anchor, and which of that anchor's tissues it is
+    // — tissues of one anchor stack in declared order.
+    function placesOf(list) {
+        const seen = {};
+        return list.map((entry, index) => {
+            const anchor = root.anchorFor(index, entry, list.length);
+            const nth = seen[anchor] || 0;
+            seen[anchor] = nth + 1;
+            return `${anchor}#${nth}`;
+        });
+    }
+
+    function entryAt(place) {
+        const at = root.placesOf(root.tissuesConfig).indexOf(place);
+        return at >= 0 ? root.tissuesConfig[at] : ({});
+    }
+
+    // The model follows the configuration row by row: what left is removed,
+    // what arrived is inserted, what stayed is moved to where it now is and
+    // keeps its instance.
+    property int placesRevision: 0
+
+    function syncPlaces() {
+        const wanted = root.placesOf(root.tissuesConfig);
+        for (let i = places.count - 1; i >= 0; i--)
+            if (wanted.indexOf(places.get(i).place) < 0)
+                places.remove(i);
+        for (let i = 0; i < wanted.length; i++) {
+            let at = -1;
+            for (let j = i; j < places.count; j++)
+                if (places.get(j).place === wanted[i]) {
+                    at = j;
+                    break;
+                }
+            if (at < 0)
+                places.insert(i, { "place": wanted[i] });
+            else if (at !== i)
+                places.move(at, i, 1);
+        }
+        root.placesRevision++;
+    }
+
+
     readonly property list<Item> tissues: {
+        root.placesRevision;
         const out = [];
         for (let i = 0; i < tissueRepeater.count; i++) {
             const item = tissueRepeater.itemAt(i);
@@ -300,14 +351,14 @@ PanelWindow {
     // configuration declares `growth`; where the tissue sits is derived from
     // its place in the list, which is what the three-tissue default means when
     // it reads left, centre, right. An explicit `anchor` overrides it.
-    function anchorFor(index, config) {
+    function anchorFor(index, config, count) {
         if (config.anchor)
             return config.anchor;
         if (config.growth === "symmetric")
             return "centre";
         if (index === 0)
             return "start";
-        if (index === tissuesConfig.length - 1)
+        if (index === (count !== undefined ? count : tissuesConfig.length) - 1)
             return "end";
         return "centre";
     }
@@ -437,7 +488,10 @@ PanelWindow {
                          + `than it was asked to hold — ${said}`);
     }
 
-    onTissuesConfigChanged: validate()
+    onTissuesConfigChanged: {
+        root.syncPlaces();
+        validate();
+    }
     onUsableLengthChanged: checkRoom()
 
     // ---- Blur and input ----------------------------------------------------
@@ -544,6 +598,7 @@ PanelWindow {
     onRevealedChanged: refreshRegions()
 
     Component.onCompleted: {
+        root.syncPlaces();
         Focus.register(root);
         refreshRegions();
     }
