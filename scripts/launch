@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+# Start an application as a systemd user service of its own, not as a child of
+# the shell.
+#
+#     launch [--id ID] [--dir DIR] -- COMMAND [ARGS...]
+#
+# A child inherits the shell's scheduling, and the shell's is not neutral: on
+# CachyOS the ananicy-cpp rules match any process named `qs` and renice it to
+# 10, so everything the launcher and the dock started ran at 10 too — Ardour's
+# GUI, its disk thread and its plugins among them. A scope (`systemd-run
+# --scope`) keeps the caller's nice, and `niri msg action spawn` hands over
+# niri's own; a service is forked by the user manager and starts at 0. It also
+# gets a cgroup of its own, named the XDG way (`app-bioma-<id>-<random>.service`),
+# so the application no longer lives and dies in the shell's.
+#
+# The service is given the shell's environment rather than the manager's, which
+# lacks niri's `environment {}` block (the Qt platform and its theme) and what
+# the shell adds (the proxy). What belongs to the shell's own start is left
+# behind.
+#
+# Without a user manager the command is run directly, as before.
+set -u
+
+id="" dir=""
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --id)  id="$2"; shift 2 ;;
+        --dir) dir="$2"; shift 2 ;;
+        --)    shift; break ;;
+        *)     break ;;
+    esac
+done
+[ $# -gt 0 ] || { echo "launch: no command" >&2; exit 2; }
+
+# The platform theme the shell set for itself (see `scripts/bioma`) is not the
+# application's: it gets the session's, or none if the session had none.
+if [ -n "${BIOMA_SESSION_PLATFORMTHEME+set}" ]; then
+    if [ -n "$BIOMA_SESSION_PLATFORMTHEME" ]; then
+        export QT_QPA_PLATFORMTHEME="$BIOMA_SESSION_PLATFORMTHEME"
+    else
+        unset QT_QPA_PLATFORMTHEME
+    fi
+    unset BIOMA_SESSION_PLATFORMTHEME
+fi
+
+if ! command -v systemd-run >/dev/null 2>&1 \
+        || [ ! -S "${XDG_RUNTIME_DIR:-/nonexistent}/systemd/private" ]; then
+    [ -n "$dir" ] && cd "$dir" 2>/dev/null
+    exec "$@"
+fi
+
+# `--setenv=NAME` with no value copies it from systemd-run's own environment,
+# which carries any value — newlines, quotes — without quoting it here.
+args=()
+while IFS='=' read -r -d '' name _; do
+    case "$name" in
+        INVOCATION_ID|JOURNAL_STREAM|MANAGERPID|MANAGERPIDFDID|NOTIFY_SOCKET \
+        |SYSTEMD_EXEC_PID|MEMORY_PRESSURE_*|LISTEN_*|WATCHDOG_* \
+        |DESKTOP_STARTUP_ID|XDG_ACTIVATION_TOKEN) ;;
+        QS_*|SHLVL|PWD|OLDPWD|_) ;;
+        *) args+=("--setenv=$name") ;;
+    esac
+done < <(env -0)
+
+id="${id%.desktop}"
+id="${id//[^A-Za-z0-9:_.]/_}"
+unit="app-bioma-${id:-app}-$(printf '%04x%04x' $RANDOM $RANDOM)"
+
+# ExitType=cgroup keeps the service up until its last process exits, so an
+# application whose first process forks and returns is not stopped with it.
+exec systemd-run --user --quiet --collect \
+    --unit="$unit" \
+    --slice=app.slice \
+    --working-directory="${dir:-$HOME}" \
+    --property=Type=exec \
+    --property=ExitType=cgroup \
+    "${args[@]}" \
+    -- "$@"

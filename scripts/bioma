@@ -16,6 +16,10 @@ set -eu
 
 here="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
 
+# What the session had is kept beside it: the shell's children inherit its
+# environment, and an application started from the launcher is one of the
+# "every other" above. `scripts/launch` puts it back.
+export BIOMA_SESSION_PLATFORMTHEME="${QT_QPA_PLATFORMTHEME-}"
 export QT_QPA_PLATFORMTHEME="${BIOMA_PLATFORMTHEME:-xdgdesktopportal}"
 
 # And the icon theme, which that platform theme does not pass on: without it Qt

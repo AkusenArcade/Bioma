@@ -36,22 +36,29 @@ Singleton {
     onEntriesChanged: root.cache = ({})
 
     // Start an application, with whatever the shell adds to its environment —
-    // the proxy, while one is on. A desktop entry's own `execute()` takes no
-    // environment, so the entry is run by its command; one that runs in a
-    // terminal is left to the entry, which knows how to find the terminal.
+    // the proxy, while one is on.
+    //
+    // Not as the shell's child: `scripts/launch` makes it a user service of its
+    // own, so it does not inherit the shell's scheduling — on CachyOS every
+    // process named `qs` is reniced to 10, and so was everything started from
+    // here — nor live in the shell's cgroup.
+    //
+    // One that runs in a terminal is still left to the entry, which knows how
+    // to find the terminal, and does not go through this.
     function run(entry, environment) {
         if (!entry)
             return;
-        const extra = environment || ({});
-        if (entry.runInTerminal || Object.keys(extra).length === 0 || !entry.command
-                || entry.command.length === 0) {
+        if (entry.runInTerminal || !entry.command || entry.command.length === 0) {
             entry.execute();
             return;
         }
-        const context = { "command": entry.command, "environment": extra };
+        const launch = [Quickshell.shellPath("scripts/launch"), "--id", entry.id || ""];
         if (entry.workingDirectory && entry.workingDirectory.length > 0)
-            context.workingDirectory = entry.workingDirectory;
-        Quickshell.execDetached(context);
+            launch.push("--dir", entry.workingDirectory);
+        Quickshell.execDetached({
+            "command": launch.concat(["--"], Array.from(entry.command)),
+            "environment": environment || ({})
+        });
     }
 
     property var cache: ({})
