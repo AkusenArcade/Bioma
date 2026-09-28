@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Effects
 import Quickshell
 import Quickshell.Wayland
 import qs.core
@@ -212,6 +213,22 @@ PanelWindow {
         onTriggered: if (!root.anyOpen) root.revealed = false
     }
 
+    // A cell opened by its key on a hidden membrane brings the membrane out
+    // with it. Left hidden, the panel was drawn — it hangs past the band, over
+    // the windows — but the hidden membrane claims only the reveal strip, so
+    // every press on the panel went to the window underneath (found
+    // 2026-09-28). Closed, it goes again unless the hand is on it.
+    onAnyOpenChanged: {
+        if (!root.autoHide)
+            return;
+        if (root.anyOpen) {
+            hideTimer.stop();
+            root.revealed = true;
+        } else if (!membraneHover.hovered) {
+            hideTimer.restart();
+        }
+    }
+
     // ---- The halo ----------------------------------------------------------
     //
     // A membrane that reserves nothing lies over the windows, and its cells
@@ -237,11 +254,22 @@ PanelWindow {
 
         readonly property real hiddenOffset: root.strip - root.revealZone
         transform: Translate {
+            id: slide
+
             x: root.horizontal ? 0 : (root.revealed ? 0 : (root.edge === "left" ? -content.hiddenOffset : content.hiddenOffset))
             y: !root.horizontal ? 0 : (root.revealed ? 0 : (root.edge === "top" ? -content.hiddenOffset : content.hiddenOffset))
 
             Behavior on x { NumberAnimation { duration: Timing.open; easing.type: Easing.InOutQuad } }
             Behavior on y { NumberAnimation { duration: Timing.open; easing.type: Easing.InOutQuad } }
+
+            // A region bound to an item follows the item and not a transform
+            // on its ancestors, so the regions read while the content was
+            // still sliding kept that offset: on an auto-hiding membrane, an
+            // opened cell's panel took no press where it was drawn (found
+            // 2026-09-28). Once the slide has come to rest they are read
+            // again, from where the shapes really are.
+            onXChanged: if (slide.x === 0 && root.revealed) root.refreshRegions(true)
+            onYChanged: if (slide.y === 0 && root.revealed) root.refreshRegions(true)
         }
 
         // Over the tissues' **places**, not over the list: a Repeater given a
@@ -255,6 +283,37 @@ PanelWindow {
         // out of the configuration by that place.
         ListModel { id: places }
 
+        // One halo per tissue, under the tissues and beside them rather than
+        // inside them: a RectangularShadow among a tissue's own children took
+        // the pointer away from every expansion hanging off that membrane —
+        // the settings' categories stopped answering (Akusen, 2026-09-28) —
+        // even while it drew nothing. Out here it follows each tissue's shape
+        // and fades with the reveal rather than sliding with it, so the part
+        // that reaches past the band never stays on screen after the band has
+        // gone.
+        Repeater {
+            model: root.overWindows && root.haloOpacity > 0 ? root.tissues : []
+
+            delegate: RectangularShadow {
+                required property Item modelData
+
+                x: modelData.x
+                y: modelData.y
+                width: modelData.width
+                height: modelData.height
+                visible: modelData.visible && opacity > 0
+                radius: modelData.radius
+                blur: root.haloReach
+                spread: root.haloReach * 0.25
+                color: Qt.alpha(Theme.background, root.haloOpacity)
+                opacity: root.revealed ? 1 : 0
+
+                Behavior on opacity {
+                    NumberAnimation { duration: Timing.open; easing.type: Easing.InOutQuad }
+                }
+            }
+        }
+
         Repeater {
             id: tissueRepeater
             model: places
@@ -266,9 +325,6 @@ PanelWindow {
 
                 readonly property var modelData: root.entryAt(tissue.place)
 
-                haloed: root.overWindows && root.revealed && root.haloOpacity > 0
-                haloReach: root.haloReach
-                haloOpacity: root.haloOpacity
 
                 metrics: root.metrics
                 cellsConfig: modelData.cells || []
@@ -577,7 +633,15 @@ PanelWindow {
     onHeightChanged: root.refreshRegions()
     onWidthChanged: root.refreshRegions()
 
-    function refreshRegions() {
+    // `reread`: the shapes did not change, but where they are did, in a way the
+    // leaves cannot see (a transform) — every leaf is let go and bound again,
+    // which is what makes a leaf read its item's geometry.
+    function refreshRegions(reread) {
+        if (reread === true) {
+            Regions.bind(root.maskRegion, []);
+            Regions.bind(root.blurRegion, []);
+        }
+
         const input = [];
         const blur = [];
 
