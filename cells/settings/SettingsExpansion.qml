@@ -77,6 +77,23 @@ Item {
     // three shapes when it has seven never finishes the last of them.
     readonly property int shapeCount: root.categories.length + 2
 
+    // The composition keeps its capsules on the left wherever the cell is, so
+    // which shape comes first depends on what the cell's thread lands on. At
+    // the start of an edge it lands on the column, and the capsules come out
+    // first and feed the panel. At the end — or centred — it lands on the
+    // panel, and the panel has to come out of the cell first: grown from the
+    // column, it opened towards the cell and closed away from it, retracting
+    // to the far side of the screen (Akusen, 2026-09-28).
+    readonly property real panelX: root.capsuleWidth + root.threadLength
+    readonly property bool fromPanel: root.cell ? root.cell.threadX > root.panelX : false
+
+    readonly property int panelStage: root.fromPanel ? 0 : root.categories.length + 1
+    readonly property int linkStage: root.fromPanel ? 1 : root.categories.length
+
+    function capsuleStage(index) {
+        return root.fromPanel ? index + 2 : index;
+    }
+
     property real cascade: 0
 
     function stage(index) {
@@ -140,12 +157,14 @@ Item {
                 padding: 0
                 fixedWidth: root.capsuleWidth
                 fixedHeight: root.capsuleHeight
-                growth: root.stage(capsule.index)
-                contentReady: root.stage(capsule.index) > 0.999
+                growth: root.stage(root.capsuleStage(capsule.index))
+                contentReady: root.stage(root.capsuleStage(capsule.index)) > 0.999
 
                 anchorX: 0
                 anchorY: capsule.index * root.capsulePitch
-                nodeX: root.capsuleWidth / 2
+                // Fed by the panel, a capsule comes out of the side the thread
+                // reaches it from.
+                nodeX: root.fromPanel ? root.capsuleWidth : root.capsuleWidth / 2
                 nodeY: capsule.index * root.capsulePitch + root.capsuleHeight / 2
 
                 Text {
@@ -177,7 +196,8 @@ Item {
         id: link
 
         vertical: false
-        progress: root.stage(root.categories.length)
+        reversed: root.fromPanel
+        progress: root.stage(root.linkStage)
         height: implicitHeight
         width: root.threadLength
         x: root.capsuleWidth
@@ -201,13 +221,19 @@ Item {
         padding: root.padding
         fixedWidth: root.panelWidth
         fixedHeight: root.panelHeight
-        growth: root.stage(root.categories.length + 1)
-        contentReady: root.stage(root.categories.length + 1) > 0.999
+        growth: root.stage(root.panelStage)
+        contentReady: root.stage(root.panelStage) > 0.999
 
-        anchorX: root.capsuleWidth + root.threadLength
+        anchorX: root.panelX
         anchorY: (root.height - root.panelHeight) / 2
-        nodeX: root.capsuleWidth + root.threadLength
-        nodeY: link.y + link.height / 2
+        // Out of the cell's thread when that is where it lands, out of the
+        // chosen capsule's thread otherwise.
+        nodeX: root.fromPanel
+               ? Math.min(root.cell.threadX, root.panelX + root.panelWidth)
+               : root.panelX
+        nodeY: root.fromPanel
+               ? (root.upward ? anchorY + root.panelHeight : anchorY)
+               : link.y + link.height / 2
 
         Behavior on fixedWidth {
             NumberAnimation {

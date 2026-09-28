@@ -21,6 +21,11 @@ Item {
     // shape. The far node arrives with the line.
     property real progress: 0
 
+    // Drawn from the far end instead: the origin node at the right (or the
+    // bottom) and the line travelling left (or up). For a thread whose origin
+    // shape sits after the one it feeds.
+    property bool reversed: false
+
     property color lineColour: Theme.line
     property color nodeColour: Theme.node
 
@@ -33,6 +38,11 @@ Item {
     implicitHeight: vertical ? 0 : nodeRadius * 2
 
     readonly property real span: vertical ? height : width
+
+    // Where the origin node sits and where the far end has reached, along the
+    // span.
+    readonly property real origin: reversed ? span : 0
+    readonly property real tip: reversed ? span * (1 - progress) : span * progress
 
     Shape {
         anchors.fill: parent
@@ -47,12 +57,12 @@ Item {
             fillColor: "transparent"
             capStyle: ShapePath.FlatCap
 
-            startX: root.vertical ? root.width / 2 : 0
-            startY: root.vertical ? 0 : root.height / 2
+            startX: root.vertical ? root.width / 2 : root.origin
+            startY: root.vertical ? root.origin : root.height / 2
 
             PathLine {
-                x: root.vertical ? root.width / 2 : root.span * root.progress
-                y: root.vertical ? root.span * root.progress : root.height / 2
+                x: root.vertical ? root.width / 2 : root.tip
+                y: root.vertical ? root.tip : root.height / 2
             }
         }
     }
@@ -64,8 +74,8 @@ Item {
         radius: width / 2
         color: root.nodeColour
         antialiasing: true
-        x: root.vertical ? (root.width - width) / 2 : -width / 2
-        y: root.vertical ? -height / 2 : (root.height - height) / 2
+        x: root.vertical ? (root.width - width) / 2 : root.origin - width / 2
+        y: root.vertical ? root.origin - height / 2 : (root.height - height) / 2
         opacity: root.progress > 0 ? 1 : 0
     }
 
@@ -76,8 +86,8 @@ Item {
         radius: width / 2
         color: root.nodeColour
         antialiasing: true
-        x: root.vertical ? (root.width - width) / 2 : root.span * root.progress - width / 2
-        y: root.vertical ? root.span * root.progress - height / 2 : (root.height - height) / 2
+        x: root.vertical ? (root.width - width) / 2 : root.tip - width / 2
+        y: root.vertical ? root.tip - height / 2 : (root.height - height) / 2
         opacity: root.progress > 0 ? 1 : 0
     }
 }
