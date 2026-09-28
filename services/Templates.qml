@@ -25,10 +25,12 @@ import qs.core
 Singleton {
     id: root
 
-    // Which templates are on. By default niri, the toolkits and what is
-    // installed of the rest is decided the first time the catalogue is read.
-    readonly property var enabled: Config.get("theme.templates", ["niri", "gtk3", "gtk4", "qt",
-                                                                  "alacritty", "btop", "cava"])
+    // Which templates are on. By default niri alone: it is the compositor the
+    // shell is written for, and its template only adds an include. Every other
+    // application is somebody's own configuration, and a first start that
+    // rewrote their terminal and their toolkits' colours would be the shell
+    // deciding for them — they are switched on from APPS in the theme cell.
+    readonly property var enabled: Config.get("theme.templates", ["niri"])
 
     // [{ "id", "name", "category", "installed" }], asked once.
     property var catalogue: []
