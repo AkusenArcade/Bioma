@@ -59,7 +59,7 @@ their `include` line to the end of it the first time:
 
 | File | Written by | What it sets |
 |---|---|---|
-| `bioma-theme.kdl` | the palette's niri template | focus ring and borders — a gradient from the rim's light at the top left to the outline colour, like a cell's lit edge — and the windows' corner radius |
+| `bioma-theme.kdl` | the palette's niri template | focus ring and borders — a gradient from the rim's light at the top left to the outline colour, like a cell's lit edge — the focused window's shadow — an invoked cell's, centred — and the windows' corner radius |
 | `bioma-keyboard.kdl` | the keyboard cell | `input.keyboard.xkb` layout and variant |
 | `bioma-cursor.kdl` | the theme cell's DESKTOP capsule | `cursor` theme and size |
 

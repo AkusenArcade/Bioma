@@ -21,7 +21,8 @@ import qs.core
 // make every terminal reload — or when a template has just been switched on.
 //
 // niri's template also carries the shell's corner radius to the windows: 20 px
-// at 100 % of the RADIUS slider, and in proportion below it.
+// at 100 % of the RADIUS slider, and in proportion below it — and an invoked
+// cell's shadow to the focused window.
 Singleton {
     id: root
 
@@ -62,6 +63,11 @@ Singleton {
     function hex(colour) {
         const c = Qt.rgba(colour.r, colour.g, colour.b, 1);
         return c.toString();
+    }
+
+    // niri writes a translucent colour as #rrggbbaa.
+    function hexa(colour) {
+        return root.hex(colour) + ("0" + Math.round(colour.a * 255).toString(16)).slice(-2);
     }
 
     function readableOn(colour, dark, light) {
@@ -138,11 +144,13 @@ Singleton {
     }
 
     readonly property int windowRadius: Math.round(20 * Metrics.radiusPercent / 100)
+    // The focused window is raised the way an invoked cell is.
+    readonly property string windowShadow: root.hexa(Theme.shadowOf(Theme.targetIsDark))
 
     // ---- Rendering --------------------------------------------------------------------
 
     readonly property string signature: JSON.stringify([root.colors, root.enabled, root.windowRadius,
-                                                        Theme.targetIsDark])
+                                                        root.windowShadow, Theme.targetIsDark])
 
     property var forced: []
 
@@ -176,7 +184,7 @@ Singleton {
         renderer.request = JSON.stringify({
             "colors": root.colors,
             "mode": Theme.targetIsDark ? "dark" : "light",
-            "vars": { "window_radius": root.windowRadius },
+            "vars": { "window_radius": root.windowRadius, "window_shadow": root.windowShadow },
             "enabled": root.enabled,
             // A hook that failed ran against a file that is now written, so
             // the file will not change again to run it: it is asked again.

@@ -99,7 +99,12 @@ Singleton {
     readonly property color textFaint: Qt.alpha(text, 0.38)
     readonly property color border: Qt.alpha(text, isDark ? 0.09 : 0.14)
 
-    readonly property color shadow: Qt.alpha("#000000", isDark ? 0.45 : 0.22)
+    // The shadow of an invoked or expanded cell. A function too, because
+    // niri's focused window carries the same one (services/Templates.qml).
+    function shadowOf(dark) {
+        return Qt.alpha("#000000", dark ? 0.45 : 0.22);
+    }
+    readonly property color shadow: shadowOf(isDark)
     readonly property color shadowFloat: Qt.alpha("#000000", isDark ? 0.60 : 0.30)
 
     // ---- The outline family ----------------------------------------------

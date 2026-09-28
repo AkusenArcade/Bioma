@@ -19,6 +19,21 @@ layout {
     }
 
 
+    // The focused window is raised the way an invoked cell is: the style
+    // guide's shadow, 28 soft at 45 % (22 % on a light palette). A 1 px ring
+    // can vanish into a wallpaper of its own colour; elevation still says which
+    // window has the focus. The others lie flat, like contracted cells.
+    // Centred, not dropped 14 below as a cell's is: the shadow is there to set
+    // the ring off the wallpaper, and the ring is lit at the top.
+    shadow {
+        on
+        softness 28
+        spread 0
+        offset x=0 y=0
+        color "{{bioma.window_shadow}}"
+        inactive-color "#00000000"
+    }
+
     tab-indicator {
         active-color   "{{colors.primary.default.hex}}"
         inactive-color "{{colors.primary_container.default.hex}}"
