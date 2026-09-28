@@ -19,7 +19,7 @@
   },
   "scrim": {
     "opacity": 0.85,
-    "reach": 1.6
+    "reach": 32
   },
 
   "fonts": {
