@@ -10,6 +10,8 @@
 #     shell bioma           stop the other, start Bioma, remember it
 #     shell noctalia        stop Bioma, start Noctalia, remember it
 #     shell toggle          the other one from whatever is running now
+#     shell restart         stop Bioma and start it again — a new version, or
+#                           a cell's file that does not reload by itself
 #     shell start           start whichever is remembered — this is the line
 #                           niri spawns at login
 #
@@ -144,6 +146,10 @@ case "${1-status}" in
     toggle)
         if bioma_running; then to_noctalia; else to_bioma; fi
         ;;
+    restart)
+        stop_bioma
+        to_bioma
+        ;;
     start)
         case "$(remembered)" in
             noctalia) start_noctalia ;;
@@ -158,7 +164,7 @@ case "${1-status}" in
         echo "at login:   $(remembered)"
         ;;
     *)
-        echo "usage: shell [bioma|noctalia|toggle|start|status]" >&2
+        echo "usage: shell [bioma|noctalia|toggle|restart|start|status]" >&2
         exit 2
         ;;
 esac

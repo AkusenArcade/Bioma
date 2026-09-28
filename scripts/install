@@ -66,6 +66,14 @@ need python3    python          "the helper scripts"
 need gsettings  glib2           "desktop settings: theme, icons, cursor, proxy"
 need wl-paste   wl-clipboard    "the clipboard cell"
 need magick     imagemagick     "wallpaper thumbnails"
+# A QML module rather than a program: Quickshell does not bring it, and the
+# cells that mask a picture through it do not load without it.
+if [ -d /usr/lib/qt6/qml/Qt5Compat/GraphicalEffects ]; then
+    printf '  ok        %-14s %s\n' "Qt5Compat" "picture masks (QML module)"
+else
+    printf '  MISSING   %-14s %s  (%s)\n' "Qt5Compat" "picture masks (QML module)" "qt6-5compat"
+    missing_required=$((missing_required + 1))
+fi
 echo "Optional:"
 want matugen    matugen         "palettes computed from the wallpaper"
 want grim       grim            "screenshots"
@@ -118,6 +126,22 @@ if [ ! -f "$binds" ] || $force; then
     echo "wrote     $binds"
 else
     echo "kept      $binds (yours; --force writes it again)"
+    # Yours, but it may name another Bioma: the clone before a package, or a
+    # repository that moved. Its keys stay; only the path in them changes.
+    moved="$(python3 - "$binds" "$here" <<'PY'
+import re, sys
+path, here = sys.argv[1], sys.argv[2]
+text = open(path).read()
+roots = set(re.findall(r'"([^"]+)/shell\.qml"', text)) | set(re.findall(r'"([^"]+)/scripts/[a-z-]+"', text))
+roots.discard(here)
+for root in roots:
+    text = text.replace(f'"{root}/', f'"{here}/')
+if roots:
+    open(path, "w").write(text)
+print(" ".join(sorted(roots)))
+PY
+)"
+    [ -n "$moved" ] && echo "pointed   $binds from $moved to $here"
 fi
 
 # An include of the repository's own binds file predates the template: it is
@@ -132,6 +156,20 @@ ensure() {   # a line, and a pattern that finds it already there
     if ! grep -qE "$2" "$real"; then
         printf '\n%s\n' "$1" >>"$real"
         echo "added     $1"
+        return
+    fi
+    # There, but pointing somewhere else: a clone the package has replaced,
+    # or a repository that moved. Left alone, niri would go on reading the old
+    # copy, and the login would start it. The line is rewritten in place.
+    if ! grep -qxF "$1" <(sed 's/^[[:space:]]*//; s/[[:space:]]*$//' "$real"); then
+        python3 - "$real" "$2" "$1" <<'PY'
+import re, sys
+path, pattern, line = sys.argv[1], sys.argv[2].replace("[[:space:]]", r"\s"), sys.argv[3]
+text = open(path).read().split("\n")
+out = [(re.match(r"\s*", l).group(0) + line) if re.search(pattern, l) else l for l in text]
+open(path, "w").write("\n".join(out))
+PY
+        echo "pointed   $1"
     fi
 }
 

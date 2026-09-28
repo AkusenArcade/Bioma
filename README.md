@@ -127,6 +127,7 @@ Linux (CachyOS). Package names below are Arch's.
 |---|---|---|
 | niri 26.04 or later | `niri` | the compositor; 26.04 is the first with `ext-background-effect` blur |
 | Quickshell 0.3.1 | `quickshell` | the shell runtime |
+| Qt 5 Compat | `qt6-5compat` | the masks the wallpaper tiles and faces are drawn through (`Qt5Compat.GraphicalEffects`), which Quickshell does not bring |
 | Python 3 | `python` | the helper scripts in `scripts/` |
 | gsettings | `glib2` | the desktop's settings: palette, icons, cursor, proxy |
 | wl-clipboard | `wl-clipboard` | the clipboard cell |
@@ -149,11 +150,28 @@ Linux (CachyOS). Package names below are Arch's.
 
 ## Install
 
+From the AUR, as `bioma-shell`:
+
+```sh
+paru -S bioma-shell          # or yay, or makepkg from packaging/aur
+bioma-install --autostart
+```
+
+The package puts Bioma in `/usr/share/bioma` and builds the spectrum tool for
+Sinestesia. `bioma-install` is `scripts/install` below; run it once per user.
+Coming from a clone, it points the existing includes, the autostart line and the
+keys at the package, and leaves the keys themselves as they are.
+
+Or from a clone:
+
 ```sh
 git clone https://github.com/AkusenArcade/Bioma.git
 cd Bioma
 scripts/install --autostart
 ```
+
+A clone needs the spectrum tool built once for Sinestesia:
+`cargo build --release` in `tools/sinestesia-bands` (see its README).
 
 `scripts/install` says what is missing first, and stops if anything required is.
 Then it writes the keys and tells niri where Bioma is:
@@ -171,7 +189,8 @@ Then it writes the keys and tells niri where Bioma is:
 If niri refuses it, the copy is put back. Running the installer again changes
 nothing.
 
-Then start it with `scripts/shell bioma`, or log in again. The first start uses
+Then start it with `scripts/shell bioma`, or log in again. After an update,
+`scripts/shell restart` stops Bioma and starts the new version. The first start uses
 `config/default.json`. Everything after that is set from the settings cell
 (`Mod+Alt+S`) and kept in `~/.config/bioma/override.json`.
 
