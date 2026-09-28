@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Effects
 import Quickshell
 import qs.core
 import qs.cells
@@ -469,33 +468,6 @@ Item {
     onRevisionChanged: relayout()
     onPaddingChanged: relayout()
     onSlotLengthChanged: relayout()
-
-    // ---- Halo --------------------------------------------------------------
-    //
-    // Set by a membrane that lies over the windows — see its note. The
-    // tissue's own shape, grown a little and blurred outward, so the cells are
-    // read against the palette's background and the window around them is
-    // left alone. It fades with the membrane's reveal rather than sliding with
-    // it: sliding, the part of it that reaches past the band would stay on
-    // screen after the band had gone.
-    property bool haloed: false
-    property real haloReach: 32
-    property real haloOpacity: 0.85
-
-    RectangularShadow {
-        anchors.fill: parent
-        z: -2
-        radius: root.radius
-        blur: root.haloReach
-        spread: root.haloReach * 0.25
-        color: Qt.alpha(Theme.background, root.haloOpacity)
-        opacity: root.haloed ? 1 : 0
-        visible: opacity > 0
-
-        Behavior on opacity {
-            NumberAnimation { duration: Timing.open; easing.type: Easing.InOutQuad }
-        }
-    }
 
     // ---- Background --------------------------------------------------------
     //
