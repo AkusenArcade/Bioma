@@ -38,7 +38,11 @@ Singleton {
     Process {
         id: watcher
 
-        command: ["wl-paste", "--watch", Quickshell.shellPath("scripts/clip"), "store", root.directory]
+        // Told by the kernel when the shell goes, as in Locker: a shell that
+        // dies rather than quits leaves its children to systemd, and a watcher
+        // never writes, so it never notices — one more for every restart.
+        command: ["setpriv", "--pdeathsig", "TERM",
+                  "wl-paste", "--watch", Quickshell.shellPath("scripts/clip"), "store", root.directory]
         running: false
 
         stdout: SplitParser {

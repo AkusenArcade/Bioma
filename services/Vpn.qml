@@ -110,7 +110,10 @@ Singleton {
     // NetworkManager says when anything changes; a burst of lines is one change.
     Process {
         id: monitor
-        command: ["nmcli", "monitor"]
+        // Told by the kernel when the shell goes, as in Locker: a shell that
+        // dies rather than quits leaves its children to systemd, and this one
+        // would otherwise outlive it — one more for every restart.
+        command: ["setpriv", "--pdeathsig", "TERM", "nmcli", "monitor"]
         running: true
         stdout: SplitParser {
             onRead: again.restart()

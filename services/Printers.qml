@@ -114,7 +114,11 @@ Singleton {
     // what the news was.
     Process {
         id: watch
-        command: [root.script, "watch"]
+        // Told by the kernel when the shell goes, as in Locker: a shell that
+        // dies rather than quits leaves its children to systemd, and this one
+        // would otherwise outlive it — one more for every restart.
+        // The signal survives the script exec-ing into dbus-monitor.
+        command: ["setpriv", "--pdeathsig", "TERM", root.script, "watch"]
         running: true
         stdout: SplitParser {
             onRead: again.restart()
