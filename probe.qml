@@ -158,6 +158,9 @@ ShellRoot {
         // The library behind the theme cell's carousel: what is in the folder,
         // and how much of it has a thumbnail yet.
         line("library", `${root.wallpaperEntries.length} images`);
+        line("  shipped", root.wallpaperEntries
+                              .filter(p => p.startsWith(Wallpaper.shippedFolder + "/"))
+                              .map(p => p.split("/").pop()).join(", ") || "none");
         line("current index", Wallpaper.index);
         if (root.wallpaperEntries.length > 0) {
             line("  previous", Wallpaper.neighbour(-1));

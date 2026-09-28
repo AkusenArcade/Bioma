@@ -41,8 +41,9 @@ Singleton {
     // and not on a black screen. Bioma's own, drawn for it — see
     // docs/design/wallpaper/. `path` stays what the user chose, empty here,
     // so the fallback is never written into their state.
-    readonly property string fallback:
-        Qt.resolvedUrl("../assets/wallpapers/bioma-forest.jpg").toString().replace("file://", "")
+    readonly property string shippedFolder:
+        Qt.resolvedUrl("../assets/wallpapers").toString().replace("file://", "")
+    readonly property string fallback: `${root.shippedFolder}/bioma-forest.jpg`
     // Nothing until the saved state has been read: shown before it, the
     // fallback came up at every start and the chosen picture faded in over it
     // a moment later — two wallpapers, one after the other (Akusen,
@@ -202,8 +203,10 @@ Singleton {
 
     // ── The library ──────────────────────────────────────────────────────
     //
-    // What the theme cell offers a choice among: the images in the folder, and
-    // a small copy of each to look at. The cache lives here rather than in the
+    // What the theme cell offers a choice among: Bioma's own images first, then
+    // the ones in the folder, and a small copy of each to look at. The shipped
+    // ones are always offered, so an empty folder still leaves a choice, and the
+    // fallback is one of them, so the carousel opens on what is on screen. The cache lives here rather than in the
     // cell because it is the wallpaper's own domain — the settings page will
     // want it too — and because a carousel that decodes fifty photographs every
     // time it opens is not the same component as one that decodes fifty
@@ -214,10 +217,12 @@ Singleton {
     readonly property string cacheDirectory:
         `${Quickshell.env("XDG_CACHE_HOME") || Quickshell.env("HOME") + "/.cache"}/bioma/thumbnails`
 
-    // Absolute paths, in name order.
+    // Absolute paths: the shipped images, then the folder's, each in name order.
     property var entries: []
 
-    readonly property int index: root.entries.indexOf(root.path)
+    // Of what is on screen, not of what was chosen: with nothing chosen the
+    // fallback is showing, and it is in the list.
+    readonly property int index: root.entries.indexOf(root.current)
 
     // The carousel's whole interaction, and it wraps: a folder of wallpapers
     // has no first and no last.
@@ -242,6 +247,17 @@ Singleton {
     }
 
     FolderListModel {
+        id: shipped
+        folder: `file://${root.shippedFolder}`
+        nameFilters: ["*.jpg", "*.jpeg", "*.png", "*.webp"]
+        caseSensitive: false
+        showDirs: false
+        sortField: FolderListModel.Name
+        onCountChanged: root.readLibrary()
+        onStatusChanged: if (status === FolderListModel.Ready) root.readLibrary()
+    }
+
+    FolderListModel {
         id: library
         folder: `file://${root.folder}`
         nameFilters: ["*.jpg", "*.jpeg", "*.png", "*.webp", "*.bmp", "*.avif"]
@@ -255,8 +271,14 @@ Singleton {
 
     function readLibrary() {
         const out = [];
-        for (let i = 0; i < library.count; i++)
-            out.push(String(library.get(i, "filePath")));
+        for (let i = 0; i < shipped.count; i++)
+            out.push(String(shipped.get(i, "filePath")));
+        // A folder pointed at assets/wallpapers would offer each image twice.
+        for (let i = 0; i < library.count; i++) {
+            const path = String(library.get(i, "filePath"));
+            if (out.indexOf(path) < 0)
+                out.push(path);
+        }
         root.entries = out;
     }
 
