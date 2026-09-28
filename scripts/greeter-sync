@@ -31,7 +31,7 @@
 # this by itself when any of it changes (services/GreeterSync.qml).
 set -euo pipefail
 
-here="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+here="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
 dest="${1:-${BIOMA_GREETER_DIR:-/var/lib/bioma-greeter}}"
 config="${XDG_CONFIG_HOME:-$HOME/.config}"
 

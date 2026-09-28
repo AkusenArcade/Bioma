@@ -22,3 +22,4 @@ prisma-pack/
 
 # Raw output of docs/design/wallpaper/nb_wallpaper.py
 docs/design/wallpaper/nb_wallpaper/
+.qmlls.ini

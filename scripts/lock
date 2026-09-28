@@ -21,7 +21,7 @@
 # missing, see README → "If the lock screen fails".
 set -u
 
-here="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+here="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
 lock_pattern="qs -p $here/lock.qml"
 
 # One lock at a time: a second press of the key while locked is not a second

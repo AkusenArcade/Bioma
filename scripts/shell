@@ -17,7 +17,7 @@
 # because it is a fact about this machine's session and not about the project.
 set -eu
 
-here="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+here="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
 state_dir="${XDG_CONFIG_HOME:-$HOME/.config}/bioma"
 state="$state_dir/shell"
 
