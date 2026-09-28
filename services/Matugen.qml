@@ -78,6 +78,12 @@ Singleton {
             "--source-color-index", String(root.sourceColorIndex),
             "image", imagePath
         ];
+        // A run still going is stopped for this one, and its exit — SIGTERM,
+        // 15 — is not this run failing: it arrives with this run's image, and
+        // was reported as matugen failing on it every time an image followed
+        // another quickly.
+        if (matugen.running)
+            matugen.superseded = true;
         matugen.running = false;
         matugen.running = true;
     }
@@ -104,6 +110,7 @@ Singleton {
         id: matugen
         property string image: ""
         property var errorLines: []
+        property bool superseded: false
         running: false
         workingDirectory: root.configDirectory
 
@@ -117,6 +124,10 @@ Singleton {
         }
 
         onExited: code => {
+            if (matugen.superseded) {
+                matugen.superseded = false;
+                return;
+            }
             if (code === 0) {
                 root.lastError = "";
                 root.lastImage = matugen.image;

@@ -163,10 +163,12 @@ PanelWindow {
 
     readonly property string anchorName: config.anchor || "centre"
 
-    readonly property var margins: config.margins || ({})
+    // Not `margins`: a PanelWindow has its own, the layer surface's, and this
+    // is the tissue's distance from the edge it is anchored to.
+    readonly property var edgeMargins: config.margins || ({})
 
     function margin(side) {
-        const value = root.margins[side];
+        const value = root.edgeMargins[side];
         return value !== undefined ? value * root.metrics.factor
                                    : root.metrics.marginEdge;
     }

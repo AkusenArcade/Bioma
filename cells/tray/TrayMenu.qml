@@ -39,13 +39,39 @@ Item {
 
     readonly property var handle: root.trail.length > 0
                                 ? root.trail[root.trail.length - 1].handle
-                                : (root.item ? root.item.menu : null)
+                                : root.itemMenu
 
     readonly property string heading: root.trail.length > 0
                                     ? root.trail[root.trail.length - 1].text
-                                    : Tray.nameOf(root.item)
+                                    : root.itemName
 
-    onItemChanged: root.trail = []
+    // The item's name and menu, kept rather than read in a binding: an item's
+    // properties are fetched over D-Bus the first time they are read, and the
+    // answer lands while the binding that asked is still being evaluated — Qt
+    // calls that a binding loop, on `heading` and on `handle`, every time a
+    // menu opened.
+    property string itemName: ""
+    property var itemMenu: null
+
+    function readItem() {
+        root.itemName = Tray.nameOf(root.item);
+        root.itemMenu = root.item ? root.item.menu : null;
+    }
+
+    onItemChanged: {
+        root.trail = [];
+        root.readItem();
+    }
+
+    Component.onCompleted: root.readItem()
+
+    Connections {
+        target: root.item
+        ignoreUnknownSignals: true
+        function onTitleChanged() { root.itemName = Tray.nameOf(root.item); }
+        function onIdChanged() { root.itemName = Tray.nameOf(root.item); }
+        function onMenuChanged() { root.itemMenu = root.item ? root.item.menu : null; }
+    }
 
     QsMenuOpener {
         id: opener
