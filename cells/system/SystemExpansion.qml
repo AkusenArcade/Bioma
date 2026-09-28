@@ -64,6 +64,11 @@ Item {
     readonly property real infoX: root.infoLeft ? 0 : root.panelWidth + root.gap
     readonly property real columnCentre: root.columnX + root.capsuleWidth / 2
 
+    // Opened in the middle of the screen, the column goes under the cell and
+    // the machine hangs beside it: the capsule is what the thread comes down
+    // to, so it is the capsule that is centred.
+    readonly property real axis: root.columnCentre
+
     implicitWidth: Math.max(capsuleWidth, panelWidth) + gap + infoWidth
     implicitHeight: capsuleHeight + gap + panelHeight
 
@@ -176,7 +181,10 @@ Item {
 
         anchorX: root.columnX
         anchorY: root.capsuleY
-        nodeX: root.columnCentre
+        // Born where the cell's thread lands. At a corner that is not the
+        // capsule's middle: the capsule keeps the cell's edge, and the thread
+        // comes down from the middle of a narrower pill.
+        nodeX: root.cell ? root.cell.threadX : root.columnCentre
         nodeY: root.capsuleNear
 
         Item {

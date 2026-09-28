@@ -72,6 +72,9 @@ Cell {
                 item.metrics = Qt.binding(() => root.metrics);
             }
 
+            readonly property real axis: expansionLoader.item ? expansionLoader.item.axis
+                                                              : width / 2
+
             function shapes() {
                 return expansionLoader.item ? expansionLoader.item.shapes() : [];
             }

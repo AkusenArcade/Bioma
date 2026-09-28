@@ -789,10 +789,20 @@ Item {
         HoverHandler { id: bodyHover }
 
         y: root.opensDown ? root.height + root.gap : -root.gap - height
+        // Centred, the composition is centred on the cell — unless it says
+        // which of its points belongs under the cell's middle. The system
+        // cell's column is on one side of it and the machine's description on
+        // the other, and centring the whole left the thread hanging beside
+        // the capsule it was meant to reach (Akusen, 2026-09-28).
         x: root.origin === "end" ? root.width - width
-         : root.origin === "centre" ? (root.width - width) / 2
+         : root.origin === "centre"
+           ? root.width / 2 - (item && item.axis !== undefined ? item.axis : width / 2)
          : 0
     }
+
+    // Where the cell's thread lands, in the composition's own coordinates:
+    // the node its first shape grows from.
+    readonly property real threadX: root.width / 2 - expansionSlot.x
 
     // And a cell can come to claim the attention while it is already open:
     // the notification's body, opened by the pointer, then pressed for its
