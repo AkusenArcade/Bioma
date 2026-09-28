@@ -42,6 +42,6 @@ pkgbase = bioma-shell
 	optdepends = ttf-orbitron: the technical typeface
 	options = !lto
 	source = bioma-shell-1.0.0beta2.tar.gz::https://github.com/AkusenArcade/Bioma/archive/refs/tags/v1.0.0-beta.2.tar.gz
-	sha256sums = SKIP
+	sha256sums = 22733e520fcd638c9725ab2239176c4666323c78f8768a5740e0c554e4053a76
 
 pkgname = bioma-shell
