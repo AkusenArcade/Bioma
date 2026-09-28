@@ -75,12 +75,16 @@ Item {
 
     // A block may name a monitor or say `primary`, which is the first screen.
     function claims(block) {
+        return root.claimsOn(block, root.monitor);
+    }
+
+    function claimsOn(block, monitor) {
         if (!block)
             return false;
-        if (block.monitor === root.monitor)
+        if (block.monitor === monitor)
             return true;
         return block.monitor === "primary" && root.outputs.length > 0
-            && root.outputs[0].name === root.monitor;
+            && root.outputs[0].name === monitor;
     }
 
     function membraneFor(edge) {
@@ -442,6 +446,207 @@ Item {
         return Math.ceil(root.roomFor(edge, tissue, "") / usable * 100);
     }
 
+    // ---- Moving a tissue, or copying it --------------------------------------
+    //
+    // MOVE or COPY takes the chosen tissue in hand, and every free place on the
+    // page becomes somewhere to put it — the dashed slots on either edge and
+    // the free floating anchors, on this monitor or, through the tabs, on
+    // another. A place is a place and not a content, so only free ones take
+    // it; a lit slot pressed meanwhile puts the tissue back and is chosen.
+    //
+    // What goes is the tissue whole — its cells in their order, their rules,
+    // its padding and opacity — less whatever the monitor it lands on already
+    // has: one place per cell per monitor, the rule the picker keeps. Copying
+    // onto its own monitor therefore has nothing left to carry, and the page
+    // says so on the slot instead of offering an empty band.
+
+    property string transfer: ""       // "" | "move" | "copy"
+    property var transferFrom: null    // { monitor, edge, place, floatIndex, tissue }
+
+    function startTransfer(kind) {
+        if (root.transfer === kind || !root.chosen) {
+            root.transfer = "";
+            root.transferFrom = null;
+            return;
+        }
+        root.transferFrom = {
+            "monitor": root.monitor,
+            "edge": root.chosenEdge,
+            "place": root.chosenPlace,
+            "floatIndex": root.floatingChosen ? root.chosenSlot : -1,
+            "tissue": JSON.parse(JSON.stringify(root.chosen))
+        };
+        root.transfer = kind;
+        root.picking = false;
+    }
+
+    function endTransfer() {
+        root.transfer = "";
+        root.transferFrom = null;
+    }
+
+    readonly property bool moving: root.transfer === "move"
+
+    // Whether the tissue in hand is drawn on the monitor the page shows —
+    // what it gives up there, a move takes out of the way.
+    readonly property bool sourceHere: {
+        const from = root.transferFrom;
+        if (!from)
+            return false;
+        return from.edge === "floating" ? root.floatShownHere(from.tissue)
+                                        : from.monitor === root.monitor;
+    }
+
+    function isSource(edge, place) {
+        const from = root.transferFrom;
+        return from !== null && from.edge === edge && from.place === place
+            && from.monitor === root.monitor;
+    }
+
+    function isFloatSource(index) {
+        const from = root.transferFrom;
+        return from !== null && from.edge === "floating" && from.floatIndex === index;
+    }
+
+    // The cells that go, for a landing on this monitor.
+    readonly property var transferCells: {
+        const from = root.transferFrom;
+        if (!from)
+            return [];
+        const taken = root.placedHere.slice();
+        if (root.moving && root.sourceHere)
+            for (const entry of (from.tissue.cells || [])) {
+                const at = taken.indexOf(Registry.canonical(entry.type));
+                if (at >= 0)
+                    taken.splice(at, 1);
+            }
+        return (from.tissue.cells || []).filter(entry =>
+            taken.indexOf(Registry.canonical(entry.type)) < 0);
+    }
+
+    // Nothing to carry: every cell is here already.
+    readonly property bool transferEmpty: root.transferFrom !== null
+        && root.transferCells.length === 0 && (root.transferFrom.tissue.cells || []).length > 0
+
+    // The share a band on this monitor would be given, or -1 where it will not
+    // fit. It keeps the share it had, raised to what its cells need on this
+    // monitor's width and held to what the other bands on the edge leave.
+    function shareAt(edge, place) {
+        const from = root.transferFrom;
+        if (!from || root.transferEmpty)
+            return -1;
+        const block = root.membraneFor(edge);
+        let others = 0;
+        const tissues = block ? (block.tissues || []) : [];
+        for (let i = 0; i < tissues.length; i++) {
+            const at = root.placeOf(tissues[i], i, tissues.length);
+            if (root.moving && root.isSource(edge, at))
+                continue;
+            others += tissues[i].percentage || 0;
+        }
+        const usable = root.usableOn(edge);
+        if (usable <= 0)
+            return -1;
+        const floor = Math.ceil(Registry.roomFor(root.transferCells, root.stepOf(edge)) / usable * 100);
+        const free = 100 - others;
+        const wanted = from.edge !== "floating" && from.tissue.percentage ? from.tissue.percentage : 25;
+        const share = Math.min(Math.max(wanted, floor), free);
+        return share >= floor && share > 0 ? share : -1;
+    }
+
+    // What a tissue is, apart from where it is.
+    function carried() {
+        const out = {};
+        for (const key of ["padding", "opacity"])
+            if (root.transferFrom.tissue[key] !== undefined)
+                out[key] = root.transferFrom.tissue[key];
+        out.cells = JSON.parse(JSON.stringify(root.transferCells));
+        return out;
+    }
+
+    // The one write, of both lists at once when both change: see
+    // `Config.setMany`.
+    function place(edge, where) {
+        const from = root.transferFrom;
+        if (!from || root.transferEmpty)
+            return;
+        const share = edge === "floating" ? 0 : root.shareAt(edge, where);
+        if (edge !== "floating" && share < 0)
+            return;
+
+        const bands = JSON.parse(JSON.stringify(root.bands));
+        const floats = JSON.parse(JSON.stringify(root.floats));
+        let bandsChanged = false;
+        let floatsChanged = false;
+
+        if (root.moving) {
+            if (from.edge === "floating") {
+                floats.splice(from.floatIndex, 1);
+                floatsChanged = true;
+            } else {
+                const block = bands.find(b => root.claimsOn(b, from.monitor) && b.edge === from.edge);
+                if (block) {
+                    const tissues = block.tissues || [];
+                    block.tissues = tissues.filter((t, i) =>
+                        root.placeOf(t, i, tissues.length) !== from.place);
+                    if (block.tissues.length === 0)
+                        bands.splice(bands.indexOf(block), 1);
+                    bandsChanged = true;
+                }
+            }
+        }
+
+        const tissue = root.carried();
+        let chosenIndex = -1;
+        if (edge === "floating") {
+            // Everywhere stays everywhere when it only changes anchor.
+            const everywhere = from.edge === "floating"
+                && (from.tissue.monitor === "all" || from.tissue.monitor === "*");
+            tissue.anchor = where;
+            tissue.monitor = everywhere ? from.tissue.monitor : root.monitor;
+            tissue.orientation = "vertical";
+            floats.push(tissue);
+            chosenIndex = floats.length - 1;
+            floatsChanged = true;
+        } else {
+            let block = bands.find(b => root.claims(b) && b.edge === edge);
+            if (!block) {
+                block = {
+                    "monitor": root.monitor,
+                    "edge": edge,
+                    "reserve_space": edge === "top",
+                    "auto_hide": false,
+                    "scale": "normal",
+                    "tissues": []
+                };
+                bands.push(block);
+            }
+            tissue.anchor = where;
+            tissue.percentage = share;
+            tissue.growth = where === "centre" ? "symmetric" : "inward";
+            tissue.orientation = "horizontal";
+            block.tissues = (block.tissues || []).concat([tissue]);
+            root.order(block);
+            chosenIndex = root.places.indexOf(where);
+            bandsChanged = true;
+        }
+
+        console.info(`Bioma: ${root.transfer === "move" ? "moving" : "copying"} a tissue from `
+                     + `${from.monitor} ${from.edge}${from.place ? " " + from.place : ""} to `
+                     + `${root.monitor} ${edge} ${where} — ${tissue.cells.length} of `
+                     + `${(from.tissue.cells || []).length} cells`);
+
+        const pairs = [];
+        if (bandsChanged)
+            pairs.push(["membranes", Registry.renamed(bands)]);
+        if (floatsChanged)
+            pairs.push(["floating", Registry.renamed(floats)]);
+        Config.setMany(pairs);
+
+        root.endTransfer();
+        root.choose(edge, chosenIndex);
+    }
+
     // ---- The chips, and their order ----------------------------------------
     //
     // The order of the cells in a band **is** the order they sit in on the
@@ -748,7 +953,21 @@ Item {
         readonly property bool chosen: spot.lit && root.floatingChosen
                                        && root.chosenSlot === spot.entry.index
 
+        // While a tissue is in hand: the one it came from, and whether this
+        // free place takes it.
+        readonly property bool source: root.transfer !== "" && spot.lit
+                                       && root.isFloatSource(spot.entry.index)
+        readonly property bool target: root.transfer !== "" && !spot.lit && !root.transferEmpty
+
         readonly property string content: {
+            if (!spot.lit && root.transfer !== "") {
+                if (root.transferEmpty)
+                    return "ALREADY HERE";
+                const total = (root.transferFrom.tissue.cells || []).length;
+                const part = root.transferCells.length < total
+                           ? `${root.transferCells.length} OF ${total}` : "";
+                return [spot.label, part].filter(t => t.length > 0).join("  ·  ");
+            }
             if (!spot.lit)
                 return spot.label;
             const cells = spot.entry.block.cells || [];
@@ -763,6 +982,7 @@ Item {
             anchors.fill: parent
             visible: !spot.lit
             radius: Metrics.shaped(11 * root.factor)
+            colour: spot.target ? Theme.primary : Qt.alpha(Theme.line, 0.7)
         }
 
         Rectangle {
@@ -772,7 +992,7 @@ Item {
             antialiasing: true
             color: Qt.alpha(Theme.lift(Theme.background, spot.chosen ? 0.04 : 0.015), 0.9)
             border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
-            border.color: spot.chosen ? Theme.primary : Theme.line
+            border.color: spot.chosen || spot.source ? Theme.primary : Theme.line
         }
 
         Text {
@@ -782,7 +1002,8 @@ Item {
             elide: Text.ElideRight
             visible: spot.content.length > 0
             text: spot.content
-            color: spot.chosen ? Theme.text : spot.lit ? Theme.textMuted : Theme.textFaint
+            color: spot.target ? Theme.primary
+                 : spot.chosen ? Theme.text : spot.lit ? Theme.textMuted : Theme.textFaint
             font: Typography.tabular(Qt.font({
                 "family": Typography.technical,
                 "pixelSize": root.metrics.fontMeta,
@@ -792,21 +1013,68 @@ Item {
 
         Icon {
             anchors.centerIn: parent
-            visible: !spot.lit && spot.label.length === 0
+            visible: !spot.lit && spot.content.length === 0
             width: 11 * root.factor
             height: width
             name: "plus"
-            colour: Theme.textFaint
+            colour: spot.target ? Theme.primary : Theme.textFaint
         }
 
         TapHandler {
             onTapped: {
+                if (root.transfer !== "") {
+                    if (spot.target) {
+                        root.place("floating", spot.anchor);
+                    } else if (spot.lit) {
+                        root.endTransfer();
+                        root.choose("floating", spot.entry.index);
+                    }
+                    return;
+                }
                 if (spot.lit)
                     root.choose("floating", spot.entry.index);
                 else
                     root.addFloatAt(spot.anchor);
             }
         }
+    }
+
+    // MOVE or COPY: a word in a pill, primary while the tissue is in hand.
+    component TransferButton: Item {
+        id: button
+
+        property string kind: "move"
+        property string label: ""
+
+        readonly property bool lit: root.transfer === button.kind
+
+        width: buttonLabel.implicitWidth + 16 * root.factor + 6 * root.factor
+        height: 22 * root.factor
+
+        Rectangle {
+            anchors.fill: parent
+            radius: Metrics.radiusFor(height, root.metrics)
+            antialiasing: true
+            color: button.lit ? Qt.alpha(Theme.primary, 0.16) : "transparent"
+            border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+            border.color: button.lit ? Theme.primary : buttonHover.hovered ? Theme.text : Theme.line
+        }
+
+        Text {
+            id: buttonLabel
+            anchors.centerIn: parent
+            text: button.label
+            color: button.lit ? Theme.text : Theme.textMuted
+            font: Qt.font({
+                "family": Typography.technical,
+                "pixelSize": root.metrics.fontMeta,
+                "letterSpacing": Typography.tracking(root.metrics.fontMeta,
+                                                     Typography.labelTracking)
+            })
+        }
+
+        HoverHandler { id: buttonHover }
+        TapHandler { onTapped: root.startTransfer(button.kind) }
     }
 
     // One membrane's row: its name, fixed or auto-hide, and its three slots.
@@ -889,6 +1157,28 @@ Item {
                         readonly property bool chosen: root.chosenEdge === edgeGroup.modelData
                                                     && root.chosenSlot === slot.index
 
+                        // While a tissue is in hand: where it came from, and
+                        // the share it would have here — -1 where it will not
+                        // fit or has nothing left to bring.
+                        readonly property bool source: root.transfer !== ""
+                            && root.isSource(edgeGroup.modelData, slot.modelData)
+                        readonly property int share: root.transfer !== "" && !slot.lit
+                            ? root.shareAt(edgeGroup.modelData, slot.modelData) : -1
+                        readonly property bool target: slot.share >= 0
+
+                        readonly property string offer: {
+                            if (root.transfer === "" || slot.lit)
+                                return "";
+                            if (root.transferEmpty)
+                                return "ALREADY HERE";
+                            if (!slot.target)
+                                return "NO ROOM";
+                            const total = (root.transferFrom.tissue.cells || []).length;
+                            const part = root.transferCells.length < total
+                                       ? `  ·  ${root.transferCells.length} OF ${total}` : "";
+                            return `${slot.share}%${part}`;
+                        }
+
                         width: root.slotWidth
                         height: root.slotHeight
 
@@ -896,6 +1186,7 @@ Item {
                             anchors.fill: parent
                             visible: !slot.lit
                             radius: Metrics.shaped(11 * root.factor)
+                            colour: slot.target ? Theme.primary : Qt.alpha(Theme.line, 0.7)
                         }
 
                         Rectangle {
@@ -906,7 +1197,20 @@ Item {
                             color: Qt.alpha(Theme.lift(Theme.background, slot.chosen ? 0.04 : 0.015),
                                             0.9)
                             border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
-                            border.color: slot.chosen ? Theme.primary : Theme.line
+                            border.color: slot.chosen || slot.source ? Theme.primary : Theme.line
+                        }
+
+                        Text {
+                            anchors.centerIn: parent
+                            visible: slot.offer.length > 0
+                            text: slot.offer
+                            color: slot.target ? Theme.primary : Theme.textFaint
+                            font: Typography.tabular(Qt.font({
+                                "family": Typography.technical,
+                                "pixelSize": root.metrics.fontMeta,
+                                "letterSpacing": Typography.tracking(root.metrics.fontMeta,
+                                                                     Typography.labelTracking)
+                            }))
                         }
 
                         // Empty, it says the slot is free. Lit, it says
@@ -927,7 +1231,7 @@ Item {
 
                         Icon {
                             anchors.centerIn: parent
-                            visible: !slot.lit
+                            visible: !slot.lit && slot.offer.length === 0
                             width: 11 * root.factor
                             height: width
                             name: "plus"
@@ -936,6 +1240,15 @@ Item {
 
                         TapHandler {
                             onTapped: {
+                                if (root.transfer !== "") {
+                                    if (slot.target) {
+                                        root.place(edgeGroup.modelData, slot.modelData);
+                                    } else if (slot.lit) {
+                                        root.endTransfer();
+                                        root.choose(edgeGroup.modelData, slot.index);
+                                    }
+                                    return;
+                                }
                                 if (!slot.lit)
                                     root.light(edgeGroup.modelData, slot.modelData);
                                 root.choose(edgeGroup.modelData, slot.index);
@@ -956,7 +1269,9 @@ Item {
         y: layout.y + layout.height + root.threadLength + 20 * root.factor
         width: scroller.width
         horizontalAlignment: Text.AlignHCenter
-        text: "Pick a band or a floating tissue to see what is in it"
+        text: root.transfer !== ""
+              ? "Pick a free place for it — here, or on another monitor"
+              : "Pick a band or a floating tissue to see what is in it"
         color: Theme.textFaint
         font.family: Typography.expressive
         font.pixelSize: root.metrics.fontTitle
@@ -1018,8 +1333,8 @@ Item {
         // what the tissue's place and cells need. The picker is not counted:
         // it scrolls inside its own well.
         height: Math.max(root.height - y,
-                         24 * root.factor + 30 * root.factor + 12 * root.factor
-                         + root.chipRows * root.chipPitchY)
+                         24 * root.factor + 30 * root.factor + 6 * root.factor + 22 * root.factor
+                         + 12 * root.factor + root.chipRows * root.chipPitchY)
 
         Item {
             anchors.fill: parent
@@ -1200,6 +1515,23 @@ Item {
                 }
             }
 
+            // Taking the tissue somewhere else: moved, or copied to another
+            // monitor. Lit while the tissue is in hand; pressed again, it puts
+            // it back. A row of its own under the band's removal, the other
+            // thing done to the tissue as a whole: the width row has no room
+            // left for two more words beside its slider and its floor.
+            Row {
+                id: transferButtons
+
+                anchors.top: width_.bottom
+                anchors.topMargin: 6 * root.factor
+                anchors.right: parent.right
+                spacing: 8 * root.factor
+
+                TransferButton { kind: "move"; label: "MOVE" }
+                TransferButton { kind: "copy"; label: "COPY" }
+            }
+
             // The cells in the band, in the order they are declared — which
             // is the order they sit in on the membrane, from the anchor
             // inward. Dragging one changes that order, the same gesture the
@@ -1207,7 +1539,7 @@ Item {
             Item {
                 id: chips
 
-                anchors.top: width_.bottom
+                anchors.top: transferButtons.bottom
                 anchors.topMargin: 12 * root.factor
                 anchors.left: parent.left
                 width: parent.width - root.pickerWidth - root.threadLength - 12 * root.factor

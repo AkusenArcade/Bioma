@@ -620,7 +620,14 @@ membrane, three on the bottom. An unlit slot is dashed with a plus: click it to 
 it to switch it off. Each membrane is **fixed or auto-hide**, and that applies to the whole
 edge. The chosen tissue opens at the bottom with its max width and its cells: each cell is a
 chip with a cross to remove it, and a dashed chip adds one. **"+ Cell" opens a capsule to the
-side**, hung on a thread, listing only the cells not already in that tissue.
+side**, hung on a thread, listing only the cells not already in that tissue. **MOVE** and
+**COPY**, under the removal, take the chosen tissue in hand: every free place on the page — the
+dashed slots on either edge and the free floating anchors — lights in the primary and says what
+the tissue would be there, and the monitor tabs lead to the same on another screen. A press on
+a free place puts it there; the same button again, or a lit slot, puts it back. It carries its
+cells, their order and their rules, less whatever the target monitor already holds — one place
+per cell per monitor — so a slot says `1 OF 2` when one cell stays behind, `ALREADY HERE` when
+none would go, and `NO ROOM` when the edge cannot grant what its cells need.
 
 **Cells** — one row per cell with visibility as a segmented control: Always, Conditional,
 **Invoked only**. Options a cell cannot have stay visible but dimmed.

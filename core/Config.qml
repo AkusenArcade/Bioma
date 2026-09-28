@@ -101,25 +101,39 @@ Singleton {
     // so a key this session never touched — a membrane list, a font — survives
     // untouched, and so do the comments-as-keys a human left in it.
     function set(path, value) {
-        const next = JSON.parse(JSON.stringify(root.overrideValues || {}));
+        root.setMany([[path, value]]);
+    }
 
-        const keys = path.split(".");
-        let node = next;
-        for (let i = 0; i < keys.length - 1; i++) {
-            const key = keys[i];
-            if (node[key] === undefined || node[key] === null
-                || typeof node[key] !== "object" || Array.isArray(node[key]))
-                node[key] = {};
-            node = node[key];
+    // Several keys in one write. A tissue moved from a band to a floating
+    // place changes two lists, and written one after the other the shell
+    // would build the layout in between — the tissue in both places, or in
+    // neither — for the length of one reload.
+    function setMany(pairs) {
+        const next = JSON.parse(JSON.stringify(root.overrideValues || {}));
+        let merged = root.values;
+
+        for (const pair of pairs) {
+            const path = pair[0];
+            const value = pair[1];
+            const keys = path.split(".");
+            let node = next;
+            for (let i = 0; i < keys.length - 1; i++) {
+                const key = keys[i];
+                if (node[key] === undefined || node[key] === null
+                    || typeof node[key] !== "object" || Array.isArray(node[key]))
+                    node[key] = {};
+                node = node[key];
+            }
+            node[keys[keys.length - 1]] = value;
+            merged = root.merge(merged, root.expandPath(path, value));
         }
-        node[keys[keys.length - 1]] = value;
 
         // The merged values follow when the file lands, but a control has to
         // answer the press it just received: the write is asynchronous and a
         // segmented pill that waits for the disk reads as a control that did
         // not take.
         root.overrideValues = next;
-        root.values = root.merge(root.values, root.expandPath(path, value));
+        root.values = merged;
 
         // And said out loud. Most of the shell reads `Config.get` through a
         // binding and follows `values` on its own, but what is built *from*
