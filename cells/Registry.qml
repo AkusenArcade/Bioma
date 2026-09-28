@@ -156,6 +156,24 @@ Singleton {
         "keyboard": ["always", "conditional"]
     })
 
+    // A cell whose form changes when it floats, and whose visibility changes
+    // with it. The launcher on a membrane is a button, and may be always
+    // there; floating it *is* the panel, field and results, and a panel always
+    // open would hold the keyboard for good. So floating it is invoked, and
+    // its block's word is not asked.
+    readonly property var floatingVisibility: ({
+        "launcher": "invoked"
+    })
+
+    function fixedWhenFloating(type) {
+        return root.floatingVisibility[root.canonical(type)] || "";
+    }
+
+    function allowsIn(type, kind, floating) {
+        const fixed = floating ? root.fixedWhenFloating(type) : "";
+        return fixed.length > 0 ? kind === fixed : root.allows(type, kind);
+    }
+
     // The narrowest a cell can be and still be itself, in logical units at
     // the normal step. A block may raise it with `min_width`; nothing lowers
     // it below what the cell needs to be read.

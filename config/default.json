@@ -294,7 +294,7 @@
       "cells": [
         {
           "type": "launcher",
-          "enabled": false,
+          "enabled": true,
           "visibility": { "type": "invoked", "shortcut": "Mod+Space" },
           "min_width": { "value": 480 }
         }

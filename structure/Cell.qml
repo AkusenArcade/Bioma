@@ -59,6 +59,10 @@ Item {
     // a threshold of 1; a continuous one passes its own value.
     property real condition: 0
 
+    // A cell that decides its own visibility in some form, whatever its block
+    // says: the launcher, floating, is invoked (`Registry.floatingVisibility`).
+    property string fixedVisibility: ""
+
     property Visibility visibility: Visibility {
         readonly property var rule: root.config.visibility || ({})
 
@@ -67,7 +71,7 @@ Item {
         readonly property var grammar: Registry.grammarOf(root.domain)
 
         value: root.condition
-        type: rule.type || "always"
+        type: root.fixedVisibility || rule.type || "always"
         // Every cell can be asked for by name: on a membrane it opens where
         // it is, anywhere else it floats. Whether it is also on screen
         // without being asked for is what `type` says.

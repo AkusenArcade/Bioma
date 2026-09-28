@@ -4,6 +4,7 @@ import qs.core
 import qs.components
 import qs.structure
 import qs.services
+import qs.cells
 
 // Search and launch.
 //
@@ -44,6 +45,11 @@ Cell {
     // it is born; what it is does not. Akusen asked for the anchored one and
     // drew its glyph, 2026-09-22.
     readonly property bool asPanel: root.floating
+
+    // And the panel is there only when it is asked for: always there, it would
+    // hold the keyboard for good. A block that says `always` is not obeyed
+    // here, and the Cells page says so by dimming the choice.
+    fixedVisibility: root.floating ? Registry.fixedWhenFloating("launcher") : ""
 
     readonly property real listGap: 6 * metrics.factor
     readonly property real glyphSize: 20 * metrics.factor

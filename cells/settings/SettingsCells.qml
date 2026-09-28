@@ -75,11 +75,14 @@ Item {
         for (const type of root.order) {
             const found = root.find(type);
             const rule = found ? (found.entry.visibility || ({})) : ({});
+            const floating = found !== null && found.list === "floating";
+            const fixed = floating ? Registry.fixedWhenFloating(type) : "";
             out.push({
                 "type": type,
                 "name": Registry.nameOf(type),
                 "placed": found !== null,
-                "state": found ? (rule.type || "always") : ""
+                "floating": floating,
+                "state": found ? (fixed || rule.type || "always") : ""
             });
         }
         return out;
@@ -282,9 +285,9 @@ Item {
 
                 options: [
                     { "key": "always", "label": "Always",
-                      "dimmed": !Registry.allows(row.modelData.type, "always") },
+                      "dimmed": !Registry.allowsIn(row.modelData.type, "always", row.modelData.floating) },
                     { "key": "conditional", "label": "Conditional",
-                      "dimmed": !Registry.allows(row.modelData.type, "conditional") }
+                      "dimmed": !Registry.allowsIn(row.modelData.type, "conditional", row.modelData.floating) }
                 ]
 
                 onChose: key => root.apply(row.modelData.type, key)
