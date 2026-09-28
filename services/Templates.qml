@@ -85,6 +85,9 @@ Singleton {
         // A grey has no hue (-1); it turns from red like any other.
         const t = Qt.hsla((Math.max(0, s.hslHue) + 0.12) % 1, s.hslSaturation, s.hslLightness, 1);
         const outline = Theme.structuralWith(bg, p, dark ? 0.32 : 0.72);
+        // The light on a cell's top edge, the lighter end of its rim; the
+        // outline above is the other end. niri's focus ring runs between them.
+        const rim = Theme.structuralWith(bg, p, dark ? 0.55 : 0.50);
         const ink = dark ? bg : Qt.color("#101010");
         const paper = dark ? Qt.color("#f4f4f4") : bg;
 
@@ -97,6 +100,7 @@ Singleton {
             "surface_container_highest": lift(0.095),
             "inverse_surface": fg, "hover": lift(0.06),
             "outline": outline, "outline_variant": root.mix(outline, bg, 0.5),
+            "rim": rim,
             "shadow": Qt.color("#000000"),
 
             "primary": p, "on_primary": root.readableOn(p, ink, paper),

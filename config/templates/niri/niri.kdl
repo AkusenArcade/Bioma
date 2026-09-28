@@ -1,15 +1,21 @@
+// Bioma: the focused window's ring is lit the way a cell's rim is — the light
+// at the top, from above and slightly from the left (the style guide's 165°),
+// falling to the outline colour below. At the primary the ring read thicker
+// than a cell's 1 px edge only because it was brighter.
 layout {
 
     focus-ring {
-        active-color   "{{colors.primary.default.hex}}"
-        inactive-color "{{colors.surface.default.hex}}"
-        urgent-color   "{{colors.error.default.hex}}"
+        active-color    "{{colors.primary.default.hex}}"
+        active-gradient from="{{colors.rim.default.hex}}" to="{{colors.outline.default.hex}}" angle=165 relative-to="window"
+        inactive-color  "{{colors.surface.default.hex}}"
+        urgent-color    "{{colors.error.default.hex}}"
     }
 
     border {
-        active-color   "{{colors.primary.default.hex}}"
-        inactive-color "{{colors.surface.default.hex}}"
-        urgent-color   "{{colors.error.default.hex}}"
+        active-color    "{{colors.primary.default.hex}}"
+        active-gradient from="{{colors.rim.default.hex}}" to="{{colors.outline.default.hex}}" angle=165 relative-to="window"
+        inactive-color  "{{colors.surface.default.hex}}"
+        urgent-color    "{{colors.error.default.hex}}"
     }
 
 
