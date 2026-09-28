@@ -491,6 +491,25 @@ Item {
 
                     Component.onCompleted: Qt.callLater(gridView.reveal)
 
+                    // A star pressed halfway down reorders the list, and a
+                    // new list starts at the top: the grid is put back where
+                    // it was, and the picture that moved shows at the top of
+                    // it the next time somebody scrolls there.
+                    property real kept: -1
+
+                    Connections {
+                        target: Wallpaper
+                        function onReordering() { gridView.kept = gridView.contentY; }
+                    }
+
+                    onModelChanged: {
+                        if (gridView.kept < 0)
+                            return;
+                        const y = gridView.kept;
+                        gridView.kept = -1;
+                        Qt.callLater(() => { gridView.contentY = y; });
+                    }
+
                     // Opened on the one on screen, wherever it is in the list.
                     function reveal() {
                         if (Wallpaper.index >= 0)
@@ -522,6 +541,51 @@ Item {
                             onTapped: point => {
                                 if (!root.onSwitch(point.scenePosition))
                                     Wallpaper.path = thumb.modelData;
+                            }
+                        }
+
+                        // A favourite, kept at the top of the list. Always
+                        // there on one, lit in the primary; on the others only
+                        // under the pointer, since at rest an empty star on
+                        // every picture would be a grid of marks saying nothing.
+                        // On a disc of the background, or it would be lost in
+                        // whatever the picture has in that corner.
+                        Item {
+                            id: star
+
+                            readonly property bool liked: Wallpaper.isFavourite(thumb.modelData)
+
+                            anchors.top: parent.top
+                            anchors.right: parent.right
+                            anchors.margins: 6 * root.factor
+                            width: 28 * root.factor
+                            height: width
+                            visible: star.liked || hover.hovered
+
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: width / 2
+                                antialiasing: true
+                                color: Qt.alpha(Theme.background, 0.72)
+                            }
+
+                            Icon {
+                                anchors.centerIn: parent
+                                width: 18 * root.factor
+                                height: width
+                                name: star.liked ? "star-filled" : "star"
+                                gradient: star.liked
+                                colour: likeArea.containsMouse ? Theme.text : Theme.textMuted
+                            }
+
+                            // A mouse area rather than a handler: it has to
+                            // take the press, or the tile under it would hear
+                            // it too and change the wallpaper.
+                            MouseArea {
+                                id: likeArea
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                onClicked: Wallpaper.favour(thumb.modelData, !star.liked)
                             }
                         }
                     }

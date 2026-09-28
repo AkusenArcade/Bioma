@@ -350,6 +350,10 @@ watch it**, in 250 ms, cell by cell.
   (`wallpaper.picker`). The panel keeps its width and changes height at the transition timing;
   the capsules below follow it. In the grid the current image is at full light with the rim,
   the others at 60% until the pointer is on them.
+- A **star** in a grid tile's top corner marks a favourite: always there on one, in the primary
+  gradient on a disc of the background, and on the others only under the pointer. Favourites
+  come first in the list, the carousel's included, and the grid stays where it was scrolled
+  when one moves (`wallpaper.favourites`).
 - The wallpaper is "which image and how": fill, fit, **span** across monitors, or one per
   monitor. Span scales to the total bounding box and clips per output.
 - Bioma themes are **data files**, one per theme: add one without touching the shell, and it
@@ -372,6 +376,7 @@ every cell at once.
 | carousel | 560 px | radius 20, padding 10, 10 px inner pitch |
 | current wallpaper | 320 × 140 px | radius 10, concentric · neighbours 100 px at 40% |
 | grid | 560 × 268 px | three columns of 173 × 76, 10 px pitch, three rows in view |
+| favourite star | 28 px | disc of the background at 72%, star 18, 6 px from the tile's corner |
 | picker switch | 28 px | two icons of 13 in a segmented track, inside the padding |
 | capsules below | 268 × 96 px | pill: under the 110 px ceiling the cap does not disturb the content |
 | dropdown | 30 px | name in Orbitron 12, chevron 9 |

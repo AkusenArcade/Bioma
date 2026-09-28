@@ -279,8 +279,39 @@ Singleton {
             if (out.indexOf(path) < 0)
                 out.push(path);
         }
-        root.entries = out;
+        // The favourites first, in the same order among themselves: the ones
+        // somebody comes back to are at the top of the grid and next to each
+        // other in the carousel (Akusen, 2026-09-28).
+        const liked = out.filter(path => root.isFavourite(path));
+        root.entries = liked.concat(out.filter(path => !root.isFavourite(path)));
     }
+
+    // ── Favourites ───────────────────────────────────────────────────────
+    //
+    // Paths, as the library lists them, in the configuration rather than in
+    // the wallpaper's state: a favourite is a preference somebody sets once,
+    // not the choice the carousel rewrites on every step. A favourite whose
+    // file has gone is simply never listed.
+    readonly property var favourites: Config.get("wallpaper.favourites", [])
+
+    function isFavourite(path) {
+        return root.favourites.indexOf(path) >= 0;
+    }
+
+    // Said before the list is reordered, so a view scrolled somewhere in it
+    // can stay there: the reorder is a new list, and a view handed a new list
+    // starts again from the top.
+    signal reordering()
+
+    function favour(path, on) {
+        if (!path || on === root.isFavourite(path))
+            return;
+        root.reordering();
+        Config.set("wallpaper.favourites", on ? root.favourites.concat([path])
+                                              : root.favourites.filter(p => p !== path));
+    }
+
+    onFavouritesChanged: root.readLibrary()
 
     // ── Thumbnails ───────────────────────────────────────────────────────
     //
