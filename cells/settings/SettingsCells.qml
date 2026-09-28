@@ -203,7 +203,7 @@ Item {
 
             Text {
                 anchors.left: ordinal.right
-                anchors.right: help.left
+                anchors.right: extra.visible ? extra.left : help.left
                 anchors.rightMargin: 12 * root.factor
                 anchors.verticalCenter: line.verticalCenter
                 text: row.modelData.name
@@ -229,6 +229,37 @@ Item {
                     "letterSpacing": Typography.tracking(root.metrics.fontMeta,
                                                          Typography.labelTracking)
                 })
+            }
+
+            // What a cell may carry beyond when it appears. The dock, only: the
+            // launcher at its head (`dock.launcher`).
+            Row {
+                id: extra
+
+                anchors.right: help.left
+                anchors.rightMargin: 12 * root.factor
+                anchors.verticalCenter: line.verticalCenter
+                spacing: 8 * root.factor
+                visible: row.modelData.type === "dock" && row.modelData.placed
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "LAUNCHER"
+                    color: Theme.textMuted
+                    font: Qt.font({
+                        "family": Typography.technical,
+                        "pixelSize": root.metrics.fontMeta,
+                        "letterSpacing": Typography.tracking(root.metrics.fontMeta,
+                                                             Typography.labelTracking)
+                    })
+                }
+
+                Switch {
+                    anchors.verticalCenter: parent.verticalCenter
+                    factor: root.factor
+                    on: Config.get("dock.launcher", false)
+                    onToggled: value => Config.set("dock.launcher", value)
+                }
             }
 
             // The question: what "conditional" means for this one.

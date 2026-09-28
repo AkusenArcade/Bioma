@@ -27,9 +27,13 @@ Cell {
     readonly property real dividerWidth: Metrics.crisp(1, Screen.devicePixelRatio)
     readonly property real dividerRoom: dividerWidth + 12 * metrics.factor
 
-    // Icons sit closer to the cap than a line of text does.
-    paddingLeading: (root.count > 0 ? 12 : 16) * metrics.factor
-    paddingTrailing: (root.count > 0 ? 12 : 16) * metrics.factor
+    // The first and last icons are concentric with the capsule's caps: as far
+    // from its ends as from its top and bottom, so each round well sits in its
+    // cap the way the system cell's avatar does (Akusen, 2026-09-28). The
+    // empty dock's sentence keeps a text's margin.
+    readonly property real iconInset: (metrics.cellHeight - root.iconSize) / 2
+    paddingLeading: root.count > 0 ? root.iconInset : 16 * metrics.factor
+    paddingTrailing: root.count > 0 ? root.iconInset : 16 * metrics.factor
 
     // ---- What it holds -------------------------------------------------------
 
@@ -180,7 +184,15 @@ Cell {
     readonly property var loose: root.running.filter(group => !root.isPinned(group.appId))
 
     readonly property bool divided: root.pinned.length > 0 && root.loose.length > 0
-    readonly property int count: root.pinned.length + root.loose.length
+
+    // The launcher, if it is asked for (`dock.launcher`), at the head of the
+    // row: the shell's own way in rather than an application, so it is fixed
+    // there, set apart by the same line, and cannot be dragged or pinned.
+    readonly property bool withLauncher: Config.get("dock.launcher", false)
+    readonly property int apps: root.pinned.length + root.loose.length
+    readonly property bool launcherDivided: root.withLauncher && root.apps > 0
+
+    readonly property int count: root.apps + (root.withLauncher ? 1 : 0)
 
     // Conditional, it is there when the desktop is: the active workspace on
     // this monitor has no windows, so nothing it could cover is there — and it
@@ -195,7 +207,8 @@ Cell {
     condition: root.count > 0 && root.desktopShowing ? 1 : 0
 
     contentWidth: root.count > 0
-        ? root.count * iconSize + (root.count - 1) * pitch + (root.divided ? dividerRoom : 0)
+        ? root.count * iconSize + (root.count - 1) * pitch
+          + (root.divided ? dividerRoom : 0) + (root.launcherDivided ? dividerRoom : 0)
         : hint.implicitWidth
 
     // ---- Empty -----------------------------------------------------------------
@@ -292,11 +305,60 @@ Cell {
         spacing: root.pitch
         visible: root.count > 0
 
+        // The launcher, first, and pressing it is Mod+Space: the launcher
+        // opens where it is placed, or in the middle of this screen.
+        Item {
+            id: launcherButton
+
+            visible: root.withLauncher
+            width: root.iconSize
+            height: root.iconSize
+
+            Rectangle {
+                anchors.fill: parent
+                radius: width / 2
+                color: Theme.lift(Theme.background, -0.015)
+                border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+                border.color: Qt.alpha(Theme.text, 0.35)
+                antialiasing: true
+            }
+
+            // The shell's own glyph, in the light it gives its own things, at
+            // the same whole-pixel size as an application's picture.
+            Icon {
+                readonly property real inner: root.iconSize - 2 * Math.round(root.iconSize * 0.19)
+                x: (root.iconSize - width) / 2
+                y: (root.iconSize - height) / 2
+                width: inner
+                height: width
+                name: "launcher"
+                gradient: true
+            }
+
+            HoverHandler {
+                onHoveredChanged: {
+                    if (hovered)
+                        root.name("Launcher", launcherButton, launcherButton.width / 2);
+                    else
+                        root.unname("Launcher");
+                }
+            }
+
+            TapHandler {
+                onTapped: Focus.invoke("launcher", root.output)
+            }
+        }
+
+        Divider { visible: root.launcherDivided }
+
         // The kept group places its own icons rather than being laid out: one
         // of them has to be able to leave the row and follow the pointer.
         Item {
             id: keptRow
 
+            // Not there at all when nothing is kept: an empty item in a Row
+            // still takes its spacing, and the running ones sat a pitch late.
+            visible: root.pinned.length > 0
             width: Math.max(0, root.pinned.length * root.step - root.pitch)
             height: root.iconSize
 
@@ -347,20 +409,7 @@ Cell {
             }
         }
 
-        // A line that does not separate two groups is decoration.
-        Item {
-            width: root.dividerRoom - root.pitch
-            height: root.iconSize
-            visible: root.divided
-
-            Rectangle {
-                anchors.centerIn: parent
-                width: root.dividerWidth
-                height: 22 * root.metrics.factor
-                color: Theme.line
-                antialiasing: true
-            }
-        }
+        Divider { visible: root.divided }
 
         Repeater {
             model: root.loose
@@ -381,6 +430,21 @@ Cell {
                 onLaunched: root.launch(live.modelData.appId)
                 onToggled: root.keep(live.modelData.appId)
             }
+        }
+    }
+
+    // A line that does not separate two groups is decoration, so each one is
+    // shown only while there is a group on both sides of it.
+    component Divider: Item {
+        width: root.dividerRoom - root.pitch
+        height: root.iconSize
+
+        Rectangle {
+            anchors.centerIn: parent
+            width: root.dividerWidth
+            height: 22 * root.metrics.factor
+            color: Theme.line
+            antialiasing: true
         }
     }
 
@@ -426,13 +490,21 @@ Cell {
             antialiasing: true
         }
 
+        // Whole pixels, the same margin on all four sides: at 62 % of the well
+        // the picture was 17.36 px wide, and a centre that falls between two
+        // pixels is rounded one way or the other — half the icons sat half a
+        // pixel off the ring's centre (Akusen, 2026-09-28).
+        readonly property real inner: icon.size - 2 * Math.round(icon.size * 0.19)
+
         // The application's picture belongs to the application: never tinted,
         // and never replaced by another application's logo when it does not
-        // resolve.
+        // resolve. What is left off centre after this is the application's
+        // own drawing — a picture not centred on its own canvas.
         Image {
-            anchors.centerIn: parent
+            x: (icon.size - width) / 2
+            y: (icon.size - height) / 2
             visible: icon.source !== ""
-            width: parent.width * 0.62
+            width: icon.inner
             height: width
             source: icon.source
             sourceSize.width: width * Screen.devicePixelRatio
@@ -442,9 +514,10 @@ Cell {
         }
 
         Icon {
-            anchors.centerIn: parent
+            x: (icon.size - width) / 2
+            y: (icon.size - height) / 2
             visible: icon.source === ""
-            width: parent.width * 0.58
+            width: icon.inner
             height: width
             name: "app-fallback"
             colour: Theme.textMuted

@@ -110,7 +110,8 @@
 
   "dock": {
     "$comment": "Applications kept on the dock, by desktop entry id, in the order they are shown. With none the dock is a window list, which is a legitimate way to use it.",
-    "pinned": []
+    "pinned": [],
+    "launcher": false
   },
 
   "session": {

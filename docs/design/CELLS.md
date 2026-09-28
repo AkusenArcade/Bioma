@@ -461,6 +461,11 @@ windows: only the running group scrolls, the pinned stay put — icons never shr
   The ring stays one: it says "running", not how many times.
 - **Pinned applications are optional.** With none pinned, only the running group remains and the
   divider never appears: the dock becomes a window list, which is a legitimate way to use it.
+- **The launcher, optionally, at its head** (`dock.launcher`, switched on the Cells page's Dock
+  row): the shell's own glyph in the primary gradient, in the same well, set apart from the
+  applications by the same divider, fixed there — it neither drags nor pins. Pressing it is
+  Mod+Space. It counts as content, so a dock with nothing pinned still appears on an empty
+  desktop, holding the launcher alone.
 - With **conditional visibility**, the cell disappears when there is neither an open window nor
   a pinned application — that is, when it would have nothing to show. With always-on visibility
   it stays at its minimum, empty.
