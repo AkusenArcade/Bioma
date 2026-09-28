@@ -167,10 +167,21 @@ PanelWindow {
     // is the tissue's distance from the edge it is anchored to.
     readonly property var edgeMargins: config.margins || ({})
 
+    // A margin the block writes is measured from the screen's edge and is
+    // obeyed. Otherwise a tissue anchored to an edge that carries a fixed
+    // membrane sits past it, on the line the windows begin on — where every
+    // expansion hangs from — and not over the membrane: at the top of a screen
+    // with a top band, the top anchor was the band's own place (Akusen,
+    // 2026-09-28). A membrane that hides itself leaves the edge free.
     function margin(side) {
         const value = root.edgeMargins[side];
-        return value !== undefined ? value * root.metrics.factor
-                                   : root.metrics.marginEdge;
+        if (value !== undefined)
+            return value * root.metrics.factor;
+        for (const membrane of Focus.membranes)
+            if (membrane && membrane.screenItem === root.screenItem && membrane.edge === side
+                && !membrane.autoHide)
+                return membrane.strip + membrane.windowInset;
+        return root.metrics.marginEdge;
     }
 
     // ---- At the pointer --------------------------------------------------------

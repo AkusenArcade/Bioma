@@ -180,6 +180,14 @@ larger half of it. It is for invoked cells — `{ "anchor": "pointer", "monitor"
 brings the audio capsule up under the hand. With the pointer on another output
 it takes the middle of this one after `timing.locate` milliseconds.
 
+Without `margins`, a tissue anchored to an edge that carries a fixed membrane
+sits just past it, on the line the windows begin on, rather than over the band;
+against an auto-hiding membrane or a bare edge it keeps the screen-edge margin.
+`margins` written in the block are measured from the screen's edge and win.
+
+The launcher, floating, is the panel itself, so it is invoked whatever its
+block says: a panel always open would hold the keyboard for good.
+
 Collision between tissues on one membrane is impossible by construction.
 Floating tissues may overlap; that is not prevented.
 
