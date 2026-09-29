@@ -633,8 +633,11 @@ Bioma's own settings: appearance, structure, cell conditions, monitors, keybinds
 control panel — anything that has its own cell does not come back here as a category. At rest it
 is the mark, and this is the only place it appears.
 
-**Expanded** — five category capsules on the left; the thread leaves the chosen one and feeds
-the panel. **The panel is as wide as the category needs**: Appearance fits in 440 px, Structure
+**Expanded** — six category capsules on the left; the thread leaves the chosen one and feeds
+the panel. Each capsule carries a glyph, its name and one line saying what is inside, in the
+session menu's arrangement: the glyph gives the column an order the eye holds before it reads.
+The chosen one carries more light, not an outline: its glyph takes the primary gradient and its
+name the primary. **The panel is as wide as the category needs**: Appearance fits in 440 px, Structure
 wants 720.
 
 **Appearance** — opacity, blur, radius, scale, and three distinct margins: screen **edge**,
@@ -685,7 +688,9 @@ advertising itself on someone else's desktop.
 
 | Measure | Value | Note |
 |---|---|---|
-| category capsule | 160 × 44 px | full pill, 52 px pitch |
+| category capsule | 240 × 64 px | full pill, 76 px pitch |
+| category glyph | 26 px box, 21 px in | `appearance` `structure` `cells` `monitors` `keyboard` `lock`; muted, primary gradient when chosen |
+| category name / line | 15 / 13 | Orbitron 500 (700 chosen, primary) over Spectral muted, 3 px apart, 16 px after the glyph |
 | panel | 440 – 720 px | as wide as the category asks; fixed height with scrolling |
 | setting row | 44 px | label 92 px in Orbitron 12, slider 150 px |
 | list row | 38 px | cells, monitors, shortcuts |

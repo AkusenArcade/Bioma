@@ -27,9 +27,13 @@ Item {
 
     readonly property real factor: metrics.factor
 
-    readonly property real capsuleWidth: 160 * factor
-    readonly property real capsuleHeight: 44 * factor
-    readonly property real capsulePitch: 52 * factor
+    // Wide and tall enough for a glyph, a name and a line saying what is
+    // inside (Akusen's mockup, 2026-09-29): the glyphs give the column an
+    // order the eye can hold before it reads.
+    readonly property real capsuleWidth: 240 * factor
+    readonly property real capsuleHeight: 64 * factor
+    readonly property real capsulePitch: 76 * factor
+    readonly property real glyphSize: 26 * factor
     readonly property real threadLength: metrics.gap
 
     readonly property real rowHeight: 44 * factor
@@ -37,12 +41,18 @@ Item {
     readonly property real padding: 14 * factor
 
     readonly property var categories: [
-        { "key": "appearance", "label": "APPEARANCE", "width": 440 },
-        { "key": "structure", "label": "STRUCTURE", "width": 644 },
-        { "key": "cells", "label": "CELLS", "width": 560 },
-        { "key": "monitors", "label": "MONITORS", "width": 720 },
-        { "key": "keybinds", "label": "KEYBINDS", "width": 560 },
-        { "key": "session", "label": "SESSION", "width": 540 }
+        { "key": "appearance", "label": "APPEARANCE", "glyph": "appearance",
+          "hint": "opacity, blur, radius, scale", "width": 440 },
+        { "key": "structure", "label": "STRUCTURE", "glyph": "structure",
+          "hint": "membranes, tissues, order", "width": 644 },
+        { "key": "cells", "label": "CELLS", "glyph": "cells",
+          "hint": "options and visibility", "width": 560 },
+        { "key": "monitors", "label": "MONITORS", "glyph": "monitors",
+          "hint": "position, scale, snapping", "width": 720 },
+        { "key": "keybinds", "label": "KEYBINDS", "glyph": "keyboard",
+          "hint": "shortcuts · niri.kdl", "width": 560 },
+        { "key": "session", "label": "SESSION", "glyph": "lock",
+          "hint": "locking when idle", "width": 540 }
     ]
 
     readonly property string chosen: root.cell ? root.cell.category : "appearance"
@@ -167,20 +177,57 @@ Item {
                 nodeX: root.fromPanel ? root.capsuleWidth : root.capsuleWidth / 2
                 nodeY: capsule.index * root.capsulePitch + root.capsuleHeight / 2
 
-                Text {
-                    anchors.centerIn: parent
-                    text: capsule.modelData.label
-                    // The chosen one says so by being where the thread starts;
-                    // what changes here is only how much light it carries.
-                    color: root.chosen === capsule.modelData.key ? Theme.text : Theme.textMuted
-                    font: Qt.font({
-                        "family": Typography.technical,
-                        "pixelSize": root.metrics.fontLabel,
-                        "weight": root.chosen === capsule.modelData.key
-                                  ? Typography.weightTitle : Typography.weightLabel,
-                        "letterSpacing": Typography.tracking(root.metrics.fontLabel,
-                                                             Typography.labelTracking)
-                    })
+                readonly property bool chosen: root.chosen === capsule.modelData.key
+
+                // The glyph, then the name and what is inside, in the session
+                // menu's arrangement. The chosen one says so by being where
+                // the thread starts; here it only carries more light — the
+                // glyph takes the primary gradient, as an active control's
+                // does, and the name the primary.
+                Icon {
+                    id: glyph
+
+                    anchors.left: parent.left
+                    anchors.leftMargin: 21 * root.factor
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: root.glyphSize
+                    height: width
+                    name: capsule.modelData.glyph
+                    gradient: capsule.chosen
+                    colour: Theme.textMuted
+                }
+
+                Column {
+                    anchors.left: glyph.right
+                    anchors.leftMargin: 16 * root.factor
+                    anchors.right: parent.right
+                    anchors.rightMargin: 20 * root.factor
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 3 * root.factor
+
+                    Text {
+                        width: parent.width
+                        elide: Text.ElideRight
+                        text: capsule.modelData.label
+                        color: capsule.chosen ? Theme.primary : Theme.text
+                        font: Qt.font({
+                            "family": Typography.technical,
+                            "pixelSize": root.metrics.fontLabel,
+                            "weight": capsule.chosen ? Typography.weightTitle : Typography.weightLabel,
+                            "letterSpacing": Typography.tracking(root.metrics.fontLabel,
+                                                                 Typography.labelTracking)
+                        })
+                    }
+
+                    // What is inside is said in words, so it is the human voice.
+                    Text {
+                        width: parent.width
+                        elide: Text.ElideRight
+                        text: capsule.modelData.hint
+                        color: Theme.textMuted
+                        font.family: Typography.expressive
+                        font.pixelSize: root.metrics.fontSecondary
+                    }
                 }
 
                 TapHandler {
