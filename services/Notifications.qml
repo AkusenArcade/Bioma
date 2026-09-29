@@ -168,10 +168,39 @@ Singleton {
         to: 0
     }
 
+    // A notification can go without the shell sending it: the sender closes
+    // it, or the server replaces it, and the object is destroyed. The queue
+    // kept it, so the next notification to arrive brought the cell back
+    // showing the dead one: an empty pill with a bell, a clock running, and a
+    // cross that did nothing (Akusen, 2026-09-28). So a closed one is taken
+    // off the queue whoever closed it, and whatever is no longer there is
+    // pruned whenever the queue moves.
+    function alive(notification) {
+        return !!notification && typeof notification.dismiss === "function";
+    }
+
+    // Something to say: a notification with no title, no text and no sender
+    // would be a bell in an empty pill.
+    function says(notification) {
+        return (notification.summary || notification.body || notification.appName || "").length > 0;
+    }
+
     function receive(notification) {
+        if (!root.says(notification))
+            return;
+
+        // The same one again is a replacement, updated in place: it is on
+        // screen already, and what it shows follows it.
+        if (root.queue.includes(notification) || root.urgent.includes(notification))
+            return;
+
         notification.tracked = true;
+        notification.closed.connect(() => root.advance(notification));
 
         root.remember(notification);
+
+        // What went while nobody was looking, gone before this one queues.
+        root.advance(null);
 
         if (root.isCritical(notification)) {
             root.urgent = root.urgent.concat([notification]);
@@ -226,14 +255,17 @@ Singleton {
     onHoldingChanged: root.pace()
     onOrdinaryVisibleChanged: root.pace()
 
-    // Take one notification off whichever queue holds it.
+    // Take one notification off whichever queue holds it, and anything the
+    // server has already let go with it. A new head starts its own clock.
     function advance(notification) {
-        if (root.urgent.includes(notification)) {
-            root.urgent = root.urgent.filter(n => n !== notification);
-        } else if (root.queue.includes(notification)) {
-            const wasHead = root.queue[0] === notification;
-            root.queue = root.queue.filter(n => n !== notification);
-            if (wasHead)
+        const head = root.queue.length > 0 ? root.queue[0] : null;
+        const keep = n => n !== notification && root.alive(n);
+
+        if (root.urgent.some(n => !keep(n)))
+            root.urgent = root.urgent.filter(keep);
+        if (root.queue.some(n => !keep(n))) {
+            root.queue = root.queue.filter(keep);
+            if ((root.queue.length > 0 ? root.queue[0] : null) !== head)
                 root.begin();
         }
 
@@ -245,11 +277,10 @@ Singleton {
     // that expires stays in the history and the sender is told it expired,
     // while one the user closes is closed. Only the ordinary head expires.
     function expire() {
-        const notification = root.ordinaryHead;
-        if (!notification)
-            return;
+        const notification = root.queue.length > 0 ? root.queue[0] : null;
         root.advance(notification);
-        notification.expire();
+        if (root.alive(notification))
+            notification.expire();
     }
 
     // The one named, or what a cell showing everything shows.
@@ -262,7 +293,8 @@ Singleton {
             return;
         }
         root.advance(which);
-        which.dismiss();
+        if (root.alive(which))
+            which.dismiss();
     }
 
     function invoke(action, notification) {

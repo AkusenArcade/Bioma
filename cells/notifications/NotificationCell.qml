@@ -55,9 +55,17 @@ Cell {
     // A copy of what it said, not the notification: one that expires is
     // destroyed by the server a frame later, and a reference to it reads
     // empty.
+    // The title, or — for a sender that gives only a body — the body's first
+    // line, markup and all taken off; the sender's name only when there is
+    // neither.
+    function firstLine(text) {
+        return (text || "").replace(/<[^>]*>/g, "").split("\n")[0].trim();
+    }
+
     function snapshot(notification) {
         return {
-            "line": notification.summary || notification.appName || "",
+            "line": notification.summary || root.firstLine(notification.body)
+                    || notification.appName || "",
             "icon": Notifications.iconFor(notification),
             "critical": Notifications.isCritical(notification)
         };
