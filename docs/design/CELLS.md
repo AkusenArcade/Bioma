@@ -666,6 +666,11 @@ inside the rectangle, so they stay centred at any size.
 **Keybinds** — added, edited and removed. The combination is recorded by pressing it, not by
 typing it.
 
+**Session** — when the screen locks by itself, in three wells: **lock after** idle (Never, 5,
+10, 15, 30 min), **before sleep** (a switch on the label's line), and **if the lock fails**,
+which is not a setting but says what takes over (hyprlock, swaylock, or in the alert colour
+nothing but a TTY). Each well ends with a line in Spectral saying what the current choice does.
+
 **Behaviour**
 - Fixed height, scrolling inside: a settings window that changes height on every category is
   unbearable to navigate.
