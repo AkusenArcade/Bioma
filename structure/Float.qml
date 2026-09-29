@@ -413,9 +413,16 @@ PanelWindow {
     // Only invoked and expanded surfaces carry a shadow, and a floating one
     // carries the deeper of the two: it is the one thing on the screen that is
     // not attached to an edge, and the shadow is what says so.
+    //
+    // It is cast by the cells, not by the tissue around them. Cut out along the
+    // tissue's edge, it left a ring of the tissue's padding between the rim and
+    // the shadow with nothing in it — no fill, no blur, no shadow — and the
+    // unshaded desktop showed through as a pale outline round the panel
+    // (Akusen, 2026-09-29).
     OuterShadow {
         anchors.fill: tissue
-        radius: tissue.radius
+        anchors.margins: tissue.padding
+        radius: tissue.cellRadius
         blur: 44
         spread: 0
         offsetY: 22
