@@ -25,6 +25,15 @@ Item {
     property real offsetY: 14
     property color color: Theme.shadow
 
+    // How far inside the shape the hole starts. Cut exactly along the edge,
+    // the hole and the rim both only half-cover the pixels on a curve, and in
+    // what neither covers the unshaded desktop shows: a bright thread outside
+    // the rim, round every corner, plain on a light wallpaper (Akusen,
+    // 2026-09-29). Every shadowed surface draws a rim, and the rim is opaque,
+    // so the shadow runs on under it and is hidden there — only the glass
+    // inside stays unshaded.
+    property real inset: Metrics.rim(Screen.devicePixelRatio)
+
     readonly property real reach: Math.ceil(root.blur + root.spread + Math.abs(root.offsetY)) + 2
 
     // The shadow as RectangularShadow draws it, on a canvas large enough to
@@ -64,11 +73,11 @@ Item {
         layer.enabled: true
 
         Rectangle {
-            x: root.reach
-            y: root.reach
-            width: root.width
-            height: root.height
-            radius: root.radius
+            x: root.reach + root.inset
+            y: root.reach + root.inset
+            width: Math.max(0, root.width - root.inset * 2)
+            height: Math.max(0, root.height - root.inset * 2)
+            radius: Metrics.innerRadius(root.radius, root.inset)
             antialiasing: true
             color: "white"
         }
