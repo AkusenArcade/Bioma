@@ -341,6 +341,41 @@ The choice lives in `~/.config/bioma/shell`, outside the repository: it is a
 fact about a machine's session, not about the project. `Mod+Alt+B` is the same
 toggle on a key.
 
+## Notifications from Flatpak applications
+
+A sandboxed application — a Flatpak such as Teams for Linux — does not call
+`org.freedesktop.Notifications` itself. It asks the notification portal, and
+the portal hands the notification to a backend. The `gnome` backend passes it
+to GNOME Shell (`org.gtk.Notifications`). Under niri nothing owns that name,
+so the notification is lost: Bioma never sees it, and nothing is logged except
+a line from `xdg-desktop-portal-gnome`:
+
+```
+Error from gnome-shell: Cannot invoke method; proxy is for the well-known name org.gtk.Notifications without an owner
+```
+
+The `gtk` backend forwards to `org.freedesktop.Notifications`, which is Bioma.
+niri's own portal configuration already chooses it. A
+`~/.config/xdg-desktop-portal/niri-portals.conf` of your own, however, replaces
+that file whole, and one written for screen casting usually leaves the line
+out. Add the last two lines to its `[preferred]` section, next to whatever it
+already sets:
+
+```ini
+[preferred]
+default=gnome;gtk
+org.freedesktop.impl.portal.Notification=gtk
+org.freedesktop.impl.portal.Access=gtk
+```
+
+The portal reads its configuration once, at start:
+
+```sh
+systemctl --user restart xdg-desktop-portal
+```
+
+A screen cast or a camera shared through the portal is dropped by the restart.
+
 ## Verifying a service without a UI
 
 ```sh
