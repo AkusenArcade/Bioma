@@ -231,7 +231,7 @@ top.
 ### Capsules and panels
 
 A **capsule** is a pill-shaped surface in an expanded cell: pods of 236 × 108, the visualiser
-capsule at 372 × 88, category capsules at 160 × 44. A **panel** is a rectangular surface, radius
+capsule at 372 × 88, category capsules at 240 × 64. A **panel** is a rectangular surface, radius
 20, for lists and anything with rectangular content. Inside a panel, **wells** hold rows: radius
 10 (concentric), flat darker fill `rgba(24,30,20,.8)`.
 
