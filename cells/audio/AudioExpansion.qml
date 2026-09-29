@@ -185,7 +185,7 @@ Item {
                 anchors.fill: parent
                 visible: !device.chosen
                 radius: width / 2
-                thickness: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+                thickness: Metrics.rim(Screen.devicePixelRatio)
                 colour: Theme.line
             }
 
@@ -271,7 +271,7 @@ Item {
             Ring {
                 anchors.fill: parent
                 radius: width / 2
-                thickness: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+                thickness: Metrics.rim(Screen.devicePixelRatio)
                 colour: Theme.line
             }
 

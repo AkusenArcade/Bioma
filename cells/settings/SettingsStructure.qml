@@ -991,7 +991,7 @@ Item {
             radius: Metrics.shaped(11 * root.factor)
             antialiasing: true
             color: Qt.alpha(Theme.lift(Theme.background, spot.chosen ? 0.04 : 0.015), 0.9)
-            border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+            border.width: Metrics.rim(Screen.devicePixelRatio)
             border.color: spot.chosen || spot.source ? Theme.primary : Theme.line
         }
 
@@ -1056,7 +1056,7 @@ Item {
             radius: Metrics.radiusFor(height, root.metrics)
             antialiasing: true
             color: button.lit ? Qt.alpha(Theme.primary, 0.16) : "transparent"
-            border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+            border.width: Metrics.rim(Screen.devicePixelRatio)
             border.color: button.lit ? Theme.primary : buttonHover.hovered ? Theme.text : Theme.line
         }
 
@@ -1196,7 +1196,7 @@ Item {
                             antialiasing: true
                             color: Qt.alpha(Theme.lift(Theme.background, slot.chosen ? 0.04 : 0.015),
                                             0.9)
-                            border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+                            border.width: Metrics.rim(Screen.devicePixelRatio)
                             border.color: slot.chosen || slot.source ? Theme.primary : Theme.line
                         }
 
@@ -1470,7 +1470,7 @@ Item {
                         radius: Metrics.radiusFor(height, root.metrics)
                         antialiasing: true
                         color: douserHover.hovered ? Qt.alpha(Theme.alert, 0.16) : "transparent"
-                        border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+                        border.width: Metrics.rim(Screen.devicePixelRatio)
                         border.color: douserHover.hovered ? Theme.alert : Theme.line
                     }
 
@@ -1594,7 +1594,7 @@ Item {
                             antialiasing: true
                             color: Qt.alpha(Theme.lift(Theme.background,
                                                        chip.carried ? 0.05 : 0.02), 0.9)
-                            border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+                            border.width: Metrics.rim(Screen.devicePixelRatio)
                             border.color: chip.carried ? Theme.primary : Theme.line
                         }
 

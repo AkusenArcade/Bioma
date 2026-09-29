@@ -266,7 +266,7 @@ Cell {
             anchors.fill: parent
             radius: width / 2
             color: "transparent"
-            border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+            border.width: Metrics.rim(Screen.devicePixelRatio)
             border.color: Qt.alpha(Theme.alert, 0.55)
             antialiasing: true
         }

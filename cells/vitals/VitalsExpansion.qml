@@ -445,7 +445,7 @@ Item {
                                 Ring {
                                     anchors.fill: parent
                                     radius: width / 2
-                                    thickness: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+                                    thickness: Metrics.rim(Screen.devicePixelRatio)
                                     colour: Theme.line
                                 }
 
@@ -529,7 +529,7 @@ Item {
                     anchors.fill: parent
                     radius: Metrics.radiusFor(height, root.metrics)
                     color: "transparent"
-                    border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+                    border.width: Metrics.rim(Screen.devicePixelRatio)
                     border.color: Theme.alert
                     antialiasing: true
                 }

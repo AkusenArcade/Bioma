@@ -407,8 +407,7 @@ Item {
                                 anchors.fill: parent
                                 radius: Metrics.shaped(6 * root.factor)
                                 color: "transparent"
-                                border.width: Metrics.crisp(Metrics.rimWidth,
-                                                            Screen.devicePixelRatio)
+                                border.width: Metrics.rim(Screen.devicePixelRatio)
                                 border.color: Theme.line
                                 antialiasing: true
                             }
@@ -449,7 +448,7 @@ Item {
                             anchors.fill: parent
                             radius: Metrics.radiusFor(height, root.metrics)
                             color: "transparent"
-                            border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+                            border.width: Metrics.rim(Screen.devicePixelRatio)
                             border.color: Theme.alert
                             antialiasing: true
                         }

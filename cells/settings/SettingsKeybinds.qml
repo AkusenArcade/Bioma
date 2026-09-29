@@ -790,7 +790,7 @@ Item {
                 anchors.fill: parent
                 radius: Metrics.radiusFor(height, root.metrics)
                 color: "transparent"
-                border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+                border.width: Metrics.rim(Screen.devicePixelRatio)
                 border.color: filter.activeFocus ? Theme.primary : Theme.line
                 antialiasing: true
             }
@@ -912,7 +912,7 @@ Item {
             anchors.fill: parent
             radius: 6 * cap.factor
             color: "transparent"
-            border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+            border.width: Metrics.rim(Screen.devicePixelRatio)
             border.color: cap.faint ? Qt.alpha(Theme.line, 0.5) : Theme.line
             antialiasing: true
         }

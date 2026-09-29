@@ -135,7 +135,7 @@ Item {
                 radius: Metrics.radiusFor(height, root.metrics)
                 antialiasing: true
                 color: clear.armed ? Qt.alpha(Theme.alert, 0.16) : "transparent"
-                border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+                border.width: Metrics.rim(Screen.devicePixelRatio)
                 border.color: clear.armed ? Theme.alert : clearHover.hovered ? Theme.text : Theme.line
             }
 

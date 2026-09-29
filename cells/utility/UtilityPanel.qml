@@ -82,7 +82,7 @@ Item {
             // otherwise it is a well with the outline family around it.
             color: source.chosen ? Qt.alpha(Theme.primary, 0.13)
                                  : Qt.alpha(Theme.lift(Theme.background, -0.01), 0.8)
-            border.width: source.chosen ? 0 : Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+            border.width: source.chosen ? 0 : Metrics.rim(Screen.devicePixelRatio)
             border.color: Theme.line
 
             Behavior on color { ColorAnimation { duration: Timing.transition } }

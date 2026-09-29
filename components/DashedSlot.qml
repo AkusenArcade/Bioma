@@ -12,7 +12,7 @@ Shape {
     id: root
 
     property color colour: Qt.alpha(Theme.line, 0.7)
-    property real thickness: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+    property real thickness: Metrics.rim(Screen.devicePixelRatio)
     property real radius: 0
     property real dash: 3
     property real space: 3

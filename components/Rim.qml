@@ -23,7 +23,7 @@ Shape {
 
     // A hairline is a critical dimension: rounded to the physical pixel or it
     // smears and disappears under fractional scaling.
-    readonly property real thickness: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+    readonly property real thickness: Metrics.rim(Screen.devicePixelRatio)
 
     // The curve renderer antialiases the ring properly at this width; the
     // geometry renderer leaves it ragged on the caps.

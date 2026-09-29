@@ -315,8 +315,8 @@ Item {
                     antialiasing: true
                     color: Qt.alpha(Theme.lift(Theme.background,
                                                monitor.isChosen ? 0.06 : 0.02), 0.9)
-                    border.width: Metrics.crisp(monitor.isChosen ? 1.5 : Metrics.rimWidth,
-                                                Screen.devicePixelRatio)
+                    border.width: monitor.isChosen ? Metrics.crisp(1.5, Screen.devicePixelRatio)
+                                                  : Metrics.rim(Screen.devicePixelRatio)
                     border.color: monitor.isChosen ? Theme.primary : Theme.line
 
                     Behavior on border.color { ColorAnimation { duration: Timing.transition } }

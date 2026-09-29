@@ -164,6 +164,9 @@ automatically.
 - **Fractional scaling caveat**: logical units do not land on whole pixels, so
   hairlines (1 px borders, thin icon strokes, connector threads) blur. Round
   **only critical dimensions** to the physical pixel; leave layouts fluid.
+  Borders are also never thinner than **2 physical pixels**: at 1 px on a
+  low-density screen a curved outline flickers along its radius and vanishes
+  on light backgrounds.
 
 ---
 
@@ -383,7 +386,7 @@ In both cases **expansion goes over windows, never into reserved space.** The
 window layout never reflows for an expansion.
 
 **Technique — decided.** Grow by animating **width and height**, never
-`transform: scale`. Scale is cheaper but deforms everything inside: the 1 px
+`transform: scale`. Scale is cheaper but deforms everything inside: the
 lit border changes thickness throughout the growth, corner radii distort, and
 text is stretched and blurred. Since the lit border is the signature of Bioma's
 surfaces, scale is disqualified.

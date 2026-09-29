@@ -50,7 +50,7 @@
   --row-height:     30px;
   --thread:         1.3px;
   --node-size:      2.5px;
-  --rim-width:      1px;
+  --rim-width:      1px;     /* logical; never below 2 physical px — see IMPLEMENTATION.md */
 
   /* --- typography --- */
   --font-machine:   'Orbitron', sans-serif;   /* declared as a role, not a name */

@@ -366,7 +366,7 @@ Item {
                 radius: Metrics.radiusFor(height, family.metrics)
                 antialiasing: true
                 color: family.searching ? Qt.alpha(Theme.primary, 0.16) : "transparent"
-                border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+                border.width: Metrics.rim(Screen.devicePixelRatio)
                 border.color: family.searching ? Theme.primary : searchHover.hovered ? Theme.text : Theme.line
             }
 
@@ -569,7 +569,7 @@ Item {
                                 anchors.fill: parent
                                 visible: !networkRow.modelData.connected
                                 radius: width / 2
-                                thickness: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+                                thickness: Metrics.rim(Screen.devicePixelRatio)
                                 colour: Theme.line
                             }
 
@@ -691,7 +691,7 @@ Item {
                                 radius: Metrics.radiusFor(height, root.metrics)
                                 z: -1
                                 color: "transparent"
-                                border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+                                border.width: Metrics.rim(Screen.devicePixelRatio)
                                 border.color: Theme.line
                                 antialiasing: true
                             }
@@ -1510,7 +1510,7 @@ Item {
                             anchors.fill: parent
                             visible: !printerRow.printer.isDefault
                             radius: width / 2
-                            thickness: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+                            thickness: Metrics.rim(Screen.devicePixelRatio)
                             colour: Theme.line
                         }
 
@@ -1670,7 +1670,7 @@ Item {
             antialiasing: true
             color: pill.lit ? Qt.alpha(Theme.primary, 0.16)
                  : pill.alert && pillHover.hovered ? Qt.alpha(Theme.alert, 0.16) : "transparent"
-            border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+            border.width: Metrics.rim(Screen.devicePixelRatio)
             border.color: pill.alert ? Theme.alert : pill.lit ? Theme.primary
                         : pillHover.hovered ? Theme.text : Theme.line
         }
@@ -1708,7 +1708,8 @@ Item {
             anchors.fill: parent
             radius: Metrics.radiusFor(height, root.metrics)
             color: "transparent"
-            border.width: Metrics.crisp(input.activeFocus ? 1.5 : Metrics.rimWidth, Screen.devicePixelRatio)
+            border.width: input.activeFocus ? Metrics.crisp(1.5, Screen.devicePixelRatio)
+                                            : Metrics.rim(Screen.devicePixelRatio)
             border.color: input.activeFocus ? Theme.primary : Theme.line
             antialiasing: true
         }

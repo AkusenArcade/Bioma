@@ -216,7 +216,7 @@ Item {
                             anchors.centerIn: parent
                             visible: row.modelData.isSeparator
                             width: parent.width - 12 * root.factor
-                            height: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+                            height: Metrics.rim(Screen.devicePixelRatio)
                             color: Theme.line
                         }
 

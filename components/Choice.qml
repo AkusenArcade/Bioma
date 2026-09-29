@@ -40,7 +40,7 @@ Item {
         visible: !root.filled
         radius: Metrics.radiusFor(height, root.metrics)
         color: "transparent"
-        border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+        border.width: Metrics.rim(Screen.devicePixelRatio)
         border.color: Theme.line
         antialiasing: true
     }

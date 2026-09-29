@@ -111,7 +111,7 @@ Item {
                         anchors.fill: parent
                         visible: !row.active && !row.vacant
                         radius: width / 2
-                        thickness: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+                        thickness: Metrics.rim(Screen.devicePixelRatio)
                         colour: Theme.line
                     }
 

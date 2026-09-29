@@ -62,7 +62,7 @@ Item {
         antialiasing: true
 
         color: Qt.alpha(Theme.lift(Theme.background, -0.01), 0.8)
-        border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+        border.width: Metrics.rim(Screen.devicePixelRatio)
         border.color: Theme.line
 
         Rectangle {

@@ -20,6 +20,12 @@ cost an error in prototype. **Read this before writing the first QML component, 
 
 - Threads 1.3 px, outlines 1 px and icon strokes are **critical dimensions**: on fractional
   scale they must be rounded to the physical pixel, or they smear and disappear.
+- Outlines (the rim and every border drawn in its place) are **never thinner than 2 physical
+  pixels**: 1 px logical, rounded to the physical pixel, then raised to 2 if it falls below. A
+  1 px ring on a curve at scale 1 is never a whole pixel — antialiasing spreads it over two
+  half-lit ones, so it fades in and out along the radius and sinks into a light wallpaper. So
+  2 px at scale 1 and 1.25, 1 px logical from scale 2 up. In the shell this is `Metrics.rim()`;
+  a border never computes its own width.
 - Round only those. Layouts stay fluid in logical units.
 - The tissue fill must be drawn **only in the band**, clipping out the cell areas, or the blur
   shows through two layers.

@@ -69,6 +69,11 @@ Singleton {
     readonly property real thread: 1.3
     readonly property real nodeSize: 2.5
     readonly property real rimWidth: 1
+    // A 1 px ring on a curve at scale 1 is never a whole pixel: the
+    // antialiasing spreads it over two half-lit ones, it fades in and out
+    // along the radius and sinks into a light wallpaper. The rim is therefore
+    // never thinner than this many physical pixels — see `rim`.
+    readonly property int rimMinPhysical: 2
 
     // ---- Steps -------------------------------------------------------------
 
@@ -163,5 +168,13 @@ Singleton {
     function crisp(logical, devicePixelRatio) {
         const ratio = devicePixelRatio > 0 ? devicePixelRatio : 1;
         return Math.max(1, Math.round(logical * ratio)) / ratio;
+    }
+
+    // The rim's width at this ratio: `rimWidth` rounded to the physical pixel,
+    // but never below `rimMinPhysical` of them. Low-density screens get a
+    // heavier line; from scale 2 up it is the logical width as before.
+    function rim(devicePixelRatio) {
+        const ratio = devicePixelRatio > 0 ? devicePixelRatio : 1;
+        return Math.max(root.rimMinPhysical, Math.round(root.rimWidth * ratio)) / ratio;
     }
 }

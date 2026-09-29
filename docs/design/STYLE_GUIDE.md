@@ -124,7 +124,7 @@ the shell.
 - Fixed direction **165°**, from above and slightly from the left.
 - Two tones of the **same hue**, luminance delta **~22%**: lighter at the top, more saturated
   and darker at the bottom.
-- The rim is the only light allowed on surfaces: 1 px running from `#8ba86e` at the top to
+- The rim is the only light allowed on surfaces: 1 px (never under 2 physical px) running from `#8ba86e` at the top to
   `#4f6340` at mid-height. It concerns the line only, never the fill.
 
 | Token | Stops |
@@ -169,7 +169,7 @@ of images and lists. There, use the panel radius.
 
 ## 6. Motion
 
-Shapes grow by animating **width and height** from the thread node. No scaling, so the 1 px rim
+Shapes grow by animating **width and height** from the thread node. No scaling, so the rim
 does not thin out, the radius does not deform and text never passes through a scale.
 
 ### Opening — 250 ms
@@ -225,7 +225,7 @@ place when the command comes from the keyboard and the eye is not on the membran
 
 The membrane is one edge of one output. It owns **auto-hide**; the cells on it do not have
 their own rule. A tissue is a group with one anchor and a percentage of the edge. A cell is the
-unit: 40 px tall contracted, full pill radius, flat glass fill, 1 px rim with the light at the
+unit: 40 px tall contracted, full pill radius, flat glass fill, rim with the light at the
 top.
 
 ### Capsules and panels

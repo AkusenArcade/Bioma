@@ -44,7 +44,7 @@ expanding this cell would add nothing the window does not already say.
 | Measure | Value | Note |
 |---|---|---|
 | cell height | 40 px | normal scale, like every contracted cell |
-| icon | 30 px | circle, 1 px outline |
+| icon | 30 px | circle, rim outline |
 | min width | 186 px | stabiliser |
 | max width | 28% of screen | then ellipsis |
 | title change | 180 ms debounce | then cross-fade |
@@ -446,7 +446,7 @@ grammar for "are you sure?".
 | capsule | 300 × 108 px | full pill, avatar flush with the padding |
 | command panel | 300 px | five rows of 44, radius 20 |
 | command row | 44 px | icon 20, label Orbitron 13/500 uppercase, key on the right |
-| key | 11 px | Orbitron 11 in a 1 px box, radius 6, tabular figures |
+| key | 11 px | Orbitron 11 in a rim-width box, radius 6, tabular figures |
 | confirmation | 44 px | radius 22, alert outline, two 26 px buttons |
 
 **Decided** — confirm only where something is lost. Confirming everything teaches people to

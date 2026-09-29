@@ -738,7 +738,7 @@ Item {
             radius: Metrics.radiusFor(height, root.metrics)
             antialiasing: true
             color: pill.lit ? Qt.alpha(Theme.primary, 0.16) : "transparent"
-            border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+            border.width: Metrics.rim(Screen.devicePixelRatio)
             border.color: pill.lit ? Theme.primary : pillHover.hovered ? Theme.text : Theme.line
         }
 

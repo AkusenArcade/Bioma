@@ -795,7 +795,7 @@ Item {
                         anchors.fill: parent
                         radius: Metrics.radiusFor(height, root.metrics)
                         color: "transparent"
-                        border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+                        border.width: Metrics.rim(Screen.devicePixelRatio)
                         border.color: Theme.line
                         antialiasing: true
                     }
@@ -875,7 +875,7 @@ Item {
             anchors.fill: parent
             radius: Metrics.radiusFor(height, root.metrics)
             color: "transparent"
-            border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+            border.width: Metrics.rim(Screen.devicePixelRatio)
             border.color: drop.open ? Theme.primary : dropHover.hovered ? Theme.text : Theme.line
             antialiasing: true
         }
@@ -1272,7 +1272,7 @@ Item {
             radius: Metrics.radiusFor(height, root.metrics)
             antialiasing: true
             color: chip.on ? Qt.alpha(chip.alert ? Theme.alert : Theme.primary, 0.16) : "transparent"
-            border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+            border.width: Metrics.rim(Screen.devicePixelRatio)
             border.color: chip.alert ? Theme.alert : chip.on ? Theme.primary
                         : chipHover.hovered && tap.enabled ? Theme.text : Theme.line
         }

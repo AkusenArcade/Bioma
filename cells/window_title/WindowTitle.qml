@@ -198,7 +198,7 @@ Cell {
             height: root.iconSize
             radius: width / 2
             color: Theme.lift(Theme.background, -0.015)
-            border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+            border.width: Metrics.rim(Screen.devicePixelRatio)
             border.color: Qt.alpha(Theme.text, 0.5)
             antialiasing: true
 

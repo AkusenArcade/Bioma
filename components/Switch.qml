@@ -39,7 +39,7 @@ Item {
         antialiasing: true
         opacity: root.on ? 0 : 1
         color: Qt.alpha(Theme.lift(Theme.background, -0.01), 0.9)
-        border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+        border.width: Metrics.rim(Screen.devicePixelRatio)
         border.color: Theme.line
 
         Behavior on opacity { NumberAnimation { duration: Timing.transition } }

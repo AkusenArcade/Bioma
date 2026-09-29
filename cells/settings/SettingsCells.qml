@@ -278,7 +278,7 @@ Item {
                     radius: width / 2
                     antialiasing: true
                     color: row.open ? Qt.alpha(Theme.primary, 0.16) : "transparent"
-                    border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+                    border.width: Metrics.rim(Screen.devicePixelRatio)
                     border.color: row.open ? Theme.primary : helpHover.hovered ? Theme.text : Theme.line
                 }
 
