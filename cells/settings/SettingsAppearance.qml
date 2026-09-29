@@ -46,17 +46,17 @@ Item {
     // together, which is what a person asking for a denser shell means; the
     // per-membrane choice belongs to the Structure page, beside the edge it
     // applies to.
-    readonly property var bands: Config.get("membranes", [])
+    readonly property var membranes: Config.get("membranes", [])
 
     readonly property string density: {
-        for (const membrane of root.bands)
+        for (const membrane of root.membranes)
             if (membrane.scale)
                 return membrane.scale;
         return "normal";
     }
 
     function setDensity(name) {
-        const copy = JSON.parse(JSON.stringify(root.bands));
+        const copy = JSON.parse(JSON.stringify(root.membranes));
         for (const membrane of copy)
             membrane.scale = name;
         Config.set("membranes", copy);

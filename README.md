@@ -109,7 +109,7 @@ Adding a cell costs one block of configuration, and the Structure page writes
 that block for you.
 
 <p align="center">
-  <img src="docs/media/settings-structure.webp" width="440" alt="Settings, Structure: bands and floating tissues per monitor">
+  <img src="docs/media/settings-structure.webp" width="440" alt="Settings, Structure: the tissues on each membrane and the floating ones, per monitor">
   <img src="docs/media/settings-appearance.webp" width="330" alt="Settings, Appearance: opacity, radius, spacing, blur, scale and timing">
 </p>
 

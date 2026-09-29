@@ -41,7 +41,7 @@ Item {
     readonly property real notePadding: 10 * factor
     readonly property real noteGap: 6 * factor
 
-    readonly property var bands: Config.get("membranes", [])
+    readonly property var membranes: Config.get("membranes", [])
     readonly property var floats: Config.get("floating", [])
 
     // The catalogue's own order, which is the order the cells were built in
@@ -52,8 +52,8 @@ Item {
     // declaration wins: the same cell on two monitors is one answer here,
     // because the visibility of a domain is a property of the domain.
     function find(type) {
-        for (let m = 0; m < root.bands.length; m++) {
-            const tissues = root.bands[m].tissues || [];
+        for (let m = 0; m < root.membranes.length; m++) {
+            const tissues = root.membranes[m].tissues || [];
             for (let t = 0; t < tissues.length; t++) {
                 const cells = tissues[t].cells || [];
                 for (let c = 0; c < cells.length; c++)
@@ -99,7 +99,7 @@ Item {
     // asked for, it is one of the two having been missed.
     function apply(type, kind) {
         for (const list of ["membranes", "floating"]) {
-            const whole = list === "membranes" ? root.bands : root.floats;
+            const whole = list === "membranes" ? root.membranes : root.floats;
             const copy = JSON.parse(JSON.stringify(whole));
             let touched = false;
 

@@ -191,7 +191,7 @@ brings the audio capsule up under the hand. With the pointer on another output
 it takes the middle of this one after `timing.locate` milliseconds.
 
 Without `margins`, a tissue anchored to an edge that carries a fixed membrane
-sits just past it, on the line the windows begin on, rather than over the band;
+sits just past it, on the line the windows begin on, rather than over the membrane;
 against an auto-hiding membrane or a bare edge it keeps the screen-edge margin.
 `margins` written in the block are measured from the screen's edge and win.
 
@@ -205,10 +205,10 @@ A percentage is a **ceiling, not a reservation**, and the tissue holds to it: it
 hands out room in anchor order — the cells against the screen edge first, since
 that is the end a tissue grows inward from — and a cell it cannot fit is not
 drawn at all until there is room for it again. The shell says so once, naming
-the membrane and the cell. A cell drawn outside its band, or off the screen, is
+the membrane and the cell. A cell drawn outside its tissue, or off the screen, is
 the one outcome a ceiling exists to prevent.
 
-**The ceiling has a floor.** A band has to be granted at least what its cells
+**The ceiling has a floor.** A tissue has to be granted at least what its cells
 need at their narrowest: every `min_width` in it, one gap between each pair and
 the tissue's own margin on both sides. Below that the membrane is drawn with
 cells missing from it, which looks like a defect rather than a setting, so the
@@ -219,10 +219,10 @@ Bioma: the top membrane on HDMI-A-1 is granted less than it was asked to hold
      — tissue 2 holds 4 cells and needs 12% rather than 5%
 ```
 
-Conditional cells count: a band that only fits while the notification is away
-is a band that breaks when one arrives. The arithmetic is `Metrics.roomFor`,
+Conditional cells count: a tissue that only fits while the notification is
+away is a tissue that breaks when one arrives. The arithmetic is `Metrics.roomFor`,
 and `Registry.roomFor` answers it for a list of cell blocks — which is how the
-settings cell can refuse to add a cell to a band that cannot hold it, before
+settings cell can refuse to add a cell to a tissue that cannot hold it, before
 the cell exists.
 
 ### cells
@@ -231,12 +231,12 @@ the cell exists.
 |---|---|
 | `type` | Which cell |
 | `enabled` | |
-| `visibility.type` | `always` \| `conditional` — whether the cell is on screen without being asked for. **Every cell answers a keybind** regardless: on a membrane it opens where it is, in a floating tissue it appears there, and placed nowhere on the monitor it is summoned into the middle. `invoked` still reads, for a block that should exist only while asked for. A cell may be in **one place per monitor** — one band or one floating tissue — and the settings cell will not give it a second. |
+| `visibility.type` | `always` \| `conditional` — whether the cell is on screen without being asked for. **Every cell answers a keybind** regardless: on a membrane it opens where it is, in a floating tissue it appears there, and placed nowhere on the monitor it is summoned into the middle. `invoked` still reads, for a block that should exist only while asked for. A cell may be in **one place per monitor** — one tissue, on a membrane or floating — and the settings cell will not give it a second. |
 | `visibility.enter` / `exit` | Dual threshold. Distinct values on every boundary, so the state cannot flicker around one. Omitted, the cell's domain answers — `cells/Registry.qml` holds the grammar each condition means, and zero would have been met by a condition of zero. |
 | `visibility.confirm` | How long the condition must hold before appearing. |
 | `visibility.dwell` | How long the cell remains after the condition lapses. Omitted, the domain's own figure applies: a window title goes in 200 ms because with no window it has nothing to name, a sound level takes four seconds to be forgotten. |
 | `visibility.shortcut` | For `invoked`. |
-| `min_width` | Below it the cell prefers not to appear rather than appear illegible. A generous minimum also stops small content changes producing motion. Omitted, the cell's own floor from `cells/Registry.qml` applies; this raises it, and the band's percentage has to cover the sum. |
+| `min_width` | Below it the cell prefers not to appear rather than appear illegible. A generous minimum also stops small content changes producing motion. Omitted, the cell's own floor from `cells/Registry.qml` applies; this raises it, and the tissue's percentage has to cover the sum. |
 | `width` | An **object**, not a bare number — `{ "elastic": true, "max_percent": 25 }` — so a per-cell weight stays possible later. |
 | `type` names | Renamed types keep working under their old name: `session` is `system` since 2026-09-23. The settings cell writes the new one. |
 | `options` | Per-cell domain settings. The clock takes `format` (`24h` \| `12h`), vitals `gpu`, and notifications `show`: `all` (the default — urgent first), `urgent` or `ordinary`. Two notification cells in a column, `urgent` above `ordinary`, are how the ordinary ones keep going past a critical one that does not leave by itself. |

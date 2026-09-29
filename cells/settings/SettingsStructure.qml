@@ -4,7 +4,7 @@ import qs.core
 import qs.components
 import qs.cells
 
-// How the shell is laid out: which bands exist on which edge, and what is in
+// How the shell is laid out: which tissues exist on which edge, and what is in
 // them.
 //
 // **Structure is composed, not listed.** Six slots drawn where they will
@@ -15,7 +15,7 @@ import qs.cells
 // switch it off.
 //
 // Six per monitor is a design limit, not a technical one: beyond three per
-// side the bands get too narrow for a percentage to mean anything, and the
+// side the tissues get too narrow for a percentage to mean anything, and the
 // membrane stops reading as a single line.
 //
 // The chosen slot feeds the detail below it through a thread — the same
@@ -35,7 +35,7 @@ Item {
     readonly property real slotGap: 14 * factor
 
     // Three slots and two gaps: the page is drawn to this, so the membrane's
-    // own control lines up with the end of its last band.
+    // own control lines up with the end of its last tissue.
     readonly property real slotsWidth: 3 * slotWidth + 2 * slotGap
     readonly property real chipHeight: 26 * factor
     readonly property real rowHeight: 36 * factor
@@ -47,7 +47,7 @@ Item {
 
     // ---- What is declared ---------------------------------------------------
 
-    readonly property var bands: Config.get("membranes", [])
+    readonly property var membranes: Config.get("membranes", [])
 
     // Bound rather than read inside a function: a compositor-backed model
     // answers empty to a call and fills to a binding.
@@ -88,7 +88,7 @@ Item {
     }
 
     function membraneFor(edge) {
-        for (const block of root.bands)
+        for (const block of root.membranes)
             if (root.claims(block) && block.edge === edge)
                 return block;
         return null;
@@ -171,7 +171,7 @@ Item {
     // different in it.
 
     function edit(change) {
-        const copy = JSON.parse(JSON.stringify(root.bands));
+        const copy = JSON.parse(JSON.stringify(root.membranes));
         if (change(copy) === false)
             return;
         Config.set("membranes", Registry.renamed(copy));
@@ -180,8 +180,8 @@ Item {
     // ---- Floating tissues --------------------------------------------------
     //
     // The tissues with no membrane: over the windows, anchored to a corner, the
-    // middle or the pointer. They are part of the layout as much as the bands
-    // are, and a layout with a part that cannot be seen from here is a layout
+    // middle or the pointer. They are part of the layout as much as the tissues on
+    // a membrane are, and a layout with a part that cannot be seen from here is a layout
     // somebody cannot fix — the default's notification column kept showing
     // every notification a second time on a desktop whose owner had put the
     // cell somewhere else, and nothing on this page said it was there.
@@ -257,7 +257,7 @@ Item {
     }
 
     // Where an anchor sits on the small screen: its row and its column, the
-    // columns lined up with the bands' own three.
+    // columns lined up with a membrane's three tissues.
     function spotOf(anchor) {
         const index = root.anchorNames.indexOf(anchor);
         return index < 0 ? { "row": 1, "column": 1 } : { "row": Math.floor(index / 3), "column": index % 3 };
@@ -340,7 +340,7 @@ Item {
     // not a membrane: it goes, rather than staying as a surface with nothing
     // on it.
     function clear(edge, place) {
-        console.info(`Bioma: removing the ${place} band of the ${edge} membrane on ${root.monitor}`);
+        console.info(`Bioma: removing the ${place} tissue of the ${edge} membrane on ${root.monitor}`);
         root.edit(copy => {
             const block = root.blockIn(copy, edge, false);
             if (!block)
@@ -416,7 +416,7 @@ Item {
     // ---- Room ---------------------------------------------------------------
     //
     // The page refuses what will not fit rather than letting somebody build a
-    // membrane with cells missing from it. A band has to hold everything
+    // membrane with cells missing from it. A tissue has to hold everything
     // declared in it at every cell's narrowest — see `Registry.roomFor`.
 
     function grantedTo(edge, tissue) {
@@ -437,7 +437,7 @@ Item {
         return root.roomFor(edge, tissue, extra) <= root.grantedTo(edge, tissue) + 0.5;
     }
 
-    // The narrowest this band may be declared and still hold what is in it,
+    // The narrowest this tissue may be declared and still hold what is in it,
     // which is what the width slider is not allowed below.
     function floorFor(edge, tissue) {
         const usable = root.usableOn(edge);
@@ -458,7 +458,7 @@ Item {
     // its padding and opacity — less whatever the monitor it lands on already
     // has: one place per cell per monitor, the rule the picker keeps. Copying
     // onto its own monitor therefore has nothing left to carry, and the page
-    // says so on the slot instead of offering an empty band.
+    // says so on the slot instead of offering an empty tissue.
 
     property string transfer: ""       // "" | "move" | "copy"
     property var transferFrom: null    // { monitor, edge, place, floatIndex, tissue }
@@ -528,9 +528,9 @@ Item {
     readonly property bool transferEmpty: root.transferFrom !== null
         && root.transferCells.length === 0 && (root.transferFrom.tissue.cells || []).length > 0
 
-    // The share a band on this monitor would be given, or -1 where it will not
+    // The share a tissue on this monitor would be given, or -1 where it will not
     // fit. It keeps the share it had, raised to what its cells need on this
-    // monitor's width and held to what the other bands on the edge leave.
+    // monitor's width and held to what the other tissues on the edge leave.
     function shareAt(edge, place) {
         const from = root.transferFrom;
         if (!from || root.transferEmpty)
@@ -574,9 +574,9 @@ Item {
         if (edge !== "floating" && share < 0)
             return;
 
-        const bands = JSON.parse(JSON.stringify(root.bands));
+        const membranes = JSON.parse(JSON.stringify(root.membranes));
         const floats = JSON.parse(JSON.stringify(root.floats));
-        let bandsChanged = false;
+        let membranesChanged = false;
         let floatsChanged = false;
 
         if (root.moving) {
@@ -584,14 +584,14 @@ Item {
                 floats.splice(from.floatIndex, 1);
                 floatsChanged = true;
             } else {
-                const block = bands.find(b => root.claimsOn(b, from.monitor) && b.edge === from.edge);
+                const block = membranes.find(b => root.claimsOn(b, from.monitor) && b.edge === from.edge);
                 if (block) {
                     const tissues = block.tissues || [];
                     block.tissues = tissues.filter((t, i) =>
                         root.placeOf(t, i, tissues.length) !== from.place);
                     if (block.tissues.length === 0)
-                        bands.splice(bands.indexOf(block), 1);
-                    bandsChanged = true;
+                        membranes.splice(membranes.indexOf(block), 1);
+                    membranesChanged = true;
                 }
             }
         }
@@ -609,7 +609,7 @@ Item {
             chosenIndex = floats.length - 1;
             floatsChanged = true;
         } else {
-            let block = bands.find(b => root.claims(b) && b.edge === edge);
+            let block = membranes.find(b => root.claims(b) && b.edge === edge);
             if (!block) {
                 block = {
                     "monitor": root.monitor,
@@ -619,7 +619,7 @@ Item {
                     "scale": "normal",
                     "tissues": []
                 };
-                bands.push(block);
+                membranes.push(block);
             }
             tissue.anchor = where;
             tissue.percentage = share;
@@ -628,7 +628,7 @@ Item {
             block.tissues = (block.tissues || []).concat([tissue]);
             root.order(block);
             chosenIndex = root.places.indexOf(where);
-            bandsChanged = true;
+            membranesChanged = true;
         }
 
         console.info(`Bioma: ${root.transfer === "move" ? "moving" : "copying"} a tissue from `
@@ -637,8 +637,8 @@ Item {
                      + `${(from.tissue.cells || []).length} cells`);
 
         const pairs = [];
-        if (bandsChanged)
-            pairs.push(["membranes", Registry.renamed(bands)]);
+        if (membranesChanged)
+            pairs.push(["membranes", Registry.renamed(membranes)]);
         if (floatsChanged)
             pairs.push(["floating", Registry.renamed(floats)]);
         Config.setMany(pairs);
@@ -649,7 +649,7 @@ Item {
 
     // ---- The chips, and their order ----------------------------------------
     //
-    // The order of the cells in a band **is** the order they sit in on the
+    // The order of the cells in a tissue **is** the order they sit in on the
     // membrane, from the anchor inward, so changing it is changing the layout
     // — and it is changed by dragging one, the way the dock's icons are.
     //
@@ -754,7 +754,7 @@ Item {
 
     // The one write, and it is refused unless the result is the same cells in
     // a different order: a reorder that has gained or lost one is a bug, and a
-    // band's contents are not worth losing to it.
+    // tissue's contents are not worth losing to it.
     function drop() {
         const from = root.held;
         const to = root.gap;
@@ -773,7 +773,7 @@ Item {
             const before = (tissue.cells || []).map(entry => entry.type).sort().join("\u0000");
             if (next.length !== (tissue.cells || []).length
                 || before !== next.map(entry => entry.type).sort().join("\u0000")) {
-                console.warn("Bioma: the settings cell refused a reorder that changed the band");
+                console.warn("Bioma: the settings cell refused a reorder that changed the tissue");
                 return false;
             }
 
@@ -782,14 +782,14 @@ Item {
         });
     }
 
-    // **One place per cell per monitor.** A cell is on one band of one
+    // **One place per cell per monitor.** A cell is in one tissue of one
     // membrane or in one floating slot, and that place is where a keybind
     // opens it — two would make the keybind a guess. So the picker offers only
     // what is nowhere on this monitor yet: not in this tissue, not in another
-    // band, not floating.
+    // tissue on a membrane, not floating.
     readonly property var placedHere: {
         const out = [];
-        for (const block of root.bands) {
+        for (const block of root.membranes) {
             if (!root.claims(block))
                 continue;
             for (const tissue of (block.tissues || []))
@@ -816,13 +816,13 @@ Item {
     // ---- Drawing ------------------------------------------------------------
 
     // The panel is sized so this page does not scroll (SettingsExpansion's
-    // `panelHeight`). This is the fallback for a band with more cells than
+    // `panelHeight`). This is the fallback for a tissue with more cells than
     // that was measured for — it never moves while the content fits.
     // Everything below is drawn into it and keeps its own coordinates.
     Flickable {
         id: scroller
 
-        // As wide as the page: the page is as wide as the bands it draws, and
+        // As wide as the page: the page is as wide as the tissues it draws, and
         // the scrollbar only shows while the page is moving.
         anchors.fill: parent
         contentWidth: width
@@ -1271,7 +1271,7 @@ Item {
         horizontalAlignment: Text.AlignHCenter
         text: root.transfer !== ""
               ? "Pick a free place for it — here, or on another monitor"
-              : "Pick a band or a floating tissue to see what is in it"
+              : "Pick a tissue to see what is in it"
         color: Theme.textFaint
         font.family: Typography.expressive
         font.pixelSize: root.metrics.fontTitle
@@ -1340,8 +1340,8 @@ Item {
             anchors.fill: parent
             anchors.margins: 12 * root.factor
 
-            // What the band may be, and what it may not: the slider stops at
-            // the width its own cells need, because a band narrower than that
+            // What the tissue may be, and what it may not: the slider stops at
+            // the width its own cells need, because a tissue narrower than that
             // draws a membrane with cells missing from it.
             Item {
                 id: width_
@@ -1439,10 +1439,10 @@ Item {
                     })
                 }
 
-                // Switching the band off. It sits here rather than on the slot
+                // Switching the tissue off. It sits here rather than on the slot
                 // itself: a cross drawn inside the slot puts two tap handlers
                 // under one press — the slot's own answered it as well and lit
-                // the band again in the same frame, which read as the cross
+                // the tissue again in the same frame, which read as the cross
                 // doing nothing at all. Here there is nothing above it.
                 Item {
                     id: douser
@@ -1492,7 +1492,7 @@ Item {
                         anchors.left: cross.right
                         anchors.leftMargin: douser.afterCross
                         anchors.verticalCenter: parent.verticalCenter
-                        text: root.floatingChosen ? "REMOVE" : "REMOVE BAND"
+                        text: "REMOVE TISSUE"
                         color: douserHover.hovered ? Theme.alert : Theme.textMuted
                         font: Qt.font({
                             "family": Typography.technical,
@@ -1517,7 +1517,7 @@ Item {
 
             // Taking the tissue somewhere else: moved, or copied to another
             // monitor. Lit while the tissue is in hand; pressed again, it puts
-            // it back. A row of its own under the band's removal, the other
+            // it back. A row of its own under the tissue's removal, the other
             // thing done to the tissue as a whole: the width row has no room
             // left for two more words beside its slider and its floor.
             Row {
@@ -1532,7 +1532,7 @@ Item {
                 TransferButton { kind: "copy"; label: "COPY" }
             }
 
-            // The cells in the band, in the order they are declared — which
+            // The cells in the tissue, in the order they are declared — which
             // is the order they sit in on the membrane, from the anchor
             // inward. Dragging one changes that order, the same gesture the
             // dock's icons answer to.
@@ -1706,8 +1706,8 @@ Item {
             // ---- The picker -----------------------------------------------
             //
             // It hangs off the add chip on a thread and lists only the cells
-            // that are not in this band already. One that will not fit stays
-            // on the list, dimmed and saying so: seeing that the band is full
+            // that are not in this tissue already. One that will not fit stays
+            // on the list, dimmed and saying so: seeing that the tissue is full
             // is the answer to the question, and hiding it would look like the
             // cell not existing.
 

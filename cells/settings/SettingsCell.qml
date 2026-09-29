@@ -50,8 +50,8 @@ Cell {
     property string category: "appearance"
 
     // Which monitor and which slot the structure page is looking at. Same
-    // reason as the category: somebody widening a band closes this to look at
-    // the result, and comes back to the band they were widening.
+    // reason as the category: somebody widening a tissue closes this to look at
+    // the result, and comes back to the tissue they were widening.
     property string monitor: ""
     property string slotEdge: "top"
     property int slot: -1
