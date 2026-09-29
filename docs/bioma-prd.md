@@ -682,6 +682,102 @@ single most uncertain piece in the project — prototype it early.**
 - **Window mode** needs window geometry from the Niri IPC — the third cell
   depending on that service.
 
+#### Dictation
+
+Speech to text, typed into the focused window. It is part of Utility, not a
+cell of its own: it is one more way of turning something into text, next to
+OCR.
+
+- **Where it sits in the panel.** Under **Text**, the three buttons are
+  **OCR SCREEN · DICTATION · OCR REGION**. Dictation takes Window's place,
+  since text is never recognised from a window. Image and Video keep
+  Screen · Window · Region. The panel stays three buttons wide: the middle
+  button changes with the tab, and it keeps its size and position. Pressing
+  DICTATION closes the panel first, so that focus returns to the window the
+  text is for, and then starts listening. Its icon is a new one, a
+  microphone, drawn in `docs/design/icons/` like the rest.
+- **The keybind is the real entry point.** `qs ipc call capture dictate`
+  toggles: the first press starts listening, the second stops and transcribes.
+  `qs ipc call capture cancel` drops the take, with nothing transcribed and
+  nothing typed. Push-to-talk (hold to speak) is not offered: niri binds act
+  on press, and a release would have to be reconstructed.
+- **Listening.** The cell takes the recording's place: same width, same stop
+  control, present even when its visibility is conditional. What moves is the
+  **microphone level**, a live value, so the form is still in silence and
+  moves as the user speaks. There is no pulse at a fixed rate and no figure.
+  The colour is the alert colour, because an open microphone must be visible
+  from across the room, just like a recording. There is a ceiling,
+  `capture.dictation.max_seconds` (default 120), so a forgotten toggle does
+  not keep the microphone open.
+- **Transcribing.** The microphone is closed, so the alert colour goes. The
+  cell shows the engine's progress as an extent, and the progress is real
+  (`whisper-cli -pp`). Cancel still works.
+- **Delivered.** The text reaches the focused window, and the cell returns to
+  rest with nothing to report. An empty transcript types nothing and says
+  nothing. An engine failure is sent as a notification, since the cell has
+  already gone quiet.
+- **One capture at a time.** Dictation is unavailable while a video is being
+  recorded or waiting for save/discard, and the reverse also holds. The cell
+  has one contracted form to speak with.
+
+**Engine.** whisper.cpp (`whisper-cli`), run locally, one process per take.
+There is no daemon, so nothing holds the model in memory between takes.
+Loading it from the page cache costs a fraction of a second per take. That is
+the price of having no daemon, and it is accepted.
+
+**Installing Bioma installs dictation. Nothing is left for the user to fetch.**
+- `whisper-cpp` (Arch `extra`) provides `whisper-cli`. `ggml-vulkan`
+  (`extra`) gives it the GPU. ggml loads its backends at run time, so a
+  machine with a Vulkan device uses it, and one without falls back to the CPU
+  with no configuration.
+- The model is `large-v3-turbo` quantised to `q5_0`, 547 MB. On the GPU it
+  transcribes ten seconds in under one, and on a CPU it is still usable. It
+  comes from the AUR package `whisper.cpp-model-large-v3-turbo-q5_0`, which
+  pins the file's sha256 and installs it under `/usr/share`. As a dependency
+  it is downloaded once, not with every Bioma release, which it would be if
+  it were a source of Bioma's own PKGBUILD.
+- `python-evdev` (`extra`) for the paste helper.
+- The package also ships a udev rule that tags `/dev/uinput` `uaccess`, and a
+  `modules-load.d` entry for `uinput`. This gives the user at the seat the
+  same access that Steam's controller rules give. It means any program of
+  that user can synthesise input. This is stated in the README, not hidden.
+- A checkout of the repository gets the same list from `scripts/install
+  --check`, like every other dependency.
+
+`capture.dictation.model` defaults to the packaged model's path, and a user
+may point it at another. `capture.dictation.language` defaults to `auto`. If
+the binary or the model is missing anyway, DICTATION is drawn unavailable,
+following the panel's rule that a pair the machine cannot do is not offered.
+
+**Audio.** `pw-record`, 16 kHz mono, into `$XDG_RUNTIME_DIR`. The file is
+deleted once it has been transcribed or cancelled, and it never reaches the
+user's folders. The level shown while listening is the default source's peak,
+read through the Audio service, not by a second capture.
+
+**How the text is typed.** Tested on niri, 2026-09-29, with an accented Italian
+string compared byte for byte:
+
+- `wtype` is ruled out. It uploads a keymap of its own, and Electron
+  (Teams, Obsidian, VS Code) never applies it: it reads the keycodes through
+  the real keymap and types `1234567890-=qwe…`. Qt applies it only after a
+  pause.
+- **Clipboard + a real paste** works everywhere. The text goes to the
+  clipboard, then a Ctrl+V is sent from a uinput keyboard, which passes
+  through the user's real keymap. Terminals take Ctrl+Shift+V instead. The
+  chord is chosen by the focused window's `app_id` against
+  `capture.dictation.terminals`.
+- The clipboard the user had is **restored** after the paste, whatever its
+  type, from the copy the clipboard history already keeps. The dictated text
+  stays in the history.
+- The paste is a small script on `python-evdev`. If `/dev/uinput` is still
+  not writable, for example on a session without a seat or with a module
+  that failed to load, the text is left on the clipboard, and the
+  notification says to paste it. This is degraded, not broken.
+
+**Service.** `services/Dictation.qml`, one singleton: state (`idle`,
+`listening`, `transcribing`), level, progress, and the paste. `Capture` keeps
+screenshots, OCR and recording. The Utility cell reads both.
+
 ### 9.7 Theme and wallpaper
 
 - **Contracted.** The current palette as a live, attractive indicator —
