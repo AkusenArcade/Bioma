@@ -42,17 +42,24 @@ def stop(*_):
 signal.signal(signal.SIGINT, stop)
 signal.signal(signal.SIGTERM, stop)
 
+# A stream opens with a click: the first 50 ms read about 0.86 whatever the
+# room is doing, and the dot jumped at every start. The first two readings are
+# not the voice, so they are reported as silence; the audio is kept as it is.
+OPENING = 2
+
 with wave.open(target, "wb") as out:
     out.setnchannels(1)
     out.setsampwidth(2)
     out.setframerate(RATE)
+    chunks = 0
     while True:
         data = recorder.stdout.read(CHUNK * 2)
         if not data:
             break
         out.writeframes(data)
+        chunks += 1
         samples = array.array("h", data[: len(data) - len(data) % 2])
-        peak = max((abs(s) for s in samples), default=0) / 32768
+        peak = max((abs(s) for s in samples), default=0) / 32768 if chunks > OPENING else 0.0
         print(f"{peak:.3f}", flush=True)
 
 recorder.wait()

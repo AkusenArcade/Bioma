@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Services.Pipewire
 import qs.core
 
@@ -196,12 +197,41 @@ Singleton {
     // and one number is all a visibility condition needs.
     readonly property bool monitoring: Config.get("audio.monitor_signal", true)
 
-    readonly property real peak: peakMonitor.peak
+    readonly property real peak: root.sinkReadable ? peakMonitor.peak : fallback.peak
     readonly property bool signalPresent: peak > 0
+
+    // Quickshell's monitor cannot read a node whose channels are AUX, which
+    // is how a pro-audio interface presents itself: it logs "missing channels
+    // present in capture stream" and reads zero for ever, so Sinestesia never
+    // appeared on a PreSonus Revelator (found with a -30 dB tone, 2026-09-29:
+    // the monitor read 0.000, the tool 0.0300). There the peak is asked of
+    // `sinestesia-bands --peak` instead, which captures in stereo and lets
+    // PipeWire mix the node down to it. One capture either way.
+    readonly property bool sinkReadable: {
+        const channels = root.sink?.audio?.channels ?? [];
+        return !channels.some(channel => channel >= PwAudioChannel.AuxRangeStart);
+    }
 
     PwNodePeakMonitor {
         id: peakMonitor
         node: root.sink
-        enabled: root.monitoring && root.sink !== null
+        enabled: root.monitoring && root.sink !== null && root.sinkReadable
+    }
+
+    Process {
+        id: fallback
+
+        property real peak: 0
+
+        running: root.monitoring && root.sink !== null && !root.sinkReadable
+        // Ten readings a second: the condition only has to see a signal
+        // hold for its confirm step, and its window is longer than a frame.
+        command: ["setpriv", "--pdeathsig", "TERM", Sinestesia.binary, "--peak", "--fps", "10"]
+
+        stdout: SplitParser {
+            onRead: line => fallback.peak = parseFloat(line) || 0
+        }
+
+        onExited: fallback.peak = 0
     }
 }

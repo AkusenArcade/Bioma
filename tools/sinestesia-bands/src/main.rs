@@ -25,6 +25,15 @@
 //!
 //! The process exists only while the shell is listening: when stdout closes it
 //! stops, so nothing has to be told to shut it down.
+//!
+//! `--peak` is the other job: no transform, one line per frame with the
+//! loudest sample of either channel as a linear 0–1 decimal. It is what the
+//! shell asks Sinestesia's visibility from when Quickshell's own peak monitor
+//! cannot read the sink — a pro-audio interface exposes AUX channels, and the
+//! monitor refuses them ("missing channels present in capture stream") and
+//! reads zero for ever. The capture here asks for stereo, and PipeWire mixes
+//! whatever the node has down to it. It stands where the monitor would have
+//! and costs what the monitor did: one capture stream, no transform.
 
 mod audio;
 mod dsp;
@@ -37,6 +46,7 @@ struct Options {
     fps: u32,
     gain: f32,
     source: audio::Source,
+    peak: bool,
 }
 
 impl Default for Options {
@@ -49,6 +59,7 @@ impl Default for Options {
             fps: 60,
             gain: 1.0,
             source: audio::Source::Output,
+            peak: false,
         }
     }
 }
@@ -91,6 +102,7 @@ fn parse(args: impl Iterator<Item = String>) -> anyhow::Result<Options> {
                     other => anyhow::bail!("unknown source: {other}"),
                 }
             }
+            "--peak" => options.peak = true,
             "--help" | "-h" => {
                 println!(
                     "sinestesia-bands — spectrum bands for Bioma, on Sinestesia's contract\n\
@@ -99,6 +111,7 @@ fn parse(args: impl Iterator<Item = String>) -> anyhow::Result<Options> {
                      --fps N      frames per second (default 60)\n\
                      --gain F     multiplier applied after the dB mapping (default 1.0)\n\
                      --source S   output (the sink's monitor) or input (default output)\n\
+                     --peak       one linear 0–1 peak per frame instead of bands\n\
                      \n\
                      One line per frame: the left channel's bands then the\n\
                      right channel's, two hex digits each, 00 to ff."
@@ -139,13 +152,26 @@ fn main() -> anyhow::Result<()> {
     loop {
         line.clear();
 
-        ring.snapshot(audio::Channel::Left, &mut samples);
-        write_bands(&mut line, left.analyze(&samples));
+        if options.peak {
+            // The window is the last FFT_SIZE samples, about 43 ms: longer
+            // than a frame at the rates the shell asks for, so nothing falls
+            // between two readings.
+            let mut loudest = 0.0f32;
+            for channel in [audio::Channel::Left, audio::Channel::Right] {
+                ring.snapshot(channel, &mut samples);
+                loudest = samples.iter().fold(loudest, |m, s| m.max(s.abs()));
+            }
+            use std::fmt::Write as _;
+            let _ = writeln!(line, "{:.4}", loudest.min(1.0));
+        } else {
+            ring.snapshot(audio::Channel::Left, &mut samples);
+            write_bands(&mut line, left.analyze(&samples));
 
-        ring.snapshot(audio::Channel::Right, &mut samples);
-        write_bands(&mut line, right.analyze(&samples));
+            ring.snapshot(audio::Channel::Right, &mut samples);
+            write_bands(&mut line, right.analyze(&samples));
 
-        line.push('\n');
+            line.push('\n');
+        }
 
         // A closed pipe is how the shell says it has stopped looking.
         let mut handle = stdout.lock();
