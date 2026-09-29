@@ -217,6 +217,10 @@ Cell {
         active: root.asPanel
         visible: root.asPanel
 
+        // Held off the top by the same inset as the sides and the bottom. The
+        // slot it sits in is the whole cell, so without it the field sat
+        // against the top edge and both insets piled up under the last row.
+        y: root.inset
         width: root.contentWidth
         height: root.bodyExtent - root.inset * 2
         opacity: root.grown ? 1 : 0
