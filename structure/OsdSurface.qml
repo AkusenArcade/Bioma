@@ -79,11 +79,11 @@ PanelWindow {
     readonly property real centreX: width / 2
     readonly property real centreY: height - 3 * metrics.cellHeight - capsuleHeight / 2
 
-    RectangularShadow {
+    OuterShadow {
         anchors.fill: capsule
         radius: capsule.radius
         blur: 44
-        offset.y: 22
+        offsetY: 22
         color: Theme.shadowFloat
         opacity: Timing.shadowFor(root.growth)
     }

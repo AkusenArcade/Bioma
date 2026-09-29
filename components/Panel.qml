@@ -60,12 +60,14 @@ Item {
 
     // Only invoked and expanded cells carry a shadow; a contracted cell never
     // does.
-    RectangularShadow {
+    // Outside the shape only, as the design's box-shadow is: under the
+    // translucent fill it darkened what the blur showed through.
+    OuterShadow {
         anchors.fill: parent
         radius: root.radius
         blur: 28
         spread: 0
-        offset.y: 14
+        offsetY: 14
         color: Theme.shadow
         opacity: Timing.shadowFor(root.growth)
     }

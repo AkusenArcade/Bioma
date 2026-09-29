@@ -3,6 +3,7 @@ import QtQuick.Effects
 import Quickshell
 import Quickshell.Wayland
 import qs.core
+import qs.components
 import qs.structure
 
 // A tissue with no membrane: anchored to a corner or centred, over the
@@ -412,12 +413,12 @@ PanelWindow {
     // Only invoked and expanded surfaces carry a shadow, and a floating one
     // carries the deeper of the two: it is the one thing on the screen that is
     // not attached to an edge, and the shadow is what says so.
-    RectangularShadow {
+    OuterShadow {
         anchors.fill: tissue
         radius: tissue.radius
         blur: 44
         spread: 0
-        offset.y: 22
+        offsetY: 22
         color: Theme.shadowFloat
         // The shadow leaves before the shapes: it follows cells that are
         // standing, not ones fading or shrinking away, and it goes in the

@@ -507,8 +507,14 @@ Item {
         return false;
     }
 
+    // Only on a membrane. A floating tissue holds nothing but its cells and
+    // has no band to show: its fill only stood under them, a second layer
+    // between a cell and the blurred desktop, and with the shadow that was
+    // under it too a floating panel let through about 8 % of what was behind
+    // it (Akusen, 2026-09-29).
     Rectangle {
         anchors.fill: parent
+        visible: !root.floating
         color: Qt.alpha(Theme.elevated, root.fillOpacity)
         radius: root.radius
         antialiasing: true
