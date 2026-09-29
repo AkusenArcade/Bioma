@@ -1709,7 +1709,9 @@ Item {
             // that are not in this tissue already. One that will not fit stays
             // on the list, dimmed and saying so: seeing that the tissue is full
             // is the answer to the question, and hiding it would look like the
-            // cell not existing.
+            // cell not existing. With every cell already placed on this monitor
+            // the list is empty, and the picker says so in its one row rather
+            // than hanging an empty capsule off the thread.
 
             Thread {
                 id: pickerLink
@@ -1732,8 +1734,22 @@ Item {
                 width: root.pickerWidth
                 x: chips.x + chips.width + root.threadLength
                 y: chips.y
-                height: Math.min(parent.height - y, root.absent.length * root.rowHeight
+                height: Math.min(parent.height - y, Math.max(1, root.absent.length) * root.rowHeight
                                  + 12 * root.factor)
+
+                Text {
+                    anchors.left: parent.left
+                    anchors.leftMargin: 14 * root.factor
+                    anchors.right: parent.right
+                    anchors.rightMargin: 14 * root.factor
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: root.absent.length === 0
+                    text: "every cell is on this monitor"
+                    elide: Text.ElideRight
+                    color: Theme.textFaint
+                    font.family: Typography.expressive
+                    font.pixelSize: 14 * root.factor
+                }
 
                 ListView {
                     id: options
