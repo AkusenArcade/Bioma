@@ -3,7 +3,6 @@
 
   "appearance": {
     "radius": 100,
-    "xray": false,
     "edge": 12,
     "gap": 24
   },

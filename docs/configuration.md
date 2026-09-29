@@ -47,12 +47,13 @@ declares a blur region through `ext-background-effect`, which is exactly how
 Bioma asks for it — the shape of each cell and nothing else, never the whole
 membrane.
 
-What the file says is `xray false`, and it has to. niri defaults xray to true
-whenever a background effect is visible, because it is the cheaper of the two:
-xray blurs the compositor's *backdrop* rather than what is actually behind the
-surface. Bioma draws its own wallpaper on a layer surface of its own, so that
-backdrop is a flat colour — and the cells come out as slabs you can see nothing
-through, which is exactly how this was found.
+What the file does say is `xray false`, for the membranes, the floating tissues
+and the OSD alike, so every Bioma surface blurs what is really underneath it.
+niri defaults xray to true whenever a background effect is visible, and on
+niri 26.04 xray paints the backdrop over the whole layer surface rather than
+the declared blur region. A membrane's surface is as tall as the screen, to
+hold the panels that hang from it, so xray there covered every window with the
+wallpaper. That is why it is not a setting.
 
 Besides that one, Bioma writes files of its own next to `config.kdl`, and adds
 their `include` line to the end of it the first time:
@@ -81,7 +82,6 @@ names and leaves the rest of the section where the user set it.
 | Key | Meaning |
 |---|---|
 | `radius` | One value as a percentage of the drawn shapes: 100 is the design as it stands, 0 a rectangle. It reaches every surface — cells, tissues, panels, wells, capsules, rows, controls — not only the cells on the membrane, because a shell with square cells and round capsules inside them is two shells. What it does not reach is what is round because of what it is: an avatar, a dial, a radio mark, a thread's node. A cell's radius is its tissue's minus the padding, so concentric corners are automatic at every value. |
-| `xray` | On: blur a static copy of the wallpaper — cheap, but it blurs the wallpaper even when windows are underneath. Off: blur the actual underlying content — correct, more expensive, still experimental. |
 | `edge` | Margin between the screen edge and a tissue, in logical units. |
 | `gap` | Distance between the shapes of one open cell — a capsule and the panel beside it, the pods and the list. |
 

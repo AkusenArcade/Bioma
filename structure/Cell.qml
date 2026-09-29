@@ -1039,9 +1039,6 @@ Item {
         HoverHandler { id: bridgeHover }
     }
 
-    // TODO Phase 0: `appearance.xray` — blur a static copy of the wallpaper
-    // instead of the live content underneath. It is a configuration key, not a
-    // fixed choice, and the cheap path is the one this build has not exercised.
     // TODO Phase 2: a cell that replaces its contracted content with a header
     // form when it opens — the vitals indicators fade and the cell becomes the
     // title of its own expansion.
