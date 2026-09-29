@@ -38,6 +38,7 @@ something is, never **how hard** it is working.
 | `workspaces.svg` | workspaces cell; shifts one step on workspace change |
 | `capture.svg` | utility cell at rest |
 | `screen.svg` `window.svg` `region.svg` | capture targets |
+| `microphone.svg` | dictation: the Text tab's middle source, and the utility cell while it listens |
 | `lock.svg` | session command; also the secured-network marker at 12 px |
 | `suspend.svg` `restart.svg` `power.svg` `logout.svg` | session commands |
 | `bell.svg` | notification cell and history rows |

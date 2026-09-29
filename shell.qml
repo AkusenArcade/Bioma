@@ -320,6 +320,30 @@ ShellRoot {
             Capture.stopRecording();
             return "stopped";
         }
+
+        // Dictation (PRD §9.6): the first call listens, the second stops and
+        // types what was said into the focused window. Cancel drops the take.
+        function dictate(): string {
+            if (Dictation.listening) {
+                Dictation.stop();
+                return "transcribing";
+            }
+            if (Dictation.active)
+                return "busy";
+            if (Dictation.blocked)
+                return "a recording is in progress";
+            if (!Dictation.available)
+                return "whisper-cli or its model is missing";
+            Dictation.start();
+            return "listening";
+        }
+
+        function cancel(): string {
+            if (!Dictation.active)
+                return "not dictating";
+            Dictation.cancel();
+            return "cancelled";
+        }
     }
 
     // TODO Phase 3: the last user of the input surface — cells positioned at

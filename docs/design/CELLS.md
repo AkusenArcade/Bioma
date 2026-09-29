@@ -274,22 +274,32 @@ exist and port when decided.
 
 ## 06 · Utility
 
-*Icon only · no state · counts while it records.*
+*Icon only · no state · counts while it records · listens while it dictates.*
 
-Screenshots, regions, OCR and recording. The first purely functional cell: at rest it has
+Screenshots, regions, OCR, recording and dictation. The first purely functional cell: at rest it has
 nothing to represent, so it shows only its icon. While it records, it is the recording: a
 recording has a duration, and what has a duration needs a cell to say so.
 
 **At rest** — the icon alone. No number, no state colour.
 
 **Expanded** — what is captured on top (Image, Video, Text), where it is captured from below
-(Screen, Window, Region). Two independent choices, never a list of six.
+(Screen, Window, Region). Two independent choices, never a list of six. Under **Text** the row
+reads **OCR SCREEN · DICTATION · OCR REGION**: text is never recognised from a window, so the
+middle place is dictation's, with the same size and position and the `microphone` glyph.
 
 **While recording** — the cell itself shows the elapsed time and a stop control, and is present
 even when its visibility is conditional. The dot pulses in the alert colour, because here the
 machine really is measuring something: it is writing to disk, and that must be visible from
 across the room. Only the stop control stops; the rest of the pill still opens the panel, where
 video is unavailable until the recording has been answered.
+
+**While dictating** — the same place and the same rule as a recording. Listening: the
+`microphone` glyph (18 px, primary gradient) says what, the alert dot says the microphone is
+open, the seconds spoken count toward the ceiling, and the stop control ends the take. The dot's
+size is the **voice**, not the clock: 9 px in silence, up to 1.6× as the level rises (−50 dB to
+0 dB), smoothed over one grow step. Silence is still. Transcribing: the microphone is closed, so
+the alert goes. The glyph stays, with the loader beside it, for exactly as long as the engine
+runs. Then the cell is at rest again, and the text is in the focused window.
 
 **On stop** — save or discard. The confirmation grows from the cell itself, like closing a
 process, and the video sits in a temporary directory until it is saved.
@@ -302,6 +312,9 @@ process, and the video sits in a temporary directory until it is saved.
 - Image: the result goes to the clipboard **and** the screenshots folder. Text: recognises the
   region, text to the clipboard.
 - Video: no audio, H.264 High Profile, 60 fps, MP4 container.
+- Dictation: whisper.cpp, run locally. The text is pasted into the focused window through the
+  clipboard, which is then restored. One capture at a time: dictation is unavailable during a
+  recording and its question, and video is unavailable while dictating.
 - Also invokable: same implementation, two placements.
 
 **Why** — recording was a cell of its own until 2026-09-27, so that it could be stopped
@@ -317,6 +330,8 @@ during a recording. `qs ipc call capture stop` stops one from anywhere.
 | mode button | 112 × 92 px | radius 20, icon 28, label 11/500 |
 | while recording | 40 px | dot 9 px, time in Orbitron 14 tabular |
 | confirmation | 40 px | grows in width from the cell; not a window |
+| while listening | 40 px | glyph 18 px, dot 9 → 14.4 px on the voice, time in Orbitron 14, stop 26 px |
+| while transcribing | 40 px | glyph 18 px, loader 18 px |
 
 See `IMPLEMENTATION.md` → Capture for even dimensions, physical pixels and window geometry.
 

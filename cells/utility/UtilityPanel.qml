@@ -34,6 +34,7 @@ Item {
 
     readonly property string what: root.cell ? root.cell.what : "image"
     readonly property string from: root.cell ? root.cell.from : "screen"
+    readonly property bool forText: root.what === "text"
 
     Segmented {
         id: kinds
@@ -126,8 +127,24 @@ Item {
         anchors.bottom: parent.bottom
         spacing: root.buttonGap
 
-        Source { key: "screen"; label: "SCREEN"; icon: "screen" }
-        Source { key: "window"; label: "WINDOW"; icon: "window" }
-        Source { key: "region"; label: "REGION"; icon: "region" }
+        // Under Text the row reads OCR SCREEN · DICTATION · OCR REGION: text
+        // is never recognised from a window, so the middle place is
+        // dictation's, same size, same position (PRD §9.6). The key stays
+        // `window`, which is what the configuration remembers.
+        Source {
+            key: "screen"
+            label: root.forText ? "OCR SCREEN" : "SCREEN"
+            icon: "screen"
+        }
+        Source {
+            key: "window"
+            label: root.forText ? "DICTATION" : "WINDOW"
+            icon: root.forText ? "microphone" : "window"
+        }
+        Source {
+            key: "region"
+            label: root.forText ? "OCR REGION" : "REGION"
+            icon: "region"
+        }
     }
 }

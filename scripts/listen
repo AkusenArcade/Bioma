@@ -1,0 +1,58 @@
+#!/usr/bin/env python3
+# Record the microphone for Bioma's dictation, and say how loud it is.
+#
+#     listen <file.wav>
+#
+# Writes 16 kHz mono WAV, what whisper.cpp reads, and prints the peak of every
+# 50 ms on its own line, 0–1, for the cell to draw while it listens. Stops on
+# SIGINT or SIGTERM and closes the file properly.
+#
+# The level is measured here rather than by a PipeWire peak monitor on the
+# source: a pro-audio interface exposes its inputs as AUX channels, and
+# Quickshell's monitor refuses those ("missing channels present in capture
+# stream"), which left the level at zero. pw-record downmixes whatever the
+# source has to the one channel asked for, so reading its own stream measures
+# exactly what is being transcribed, with no second capture.
+
+import array
+import os
+import signal
+import subprocess
+import sys
+import wave
+
+RATE = 16000
+CHUNK = RATE // 20          # 50 ms of samples
+target = sys.argv[1]
+
+os.makedirs(os.path.dirname(target) or ".", exist_ok=True)
+recorder = subprocess.Popen(
+    ["pw-record", "--rate", str(RATE), "--channels", "1", "--format", "s16", "-"],
+    stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+
+stopping = False
+
+
+def stop(*_):
+    global stopping
+    stopping = True
+    recorder.send_signal(signal.SIGINT)
+
+
+signal.signal(signal.SIGINT, stop)
+signal.signal(signal.SIGTERM, stop)
+
+with wave.open(target, "wb") as out:
+    out.setnchannels(1)
+    out.setsampwidth(2)
+    out.setframerate(RATE)
+    while True:
+        data = recorder.stdout.read(CHUNK * 2)
+        if not data:
+            break
+        out.writeframes(data)
+        samples = array.array("h", data[: len(data) - len(data) % 2])
+        peak = max((abs(s) for s in samples), default=0) / 32768
+        print(f"{peak:.3f}", flush=True)
+
+recorder.wait()

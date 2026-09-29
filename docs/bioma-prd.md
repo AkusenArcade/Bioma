@@ -710,8 +710,10 @@ OCR.
   `capture.dictation.max_seconds` (default 120), so a forgotten toggle does
   not keep the microphone open.
 - **Transcribing.** The microphone is closed, so the alert colour goes. The
-  cell shows the engine's progress as an extent, and the progress is real
-  (`whisper-cli -pp`). Cancel still works.
+  glyph stays, with the loader beside it for as long as the engine runs.
+  A take of a few seconds is transcribed in one pass, and most of the wait is
+  loading the model, so `whisper-cli` has no progress worth drawing. The
+  loader's meaning, "no value yet", is exactly true here. Cancel still works.
 - **Delivered.** The text reaches the focused window, and the cell returns to
   rest with nothing to report. An empty transcript types nothing and says
   nothing. An engine failure is sent as a notification, since the cell has
@@ -751,8 +753,11 @@ following the panel's rule that a pair the machine cannot do is not offered.
 
 **Audio.** `pw-record`, 16 kHz mono, into `$XDG_RUNTIME_DIR`. The file is
 deleted once it has been transcribed or cancelled, and it never reaches the
-user's folders. The level shown while listening is the default source's peak,
-read through the Audio service, not by a second capture.
+user's folders. The level shown while listening is measured by the recorder
+itself (`scripts/listen`), from the same mono stream it writes. It is not
+taken from a PipeWire peak monitor on the source: a pro-audio interface
+exposes its inputs as AUX channels, and Quickshell's monitor refuses them, so
+the level stayed at zero (found on a PreSonus Revelator, 2026-09-29).
 
 **How the text is typed.** Tested on niri, 2026-09-29, with an accented Italian
 string compared byte for byte:
@@ -767,8 +772,9 @@ string compared byte for byte:
   chord is chosen by the focused window's `app_id` against
   `capture.dictation.terminals`.
 - The clipboard the user had is **restored** after the paste, whatever its
-  type, from the copy the clipboard history already keeps. The dictated text
-  stays in the history.
+  type. The paste script reads it just before it copies, so this works
+  without the clipboard history as well. The dictated text stays in the
+  history.
 - The paste is a small script on `python-evdev`. If `/dev/uinput` is still
   not writable, for example on a session without a seat or with a module
   that failed to load, the text is left on the clipboard, and the

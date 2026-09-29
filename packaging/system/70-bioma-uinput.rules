@@ -1,0 +1,5 @@
+# Bioma's dictation pastes with a real Ctrl+V from a uinput keyboard, because
+# a typed keymap is ignored by Electron applications. This gives the user at
+# the seat access to /dev/uinput: the same rule steam-devices ships for game
+# controllers. Any program of that user can then synthesise input.
+KERNEL=="uinput", SUBSYSTEM=="misc", TAG+="uaccess", OPTIONS+="static_node=uinput"

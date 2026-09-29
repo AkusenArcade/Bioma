@@ -86,6 +86,28 @@ want ddcutil    ddcutil         "external monitor brightness"
 want pw-play    pipewire        "the alarm's sound"
 want lspci      pciutils        "the graphics card, in the System cell"
 want notify-send libnotify      "the timer and alarm notifications"
+want pw-record  pipewire        "dictation: the microphone"
+want whisper-cli whisper-cpp    "dictation: the engine"
+
+# Dictation's other three parts are not programs. The package brings all of
+# them; a checkout is told what is missing, like everything above.
+dictation_part() {   # present?, name, what for, where from
+    if [ "$1" = yes ]; then
+        printf '  ok        %-14s %s\n' "$2" "$3"
+    else
+        printf '  optional  %-14s %s  (%s)\n' "$2" "$3" "$4"
+    fi
+}
+model=/usr/share/whisper.cpp-model-large-v3-turbo-q5_0/ggml-large-v3-turbo-q5_0.bin
+dictation_part "$([ -r "$model" ] && echo yes)" "model" "dictation: large-v3-turbo q5_0" \
+    "AUR whisper.cpp-model-large-v3-turbo-q5_0"
+dictation_part "$(ls /usr/lib/ggml/libggml-vulkan*.so >/dev/null 2>&1 && echo yes)" "ggml-vulkan" \
+    "dictation on the GPU; without it, the CPU" "ggml-vulkan"
+dictation_part "$(python3 -c 'import evdev' 2>/dev/null && echo yes)" "python-evdev" \
+    "dictation: pasting into the window" "python-evdev"
+dictation_part "$([ -w /dev/uinput ] && echo yes)" "/dev/uinput" \
+    "dictation: pasting; without it the text stays on the clipboard" \
+    "packaging/system/70-bioma-uinput.rules into /etc/udev/rules.d"
 
 if command -v niri >/dev/null 2>&1; then
     version="$(niri --version 2>/dev/null | awk '{print $2}')"

@@ -92,6 +92,11 @@ Singleton {
     // A dwell, not an animation, so the speed setting leaves it alone.
     readonly property int osd: Config.get("timing.osd", 1500)
 
+    // How long after dictation has pasted the clipboard stays quiet: the
+    // restore of what the user had copied reaches the history a moment later,
+    // and it is not a copy the clipboard cell should announce. Not scaled.
+    readonly property int hush: Config.get("timing.hush", 1000)
+
     // How long the greeter's welcome stays before the screen goes dark: long
     // enough to be read once. A dwell too, so the speed setting leaves it alone.
     readonly property int welcome: Config.get("timing.welcome", 900)

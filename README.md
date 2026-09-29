@@ -137,6 +137,7 @@ Linux (CachyOS). Package names below are Arch's.
 |---|---|---|
 | matugen | `matugen` | palettes computed from the wallpaper |
 | grim, tesseract | `grim`, `tesseract` | screenshots and text recognition |
+| whisper.cpp, its model, python-evdev | `whisper-cpp`, `ggml-vulkan`, AUR `whisper.cpp-model-large-v3-turbo-q5_0`, `python-evdev` | dictation — see [Dictation](#dictation). The AUR package brings all of it |
 | wl-screenrec or wf-recorder | `wl-screenrec`, `wf-recorder` | screen recording (VAAPI; the second is the fallback) |
 | NetworkManager | `networkmanager` | Wi-Fi, wired, VPN profiles, proxy triggers |
 | BlueZ | `bluez`, `bluez-utils` | Bluetooth |
@@ -211,6 +212,7 @@ Then start it with `scripts/shell bioma`, or log in again. After an update,
 | `Mod+Print` | a screenshot of the monitor the keyboard is on |
 | `Alt+Print` | a screenshot of the window that has the focus |
 | `Shift+Print` | stop a recording, wherever the utility cell is |
+| `Mod+Alt+D` | dictation: press to speak, press again to type it into the focused window |
 | `Mod+Alt+L` | lock the session |
 | `Mod+Alt+B` | switch between Bioma and the other shell |
 
@@ -218,6 +220,31 @@ The volume, brightness and media keys go to Bioma too. Every other cell also
 answers `qs -p /path/to/Bioma/shell.qml ipc call cell toggle <name>`, so any
 key can be given to any cell from the Keybinds page. Escape, or a press
 anywhere else, closes what is open.
+
+### Dictation
+
+Speech to text, in the utility cell: under **Text** the middle button is
+DICTATION, or `Mod+Alt+D` from anywhere. The first press listens, and the cell
+shows the open microphone, its level and the seconds spoken. The second press
+transcribes, locally, with whisper.cpp, and the text lands in the window that
+has the focus. `qs -p shell.qml ipc call capture cancel` drops a take.
+
+The text is **pasted**, not typed. A typed keymap is ignored by Electron
+applications, Teams, Obsidian and VS Code among them, and accented letters
+arrive as other keys. So the text goes to the clipboard, a real Ctrl+V is
+sent from a virtual keyboard (Ctrl+Shift+V in a terminal), and the clipboard
+you had is put back.
+
+That keyboard needs `/dev/uinput`. The package installs a udev rule giving it
+to the user at the seat, the same rule `steam-devices` ships for game
+controllers. Be aware of what that means: **any program you run can then
+synthesise keyboard and mouse input.** Without it, dictation still works: the
+text is left on the clipboard, and a notification says to paste it.
+
+The model is `large-v3-turbo`, quantised (547 MB). It runs on the GPU through
+Vulkan when there is one, and on the CPU otherwise.
+`capture.dictation` in the configuration picks another model, the language,
+and the terminals that paste with Ctrl+Shift+V.
 
 ### The lock screen
 

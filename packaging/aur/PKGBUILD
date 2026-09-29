@@ -20,6 +20,11 @@ depends=(
     'gcc-libs'
     'glibc'
     'util-linux'
+    # Dictation (PRD §9.6): installing Bioma installs all of it.
+    'whisper-cpp'
+    'ggml-vulkan'
+    'whisper.cpp-model-large-v3-turbo-q5_0'
+    'python-evdev'
 )
 makedepends=('cargo' 'clang' 'pipewire')
 optdepends=(
@@ -97,4 +102,11 @@ package() {
     install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
     install -Dm644 docs/configuration.md "$pkgdir/usr/share/doc/$pkgname/configuration.md"
     install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+
+    # Dictation pastes through a uinput keyboard: the seat's user gets
+    # /dev/uinput, as steam-devices gives it for controllers.
+    install -Dm644 packaging/system/70-bioma-uinput.rules \
+        "$pkgdir/usr/lib/udev/rules.d/70-bioma-uinput.rules"
+    install -Dm644 packaging/system/bioma-uinput.conf \
+        "$pkgdir/usr/lib/modules-load.d/bioma-uinput.conf"
 }

@@ -5,7 +5,7 @@ import qs.components
 import qs.structure
 import qs.services
 
-// Screenshots, regions, text recognition and recording.
+// Screenshots, regions, text recognition, recording and dictation.
 //
 // The first purely functional cell: at rest it has nothing to represent, so it
 // shows its icon and nothing else — no figure, no state colour, because it
@@ -23,6 +23,13 @@ import qs.services
 // and that has to be visible from the other side of the room. It beats once per
 // counted second, so the movement is the count and not a decoration.
 //
+// While it listens for dictation it is the listening, in the same place and
+// by the same rule: the microphone glyph says what, the alert dot says the
+// microphone is open, and the dot's size is the voice — still in silence,
+// swelling as the user speaks. Transcribing, the microphone is closed and the
+// alert goes with it; the loader stands beside the glyph until the text is
+// there, because the engine gives no progress for a take this short.
+//
 // See docs/design/CELLS.md §06.
 Cell {
     id: root
@@ -39,12 +46,14 @@ Cell {
     // Recording, then the question. The cell stands for both, because the file
     // it is asking about is the one it just made.
     readonly property bool confirming: !Capture.recording && Capture.pendingVideo.length > 0
-    readonly property bool idle: !root.recording && !root.confirming
+    readonly property bool dictating: Dictation.active
+    readonly property bool idle: !root.recording && !root.confirming && !root.dictating
 
     // Something is happening, and it must not be what a narrow tissue drops.
     busy: !root.idle
 
     readonly property real dotSize: 9 * metrics.factor
+    readonly property real micSize: 18 * metrics.factor
     readonly property real stopSize: 26 * metrics.factor
     readonly property real spacing: 11 * metrics.factor
     readonly property int fontTime: Math.round(14 * metrics.factor)
@@ -57,12 +66,13 @@ Cell {
     paddingLeading: (root.idle ? 10 : 16) * metrics.factor
     paddingTrailing: (root.idle ? 10 : root.confirming ? 6 : 16) * metrics.factor
 
-    readonly property string elapsed: {
-        const total = Capture.elapsed;
+    function clock(total) {
         const minutes = Math.floor(total / 60);
         const seconds = total % 60;
         return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
     }
+
+    readonly property string elapsed: root.clock(Capture.elapsed)
 
     // Open, the cell becomes the title of the panel it opened: the glyph of its
     // domain and its name, in the technical voice, like every other cell with
@@ -102,6 +112,7 @@ Cell {
 
     contentWidth: root.confirming ? question.implicitWidth
                 : root.recording ? counter.implicitWidth
+                : root.dictating ? dictation.implicitWidth
                 : iconSize
 
     replacesContent: true
@@ -116,15 +127,21 @@ Cell {
     // Video is the recorder's, and it cannot record a window: `wl-screenrec`
     // takes an output or a region and nothing else. Text is `tesseract` over a
     // captured region, and a window has no region here — niri reports no window
-    // position, so the compositor captures it by id. And there is one recorder:
-    // a second recording while one runs, or while the last one waits for its
-    // answer, would take the file being asked about. A pair that cannot be done
-    // is shown as unavailable rather than offered and then refused.
+    // position, so the compositor captures it by id. So under Text the middle
+    // place is dictation's (PRD §9.6): OCR SCREEN · DICTATION · OCR REGION.
+    //
+    // And there is one capture at a time: a second recording while one runs,
+    // or while the last one waits for its answer, would take the file being
+    // asked about, and dictation would take the cell's one contracted form. A
+    // pair that cannot be done is shown as unavailable rather than offered and
+    // then refused — dictation too, when the engine or its model is missing.
     function supports(what, from) {
         if (what === "video" && !root.idle)
             return false;
         if (from !== "window")
             return true;
+        if (what === "text")
+            return root.idle && Dictation.available;
         return what === "image";
     }
 
@@ -199,40 +216,120 @@ Cell {
             }
         }
 
-        Text {
+        Clock {
             anchors.verticalCenter: parent.verticalCenter
             text: root.elapsed
-            color: Theme.text
-            font: Typography.tabular(Qt.font({
-                "family": Typography.technical,
-                "pixelSize": root.fontTime,
-                "weight": Typography.weightLabel,
-                "letterSpacing": Typography.tracking(root.fontTime, Typography.labelTracking)
-            }))
         }
 
-        // The stop control, in the colour of what it stops. It takes the
-        // press for itself, or the same press would stop the recording and
-        // open the panel.
+        Stop {
+            anchors.verticalCenter: parent.verticalCenter
+            onStopped: Capture.stopRecording()
+        }
+    }
+
+    // The seconds counted, at the width of "00:00" whatever they read.
+    // Orbitron has no tabular figures, so `tnum` changes nothing and a 1 is
+    // narrower than a 0: the pill narrowed and widened every second, a
+    // movement that measured nothing (Akusen, 2026-09-29).
+    component Clock: Text {
+        id: clock
+
+        width: widest.advanceWidth
+        horizontalAlignment: Text.AlignHCenter
+        color: Theme.text
+        font: Typography.tabular(Qt.font({
+            "family": Typography.technical,
+            "pixelSize": root.fontTime,
+            "weight": Typography.weightLabel,
+            "letterSpacing": Typography.tracking(root.fontTime, Typography.labelTracking)
+        }))
+
+        TextMetrics {
+            id: widest
+            font: clock.font
+            text: "00:00"
+        }
+    }
+
+    // The stop control, in the colour of what it stops. It takes the press
+    // for itself, or the same press would stop the recording and open the
+    // panel.
+    component Stop: Item {
+        id: stop
+
+        signal stopped
+
+        width: root.stopSize
+        height: width
+
+        Rectangle {
+            anchors.fill: parent
+            radius: width / 2
+            color: "transparent"
+            border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
+            border.color: Qt.alpha(Theme.alert, 0.55)
+            antialiasing: true
+        }
+
+        Rectangle {
+            anchors.centerIn: parent
+            width: 10 * root.metrics.factor
+            height: width
+            radius: 2 * root.metrics.factor
+            antialiasing: true
+
+            gradient: Gradient {
+                GradientStop { position: 0; color: Theme.gradientTop(Theme.alert) }
+                GradientStop { position: 1; color: Theme.gradientBottom(Theme.alert) }
+            }
+        }
+
+        TapHandler {
+            gesturePolicy: TapHandler.WithinBounds
+            onTapped: stop.stopped()
+        }
+    }
+
+    // ---- While it listens ---------------------------------------------------
+    //
+    // The glyph, the open microphone, the seconds spoken, the stop. The dot
+    // is the recording's, but what moves it is the voice rather than the
+    // clock: its size follows the microphone's level, so silence is still.
+
+    Row {
+        id: dictation
+
+        anchors.verticalCenter: parent.verticalCenter
+        spacing: root.spacing
+        visible: root.dictating
+
+        Icon {
+            anchors.verticalCenter: parent.verticalCenter
+            name: "microphone"
+            width: root.micSize
+            height: width
+            gradient: true
+        }
+
         Item {
             anchors.verticalCenter: parent.verticalCenter
-            width: root.stopSize
+            visible: Dictation.listening
+            width: root.dotSize * 1.6
             height: width
 
             Rectangle {
-                anchors.fill: parent
-                radius: width / 2
-                color: "transparent"
-                border.width: Metrics.crisp(Metrics.rimWidth, Screen.devicePixelRatio)
-                border.color: Qt.alpha(Theme.alert, 0.55)
-                antialiasing: true
-            }
+                id: voice
 
-            Rectangle {
+                // Width and height rather than a scale, like every other
+                // growth in the shell; smoothed over one grow step so a
+                // syllable reads as a swell and not a flicker.
+                property real size: root.dotSize * (1 + 0.6 * Dictation.level)
+                Behavior on size { NumberAnimation { duration: Timing.grow } }
+
                 anchors.centerIn: parent
-                width: 10 * root.metrics.factor
-                height: width
-                radius: 2 * root.metrics.factor
+                width: voice.size
+                height: voice.size
+                radius: width / 2
                 antialiasing: true
 
                 gradient: Gradient {
@@ -240,11 +337,28 @@ Cell {
                     GradientStop { position: 1; color: Theme.gradientBottom(Theme.alert) }
                 }
             }
+        }
 
-            TapHandler {
-                gesturePolicy: TapHandler.WithinBounds
-                onTapped: Capture.stopRecording()
-            }
+        Clock {
+            anchors.verticalCenter: parent.verticalCenter
+            visible: Dictation.listening
+            text: root.clock(Dictation.elapsed)
+        }
+
+        Stop {
+            anchors.verticalCenter: parent.verticalCenter
+            visible: Dictation.listening
+            onStopped: Dictation.stop()
+        }
+
+        // No value yet, and no way to know how long until there is one: the
+        // loader, beside the glyph, and only for as long as the wait lasts.
+        Sweep {
+            anchors.verticalCenter: parent.verticalCenter
+            visible: Dictation.transcribing
+            running: Dictation.transcribing
+            width: root.micSize
+            height: width
         }
     }
 
@@ -305,6 +419,13 @@ Cell {
 
         if (from === "region") {
             Capture.selectRegion();
+            return;
+        }
+
+        // Closing the panel first gives the focus back to the window the text
+        // is for; the paste goes wherever the focus is when the text is ready.
+        if (what === "text" && from === "window") {
+            Dictation.start();
             return;
         }
 

@@ -95,7 +95,15 @@
     "from": "screen",
     "fps": 60,
     "codec": "avc",
-    "bitrate": "5 MB"
+    "bitrate": "5 MB",
+    "dictation": {
+      "model": "/usr/share/whisper.cpp-model-large-v3-turbo-q5_0/ggml-large-v3-turbo-q5_0.bin",
+      "language": "auto",
+      "max_seconds": 120,
+      "terminals": ["Alacritty", "foot", "footclient", "kitty", "com.mitchellh.ghostty",
+                    "org.wezfurlong.wezterm", "org.kde.konsole", "org.gnome.Console",
+                    "org.gnome.Ptyxis", "xterm"]
+    }
   },
 
   "notifications": {

@@ -83,8 +83,15 @@ Singleton {
         root.entries = kept;
         root.forget(doomed);
         root.save();
-        root.copied();
+        // Kept either way; announced only when it was the user who copied.
+        if (!root.quiet)
+            root.copied();
     }
+
+    // Set while something else uses the clipboard as a way through — the
+    // dictation's paste, and the restore after it. What passes is still kept
+    // in the history; only the cell's "copied" stays silent.
+    property bool quiet: false
 
     // ---- Keeping the list ---------------------------------------------------------
 
