@@ -102,23 +102,36 @@ Item {
     //
     // It still arrives only once the shape is at size, and it still leaves
     // before the shape does: `contentFade` against the shape's `close`.
+    //
+    // And while the shape is not at size, the content is held inside it. The
+    // closing curve is quick from its first frame, so the shape is most of the
+    // way back to its node while the content is still fading, and content
+    // wider than the shape it is shrinking into — a list of left-aligned rows
+    // — hung out past the capsule the shape came from: the list seemed to
+    // leave towards nobody (Akusen, 2026-10-01). At size nothing is clipped,
+    // so what may overhang a panel at rest still does.
     Item {
-        id: contentSlot
+        anchors.fill: parent
+        clip: root.growth < 0.999
 
-        readonly property real inner: Math.max(0, root.targetWidth - root.padding * 2)
-        readonly property real innerHeight: Math.max(0, root.targetHeight - root.padding * 2)
+        Item {
+            id: contentSlot
 
-        width: contentSlot.inner
-        height: contentSlot.innerHeight
+            readonly property real inner: Math.max(0, root.targetWidth - root.padding * 2)
+            readonly property real innerHeight: Math.max(0, root.targetHeight - root.padding * 2)
 
-        x: (root.width - width) / 2
-        y: (root.height - height) / 2
+            width: contentSlot.inner
+            height: contentSlot.innerHeight
 
-        opacity: root.contentReady ? 1 : 0
-        scale: root.contentReady ? 1 : 0.88
-        transformOrigin: Item.Center
+            x: (root.width - width) / 2
+            y: (root.height - height) / 2
 
-        Behavior on opacity { NumberAnimation { duration: Timing.contentFade } }
-        Behavior on scale { NumberAnimation { duration: Timing.contentFade; easing.type: Easing.OutQuad } }
+            opacity: root.contentReady ? 1 : 0
+            scale: root.contentReady ? 1 : 0.88
+            transformOrigin: Item.Center
+
+            Behavior on opacity { NumberAnimation { duration: Timing.contentFade } }
+            Behavior on scale { NumberAnimation { duration: Timing.contentFade; easing.type: Easing.OutQuad } }
+        }
     }
 }

@@ -1165,19 +1165,32 @@ Item {
     // still has its rows until it is gone.
     property string listShown: ""
 
-    // Where the control that asked for it is — read when it is pressed, when
-    // the capsule that holds it has long finished growing.
+    // The control that asked for it, and where it is. Read when it is
+    // pressed — the capsule that holds it has long finished growing — and read
+    // again on every frame the list moves: the cell closing takes the list
+    // and the capsule away together, and a list put back into the place its
+    // control stood a moment ago goes back into nothing while the control
+    // retracts elsewhere (Akusen, 2026-10-01).
+    property Item listControl: null
     property real listOriginX: 0
     property real listOriginY: 0
+
+    function placeList() {
+        if (!root.listControl)
+            return;
+        const at = root.listControl.mapToItem(root, root.listControl.width / 2,
+                                              root.upward ? 0 : root.listControl.height);
+        root.listOriginX = at.x;
+        root.listOriginY = at.y;
+    }
 
     function toggleList(which, control) {
         if (root.listing === which) {
             root.listing = "";
             return;
         }
-        const at = control.mapToItem(root, control.width / 2, root.upward ? 0 : control.height);
-        root.listOriginX = at.x;
-        root.listOriginY = at.y;
+        root.listControl = control;
+        root.placeList();
         root.listShown = which;
         root.listing = which;
     }
@@ -1215,7 +1228,11 @@ Item {
     // The list is a shape of its own, and the cell's regions are rectangles
     // read once its shapes stop moving — so a shape that moves says so, or
     // the region is whatever it was when something else last did.
-    onListGrowthChanged: if (root.cell) root.cell.shapesSettling()
+    onListGrowthChanged: {
+        root.placeList();
+        if (root.cell)
+            root.cell.shapesSettling();
+    }
 
     Behavior on listGrowth {
         NumberAnimation {
