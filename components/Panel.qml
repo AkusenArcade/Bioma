@@ -47,6 +47,17 @@ Item {
     property real fixedWidth: -1
     property real fixedHeight: -1
 
+    // The shell's own content this panel lies over, on the same surface, when
+    // it lies over any — a dropdown's list over the capsules around it. The
+    // compositor's blur is of what is behind the surface, so it cannot reach
+    // this: the panel draws a blurred copy of it under its glass itself, and
+    // takes the pointer away from it — hovered through the list, the controls
+    // under it lit up as if nothing covered them (Akusen, 2026-10-01). Under
+    // a translucent glass the sharp original still shows through the copy, so
+    // whoever holds both cuts this panel's shape out of `over`
+    // (cells/theme/ThemeExpansion.qml does, with an inverted mask).
+    property Item over: null
+
     property real targetWidth: fixedWidth > 0 ? fixedWidth
                                               : contentSlot.childrenRect.width + padding * 2
     property real targetHeight: fixedHeight > 0 ? fixedHeight
@@ -72,6 +83,63 @@ Item {
         opacity: Timing.shadowFor(root.growth)
     }
 
+    // The glass over shell content: a copy of what lies under the shape, taken
+    // a blur's width wider on every side so the blur does not darken towards
+    // the edges, blurred at the glass radius and cut to the shape.
+    readonly property bool overShown: root.over !== null && root.visible
+    readonly property real overBleed: root.overShown ? Math.ceil(root.metrics.blurRadius) : 0
+
+    ShaderEffectSource {
+        id: overCopy
+        visible: false
+        sourceItem: root.overShown ? root.over : null
+        hideSource: false
+        live: true
+        sourceRect: {
+            if (!root.overShown || root.width <= 0 || root.height <= 0)
+                return Qt.rect(0, 0, 0, 0);
+            // A mapping is not a binding: the panel moves while it grows, and
+            // it has to say so.
+            root.x;
+            root.y;
+            const at = root.over.mapFromItem(root, -root.overBleed, -root.overBleed);
+            return Qt.rect(at.x, at.y, root.width + root.overBleed * 2, root.height + root.overBleed * 2);
+        }
+    }
+
+    Item {
+        id: overShape
+        width: root.width + root.overBleed * 2
+        height: root.height + root.overBleed * 2
+        visible: false
+        layer.enabled: root.overShown
+
+        Rectangle {
+            x: root.overBleed
+            y: root.overBleed
+            width: root.width
+            height: root.height
+            radius: root.radius
+            antialiasing: true
+        }
+    }
+
+    MultiEffect {
+        id: overEffect
+        x: -root.overBleed
+        y: -root.overBleed
+        width: root.width + root.overBleed * 2
+        height: root.height + root.overBleed * 2
+        visible: root.overShown && root.width > 0 && root.height > 0
+        source: overCopy
+        autoPaddingEnabled: false
+        blurEnabled: true
+        blur: 1
+        blurMax: Math.round(root.metrics.blurRadius)
+        maskEnabled: true
+        maskSource: overShape
+    }
+
     Rectangle {
         anchors.fill: parent
         radius: root.radius
@@ -82,6 +150,34 @@ Item {
     Rim {
         anchors.fill: parent
         radius: root.radius
+    }
+
+    // Nothing under the shape hears the pointer: not a hover, not a press,
+    // not a wheel. Under the content, so the content hears it first.
+    //
+    // An item that accepts a press is not enough in Qt 6: the press still goes
+    // on to the handlers of every item below, and a TapHandler there taps — a
+    // row chosen in the list would have switched the app chip under it. The
+    // press has to be grabbed exclusively, which is what a TapHandler holding
+    // to its bounds does; the handlers below only held it passively, and lose
+    // it.
+    MouseArea {
+        anchors.fill: parent
+        enabled: root.over !== null
+        hoverEnabled: true
+        acceptedButtons: Qt.AllButtons
+        onWheel: wheel => wheel.accepted = true
+    }
+
+    TapHandler {
+        enabled: root.over !== null
+        gesturePolicy: TapHandler.WithinBounds
+        acceptedButtons: Qt.AllButtons
+    }
+
+    HoverHandler {
+        enabled: root.over !== null
+        blocking: true
     }
 
     // The content sits inside the padding and is centred in what is left: a

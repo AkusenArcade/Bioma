@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Effects
 import Qt5Compat.GraphicalEffects
 import Quickshell
 import qs.core
@@ -365,493 +366,11 @@ Item {
         }
     }
 
-    Panel {
-        id: carousel
-
-        metrics: root.metrics
-        targetWidth: root.carouselWidth
-        targetHeight: root.pickerHeight
-        growth: root.cell ? root.cell.panelGrowth : 0
-        contentReady: root.cell ? root.cell.panelReady : false
-
-        // Born from the node of the cell's own thread, which lands on the edge
-        // facing the cell, under the middle of it.
-        anchorX: 0
-        anchorY: root.carouselY
-        nodeX: root.width - (root.cell ? root.cell.width / 2 : 0)
-        nodeY: root.carouselNear
-
-        // The grid scrolls under the wheel by itself; the carousel steps.
-        WheelHandler {
-            enabled: !root.grid
-            acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
-            onWheel: event => {
-                if (event.angleDelta.y > 0)
-                    root.slide(-1);
-                else if (event.angleDelta.y < 0)
-                    root.slide(1);
-            }
-        }
-
-        // Clipped here and not on the panel: the strip has to run past the
-        // inside edges, and the rim belongs to the panel, which is a different
-        // item. Clipping a surface that carries the rim eats it.
-        Item {
-            anchors.centerIn: parent
-            width: root.stripWidth
-            height: root.tileHeight
-            clip: true
-            opacity: root.grid ? 0 : 1
-            visible: opacity > 0
-
-            Behavior on opacity { NumberAnimation { duration: Timing.contentFade } }
-
-            Repeater {
-                model: root.reach * 2 + 1
-
-                delegate: Tile {
-                    id: place
-
-                    required property int index
-
-                    readonly property int offset: place.index - root.reach
-                    readonly property real position: place.offset - root.travel
-
-                    x: root.places.lefts[place.index]
-                    y: 0
-                    width: root.places.widths[place.index]
-                    height: root.tileHeight
-
-                    image: Wallpaper.neighbour(place.offset)
-                    // Full light in the middle, the shipped 0.40 at the sides,
-                    // and everything between while it travels.
-                    opacity: 0.40 + 0.60 * root.closeness(place.position)
-                    lit: root.closeness(place.position)
-
-                    // The two beyond the neighbours exist so a step has
-                    // something to bring in; they are outside the strip and
-                    // answer nothing.
-                    TapHandler {
-                        enabled: !root.grid && Math.abs(place.offset) === 1
-                                 && Math.abs(place.position) > 0.5
-                        onTapped: point => {
-                            if (!root.onSwitch(point.scenePosition))
-                                root.slide(place.offset);
-                        }
-                    }
-                }
-            }
-        }
-
-        // An empty folder is not a broken cell: it says where it looked.
-        Text {
-            anchors.centerIn: parent
-            visible: Wallpaper.entries.length === 0
-            text: `No images in ${Wallpaper.folder}`
-            color: Theme.textMuted
-            font.family: Typography.expressive
-            font.pixelSize: root.metrics.fontTitle
-        }
-
-        // Built only while it is wanted or still fading: a hundred decoded
-        // thumbnails kept alive behind a carousel would be memory spent on
-        // nothing on screen.
-        Loader {
-            id: gridSlot
-
-            property real shown: root.grid ? 1 : 0
-            Behavior on shown { NumberAnimation { duration: Timing.contentFade } }
-
-            anchors.centerIn: parent
-            width: root.gridInner
-            height: root.gridViewport
-            active: root.grid || gridSlot.shown > 0
-            opacity: gridSlot.shown
-
-            sourceComponent: Item {
-                clip: true
-
-                GridView {
-                    id: gridView
-
-                    // A cell is a tile and the pitch after it, so the last
-                    // column's pitch falls outside the clip, and so does the
-                    // last row's.
-                    width: root.gridInner + root.tilePitch
-                    height: root.gridViewport + root.tilePitch
-                    cellWidth: root.gridTileWidth + root.tilePitch
-                    cellHeight: root.gridTileHeight + root.tilePitch
-                    model: Wallpaper.entries
-                    boundsBehavior: Flickable.StopAtBounds
-                    // Room at the end to scroll the last row out from under
-                    // the switch, which is at the bottom unless the cell
-                    // opened upward.
-                    bottomMargin: root.upward ? 0 : pickerSwitch.height + root.tilePitch
-                    topMargin: root.upward ? pickerSwitch.height + root.tilePitch : 0
-
-                    Component.onCompleted: Qt.callLater(gridView.reveal)
-
-                    // A star pressed halfway down reorders the list, and a
-                    // new list starts at the top: the grid is put back where
-                    // it was, and the picture that moved shows at the top of
-                    // it the next time somebody scrolls there.
-                    property real kept: -1
-
-                    Connections {
-                        target: Wallpaper
-                        function onReordering() { gridView.kept = gridView.contentY; }
-                    }
-
-                    onModelChanged: {
-                        if (gridView.kept < 0)
-                            return;
-                        const y = gridView.kept;
-                        gridView.kept = -1;
-                        Qt.callLater(() => { gridView.contentY = y; });
-                    }
-
-                    // Opened on the one on screen, wherever it is in the list.
-                    function reveal() {
-                        if (Wallpaper.index >= 0)
-                            gridView.positionViewAtIndex(Wallpaper.index, GridView.Contain);
-                    }
-
-                    delegate: Tile {
-                        id: thumb
-
-                        required property string modelData
-                        required property int index
-
-                        readonly property bool current: thumb.index === Wallpaper.index
-
-                        width: root.gridTileWidth
-                        height: root.gridTileHeight
-                        image: thumb.modelData
-                        decode: root.gridTileWidth
-                        lit: thumb.current ? 1 : 0
-                        // The one on screen at full light, like the middle of
-                        // the carousel; the rest brighten under the pointer.
-                        opacity: thumb.current || hover.hovered ? 1 : 0.6
-
-                        Behavior on opacity { NumberAnimation { duration: Timing.contentFade } }
-
-                        HoverHandler { id: hover }
-
-                        TapHandler {
-                            onTapped: point => {
-                                if (!root.onSwitch(point.scenePosition))
-                                    Wallpaper.path = thumb.modelData;
-                            }
-                        }
-
-                        // A favourite, kept at the top of the list. Always
-                        // there on one, lit in the primary; on the others only
-                        // under the pointer, since at rest an empty star on
-                        // every picture would be a grid of marks saying nothing.
-                        // On a disc of the background, or it would be lost in
-                        // whatever the picture has in that corner.
-                        Item {
-                            id: star
-
-                            readonly property bool liked: Wallpaper.isFavourite(thumb.modelData)
-
-                            anchors.top: parent.top
-                            anchors.right: parent.right
-                            anchors.margins: 6 * root.factor
-                            width: 28 * root.factor
-                            height: width
-                            visible: star.liked || hover.hovered
-
-                            Rectangle {
-                                anchors.fill: parent
-                                radius: width / 2
-                                antialiasing: true
-                                color: Qt.alpha(Theme.background, 0.72)
-                            }
-
-                            Icon {
-                                anchors.centerIn: parent
-                                width: 18 * root.factor
-                                height: width
-                                name: star.liked ? "star-filled" : "star"
-                                gradient: star.liked
-                                colour: likeArea.containsMouse ? Theme.text : Theme.textMuted
-                            }
-
-                            // A mouse area rather than a handler: it has to
-                            // take the press, or the tile under it would hear
-                            // it too and change the wallpaper.
-                            MouseArea {
-                                id: likeArea
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                onClicked: Wallpaper.favour(thumb.modelData, !star.liked)
-                            }
-                        }
-                    }
-                }
-
-                Scroller {
-                    flick: gridView
-                    factor: root.factor
-                    x: root.gridInner - width
-                }
-            }
-        }
-
-        // Carousel or grid. In the corner away from the thread, so the
-        // cell's own line never lands on it, and in the same corner in both
-        // ways of choosing: a control that moved when it was used would have
-        // to be found again.
-        Segmented {
-            id: pickerSwitch
-
-            anchors.right: parent.right
-            anchors.bottom: root.upward ? undefined : parent.bottom
-            anchors.top: root.upward ? parent.top : undefined
-            z: 2
-            metrics: root.metrics
-            buttonHeight: 22 * root.factor
-            iconSize: 13 * root.factor
-            iconPadding: 7 * root.factor
-            options: [
-                { "key": "carousel", "icon": "carousel" },
-                { "key": "grid", "icon": "grid" }
-            ]
-            current: root.grid ? "grid" : "carousel"
-            onChose: key => Config.set("wallpaper.picker", key)
-        }
-    }
-
     // A press on the switch is not a press on the picture under it: the
     // handlers of both hear it.
     function onSwitch(scenePoint) {
         const at = pickerSwitch.mapFromItem(null, scenePoint.x, scenePoint.y);
         return at.x >= 0 && at.y >= 0 && at.x <= pickerSwitch.width && at.y <= pickerSwitch.height;
-    }
-
-    // The carousel hangs the source capsule off its own edge, at that capsule's
-    // centre line — the thread is computed from both shapes, never placed.
-    // Both threads have their ends on the shapes they touch rather than on the
-    // coordinates those shapes settle at. It is the same rule the design states
-    // for the opening — a thread stays attached while a shape grows — and it is
-    // the closing that shows what breaks without it: the shapes retract towards
-    // the cell and a thread computed from resting coordinates stays behind,
-    // hanging between two places where nothing is any more.
-    Thread {
-        id: descent
-
-        // Not `top` and `bottom`: an Item declares those final, and shadowing
-        // them costs a warning and the binding.
-        readonly property real headY: root.upward ? source.y + source.height
-                                                  : carousel.y + carousel.height
-        readonly property real footY: root.upward ? carousel.y : source.y
-
-        vertical: true
-        progress: root.linkProgress
-        width: implicitWidth
-        height: Math.max(0, descent.footY - descent.headY)
-        x: Math.max(source.x, Math.min(source.x + source.width, root.capsuleWidth / 2)) - width / 2
-        y: descent.headY
-    }
-
-    Thread {
-        id: crossing
-
-        readonly property real from: source.x + source.width
-
-        vertical: false
-        progress: root.linkProgress
-        width: Math.max(0, palette.x - crossing.from)
-        height: implicitHeight
-        x: crossing.from
-        y: Math.max(source.y, Math.min(source.y + source.height,
-                                       root.capsuleY + root.capsuleHeight / 2)) - height / 2
-    }
-
-    // ---- Source -------------------------------------------------------------
-
-    Panel {
-        id: source
-
-        metrics: root.metrics
-        radius: Metrics.radiusFor(root.capsuleHeight, root.metrics)
-        padding: 14 * root.factor
-        targetWidth: root.capsuleWidth
-        targetHeight: root.capsuleHeight
-        growth: root.sourceProgress
-        contentReady: root.sourceProgress > 0.999
-
-        // Born from the node where the vertical thread meets its cap — on the
-        // carousel's edge as it is, not as it will be.
-        anchorX: 0
-        anchorY: root.capsuleY
-        nodeX: Math.max(carousel.x, Math.min(carousel.x + carousel.width, root.capsuleWidth / 2))
-        nodeY: root.upward ? carousel.y : carousel.y + carousel.height
-
-        Column {
-            anchors.centerIn: parent
-            spacing: root.stackSpacing
-
-            Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: "SOURCE"
-                color: Theme.text
-                font: Qt.font({
-                    "family": Typography.technical,
-                    "pixelSize": root.fontControl,
-                    "weight": Typography.weightLabel,
-                    "letterSpacing": Typography.tracking(root.fontControl, Typography.labelTracking)
-                })
-            }
-
-            Segmented {
-                anchors.horizontalCenter: parent.horizontalCenter
-                metrics: root.metrics
-                fontSize: root.fontControl
-                options: [
-                    { "key": "matugen", "label": "matugen" },
-                    { "key": "manual", "label": "Bioma" }
-                ]
-                current: Theme.source
-                onChose: key => {
-                    Config.set("theme.source", key);
-                    root.listing = "";
-                }
-            }
-        }
-    }
-
-    // ---- What comes out of it ----------------------------------------------
-
-    Panel {
-        id: palette
-
-        metrics: root.metrics
-        radius: Metrics.radiusFor(root.capsuleHeight, root.metrics)
-        padding: 14 * root.factor
-        targetWidth: root.capsuleWidth
-        targetHeight: root.capsuleHeight
-        growth: root.paletteProgress
-        contentReady: root.paletteProgress > 0.999
-
-        // Born from the far node of the horizontal thread, which rides on the
-        // source capsule's edge.
-        anchorX: root.capsuleWidth + root.gap
-        anchorY: root.capsuleY
-        nodeX: source.x + source.width
-        nodeY: Math.max(source.y, Math.min(source.y + source.height,
-                                           root.capsuleY + root.capsuleHeight / 2))
-
-        Column {
-            anchors.centerIn: parent
-            spacing: root.stackSpacing
-
-            Row {
-                anchors.horizontalCenter: parent.horizontalCenter
-                spacing: root.chipPitch
-
-                Repeater {
-                    model: Theme.targetRoles
-
-                    delegate: Rectangle {
-                        id: chip
-
-                        required property var modelData
-                        required property int index
-
-                        width: root.chipSize
-                        height: width
-                        radius: Metrics.shaped(5 * root.factor)
-                        antialiasing: true
-                        color: chip.modelData
-
-                        // The same replacement the contracted cell makes, at
-                        // the same rate: it is the same seven roles.
-                        Behavior on color {
-                            SequentialAnimation {
-                                PauseAnimation { duration: chip.index * Timing.stagger }
-                                ColorAnimation { duration: Timing.theme; easing.type: Easing.InOutQuad }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // One place to learn: the dropdown never moves and never changes
-            // shape, only what it lists.
-            Row {
-                id: controls
-
-                anchors.horizontalCenter: parent.horizontalCenter
-
-                Item {
-                    id: dropdown
-
-                    width: chosenText.width + 12 * root.factor * 2 + 7 * root.factor + chevron.width
-                    height: root.dropdownHeight
-
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: Metrics.radiusFor(height, root.metrics)
-                        color: "transparent"
-                        border.width: Metrics.rim(Screen.devicePixelRatio)
-                        border.color: Theme.line
-                        antialiasing: true
-                    }
-
-                    Row {
-                        anchors.centerIn: parent
-                        spacing: 7 * root.factor
-
-                        Text {
-                            id: chosenText
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: root.chosenLabel
-                            color: Theme.text
-                            font: Qt.font({
-                                "family": Typography.technical,
-                                "pixelSize": root.fontControl,
-                                "weight": Typography.weightLabel,
-                                "letterSpacing": Typography.tracking(root.fontControl, 0.04)
-                            })
-                        }
-
-                        Icon {
-                            id: chevron
-                            anchors.verticalCenter: parent.verticalCenter
-                            name: "chevron-down"
-                            width: 9 * root.factor
-                            height: width
-                            colour: Qt.alpha(Theme.text, 0.6)
-                        }
-                    }
-
-                    TapHandler { onTapped: root.toggleList("palette", dropdown) }
-                }
-            }
-        }
-    }
-
-    // ---- How the desktop looks ---------------------------------------------
-    //
-    // The desktop's icon theme and cursor. It hangs from the source capsule on
-    // the same line the source hangs from the carousel: one spine down the
-    // composition, and the palette beside it.
-
-    Thread {
-        id: descentDesktop
-
-        readonly property real headY: root.upward ? desktop.y + desktop.height
-                                                  : source.y + source.height
-        readonly property real footY: root.upward ? source.y : desktop.y
-
-        vertical: true
-        progress: root.linkProgress
-        width: implicitWidth
-        height: Math.max(0, descentDesktop.footY - descentDesktop.headY)
-        x: root.capsuleWidth / 2 - width / 2
-        y: descentDesktop.headY
     }
 
     // A dropdown in the desktop capsule: the same shape as the palette's, and
@@ -930,224 +449,760 @@ Item {
         })
     }
 
-    Panel {
-        id: desktop
+    readonly property real cutMargin: 64 * factor
 
-        metrics: root.metrics
-        // A panel's radius, not a pill's: it is as wide as the carousel, and
-        // a pill's caps would bring the labels at its corners too close to
-        // the edge (Akusen, 2026-09-23).
-        // More room inside than a capsule's: it holds two rows of controls and
-        // a field of chips, and they need air around them to read as groups.
-        padding: root.desktopPadding
-        targetWidth: root.carouselWidth
-        growth: root.desktopProgress
-        contentReady: root.desktopProgress > 0.999
+    // Everything the list can lie over, in one item: the list is drawn over a
+    // blurred copy of it, which the compositor cannot give — its blur is of
+    // what lies behind the shell's surface, and the capsules are on it. And
+    // while the list is out, the list's shape is cut out of it: under a
+    // translucent glass the sharp original showed through the blurred copy.
+    Item {
+        id: cutout
 
-        // Born from the node where its thread meets the source capsule's edge.
-        anchorX: 0
-        anchorY: root.desktopY
-        nodeX: Math.max(source.x, Math.min(source.x + source.width, root.capsuleWidth / 2))
-        nodeY: root.upward ? source.y : source.y + source.height
+        // Past the edges by a shadow's reach: a layer is cut to its item, and
+        // the capsules' shadows fall outside it.
+        x: -root.cutMargin
+        y: -root.cutMargin
+        width: root.width + root.cutMargin * 2
+        height: root.height + root.cutMargin * 2
+        layer.enabled: root.listGrowth > 0
+        layer.effect: MultiEffect {
+            maskEnabled: true
+            maskInverted: true
+            maskSource: listHole
+        }
 
-        Column {
-            width: root.carouselWidth - root.desktopPadding * 2
-            spacing: 20 * root.factor
+        Item {
+            id: composition
 
-            Item {
-                width: parent.width
-                height: looks.height
+            x: root.cutMargin
+            y: root.cutMargin
+            width: root.width
+            height: root.height
 
-                Row {
-                    id: looks
+            Panel {
+                id: carousel
 
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    spacing: 24 * root.factor
+                metrics: root.metrics
+                targetWidth: root.carouselWidth
+                targetHeight: root.pickerHeight
+                growth: root.cell ? root.cell.panelGrowth : 0
+                contentReady: root.cell ? root.cell.panelReady : false
 
-                    Column {
-                        spacing: root.stackSpacing
+                // Born from the node of the cell's own thread, which lands on the edge
+                // facing the cell, under the middle of it.
+                anchorX: 0
+                anchorY: root.carouselY
+                nodeX: root.width - (root.cell ? root.cell.width / 2 : 0)
+                nodeY: root.carouselNear
 
-                        LookLabel { text: "ICONS" }
+                // The grid scrolls under the wheel by itself; the carousel steps.
+                WheelHandler {
+                    enabled: !root.grid
+                    acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+                    onWheel: event => {
+                        if (event.angleDelta.y > 0)
+                            root.slide(-1);
+                        else if (event.angleDelta.y < 0)
+                            root.slide(1);
+                    }
+                }
 
-                        LookDropdown {
-                            id: iconsDrop
-                            label: Looks.nameOf(Looks.icons, Looks.iconTheme)
-                            open: root.listing === "icons"
-                            onPressed: root.toggleList("icons", iconsDrop)
-                        }
+                // Clipped here and not on the panel: the strip has to run past the
+                // inside edges, and the rim belongs to the panel, which is a different
+                // item. Clipping a surface that carries the rim eats it.
+                Item {
+                    anchors.centerIn: parent
+                    width: root.stripWidth
+                    height: root.tileHeight
+                    clip: true
+                    opacity: root.grid ? 0 : 1
+                    visible: opacity > 0
 
-                        // The shell's own icons are the one thing that cannot follow a
-                        // change live; it says so rather than looking as though the
-                        // choice half failed. Held to the dropdown's width, so the
-                        // capsule's row does not grow when it appears.
-                        Item {
-                            width: iconsDrop.width
-                            height: pending.implicitHeight
+                    Behavior on opacity { NumberAnimation { duration: Timing.contentFade } }
 
-                            Text {
-                                id: pending
-                                width: parent.width
-                                horizontalAlignment: Text.AlignHCenter
-                                visible: Looks.iconsPending
-                                text: "SHELL: NEXT START"
-                                elide: Text.ElideRight
-                                color: Theme.textFaint
-                                font: Qt.font({
-                                    "family": Typography.technical,
-                                    "pixelSize": root.metrics.fontMeta,
-                                    "letterSpacing": Typography.tracking(root.metrics.fontMeta, Typography.labelTracking)
-                                })
+                    Repeater {
+                        model: root.reach * 2 + 1
+
+                        delegate: Tile {
+                            id: place
+
+                            required property int index
+
+                            readonly property int offset: place.index - root.reach
+                            readonly property real position: place.offset - root.travel
+
+                            x: root.places.lefts[place.index]
+                            y: 0
+                            width: root.places.widths[place.index]
+                            height: root.tileHeight
+
+                            image: Wallpaper.neighbour(place.offset)
+                            // Full light in the middle, the shipped 0.40 at the sides,
+                            // and everything between while it travels.
+                            opacity: 0.40 + 0.60 * root.closeness(place.position)
+                            lit: root.closeness(place.position)
+
+                            // The two beyond the neighbours exist so a step has
+                            // something to bring in; they are outside the strip and
+                            // answer nothing.
+                            TapHandler {
+                                enabled: !root.grid && Math.abs(place.offset) === 1
+                                         && Math.abs(place.position) > 0.5
+                                onTapped: point => {
+                                    if (!root.onSwitch(point.scenePosition))
+                                        root.slide(place.offset);
+                                }
                             }
                         }
                     }
+                }
 
-                    Column {
-                        spacing: root.stackSpacing
+                // An empty folder is not a broken cell: it says where it looked.
+                Text {
+                    anchors.centerIn: parent
+                    visible: Wallpaper.entries.length === 0
+                    text: `No images in ${Wallpaper.folder}`
+                    color: Theme.textMuted
+                    font.family: Typography.expressive
+                    font.pixelSize: root.metrics.fontTitle
+                }
 
-                        Row {
-                            spacing: 8 * root.factor
+                // Built only while it is wanted or still fading: a hundred decoded
+                // thumbnails kept alive behind a carousel would be memory spent on
+                // nothing on screen.
+                Loader {
+                    id: gridSlot
 
-                            LookLabel { text: "CURSOR" }
+                    property real shown: root.grid ? 1 : 0
+                    Behavior on shown { NumberAnimation { duration: Timing.contentFade } }
 
-                            LookLabel {
-                                visible: Looks.error.length > 0
-                                text: "· REFUSED"
-                                color: Theme.alert
+                    anchors.centerIn: parent
+                    width: root.gridInner
+                    height: root.gridViewport
+                    active: root.grid || gridSlot.shown > 0
+                    opacity: gridSlot.shown
+
+                    sourceComponent: Item {
+                        clip: true
+
+                        GridView {
+                            id: gridView
+
+                            // A cell is a tile and the pitch after it, so the last
+                            // column's pitch falls outside the clip, and so does the
+                            // last row's.
+                            width: root.gridInner + root.tilePitch
+                            height: root.gridViewport + root.tilePitch
+                            cellWidth: root.gridTileWidth + root.tilePitch
+                            cellHeight: root.gridTileHeight + root.tilePitch
+                            model: Wallpaper.entries
+                            boundsBehavior: Flickable.StopAtBounds
+                            // Room at the end to scroll the last row out from under
+                            // the switch, which is at the bottom unless the cell
+                            // opened upward.
+                            bottomMargin: root.upward ? 0 : pickerSwitch.height + root.tilePitch
+                            topMargin: root.upward ? pickerSwitch.height + root.tilePitch : 0
+
+                            Component.onCompleted: Qt.callLater(gridView.reveal)
+
+                            // A star pressed halfway down reorders the list, and a
+                            // new list starts at the top: the grid is put back where
+                            // it was, and the picture that moved shows at the top of
+                            // it the next time somebody scrolls there.
+                            property real kept: -1
+
+                            Connections {
+                                target: Wallpaper
+                                function onReordering() { gridView.kept = gridView.contentY; }
+                            }
+
+                            onModelChanged: {
+                                if (gridView.kept < 0)
+                                    return;
+                                const y = gridView.kept;
+                                gridView.kept = -1;
+                                Qt.callLater(() => { gridView.contentY = y; });
+                            }
+
+                            // Opened on the one on screen, wherever it is in the list.
+                            function reveal() {
+                                if (Wallpaper.index >= 0)
+                                    gridView.positionViewAtIndex(Wallpaper.index, GridView.Contain);
+                            }
+
+                            delegate: Tile {
+                                id: thumb
+
+                                required property string modelData
+                                required property int index
+
+                                readonly property bool current: thumb.index === Wallpaper.index
+
+                                width: root.gridTileWidth
+                                height: root.gridTileHeight
+                                image: thumb.modelData
+                                decode: root.gridTileWidth
+                                lit: thumb.current ? 1 : 0
+                                // The one on screen at full light, like the middle of
+                                // the carousel; the rest brighten under the pointer.
+                                opacity: thumb.current || hover.hovered ? 1 : 0.6
+
+                                Behavior on opacity { NumberAnimation { duration: Timing.contentFade } }
+
+                                HoverHandler { id: hover }
+
+                                TapHandler {
+                                    onTapped: point => {
+                                        if (!root.onSwitch(point.scenePosition))
+                                            Wallpaper.path = thumb.modelData;
+                                    }
+                                }
+
+                                // A favourite, kept at the top of the list. Always
+                                // there on one, lit in the primary; on the others only
+                                // under the pointer, since at rest an empty star on
+                                // every picture would be a grid of marks saying nothing.
+                                // On a disc of the background, or it would be lost in
+                                // whatever the picture has in that corner.
+                                Item {
+                                    id: star
+
+                                    readonly property bool liked: Wallpaper.isFavourite(thumb.modelData)
+
+                                    anchors.top: parent.top
+                                    anchors.right: parent.right
+                                    anchors.margins: 6 * root.factor
+                                    width: 28 * root.factor
+                                    height: width
+                                    visible: star.liked || hover.hovered
+
+                                    Rectangle {
+                                        anchors.fill: parent
+                                        radius: width / 2
+                                        antialiasing: true
+                                        color: Qt.alpha(Theme.background, 0.72)
+                                    }
+
+                                    Icon {
+                                        anchors.centerIn: parent
+                                        width: 18 * root.factor
+                                        height: width
+                                        name: star.liked ? "star-filled" : "star"
+                                        gradient: star.liked
+                                        colour: likeArea.containsMouse ? Theme.text : Theme.textMuted
+                                    }
+
+                                    // A mouse area rather than a handler: it has to
+                                    // take the press, or the tile under it would hear
+                                    // it too and change the wallpaper.
+                                    MouseArea {
+                                        id: likeArea
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        onClicked: Wallpaper.favour(thumb.modelData, !star.liked)
+                                    }
+                                }
                             }
                         }
 
-                        Row {
-                            spacing: 8 * root.factor
-
-                            LookDropdown {
-                                id: cursorDrop
-                                label: Looks.nameOf(Looks.cursors, Looks.cursorTheme)
-                                open: root.listing === "cursor"
-                                onPressed: root.toggleList("cursor", cursorDrop)
-                            }
-
-                            Segmented {
-                                anchors.verticalCenter: parent.verticalCenter
-                                metrics: root.metrics
-                                fontSize: root.fontControl
-                                options: Looks.sizes.map(size => ({ "key": String(size), "label": String(size) }))
-                                current: String(Looks.cursorSize)
-                                onChose: key => Looks.setCursor("", parseInt(key, 10))
-                            }
+                        Scroller {
+                            flick: gridView
+                            factor: root.factor
+                            x: root.gridInner - width
                         }
                     }
+                }
+
+                // Carousel or grid. In the corner away from the thread, so the
+                // cell's own line never lands on it, and in the same corner in both
+                // ways of choosing: a control that moved when it was used would have
+                // to be found again.
+                Segmented {
+                    id: pickerSwitch
+
+                    anchors.right: parent.right
+                    anchors.bottom: root.upward ? undefined : parent.bottom
+                    anchors.top: root.upward ? parent.top : undefined
+                    z: 2
+                    metrics: root.metrics
+                    buttonHeight: 22 * root.factor
+                    iconSize: 13 * root.factor
+                    iconPadding: 7 * root.factor
+                    options: [
+                        { "key": "carousel", "icon": "carousel" },
+                        { "key": "grid", "icon": "grid" }
+                    ]
+                    current: root.grid ? "grid" : "carousel"
+                    onChose: key => Config.set("wallpaper.picker", key)
                 }
             }
 
-            Column {
-                width: parent.width
-                spacing: root.stackSpacing
+            // The carousel hangs the source capsule off its own edge, at that capsule's
+            // centre line — the thread is computed from both shapes, never placed.
+            // Both threads have their ends on the shapes they touch rather than on the
+            // coordinates those shapes settle at. It is the same rule the design states
+            // for the opening — a thread stays attached while a shape grows — and it is
+            // the closing that shows what breaks without it: the shapes retract towards
+            // the cell and a thread computed from resting coordinates stays behind,
+            // hanging between two places where nothing is any more.
+            Thread {
+                id: descent
 
-                Row {
-                    spacing: 8 * root.factor
+                // Not `top` and `bottom`: an Item declares those final, and shadowing
+                // them costs a warning and the binding.
+                readonly property real headY: root.upward ? source.y + source.height
+                                                          : carousel.y + carousel.height
+                readonly property real footY: root.upward ? carousel.y : source.y
 
-                    LookLabel { text: "WALLPAPER FOLDER" }
+                vertical: true
+                progress: root.linkProgress
+                width: implicitWidth
+                height: Math.max(0, descent.footY - descent.headY)
+                x: Math.max(source.x, Math.min(source.x + source.width, root.capsuleWidth / 2)) - width / 2
+                y: descent.headY
+            }
 
-                    LookLabel {
-                        visible: Wallpaper.folderError.length > 0
-                        text: `· ${Wallpaper.folderError}`
-                        color: Theme.alert
-                    }
-                }
+            Thread {
+                id: crossing
 
-                // Where the library looks besides Bioma's own images. Pressed,
-                // it opens a GTK folder picker; the cell closes first, because
-                // while it is open the shell holds the keyboard and the picker
-                // would be a window nobody can type into.
-                Item {
-                    id: folderBox
+                readonly property real from: source.x + source.width
 
-                    readonly property real inset: 12 * root.factor
+                vertical: false
+                progress: root.linkProgress
+                width: Math.max(0, palette.x - crossing.from)
+                height: implicitHeight
+                x: crossing.from
+                y: Math.max(source.y, Math.min(source.y + source.height,
+                                               root.capsuleY + root.capsuleHeight / 2)) - height / 2
+            }
 
-                    width: parent.width
-                    height: root.dropdownHeight
+            // ---- Source -------------------------------------------------------------
 
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: Metrics.radiusFor(height, root.metrics)
-                        color: "transparent"
-                        border.width: Metrics.rim(Screen.devicePixelRatio)
-                        border.color: Wallpaper.picking ? Theme.primary
-                                    : folderHover.hovered ? Theme.text : Theme.line
-                        antialiasing: true
-                    }
+            Panel {
+                id: source
+
+                metrics: root.metrics
+                radius: Metrics.radiusFor(root.capsuleHeight, root.metrics)
+                padding: 14 * root.factor
+                targetWidth: root.capsuleWidth
+                targetHeight: root.capsuleHeight
+                growth: root.sourceProgress
+                contentReady: root.sourceProgress > 0.999
+
+                // Born from the node where the vertical thread meets its cap — on the
+                // carousel's edge as it is, not as it will be.
+                anchorX: 0
+                anchorY: root.capsuleY
+                nodeX: Math.max(carousel.x, Math.min(carousel.x + carousel.width, root.capsuleWidth / 2))
+                nodeY: root.upward ? carousel.y : carousel.y + carousel.height
+
+                Column {
+                    anchors.centerIn: parent
+                    spacing: root.stackSpacing
 
                     Text {
-                        anchors.left: parent.left
-                        anchors.leftMargin: folderBox.inset
-                        anchors.right: folderMark.left
-                        anchors.rightMargin: 7 * root.factor
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: root.shortPath(Wallpaper.folder)
-                        elide: Text.ElideMiddle
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: "SOURCE"
                         color: Theme.text
                         font: Qt.font({
                             "family": Typography.technical,
                             "pixelSize": root.fontControl,
                             "weight": Typography.weightLabel,
-                            "letterSpacing": Typography.tracking(root.fontControl, 0.04)
+                            "letterSpacing": Typography.tracking(root.fontControl, Typography.labelTracking)
                         })
                     }
 
-                    Icon {
-                        id: folderMark
-                        anchors.right: parent.right
-                        anchors.rightMargin: folderBox.inset
-                        anchors.verticalCenter: parent.verticalCenter
-                        name: "edit"
-                        width: 11 * root.factor
-                        height: width
-                        colour: folderHover.hovered ? Theme.text : Qt.alpha(Theme.text, 0.6)
-                    }
-
-                    HoverHandler { id: folderHover }
-                    TapHandler {
-                        onTapped: {
-                            if (root.cell)
-                                root.cell.open = false;
-                            Wallpaper.pickFolder();
+                    Segmented {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        metrics: root.metrics
+                        fontSize: root.fontControl
+                        options: [
+                            { "key": "matugen", "label": "matugen" },
+                            { "key": "manual", "label": "Bioma" }
+                        ]
+                        current: Theme.source
+                        onChose: key => {
+                            Config.set("theme.source", key);
+                            root.listing = "";
                         }
                     }
                 }
             }
 
-            // Where the palette goes outside the shell: every application there
-            // is a template for, lit when it is on.
-            Column {
-                width: parent.width
-                spacing: root.stackSpacing
+            // ---- What comes out of it ----------------------------------------------
 
-                LookLabel { text: "APP TEMPLATES" }
+            Panel {
+                id: palette
 
-                Flow {
-                    width: parent.width
-                    spacing: 6 * root.factor
+                metrics: root.metrics
+                radius: Metrics.radiusFor(root.capsuleHeight, root.metrics)
+                padding: 14 * root.factor
+                targetWidth: root.capsuleWidth
+                targetHeight: root.capsuleHeight
+                growth: root.paletteProgress
+                contentReady: root.paletteProgress > 0.999
 
-                    Repeater {
-                        model: Templates.catalogue
+                // Born from the far node of the horizontal thread, which rides on the
+                // source capsule's edge.
+                anchorX: root.capsuleWidth + root.gap
+                anchorY: root.capsuleY
+                nodeX: source.x + source.width
+                nodeY: Math.max(source.y, Math.min(source.y + source.height,
+                                                   root.capsuleY + root.capsuleHeight / 2))
 
-                        delegate: AppChip {
-                            required property var modelData
-                            entry: modelData
+                Column {
+                    anchors.centerIn: parent
+                    spacing: root.stackSpacing
+
+                    Row {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        spacing: root.chipPitch
+
+                        Repeater {
+                            model: Theme.targetRoles
+
+                            delegate: Rectangle {
+                                id: chip
+
+                                required property var modelData
+                                required property int index
+
+                                width: root.chipSize
+                                height: width
+                                radius: Metrics.shaped(5 * root.factor)
+                                antialiasing: true
+                                color: chip.modelData
+
+                                // The same replacement the contracted cell makes, at
+                                // the same rate: it is the same seven roles.
+                                Behavior on color {
+                                    SequentialAnimation {
+                                        PauseAnimation { duration: chip.index * Timing.stagger }
+                                        ColorAnimation { duration: Timing.theme; easing.type: Easing.InOutQuad }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // One place to learn: the dropdown never moves and never changes
+                    // shape, only what it lists.
+                    Row {
+                        id: controls
+
+                        anchors.horizontalCenter: parent.horizontalCenter
+
+                        Item {
+                            id: dropdown
+
+                            width: chosenText.width + 12 * root.factor * 2 + 7 * root.factor + chevron.width
+                            height: root.dropdownHeight
+
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: Metrics.radiusFor(height, root.metrics)
+                                color: "transparent"
+                                border.width: Metrics.rim(Screen.devicePixelRatio)
+                                border.color: Theme.line
+                                antialiasing: true
+                            }
+
+                            Row {
+                                anchors.centerIn: parent
+                                spacing: 7 * root.factor
+
+                                Text {
+                                    id: chosenText
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: root.chosenLabel
+                                    color: Theme.text
+                                    font: Qt.font({
+                                        "family": Typography.technical,
+                                        "pixelSize": root.fontControl,
+                                        "weight": Typography.weightLabel,
+                                        "letterSpacing": Typography.tracking(root.fontControl, 0.04)
+                                    })
+                                }
+
+                                Icon {
+                                    id: chevron
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    name: "chevron-down"
+                                    width: 9 * root.factor
+                                    height: width
+                                    colour: Qt.alpha(Theme.text, 0.6)
+                                }
+                            }
+
+                            TapHandler { onTapped: root.toggleList("palette", dropdown) }
                         }
                     }
                 }
+            }
 
-                Text {
-                    width: parent.width
-                    visible: root.failed !== null
-                    text: root.failed ? `${root.failed.name}: ${root.failed.error}` : ""
-                    color: Theme.alert
-                    elide: Text.ElideRight
-                    font.family: Typography.technical
-                    font.pixelSize: root.metrics.fontMeta
+            // ---- How the desktop looks ---------------------------------------------
+            //
+            // The desktop's icon theme and cursor. It hangs from the source capsule on
+            // the same line the source hangs from the carousel: one spine down the
+            // composition, and the palette beside it.
+
+            Thread {
+                id: descentDesktop
+
+                readonly property real headY: root.upward ? desktop.y + desktop.height
+                                                          : source.y + source.height
+                readonly property real footY: root.upward ? source.y : desktop.y
+
+                vertical: true
+                progress: root.linkProgress
+                width: implicitWidth
+                height: Math.max(0, descentDesktop.footY - descentDesktop.headY)
+                x: root.capsuleWidth / 2 - width / 2
+                y: descentDesktop.headY
+            }
+
+            Panel {
+                id: desktop
+
+                metrics: root.metrics
+                // A panel's radius, not a pill's: it is as wide as the carousel, and
+                // a pill's caps would bring the labels at its corners too close to
+                // the edge (Akusen, 2026-09-23).
+                // More room inside than a capsule's: it holds two rows of controls and
+                // a field of chips, and they need air around them to read as groups.
+                padding: root.desktopPadding
+                targetWidth: root.carouselWidth
+                growth: root.desktopProgress
+                contentReady: root.desktopProgress > 0.999
+
+                // Born from the node where its thread meets the source capsule's edge.
+                anchorX: 0
+                anchorY: root.desktopY
+                nodeX: Math.max(source.x, Math.min(source.x + source.width, root.capsuleWidth / 2))
+                nodeY: root.upward ? source.y : source.y + source.height
+
+                Column {
+                    width: root.carouselWidth - root.desktopPadding * 2
+                    spacing: 20 * root.factor
+
+                    Item {
+                        width: parent.width
+                        height: looks.height
+
+                        Row {
+                            id: looks
+
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            spacing: 24 * root.factor
+
+                            Column {
+                                spacing: root.stackSpacing
+
+                                LookLabel { text: "ICONS" }
+
+                                LookDropdown {
+                                    id: iconsDrop
+                                    label: Looks.nameOf(Looks.icons, Looks.iconTheme)
+                                    open: root.listing === "icons"
+                                    onPressed: root.toggleList("icons", iconsDrop)
+                                }
+
+                                // The shell's own icons are the one thing that cannot follow a
+                                // change live; it says so rather than looking as though the
+                                // choice half failed. Held to the dropdown's width, so the
+                                // capsule's row does not grow when it appears.
+                                Item {
+                                    width: iconsDrop.width
+                                    height: pending.implicitHeight
+
+                                    Text {
+                                        id: pending
+                                        width: parent.width
+                                        horizontalAlignment: Text.AlignHCenter
+                                        visible: Looks.iconsPending
+                                        text: "SHELL: NEXT START"
+                                        elide: Text.ElideRight
+                                        color: Theme.textFaint
+                                        font: Qt.font({
+                                            "family": Typography.technical,
+                                            "pixelSize": root.metrics.fontMeta,
+                                            "letterSpacing": Typography.tracking(root.metrics.fontMeta, Typography.labelTracking)
+                                        })
+                                    }
+                                }
+                            }
+
+                            Column {
+                                spacing: root.stackSpacing
+
+                                Row {
+                                    spacing: 8 * root.factor
+
+                                    LookLabel { text: "CURSOR" }
+
+                                    LookLabel {
+                                        visible: Looks.error.length > 0
+                                        text: "· REFUSED"
+                                        color: Theme.alert
+                                    }
+                                }
+
+                                Row {
+                                    spacing: 8 * root.factor
+
+                                    LookDropdown {
+                                        id: cursorDrop
+                                        label: Looks.nameOf(Looks.cursors, Looks.cursorTheme)
+                                        open: root.listing === "cursor"
+                                        onPressed: root.toggleList("cursor", cursorDrop)
+                                    }
+
+                                    Segmented {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        metrics: root.metrics
+                                        fontSize: root.fontControl
+                                        options: Looks.sizes.map(size => ({ "key": String(size), "label": String(size) }))
+                                        current: String(Looks.cursorSize)
+                                        onChose: key => Looks.setCursor("", parseInt(key, 10))
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Column {
+                        width: parent.width
+                        spacing: root.stackSpacing
+
+                        Row {
+                            spacing: 8 * root.factor
+
+                            LookLabel { text: "WALLPAPER FOLDER" }
+
+                            LookLabel {
+                                visible: Wallpaper.folderError.length > 0
+                                text: `· ${Wallpaper.folderError}`
+                                color: Theme.alert
+                            }
+                        }
+
+                        // Where the library looks besides Bioma's own images. Pressed,
+                        // it opens a GTK folder picker; the cell closes first, because
+                        // while it is open the shell holds the keyboard and the picker
+                        // would be a window nobody can type into.
+                        Item {
+                            id: folderBox
+
+                            readonly property real inset: 12 * root.factor
+
+                            width: parent.width
+                            height: root.dropdownHeight
+
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: Metrics.radiusFor(height, root.metrics)
+                                color: "transparent"
+                                border.width: Metrics.rim(Screen.devicePixelRatio)
+                                border.color: Wallpaper.picking ? Theme.primary
+                                            : folderHover.hovered ? Theme.text : Theme.line
+                                antialiasing: true
+                            }
+
+                            Text {
+                                anchors.left: parent.left
+                                anchors.leftMargin: folderBox.inset
+                                anchors.right: folderMark.left
+                                anchors.rightMargin: 7 * root.factor
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: root.shortPath(Wallpaper.folder)
+                                elide: Text.ElideMiddle
+                                color: Theme.text
+                                font: Qt.font({
+                                    "family": Typography.technical,
+                                    "pixelSize": root.fontControl,
+                                    "weight": Typography.weightLabel,
+                                    "letterSpacing": Typography.tracking(root.fontControl, 0.04)
+                                })
+                            }
+
+                            Icon {
+                                id: folderMark
+                                anchors.right: parent.right
+                                anchors.rightMargin: folderBox.inset
+                                anchors.verticalCenter: parent.verticalCenter
+                                name: "edit"
+                                width: 11 * root.factor
+                                height: width
+                                colour: folderHover.hovered ? Theme.text : Qt.alpha(Theme.text, 0.6)
+                            }
+
+                            HoverHandler { id: folderHover }
+                            TapHandler {
+                                onTapped: {
+                                    if (root.cell)
+                                        root.cell.open = false;
+                                    Wallpaper.pickFolder();
+                                }
+                            }
+                        }
+                    }
+
+                    // Where the palette goes outside the shell: every application there
+                    // is a template for, lit when it is on.
+                    Column {
+                        width: parent.width
+                        spacing: root.stackSpacing
+
+                        LookLabel { text: "APP TEMPLATES" }
+
+                        Flow {
+                            width: parent.width
+                            spacing: 6 * root.factor
+
+                            Repeater {
+                                model: Templates.catalogue
+
+                                delegate: AppChip {
+                                    required property var modelData
+                                    entry: modelData
+                                }
+                            }
+                        }
+
+                        Text {
+                            width: parent.width
+                            visible: root.failed !== null
+                            text: root.failed ? `${root.failed.name}: ${root.failed.error}` : ""
+                            color: Theme.alert
+                            elide: Text.ElideRight
+                            font.family: Typography.technical
+                            font.pixelSize: root.metrics.fontMeta
+                        }
+                    }
                 }
             }
+        }
+    }
+
+    // The list's shape, for the cut.
+    Item {
+        id: listHole
+
+        x: cutout.x
+        y: cutout.y
+        width: cutout.width
+        height: cutout.height
+        visible: false
+        layer.enabled: root.listGrowth > 0
+
+        Rectangle {
+            x: list.x + root.cutMargin
+            y: list.y + root.cutMargin
+            width: list.width
+            height: list.height
+            radius: list.radius
+            antialiasing: true
         }
     }
 
@@ -1257,6 +1312,9 @@ Item {
         growth: root.listGrowth
         contentReady: root.listGrowth > 0.999
         visible: root.listGrowth > 0
+        // It lies over the capsules: they are glass under glass, blurred, and
+        // deaf to the pointer while it is there.
+        over: composition
 
         // A list belongs to its dropdown: it is born from the control's edge
         // and settles just past it, over whatever capsule lies beyond, rather
