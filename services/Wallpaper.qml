@@ -58,6 +58,8 @@ Singleton {
 
     function expand(candidate) {
         const home = Quickshell.env("HOME") ?? "";
+        if (candidate === "~")
+            return home;
         if (candidate.startsWith("~/"))
             return home + candidate.slice(1);
         if (candidate.startsWith("$HOME"))
@@ -312,6 +314,51 @@ Singleton {
     }
 
     onFavouritesChanged: root.readLibrary()
+
+    // ── The folder ───────────────────────────────────────────────────────
+    //
+    // Chosen in a GTK folder picker rather than typed: a path is found by
+    // looking, and a picker cannot return a folder that is not there. Written
+    // into the configuration the short way, `~/…`, which `expand` reads back.
+    // `folderError` names what went wrong when the picker could not open.
+    property string folderError: ""
+    readonly property bool picking: folderPicker.running
+
+    function pickFolder() {
+        if (folderPicker.running)
+            return;
+        root.folderError = "";
+        folderPicker.running = true;
+    }
+
+    function setFolder(path) {
+        const home = Quickshell.env("HOME") ?? "";
+        let wanted = String(path).trim();
+        while (wanted.length > 1 && wanted.endsWith("/"))
+            wanted = wanted.slice(0, -1);
+        if (!wanted.startsWith("/"))
+            return;
+        if (home.length > 0 && (wanted === home || wanted.startsWith(home + "/")))
+            wanted = "~" + wanted.slice(home.length);
+        Config.set("wallpaper.folder", wanted);
+    }
+
+    Process {
+        id: folderPicker
+        // 127 is the shell's own answer for a command it cannot find, so a
+        // missing zenity is told apart from a picker that was cancelled (1).
+        command: ["sh", "-c", 'command -v zenity >/dev/null || exit 127; '
+                  + 'exec zenity --file-selection --directory --title="Wallpaper folder" '
+                  + '--filename="$1/"', "sh", root.folder]
+        running: false
+        stdout: StdioCollector { id: pickedFolder }
+        onExited: code => {
+            if (code === 0)
+                root.setFolder(pickedFolder.text);
+            else if (code === 127)
+                root.folderError = "ZENITY MISSING";
+        }
+    }
 
     // ── Thumbnails ───────────────────────────────────────────────────────
     //

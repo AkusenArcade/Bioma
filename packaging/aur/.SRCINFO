@@ -39,6 +39,7 @@ pkgbase = bioma-shell
 	optdepends = upower: the battery, on a laptop
 	optdepends = pciutils: the graphics card in the System cell
 	optdepends = libnotify: timer and alarm notifications
+	optdepends = zenity: the folder picker for the wallpaper library
 	optdepends = hyprlock: the fallback lock screen
 	optdepends = swaylock: the fallback lock screen, if hyprlock is not installed
 	optdepends = greetd: the Bioma greeter

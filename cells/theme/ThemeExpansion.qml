@@ -914,6 +914,12 @@ Item {
         TapHandler { onTapped: drop.pressed() }
     }
 
+    // Where a path is, said the short way.
+    function shortPath(path) {
+        const home = Quickshell.env("HOME") ?? "";
+        return home.length > 0 && path.startsWith(home) ? "~" + path.slice(home.length) : path;
+    }
+
     component LookLabel: Text {
         color: Theme.text
         font: Qt.font({
@@ -1028,6 +1034,83 @@ Item {
                                 current: String(Looks.cursorSize)
                                 onChose: key => Looks.setCursor("", parseInt(key, 10))
                             }
+                        }
+                    }
+                }
+            }
+
+            Column {
+                width: parent.width
+                spacing: root.stackSpacing
+
+                Row {
+                    spacing: 8 * root.factor
+
+                    LookLabel { text: "WALLPAPER FOLDER" }
+
+                    LookLabel {
+                        visible: Wallpaper.folderError.length > 0
+                        text: `· ${Wallpaper.folderError}`
+                        color: Theme.alert
+                    }
+                }
+
+                // Where the library looks besides Bioma's own images. Pressed,
+                // it opens a GTK folder picker; the cell closes first, because
+                // while it is open the shell holds the keyboard and the picker
+                // would be a window nobody can type into.
+                Item {
+                    id: folderBox
+
+                    readonly property real inset: 12 * root.factor
+
+                    width: parent.width
+                    height: root.dropdownHeight
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: Metrics.radiusFor(height, root.metrics)
+                        color: "transparent"
+                        border.width: Metrics.rim(Screen.devicePixelRatio)
+                        border.color: Wallpaper.picking ? Theme.primary
+                                    : folderHover.hovered ? Theme.text : Theme.line
+                        antialiasing: true
+                    }
+
+                    Text {
+                        anchors.left: parent.left
+                        anchors.leftMargin: folderBox.inset
+                        anchors.right: folderMark.left
+                        anchors.rightMargin: 7 * root.factor
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: root.shortPath(Wallpaper.folder)
+                        elide: Text.ElideMiddle
+                        color: Theme.text
+                        font: Qt.font({
+                            "family": Typography.technical,
+                            "pixelSize": root.fontControl,
+                            "weight": Typography.weightLabel,
+                            "letterSpacing": Typography.tracking(root.fontControl, 0.04)
+                        })
+                    }
+
+                    Icon {
+                        id: folderMark
+                        anchors.right: parent.right
+                        anchors.rightMargin: folderBox.inset
+                        anchors.verticalCenter: parent.verticalCenter
+                        name: "edit"
+                        width: 11 * root.factor
+                        height: width
+                        colour: folderHover.hovered ? Theme.text : Qt.alpha(Theme.text, 0.6)
+                    }
+
+                    HoverHandler { id: folderHover }
+                    TapHandler {
+                        onTapped: {
+                            if (root.cell)
+                                root.cell.open = false;
+                            Wallpaper.pickFolder();
                         }
                     }
                 }

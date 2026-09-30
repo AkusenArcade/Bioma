@@ -42,6 +42,7 @@ optdepends=(
     'upower: the battery, on a laptop'
     'pciutils: the graphics card in the System cell'
     'libnotify: timer and alarm notifications'
+    'zenity: the folder picker for the wallpaper library'
     'hyprlock: the fallback lock screen'
     'swaylock: the fallback lock screen, if hyprlock is not installed'
     'greetd: the Bioma greeter'
