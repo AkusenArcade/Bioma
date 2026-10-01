@@ -36,6 +36,7 @@ optdepends=(
     'networkmanager: Wi-Fi, wired, VPN profiles and proxy triggers'
     'bluez-utils: Bluetooth'
     'cups: printers in the connectivity cell'
+    'business-network-wizard: company network setup (NTLM proxy, VPN, 802.1X, shares), opened from the connectivity cell'
     'avahi: network printers found and added driverless'
     'ddcutil: the brightness of external monitors'
     'pipewire: audio and the alarm sound'

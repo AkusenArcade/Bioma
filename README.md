@@ -142,6 +142,7 @@ Linux (CachyOS). Package names below are Arch's.
 | NetworkManager | `networkmanager` | Wi-Fi, wired, VPN profiles, proxy triggers |
 | BlueZ | `bluez`, `bluez-utils` | Bluetooth |
 | CUPS, Avahi | `cups`, `avahi` | printers in the connectivity cell: the queues, the default, network printers found and added driverless. Adding and removing one needs CUPS's admin group (`sys` or `wheel` on Arch) |
+| Business Network Wizard | AUR `business-network-wizard` | a company network — NTLM proxy, VPN, 802.1X Wi-Fi, shares, printers. When it is installed the connectivity cell's proxy well offers COMPANY NETWORK, which opens it |
 | ddcutil | `ddcutil` | the brightness of external monitors |
 | PipeWire | `pipewire` | audio, and the alarm's sound |
 | UPower | `upower` | the battery, on a laptop |

@@ -601,6 +601,9 @@ field. The text stays, the focus stays, no dialog arrives.
 - **Devices have no selection.** More than one can stay connected at a time, so each row stands
   alone: clicking connects or disconnects that one. The lit glyph means connected, the dim one
   paired but idle.
+- **Business Network Wizard**, when it is installed, is offered by a `COMPANY NETWORK` pill in the
+  proxy well's bottom row, opposite `+ PROXY`; pressed, it opens the application and the panel
+  closes. Not installed, the pill is not there — no placeholder, no hint.
 - Switches turn off the family, not the cell: with Wi-Fi off its glyph leaves the contracted
   cell and the well stays, empty and available.
 

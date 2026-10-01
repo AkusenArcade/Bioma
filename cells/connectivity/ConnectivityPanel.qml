@@ -204,6 +204,24 @@ Item {
 
     onEditingChanged: if (root.cell) root.cell.asking = root.editing !== null || root.adding
 
+    // Business Network Wizard, an optional dependency: it sets up what a
+    // company network asks for — NTLM proxy, VPN, 802.1X, shares — and when it
+    // is installed the proxy well offers it. Read from the desktop files rather
+    // than the path, so it comes and goes with the package without a restart;
+    // the binding on `Apps.entries` is what re-asks when the set changes.
+    readonly property var companyWizard: {
+        Apps.entries;
+        return DesktopEntries.byId("it.akusen.BusinessNetworkWizard");
+    }
+
+    function openCompanyWizard() {
+        if (!root.companyWizard)
+            return;
+        Apps.run(root.companyWizard, Proxy.environment);
+        if (root.cell)
+            root.cell.open = false;
+    }
+
     readonly property bool proxyValid: proxyHost.text.trim().length > 0
                                        && parseInt(proxyPort.text, 10) > 0
 
@@ -1294,6 +1312,14 @@ Item {
                         label: "+ PROXY"
                         dashed: true
                         onPressed: root.edit(null)
+                    }
+
+                    PanelPill {
+                        visible: !!root.companyWizard
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        label: "COMPANY NETWORK"
+                        onPressed: root.openCompanyWizard()
                     }
                 }
             }
