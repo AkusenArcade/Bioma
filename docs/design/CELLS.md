@@ -112,8 +112,8 @@ tissue and opens downward, aligned left.
 **At rest** — the two-stacked-bars icon and the workspace name in Spectral; if the workspace has
 no name, its number in Orbitron. Width changes only on workspace change.
 
-**Limit cases** — unnamed workspace: the number, cell at its minimum. Long name: ellipsis at the
-limit. Shortcut change: the bars **shift one step** in the direction of the jump, 180 ms.
+**Limit cases** — unnamed workspace: the number, and the cell fits it — the minimum is for names,
+which come in every length; a number does not. Long name: ellipsis at the limit. Shortcut change: the bars **shift one step** in the direction of the jump, 180 ms.
 
 **Expanded** — a rectangular panel: round buttons with the numbers on the left, names in
 Spectral on the right. Five rows visible, then it scrolls with the active workspace always
@@ -138,7 +138,7 @@ an indicator repeating in miniature something already legible elsewhere adds noi
 
 | Measure | Value | Note |
 |---|---|---|
-| contracted cell | 40 px | min 96, max 220 px with ellipsis |
+| contracted cell | 40 px | min 96 for a name (a number fits its content), max 220 px with ellipsis |
 | icon | 16 px | two bars, 1.4 stroke, primary gradient |
 | icon shift | 180 ms | one step of 9.5 units, opening curve |
 | panel | 236 px | padding 10, radius 20 |

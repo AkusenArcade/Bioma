@@ -56,6 +56,18 @@ Cell {
     }
 
     contentWidth: markSize + spacing + (named ? name.implicitWidth : number.implicitWidth)
+
+    // The configured minimum is for names: they come in every length, and a
+    // floor keeps a short one from making the pill twitch. A number is one or
+    // two tabular figures and needs no floor — held at a name's minimum, the
+    // pill was a third empty (Akusen, 2026-10-02, on a machine whose
+    // workspaces have no names).
+    minWidth: {
+        if (!root.named)
+            return 0;
+        const min = root.config.min_width;
+        return min && min.value !== undefined ? min.value : 24;
+    }
     readonly property real available: Math.max(0, width - paddingLeading - paddingTrailing - markSize - spacing)
 
     // ---- The confirmation -------------------------------------------------
