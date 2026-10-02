@@ -88,6 +88,12 @@ Singleton {
     // appear for. Not scaled either.
     readonly property int settle: Config.get("timing.settle", 3000)
 
+    // How long after niri's overview opens or closes the membranes declare
+    // their blur again. It has to outlast niri's own animation and the cells
+    // that leave while it runs; see `Membrane.qml`. Not scaled: niri does not
+    // move at Bioma's speed.
+    readonly property int overviewSettle: Config.get("timing.overview_settle", 800)
+
     // How long the on-screen display stays after the last change it shows.
     // A dwell, not an animation, so the speed setting leaves it alone.
     readonly property int osd: Config.get("timing.osd", 1500)

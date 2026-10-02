@@ -682,6 +682,25 @@ PanelWindow {
 
     onRevealedChanged: refreshRegions()
 
+    // niri keeps the blur region it had when the region shrinks while the
+    // overview is opening: the window title leaves as the overview takes the
+    // focus, the region without it is sent and committed — verified in the
+    // protocol trace — and its glass stays on the backdrop until the region
+    // is sent again. Seen on the laptop only, 2026-10-02. So once niri has
+    // settled, every membrane declares its regions once more.
+    Connections {
+        target: Niri
+        function onOverviewOpenChanged() {
+            overviewSettled.restart();
+        }
+    }
+
+    Timer {
+        id: overviewSettled
+        interval: Timing.overviewSettle
+        onTriggered: root.refreshRegions(true)
+    }
+
     Component.onCompleted: {
         root.syncPlaces();
         Focus.register(root);
