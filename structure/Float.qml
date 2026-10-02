@@ -5,6 +5,7 @@ import Quickshell.Wayland
 import qs.core
 import qs.components
 import qs.structure
+import qs.services
 
 // A tissue with no membrane: anchored to a corner or centred, over the
 // windows, ceding nothing.
@@ -169,19 +170,28 @@ PanelWindow {
     readonly property var edgeMargins: config.margins || ({})
 
     // A margin the block writes is measured from the screen's edge and is
-    // obeyed. Otherwise a tissue anchored to an edge that carries a fixed
-    // membrane sits past it, on the line the windows begin on — where every
-    // expansion hangs from — and not over the membrane: at the top of a screen
-    // with a top band, the top anchor was the band's own place (Akusen,
-    // 2026-09-28). A membrane that hides itself leaves the edge free.
+    // obeyed. Otherwise a tissue anchored to the top or the bottom never takes
+    // a membrane's place: it sits past the strip, on the line the windows
+    // begin on — where every expansion hangs from. At the top of a screen with
+    // a top band the top anchor was the band's own place (Akusen, 2026-09-28),
+    // and at the bottom of a screen with no band a bottom-left notification
+    // sat exactly where a cell on the left of a bottom membrane would
+    // (2026-10-02). So the strip is held whether or not a membrane is there,
+    // and whether or not it is hidden at the moment: one that hides comes
+    // back to the same place. With no membrane on that edge it is the strip
+    // one would take at this tissue's step.
+    //
+    // A side edge has no such strip unless a membrane is on it.
     function margin(side) {
         const value = root.edgeMargins[side];
         if (value !== undefined)
             return value * root.metrics.factor;
         for (const membrane of Focus.membranes)
-            if (membrane && membrane.screenItem === root.screenItem && membrane.edge === side
-                && !membrane.autoHide)
+            if (membrane && membrane.screenItem === root.screenItem && membrane.edge === side)
                 return membrane.strip + membrane.windowInset;
+        if (side === "top" || side === "bottom")
+            return root.metrics.marginEdge + root.metrics.cellHeight
+                + root.metrics.tissuePadding * 2 + Niri.windowGap + Niri.strutFor(side);
         return root.metrics.marginEdge;
     }
 

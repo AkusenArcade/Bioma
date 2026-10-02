@@ -190,9 +190,12 @@ larger half of it. It is for invoked cells — `{ "anchor": "pointer", "monitor"
 brings the audio capsule up under the hand. With the pointer on another output
 it takes the middle of this one after `timing.locate` milliseconds.
 
-Without `margins`, a tissue anchored to an edge that carries a fixed membrane
-sits just past it, on the line the windows begin on, rather than over the membrane;
-against an auto-hiding membrane or a bare edge it keeps the screen-edge margin.
+Without `margins`, a tissue anchored to the top or the bottom never takes a
+membrane's place: it sits just past the membrane's strip, on the line the
+windows begin on. It holds that strip whether the membrane is there, hidden,
+or not declared at all — then it is the strip one would take at the tissue's
+`scale`. On a side edge it does the same past a membrane, and keeps the
+screen-edge margin when there is none.
 `margins` written in the block are measured from the screen's edge and win.
 
 The launcher, floating, is the panel itself, so it is invoked whatever its
