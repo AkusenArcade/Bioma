@@ -193,9 +193,10 @@ it takes the middle of this one after `timing.locate` milliseconds.
 Without `margins`, a tissue anchored to the top or the bottom never takes a
 membrane's place: it sits just past the membrane's strip, on the line the
 windows begin on. It holds that strip whether the membrane is there, hidden,
-or not declared at all — then it is the strip one would take at the tissue's
-`scale`. On a side edge it does the same past a membrane, and keeps the
-screen-edge margin when there is none.
+or not declared at all — then it is the strip one would take at the
+membranes' `scale`, this monitor's or else any, so it follows the density.
+On a side edge it does the same past a membrane, and keeps the screen-edge
+margin when there is none.
 `margins` written in the block are measured from the screen's edge and win.
 
 The launcher, floating, is the panel itself, so it is invoked whatever its

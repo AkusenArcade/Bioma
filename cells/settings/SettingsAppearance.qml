@@ -55,11 +55,18 @@ Item {
         return "normal";
     }
 
+    // The floating tissues go with them: a denser shell whose notifications
+    // stayed at the normal step was not denser.
     function setDensity(name) {
         const copy = JSON.parse(JSON.stringify(root.membranes));
         for (const membrane of copy)
             membrane.scale = name;
         Config.set("membranes", copy);
+
+        const floats = JSON.parse(JSON.stringify(Config.get("floating", [])));
+        for (const tissue of floats)
+            tissue.scale = name;
+        Config.set("floating", floats);
     }
 
     Column {

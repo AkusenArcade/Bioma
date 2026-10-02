@@ -179,9 +179,25 @@ PanelWindow {
     // (2026-10-02). So the strip is held whether or not a membrane is there,
     // and whether or not it is hidden at the moment: one that hides comes
     // back to the same place. With no membrane on that edge it is the strip
-    // one would take at this tissue's step.
+    // one would take at the density the membranes run at — this screen's,
+    // else any — so it follows the three steps with them.
     //
     // A side edge has no such strip unless a membrane is on it.
+    //
+    // The register holds the floating surfaces too, this one included; only
+    // what has a strip is a membrane.
+    readonly property var stripMetrics: {
+        let any = null;
+        for (const membrane of Focus.membranes) {
+            if (!membrane || membrane.strip === undefined)
+                continue;
+            if (membrane.screenItem === root.screenItem)
+                return membrane.metrics;
+            any = any || membrane.metrics;
+        }
+        return any || root.metrics;
+    }
+
     function margin(side) {
         const value = root.edgeMargins[side];
         if (value !== undefined)
@@ -189,9 +205,11 @@ PanelWindow {
         for (const membrane of Focus.membranes)
             if (membrane && membrane.screenItem === root.screenItem && membrane.edge === side)
                 return membrane.strip + membrane.windowInset;
-        if (side === "top" || side === "bottom")
-            return root.metrics.marginEdge + root.metrics.cellHeight
-                + root.metrics.tissuePadding * 2 + Niri.windowGap + Niri.strutFor(side);
+        if (side === "top" || side === "bottom") {
+            const step = root.stripMetrics;
+            return step.marginEdge + step.cellHeight + step.tissuePadding * 2
+                + Niri.windowGap + Niri.strutFor(side);
+        }
         return root.metrics.marginEdge;
     }
 
