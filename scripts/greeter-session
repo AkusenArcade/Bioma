@@ -3,18 +3,33 @@
 # greeter, which ends when the greeter has handed over to the session.
 #
 #     [default_session]
-#     command = "/var/lib/bioma-greeter/live/shell/scripts/greeter-session"
+#     command = "/usr/share/bioma/scripts/greeter-session"
 #     user = "greeter"
 #
-# It runs from the copy scripts/greeter-sync keeps — this file is part of it —
-# and points the greeter's configuration, data and fonts there, so the greeter
-# reads the user's own appearance through the ordinary paths.
+# It runs the copy scripts/greeter-sync keeps, and points the greeter's
+# configuration, data and fonts there, so the greeter reads the user's own
+# appearance through the ordinary paths. Run from inside the copy — this file
+# is part of it — it runs that copy; run from anywhere else, such as the
+# package, it runs the one in $BIOMA_GREETER_DIR, or /var/lib/bioma-greeter.
+#
+# With no copy to run there is no Bioma greeter yet, and greetd's plain one,
+# agreety, asks for the password instead: a login screen must never be empty.
 #
 # The log goes to /tmp/bioma-greeter.log, because a greeter that does not come
 # up has nowhere else to say why.
 set -eu
 
 live="$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)"
+if [ ! -f "$live/niri.kdl" ]; then
+    live="${BIOMA_GREETER_DIR:-/var/lib/bioma-greeter}/live"
+fi
+
+if [ ! -f "$live/niri.kdl" ] || ! command -v niri >/dev/null 2>&1 \
+        || ! command -v qs >/dev/null 2>&1; then
+    echo "=== bioma greeter $(date -Iseconds): no copy at $live, agreety instead ===" \
+        >>/tmp/bioma-greeter.log 2>&1 || true
+    exec agreety --cmd niri-session
+fi
 
 export BIOMA_GREETER_DIR="$live"
 export XDG_CONFIG_HOME="$live/config"

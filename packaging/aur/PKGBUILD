@@ -59,9 +59,12 @@ depends=(
     # the avatar's file picker goes through the portal.
     'xdg-desktop-portal'
     'xdg-desktop-portal-gtk'
-    # Session: the lock screen's fallback (assets/hyprlock), the greeter.
+    # Session: the lock screen's fallback (assets/hyprlock), the greeter, and
+    # greetd's plain greeter, which asks for the password while there is no
+    # copy of Bioma's to run (scripts/greeter-session).
     'hyprlock'
     'greetd'
+    'greetd-agreety'
 )
 makedepends=('cargo' 'clang')
 optdepends=(

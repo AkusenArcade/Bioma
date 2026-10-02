@@ -46,6 +46,7 @@ pkgbase = bioma-shell
 	depends = xdg-desktop-portal-gtk
 	depends = hyprlock
 	depends = greetd
+	depends = greetd-agreety
 	optdepends = whisper-cpp: dictation, the engine
 	optdepends = ggml-vulkan: dictation on the GPU; without it, the CPU
 	optdepends = whisper.cpp-model-large-v3-turbo-q5_0: dictation, the model (AUR)

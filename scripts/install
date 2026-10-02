@@ -112,6 +112,7 @@ need_part "$([ -x /usr/lib/xdg-desktop-portal-gtk ] && echo yes)" \
     "portal gtk" "notifications from Flatpaks, the avatar's file picker" "xdg-desktop-portal-gtk"
 need hyprlock   hyprlock        "the lock screen's fallback"
 need greetd     greetd          "the Bioma greeter"
+need agreety    greetd-agreety  "the plain greeter, while the Bioma one has no copy to run"
 
 echo "Optional:"
 # Dictation's parts. The package leaves them optional: the model alone is

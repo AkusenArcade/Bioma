@@ -148,7 +148,7 @@ the whole shell. Only the second table is left to you.
 | pciutils, libnotify | `pciutils`, `libnotify` | the graphics card in the System cell; timer and alarm notifications |
 | The gtk portal | `xdg-desktop-portal`, `xdg-desktop-portal-gtk` | notifications from Flatpak applications, and the avatar's file picker |
 | hyprlock | `hyprlock` | the fallback lock screen, which takes over if Bioma's own fails |
-| greetd | `greetd` | the Bioma greeter. Installed, not enabled — see [The greeter](#the-greeter) |
+| greetd | `greetd`, `greetd-agreety` | the Bioma greeter, and the plain one while it has no copy to run — see [The greeter](#the-greeter) |
 
 | Optional | Package | For |
 |---|---|---|
@@ -306,9 +306,22 @@ composition, with greetd checking the password: the same wallpaper and mode
 primary monitor only, the one `focus-at-startup` marks in niri's outputs.
 
 The greeter runs as the `greeter` user and cannot read your home, so it runs
-from a copy. The shell keeps that copy current by itself: the configuration,
-the wallpaper, the palette, the monitors, the keyboard layout, the cursor and
-your picture. It needs greetd, and three steps with sudo, once:
+from a copy in `/var/lib/bioma-greeter`. The shell keeps that copy current by
+itself: the configuration, the wallpaper, the palette, the monitors, the
+keyboard layout, the cursor and your picture.
+
+**The AUR package sets it up.** Installing it makes the copy for the user who
+installed it, keeps greetd's configuration as
+`/etc/greetd/config.toml.before-bioma`, points greetd at
+`/usr/share/bioma/scripts/greeter-session`, and enables greetd — unless another
+login manager is enabled, which it leaves alone and names, with the line that
+switches. Nothing restarts: it takes effect at the next boot. Removing the
+package puts the old configuration back.
+
+While there is no copy to run, the same command shows greetd's plain greeter,
+agreety, so the login screen is never empty.
+
+From a clone it takes three steps with sudo, once:
 
 1. A directory you write and the greeter reads:
 
