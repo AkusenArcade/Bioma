@@ -41,6 +41,7 @@ optdepends=(
     'ddcutil: the brightness of external monitors'
     'pipewire: audio and the alarm sound'
     'upower: the battery, on a laptop'
+    'power-profiles-daemon: the power profile in the System cell'
     'pciutils: the graphics card in the System cell'
     'libnotify: timer and alarm notifications'
     'zenity: the folder picker for the wallpaper library'

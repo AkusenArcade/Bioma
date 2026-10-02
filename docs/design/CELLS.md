@@ -432,6 +432,13 @@ appears only here, on the button that performs the action.
   over.
 - Changing the avatar opens the system file picker. It is the only action in the cell that is
   not about the session but about identity, which is why it sits on the avatar.
+- **Power profile** — saver, balanced, performance, as a segmented control in a panel of its own
+  beside the capsule, above the machine's description and tied to it by a thread: the profile is
+  the machine's, not the shell's. It is there only when a daemon answers on
+  `org.freedesktop.UPower.PowerProfiles` (power-profiles-daemon or tuned-ppd). A machine with no
+  performance profile shows the word faint and does not take the press. When the daemon holds
+  performance back — on a lap, running hot — a line in Spectral says so; the shell does not
+  overrule it.
 
 **Why** — the labels are in Orbitron: they are commands, not human language; the person's name
 is in Spectral. Red only on the confirmation: colouring "shut down" red all the time would make
@@ -448,6 +455,7 @@ grammar for "are you sure?".
 | command row | 44 px | icon 20, label Orbitron 13/500 uppercase, key on the right |
 | key | 11 px | Orbitron 11 in a rim-width box, radius 6, tabular figures |
 | confirmation | 44 px | radius 22, alert outline, two 26 px buttons |
+| power panel | 340 × 108 px | the machine panel's width, the capsule's height; segmented 32 px |
 
 **Decided** — confirm only where something is lost. Confirming everything teaches people to
 press twice without reading, which is the fastest way to make the confirmation that matters

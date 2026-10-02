@@ -9,7 +9,8 @@ import qs.services
 // increasing order of gravity, and beside them, on a thread, what the machine
 // is — its name, what it runs, what it is made of, how long it has been up.
 // The machine's description opens toward the middle of the screen, away from
-// the edge the cell sits at.
+// the edge the cell sits at, and above it, beside the capsule, how hard the
+// machine is allowed to work — on a machine where something answers that.
 //
 // The confirmation is the row. No dialog arrives from outside and nothing is
 // covered: the row that was pressed becomes the question, and the alert colour
@@ -79,14 +80,20 @@ Item {
 
     property real cascade: 0
 
+    // The power profile is there only where a daemon answers for it, and
+    // where it is not the cascade does not wait for it.
+    readonly property bool powered: Power.present
+
     function stage(index) {
-        return Timing.stage(root.cascade, index, 4);
+        return Timing.stage(root.cascade, index, root.powered ? 6 : 4);
     }
 
     readonly property real linkProgress: stage(0)
     readonly property real panelProgress: stage(1)
     readonly property real sideProgress: stage(2)
     readonly property real infoProgress: stage(3)
+    readonly property real powerLinkProgress: root.powered ? stage(4) : 0
+    readonly property real powerProgress: root.powered ? stage(5) : 0
 
     Connections {
         target: root.cell
@@ -127,6 +134,7 @@ Item {
             keys.forceActiveFocus();
             Machine.ask();
             Machine.watching = true;
+            Power.ask();
         }
     }
 
@@ -499,8 +507,10 @@ Item {
     Connections {
         target: root.cell
         function onOpenChanged() {
-            if (root.cell.open)
+            if (root.cell.open) {
                 Machine.ask();
+                Power.ask();
+            }
             Machine.watching = root.cell.open;
         }
     }
@@ -588,12 +598,102 @@ Item {
         }
     }
 
+    // ---- How hard it works ---------------------------------------------------
+    //
+    // Saver, balanced, performance: the one setting here, because it is the
+    // machine's and not the shell's, and the System cell is where the machine
+    // is. It hangs above the machine's description, in the corner beside the
+    // capsule, and is born from the thread that ties the two.
+
+    Thread {
+        id: powerLink
+
+        readonly property real headY: root.upward ? machine.y + machine.height
+                                                  : power.y + power.height
+        readonly property real footY: root.upward ? power.y : machine.y
+
+        visible: root.powered
+        vertical: true
+        progress: root.powerLinkProgress
+        width: implicitWidth
+        height: Math.max(0, powerLink.footY - powerLink.headY)
+        x: root.infoX + root.infoWidth / 2 - width / 2
+        y: powerLink.headY
+    }
+
+    Panel {
+        id: power
+
+        visible: root.powered
+        metrics: root.metrics
+        padding: root.panelPadding + 4 * root.factor
+        targetWidth: root.infoWidth
+        targetHeight: root.capsuleHeight
+        growth: root.powerProgress
+        contentReady: root.powerProgress > 0.999
+
+        anchorX: root.infoX
+        anchorY: root.capsuleY
+        nodeX: root.infoX + root.infoWidth / 2
+        nodeY: root.upward ? root.capsuleY : root.capsuleY + root.capsuleHeight
+
+        Column {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 8 * root.factor
+
+            Text {
+                text: "POWER"
+                color: Theme.textFaint
+                font: Qt.font({
+                    "family": Typography.technical,
+                    "pixelSize": root.metrics.fontMeta,
+                    "letterSpacing": Typography.tracking(root.metrics.fontMeta,
+                                                         Typography.labelTracking)
+                })
+            }
+
+            // A machine with no performance profile to give still shows the
+            // word, faint: a choice it cannot make is shown rather than
+            // removed.
+            Segmented {
+                metrics: root.metrics
+                fontSize: root.metrics.fontMeta
+                buttonPadding: 12 * root.factor
+                options: [
+                    { "key": "saver", "label": "Saver" },
+                    { "key": "balanced", "label": "Balanced" },
+                    { "key": "performance", "label": "Performance",
+                      "dimmed": !Power.performanceAvailable }
+                ]
+                current: Power.profile
+                onChose: key => Power.set(key)
+            }
+
+            // The daemon holding performance back is said, not fought: a
+            // laptop on a lap or running hot is not the shell's to overrule.
+            Text {
+                width: parent.width
+                visible: Power.heldBack.length > 0
+                text: Power.heldBack
+                elide: Text.ElideRight
+                color: Theme.textMuted
+                font.family: Typography.expressive
+                font.pixelSize: root.metrics.fontMeta
+            }
+        }
+    }
+
     // What the membrane has to mask and blur: the surfaces, never the threads.
     function shapes() {
-        return [
+        const out = [
             { "item": identity, "radius": identity.radius },
             { "item": commands, "radius": commands.radius },
             { "item": machine, "radius": machine.radius }
         ];
+        if (root.powered)
+            out.push({ "item": power, "radius": power.radius });
+        return out;
     }
 }

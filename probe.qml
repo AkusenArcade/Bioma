@@ -85,6 +85,8 @@ ShellRoot {
     readonly property var monitors: Monitors.outputs
     readonly property bool restartDue: Session.restartDue
     readonly property var machineRows: Machine.rows
+    readonly property bool powerPresent: Power.present
+    readonly property string powerProfile: Power.profile
     readonly property string kernelRelease: Session.release
     readonly property var niriActions: Keybinds.actions
 
@@ -520,6 +522,14 @@ ShellRoot {
             line("error", Printers.error);
     }
 
+    function probePower() {
+        console.log("── Power ─────────────────────────────────────────");
+        line("daemon", root.powerPresent ? "present" : "absent");
+        line("profile", root.powerProfile);
+        line("performance", Power.performanceAvailable ? "offered" : "not offered");
+        line("held back", Power.heldBack || "no");
+    }
+
     function probeScreens() {
         console.log("── Screens ───────────────────────────────────────");
         for (const s of Quickshell.screens)
@@ -556,6 +566,7 @@ ShellRoot {
             probeCapture();
             probeKeyboard();
             probeLooks();
+            probePower();
             console.log("──────────────────────────────────────────────────");
             Qt.exit(0);
         }
