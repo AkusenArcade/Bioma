@@ -9,7 +9,10 @@ import qs.services
 //
 // The pods hang off the panel rather than off each other, each on its own
 // thread, and their bottoms align with it — three pods of 108 with 24 between
-// them is exactly the panel's 372. The indicators inside them are the same
+// them is exactly the panel's 372. With a fourth domain, the battery, they turn
+// into vertical capsules in a two-by-two matrix: four in a column would make
+// the cell a tall strip. The outer pod of each row hangs off the inner one,
+// and the inner one off the panel. The indicators inside them are the same
 // shapes the contracted cell showed, larger: the cell does not present a new
 // vocabulary when it opens, it presents the same one with room.
 //
@@ -26,13 +29,30 @@ Item {
     property var metrics: Metrics.step("normal")
 
     readonly property real factor: metrics.factor
-    readonly property real podWidth: 236 * factor
-    readonly property real podHeight: 108 * factor
     readonly property real panelWidth: 372 * factor
     readonly property real gap: metrics.gap
 
-    implicitWidth: podWidth + gap + panelWidth
-    implicitHeight: panelWidth   // 372: three pods of 108 and two gaps of 24
+    // Four domains are a matrix of vertical capsules, fewer a column of
+    // horizontal ones (CELLS §02).
+    readonly property bool matrix: root.domains.length === 4
+    readonly property int columns: root.matrix ? 2 : 1
+    readonly property int rows: root.matrix ? 2 : 3
+    readonly property real podWidth: (root.matrix ? 120 : 236) * factor
+    readonly property real podHeight: (root.matrix ? 178 : 108) * factor
+
+    readonly property real podsWidth: root.columns * (root.podWidth + root.gap)
+
+    function columnOf(index) {
+        return root.matrix ? index % 2 : 0;
+    }
+
+    function rowOf(index) {
+        return root.matrix ? Math.floor(index / 2) : index;
+    }
+
+    // The list's height is the pods' column, so their bottoms align.
+    implicitWidth: podsWidth + panelWidth
+    implicitHeight: rows * podHeight + (rows - 1) * gap
 
     width: implicitWidth
     height: implicitHeight
@@ -57,7 +77,7 @@ Item {
         if (SystemMonitor.gpuPresent)
             out.push({ "key": "gpu", "label": "GPU" });
         if (SystemMonitor.hasBattery)
-            out.push({ "key": "battery", "label": "BATTERY" });
+            out.push({ "key": "battery", "label": "BATTERY", "short": "BAT" });
         return out;
     }
 
@@ -110,9 +130,12 @@ Item {
 
     property real cascade: 0
 
+    // In the matrix the inner column comes first: the outer pod is born from
+    // the inner one, which has to be there to be born from.
     function podProgress(index) {
+        const order = root.matrix ? (1 - root.columnOf(index)) * 2 + root.rowOf(index) : index;
         const span = Timing.grow + Timing.stagger * Math.max(0, root.domains.length - 1);
-        const started = root.cascade * span - index * Timing.stagger;
+        const started = root.cascade * span - order * Timing.stagger;
         return Math.max(0, Math.min(1, started / Timing.grow));
     }
 
@@ -173,9 +196,13 @@ Item {
             // Up to the pill ceiling the cap is still a border rather than a
             // shape that dictates the content, so a pod is a full pill — and
             // its content is held off the cap by rather more than a panel's
-            // padding, or the indicator sits in the curve.
-            radius: Metrics.radiusFor(root.podHeight, root.metrics)
-            padding: 23 * root.factor
+            // padding, or the indicator sits in the curve. The vertical
+            // capsule is a pill too, though it is wider than the ceiling: it
+            // holds one indicator above its values and nothing with corners
+            // for the cap to eat (STYLE_GUIDE, vertical capsules).
+            radius: root.matrix ? Metrics.shaped(root.podWidth / 2)
+                                : Metrics.radiusFor(root.podHeight, root.metrics)
+            padding: root.matrix ? 8 * root.factor : 23 * root.factor
             targetWidth: root.podWidth
             targetHeight: root.podHeight
             growth: progress
@@ -186,19 +213,107 @@ Item {
             // that edge *is*, the pod grows out of the panel as it opens and
             // goes back into it as it closes; bound to where it will be, the
             // pod retracted into empty space once the panel had left.
-            readonly property real centre: index * (root.podHeight + root.gap) + root.podHeight / 2
+            readonly property real centre: root.rowOf(index) * (root.podHeight + root.gap)
+                                           + root.podHeight / 2
 
-            anchorX: 0
-            anchorY: index * (root.podHeight + root.gap)
-            nodeX: list.x
-            nodeY: Math.max(list.y, Math.min(list.y + list.height, pod.centre))
+            // What it hangs off: the panel, or in the matrix's outer column
+            // the inner pod beside it. `count` first, for the reason given at
+            // the threads.
+            readonly property Item host: root.columnOf(index) === 0 && root.matrix
+                                         && index + 1 < podList.count
+                                         ? podList.itemAt(index + 1) : null
+            readonly property Item hostShape: pod.host ? pod.host : list
+
+            anchorX: root.columnOf(index) * (root.podWidth + root.gap)
+            anchorY: root.rowOf(index) * (root.podHeight + root.gap)
+            nodeX: pod.hostShape.x
+            nodeY: Math.max(pod.hostShape.y,
+                            Math.min(pod.hostShape.y + pod.hostShape.height, pod.centre))
 
             TapHandler {
                 // The indicators double as the sort control.
                 onTapped: root.sort = pod.key
             }
 
+            // Matrix: the indicator above its figures, read top to bottom,
+            // and the name at the foot.
+            Column {
+                visible: root.matrix
+                anchors.centerIn: parent
+                width: parent.width
+                spacing: 3 * root.factor
+
+                Vital {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: 56 * root.factor
+                    height: width
+                    kind: pod.key
+                    load: root.loadOf(pod.key)
+                    rate: root.rateOf(pod.key)
+                    level: root.levelOf(pod.key)
+                }
+
+                Item { width: 1; height: 10 * root.factor }
+
+                Text {
+                    width: parent.width
+                    horizontalAlignment: Text.AlignHCenter
+                    text: root.readingOf(pod.key)
+                    color: Theme.stateFor(root.loadOf(pod.key))
+                    font: Typography.tabular(Qt.font({
+                        "family": Typography.technical,
+                        "pixelSize": root.metrics.fontValue,
+                        "weight": Typography.weightValue
+                    }))
+                }
+
+                Text {
+                    width: parent.width
+                    horizontalAlignment: Text.AlignHCenter
+                    elide: Text.ElideRight
+                    text: root.detailOf(pod.key)
+                    visible: text !== ""
+                    color: Qt.alpha(Theme.stateFor(root.loadOf(pod.key)), 0.8)
+                    font: Typography.tabular(Qt.font({
+                        "family": Typography.technical,
+                        "pixelSize": root.metrics.fontMeta,
+                        "weight": Typography.weightSecondary
+                    }))
+                }
+
+                Item { width: 1; height: 8 * root.factor }
+
+                Row {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    spacing: 7 * root.factor
+
+                    // The cap narrows the foot to about a hundred pixels,
+                    // so a long name goes by its short one there.
+                    Text {
+                        text: pod.modelData.short || pod.modelData.label
+                        color: Theme.text
+                        font: Qt.font({
+                            "family": Typography.technical,
+                            "pixelSize": root.metrics.fontSecondary,
+                            "weight": Typography.weightLabel,
+                            "letterSpacing": Typography.tracking(root.metrics.fontSecondary, Typography.labelTracking)
+                        })
+                    }
+
+                    Rectangle {
+                        anchors.verticalCenter: parent.verticalCenter
+                        visible: pod.sorted
+                        width: 6 * root.factor
+                        height: width
+                        radius: width / 2
+                        color: Theme.primary
+                        antialiasing: true
+                    }
+                }
+            }
+
             Row {
+                visible: !root.matrix
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 14 * root.factor
 
@@ -287,12 +402,13 @@ Item {
             readonly property Item pod: link.index < podList.count
                                         ? podList.itemAt(link.index) : null
             readonly property real from: link.pod ? link.pod.x + link.pod.width : list.x
+            readonly property real to: link.pod && link.pod.host ? link.pod.host.x : list.x
 
             vertical: false
             progress: root.cell ? root.cell.threadProgress : 0
             x: link.from
             y: (link.pod ? link.pod.y + link.pod.height / 2 : list.y) - height / 2
-            width: Math.max(0, list.x - link.from)
+            width: Math.max(0, link.to - link.from)
             height: implicitHeight
         }
     }
@@ -318,7 +434,7 @@ Item {
         // It grows out of the node of the cell's own thread, which lands on the
         // edge facing the cell — the top one on a membrane at the top of the
         // screen, the bottom one on a membrane at the bottom of it.
-        anchorX: root.podWidth + root.gap
+        anchorX: root.podsWidth
         anchorY: 0
         nodeX: root.width - (root.cell ? root.cell.width / 2 : 0)
         nodeY: root.cell && !root.cell.opensDown ? root.height : 0

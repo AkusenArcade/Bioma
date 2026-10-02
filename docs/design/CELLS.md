@@ -92,9 +92,9 @@ exactly when the two need telling apart.
 |---|---|---|
 | contracted indicators | 26 px | 10 px pitch, in a 40 px cell |
 | horizontal pod | 236 × 108 px | three domains, 24 px pitch |
-| vertical pod | 120 × 178 px | four domains, 2 × 2 matrix |
+| vertical pod | 120 × 178 px | four domains, 2 × 2 matrix; a full pill (vertical capsule), BATTERY shortened to BAT |
 | indicator in pod | 62 / 56 px | horizontal / vertical, 1.5 px ring |
-| list panel | 372 × 372 / 376 px | height matches the pod column |
+| list panel | 372 × 372 / 380 px | height matches the pod column: 3 × 108 + 2 × 24, or 2 × 178 + 24 |
 | search field | 40 px | lens 16 in primary, Spectral 14.5 |
 | process row | 30 px | icon 20, name Spectral 13, value Orbitron 13 |
 | threads | 24 px | pod → pod and pod → panel, nodes at both ends |
