@@ -34,8 +34,13 @@ Item {
     // Below its minimum a cell prefers not to appear rather than appear
     // illegible; text cells fall back to ellipsis. A generous minimum also
     // stops small content changes from producing motion.
-    property real minWidth: config.min_width && config.min_width.value !== undefined
-                            ? config.min_width.value : 24
+    //
+    // Configured at the normal step, like `width.max` and like the room the
+    // registry asks for, so it takes the step here: held at its normal figure
+    // under `compact`, a one-icon cell was a 40 px pill 34 px tall rather
+    // than a circle.
+    property real minWidth: (config.min_width && config.min_width.value !== undefined
+                             ? config.min_width.value : 24) * metrics.factor
 
     // Elastic cells take the remaining space in their tissue. `width` is an
     // object rather than a bare number so a per-cell weight stays possible

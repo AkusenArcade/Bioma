@@ -32,8 +32,8 @@ Cell {
     // its own width reads as a cell that has lost its content — the minimum in
     // the handoff belongs to the composed form, where the width is the count.
     // Akusen's call, 2026-09-22, against the 64 px in CELLS §11.
-    readonly property real configuredMin: config.min_width && config.min_width.value !== undefined
-                                          ? config.min_width.value : 64
+    readonly property real configuredMin: (config.min_width && config.min_width.value !== undefined
+                                           ? config.min_width.value : 64) * metrics.factor
 
     minWidth: composed ? configuredMin : metrics.cellHeight
 

@@ -66,7 +66,7 @@ Cell {
         if (!root.named)
             return 0;
         const min = root.config.min_width;
-        return min && min.value !== undefined ? min.value : 24;
+        return (min && min.value !== undefined ? min.value : 24) * metrics.factor;
     }
     readonly property real available: Math.max(0, width - paddingLeading - paddingTrailing - markSize - spacing)
 
