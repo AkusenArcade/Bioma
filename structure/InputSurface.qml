@@ -114,6 +114,23 @@ PanelWindow {
         }
         const rects = Focus.claimed(root.screenItem ? root.screenItem.name : "");
         root.catchRegion = Regions.rebindHoleRects(root, root.catchRegion, sheet, rects);
+        root.requestFrame();
+    }
+
+    // Quickshell hands a new mask to the compositor when the window polishes,
+    // and Qt schedules that polish only for the first request it queues: one
+    // made while the surface is still being mapped is lost, and every request
+    // after it joins the same queue and asks for nothing. This sheet appears
+    // at the very moment a cell opens and draws nothing of its own, so all the
+    // holes punched while that cell grew stayed in Bioma — the theme's panel
+    // sat under a sheet with no hole for it, and a press on any capsule closed
+    // it, until the pointer happened to cross something that repainted
+    // (Akusen, 2026-10-02; one region on the wire against seventy rebuilds).
+    // Turning updates back on asks the window itself for a frame, which does
+    // not wait on that queue.
+    function requestFrame() {
+        root.updatesEnabled = false;
+        root.updatesEnabled = true;
     }
 
     onVisibleChanged: {
@@ -132,8 +149,8 @@ PanelWindow {
 
     Connections {
         target: Focus
-        // The shapes changed shape only in number; their geometry follows the
-        // items themselves.
+        // The shapes changed in number or in place. The holes are rectangles,
+        // not items, so they follow only when they are rebuilt.
         function onRevisionChanged() { root.rebuild(); }
     }
 }
