@@ -37,27 +37,42 @@ done
 
 # ---- What is missing ---------------------------------------------------------
 #
-# Required: without these the shell does not start or cannot do its basic job.
-# The rest each serve one cell or one feature, and their absence costs only that.
+# Required is everything the package depends on: without it a cell is empty or
+# a key does nothing. Only dictation and the company network wizard are
+# optional, and their absence costs only that.
 
 missing_required=0
 
 need() {   # program, Arch package, what for
     if command -v "$1" >/dev/null 2>&1; then
-        printf '  ok        %-14s %s\n' "$1" "$3"
+        printf '  ok        %-16s %s\n' "$1" "$3"
     else
-        printf '  MISSING   %-14s %s  (%s)\n' "$1" "$3" "$2"
+        printf '  MISSING   %-16s %s  (%s)\n' "$1" "$3" "$2"
         missing_required=$((missing_required + 1))
     fi
 }
 
-want() {   # program, Arch package, what for
-    if command -v "$1" >/dev/null 2>&1; then
-        printf '  ok        %-14s %s\n' "$1" "$3"
+need_part() {   # present?, name, what for, Arch package
+    if [ "$1" = yes ]; then
+        printf '  ok        %-16s %s\n' "$2" "$3"
     else
-        printf '  optional  %-14s %s  (%s)\n' "$1" "$3" "$2"
+        printf '  MISSING   %-16s %s  (%s)\n' "$2" "$3" "$4"
+        missing_required=$((missing_required + 1))
     fi
 }
+
+want_part() {   # present?, name, what for, Arch package
+    if [ "$1" = yes ]; then
+        printf '  ok        %-16s %s\n' "$2" "$3"
+    else
+        printf '  optional  %-16s %s  (%s)\n' "$2" "$3" "$4"
+    fi
+}
+
+has() { command -v "$1" >/dev/null 2>&1 && echo yes; }
+# Not `grep -q`: it stops at the first match, fc-list dies of the closed pipe,
+# and under pipefail a font that is there reads as missing.
+font() { fc-list : family 2>/dev/null | grep -i "$1" >/dev/null && echo yes; }
 
 echo "Required:"
 need niri       niri            "the compositor, 26.04 or later"
@@ -68,46 +83,52 @@ need wl-paste   wl-clipboard    "the clipboard cell"
 need magick     imagemagick     "wallpaper thumbnails"
 # A QML module rather than a program: Quickshell does not bring it, and the
 # cells that mask a picture through it do not load without it.
-if [ -d /usr/lib/qt6/qml/Qt5Compat/GraphicalEffects ]; then
-    printf '  ok        %-14s %s\n' "Qt5Compat" "picture masks (QML module)"
-else
-    printf '  MISSING   %-14s %s  (%s)\n' "Qt5Compat" "picture masks (QML module)" "qt6-5compat"
-    missing_required=$((missing_required + 1))
-fi
-echo "Optional:"
-want matugen    matugen         "palettes computed from the wallpaper"
-want grim       grim            "screenshots"
-want tesseract  tesseract       "text recognition from a region"
-want wl-screenrec wl-screenrec  "screen recording (VAAPI)"
-want wf-recorder wf-recorder    "screen recording, fallback"
-want nmcli      networkmanager  "Wi-Fi, wired, VPN and proxy triggers"
-want bluetoothctl bluez-utils   "Bluetooth pairing"
-want ddcutil    ddcutil         "external monitor brightness"
-want pw-play    pipewire        "the alarm's sound"
-want lspci      pciutils        "the graphics card, in the System cell"
-want notify-send libnotify      "the timer and alarm notifications"
-want pw-record  pipewire        "dictation: the microphone"
-want whisper-cli whisper-cpp    "dictation: the engine"
+need_part "$([ -d /usr/lib/qt6/qml/Qt5Compat/GraphicalEffects ] && echo yes)" \
+    "Qt5Compat" "picture masks (QML module)" "qt6-5compat"
+need fc-list    fontconfig      "the fonts"
+need_part "$(font Spectral)" "Spectral" "the expressive voice" "AUR ttf-spectral"
+need_part "$(font Orbitron)" "Orbitron" "the technical voice" "AUR ttf-orbitron"
+need matugen    matugen         "palettes computed from the wallpaper"
+need zenity     zenity          "the wallpaper folder picker"
+need grim       grim            "screenshots"
+need tesseract  tesseract       "text recognition from a region"
+need_part "$(tesseract --list-langs 2>/dev/null | grep -qx eng && echo yes)" \
+    "tessdata eng" "text recognition, in English" "tesseract-data-eng"
+need wl-screenrec wl-screenrec  "screen recording (AUR)"
+need pw-play    pipewire-audio  "the alarm's sound, the microphone"
+need nmcli      networkmanager  "Wi-Fi, wired, VPN and proxy triggers"
+need bluetoothctl bluez-utils   "Bluetooth pairing"
+need_part "$([ -x /usr/lib/bluetooth/bluetoothd ] && echo yes)" \
+    "bluetoothd" "Bluetooth" "bluez"
+need lpstat     cups            "printers"
+need avahi-browse avahi         "network printers, found and added driverless"
+need brightnessctl brightnessctl "the backlight, on a laptop"
+need ddcutil    ddcutil         "external monitor brightness"
+need upower     upower          "the battery, on a laptop"
+need powerprofilesctl power-profiles-daemon "the power profile (or tuned-ppd)"
+need lspci      pciutils        "the graphics card, in the System cell"
+need notify-send libnotify      "the timer and alarm notifications"
+need_part "$([ -x /usr/lib/xdg-desktop-portal-gtk ] && echo yes)" \
+    "portal gtk" "notifications from Flatpaks, the avatar's file picker" "xdg-desktop-portal-gtk"
+need hyprlock   hyprlock        "the lock screen's fallback"
+need greetd     greetd          "the Bioma greeter"
 
-# Dictation's other three parts are not programs. The package brings all of
-# them; a checkout is told what is missing, like everything above.
-dictation_part() {   # present?, name, what for, where from
-    if [ "$1" = yes ]; then
-        printf '  ok        %-14s %s\n' "$2" "$3"
-    else
-        printf '  optional  %-14s %s  (%s)\n' "$2" "$3" "$4"
-    fi
-}
+echo "Optional:"
+# Dictation's parts. The package leaves them optional: the model alone is
+# half a gigabyte, for one button.
 model=/usr/share/whisper.cpp-model-large-v3-turbo-q5_0/ggml-large-v3-turbo-q5_0.bin
-dictation_part "$([ -r "$model" ] && echo yes)" "model" "dictation: large-v3-turbo q5_0" \
+want_part "$(has whisper-cli)" "whisper-cli" "dictation: the engine" "whisper-cpp"
+want_part "$([ -r "$model" ] && echo yes)" "model" "dictation: large-v3-turbo q5_0" \
     "AUR whisper.cpp-model-large-v3-turbo-q5_0"
-dictation_part "$(ls /usr/lib/ggml/libggml-vulkan*.so >/dev/null 2>&1 && echo yes)" "ggml-vulkan" \
+want_part "$(ls /usr/lib/ggml/libggml-vulkan*.so >/dev/null 2>&1 && echo yes)" "ggml-vulkan" \
     "dictation on the GPU; without it, the CPU" "ggml-vulkan"
-dictation_part "$(python3 -c 'import evdev' 2>/dev/null && echo yes)" "python-evdev" \
+want_part "$(python3 -c 'import evdev' 2>/dev/null && echo yes)" "python-evdev" \
     "dictation: pasting into the window" "python-evdev"
-dictation_part "$([ -w /dev/uinput ] && echo yes)" "/dev/uinput" \
+want_part "$([ -w /dev/uinput ] && echo yes)" "/dev/uinput" \
     "dictation: pasting; without it the text stays on the clipboard" \
     "packaging/system/70-bioma-uinput.rules into /etc/udev/rules.d"
+want_part "$(has bnw)" "network wizard" \
+    "company network setup, from the connectivity cell" "AUR business-network-wizard"
 
 if command -v niri >/dev/null 2>&1; then
     version="$(niri --version 2>/dev/null | awk '{print $2}')"
@@ -117,10 +138,35 @@ if command -v niri >/dev/null 2>&1; then
     fi
 fi
 
-# Not `grep -q`: it stops at the first match, fc-list dies of the closed pipe,
-# and under pipefail a font that is there reads as missing.
-fc-list : family 2>/dev/null | grep -i "Spectral" >/dev/null || echo "  font      Spectral        not found (ttf-spectral) — the expressive voice falls back"
-fc-list : family 2>/dev/null | grep -i "Orbitron" >/dev/null || echo "  font      Orbitron        not found (AUR ttf-orbitron) — the technical voice falls back"
+# ---- System services ---------------------------------------------------------
+#
+# A package does not enable services, and this script does not run sudo: a
+# machine that keeps its network with iwd or systemd-networkd would lose it to
+# NetworkManager. So the disabled ones are named, with the one command that
+# enables them.
+
+disabled=()
+service() {   # unit(s), any one enabled is enough; the first is the one named
+    local unit
+    for unit in "$@"; do
+        case "$(systemctl is-enabled "$unit" 2>/dev/null)" in
+            enabled|enabled-runtime|static|indirect|alias) return ;;
+        esac
+    done
+    # A unit that is not installed was reported above, as a program.
+    if systemctl cat "$1" >/dev/null 2>&1; then disabled+=("$1"); fi
+}
+service NetworkManager.service
+service bluetooth.service
+service cups.socket cups.service
+service avahi-daemon.service avahi-daemon.socket
+# power-profiles-daemon and tuned-ppd are started by D-Bus when first asked.
+
+if [ "${#disabled[@]}" -gt 0 ]; then
+    echo "Services not enabled — the cells that read them stay empty until they are:"
+    printf '  %s\n' "${disabled[@]}"
+    echo "  sudo systemctl enable --now ${disabled[*]}"
+fi
 
 if [ "$missing_required" -gt 0 ]; then
     echo

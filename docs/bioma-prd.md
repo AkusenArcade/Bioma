@@ -730,7 +730,9 @@ There is no daemon, so nothing holds the model in memory between takes.
 Loading it from the page cache costs a fraction of a second per take. That is
 the price of having no daemon, and it is accepted.
 
-**Installing Bioma installs dictation. Nothing is left for the user to fetch.**
+**Dictation is optional: the one feature the package does not install.** The
+model alone is half a gigabyte, for one button. Every other feature is a hard
+dependency of the package. The pieces, all named in the package's `optdepends`:
 - `whisper-cpp` (Arch `extra`) provides `whisper-cli`. `ggml-vulkan`
   (`extra`) gives it the GPU. ggml loads its backends at run time, so a
   machine with a Vulkan device uses it, and one without falls back to the CPU
@@ -738,9 +740,9 @@ the price of having no daemon, and it is accepted.
 - The model is `large-v3-turbo` quantised to `q5_0`, 547 MB. On the GPU it
   transcribes ten seconds in under one, and on a CPU it is still usable. It
   comes from the AUR package `whisper.cpp-model-large-v3-turbo-q5_0`, which
-  pins the file's sha256 and installs it under `/usr/share`. As a dependency
-  it is downloaded once, not with every Bioma release, which it would be if
-  it were a source of Bioma's own PKGBUILD.
+  pins the file's sha256 and installs it under `/usr/share`. As a separate
+  package it is downloaded once, not with every Bioma release, which it would
+  be if it were a source of Bioma's own PKGBUILD.
 - `python-evdev` (`extra`) for the paste helper.
 - The package also ships a udev rule that tags `/dev/uinput` `uaccess`, and a
   `modules-load.d` entry for `uinput`. This gives the user at the seat the

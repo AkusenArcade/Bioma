@@ -123,6 +123,9 @@ https://github.com/user-attachments/assets/b6040d46-5f7f-4733-bbe6-13055976d951
 Bioma is written for **niri** and **Quickshell 0.3.1**, and it is tested on Arch
 Linux (CachyOS). Package names below are Arch's.
 
+The AUR package depends on all of the first table, so installing it installs
+the whole shell. Only the second table is left to you.
+
 | Required | Package | For |
 |---|---|---|
 | niri 26.04 or later | `niri` | the compositor; 26.04 is the first with `ext-background-effect` blur |
@@ -132,24 +135,25 @@ Linux (CachyOS). Package names below are Arch's.
 | gsettings | `glib2` | the desktop's settings: palette, icons, cursor, proxy |
 | wl-clipboard | `wl-clipboard` | the clipboard cell |
 | ImageMagick | `imagemagick` | wallpaper thumbnails |
-
-| Optional | Package | For |
-|---|---|---|
-| matugen | `matugen` | palettes computed from the wallpaper |
-| grim, tesseract | `grim`, `tesseract` | screenshots and text recognition |
-| whisper.cpp, its model, python-evdev | `whisper-cpp`, `ggml-vulkan`, AUR `whisper.cpp-model-large-v3-turbo-q5_0`, `python-evdev` | dictation — see [Dictation](#dictation). The AUR package brings all of it |
-| wl-screenrec or wf-recorder | `wl-screenrec`, `wf-recorder` | screen recording (VAAPI; the second is the fallback) |
+| Spectral, Orbitron | AUR `ttf-spectral`, AUR `ttf-orbitron` | the two voices, expressive and technical. Both are SIL OFL |
+| matugen, zenity | `matugen`, `zenity` | palettes computed from the wallpaper; the wallpaper folder picker |
+| grim, tesseract, wl-screenrec | `grim`, `tesseract`, `tesseract-data-eng`, AUR `wl-screenrec` | screenshots, text recognition, screen recording (VAAPI) |
+| PipeWire | `pipewire`, `pipewire-audio` | audio, the alarm's sound, the microphone |
 | NetworkManager | `networkmanager` | Wi-Fi, wired, VPN profiles, proxy triggers |
 | BlueZ | `bluez`, `bluez-utils` | Bluetooth |
 | CUPS, Avahi | `cups`, `avahi` | printers in the connectivity cell: the queues, the default, network printers found and added driverless. Adding and removing one needs CUPS's admin group (`sys` or `wheel` on Arch) |
-| Business Network Wizard | AUR `business-network-wizard` | a company network — NTLM proxy, VPN, 802.1X Wi-Fi, shares, printers. When it is installed the connectivity cell's proxy well offers COMPANY NETWORK, which opens it |
-| ddcutil | `ddcutil` | the brightness of external monitors |
-| PipeWire | `pipewire` | audio, and the alarm's sound |
+| brightnessctl, ddcutil | `brightnessctl`, `ddcutil` | the backlight of a laptop; the brightness of external monitors |
 | UPower | `upower` | the battery, on a laptop |
-| power-profiles-daemon or tuned-ppd | `power-profiles-daemon`, `tuned-ppd` | the power profile in the System cell — saver, balanced, performance — and, on a laptop, switching it with the plug |
+| power-profiles-daemon | `power-profiles-daemon` (or `tuned-ppd`, which provides it) | the power profile in the System cell — saver, balanced, performance — and, on a laptop, switching it with the plug |
 | pciutils, libnotify | `pciutils`, `libnotify` | the graphics card in the System cell; timer and alarm notifications |
-| hyprlock or swaylock | `hyprlock`, `swaylock` | the fallback lock screen, which takes over if Bioma's own fails. Without one, a lock screen that fails leaves only the TTY way back in |
-| Spectral, Orbitron | `ttf-spectral`, AUR `ttf-orbitron` | the two voices, expressive and technical. Declared as roles, so their absence degrades rather than breaks. Both are SIL OFL, and the Google Fonts families dropped into `~/.local/share/fonts` work too |
+| The gtk portal | `xdg-desktop-portal`, `xdg-desktop-portal-gtk` | notifications from Flatpak applications, and the avatar's file picker |
+| hyprlock | `hyprlock` | the fallback lock screen, which takes over if Bioma's own fails |
+| greetd | `greetd` | the Bioma greeter. Installed, not enabled — see [The greeter](#the-greeter) |
+
+| Optional | Package | For |
+|---|---|---|
+| whisper.cpp, its model, python-evdev | `whisper-cpp`, `ggml-vulkan`, AUR `whisper.cpp-model-large-v3-turbo-q5_0`, `python-evdev` | dictation — see [Dictation](#dictation). The model alone is 547 MB |
+| Business Network Wizard | AUR `business-network-wizard` | a company network — NTLM proxy, VPN, 802.1X Wi-Fi, shares, printers. When it is installed the connectivity cell's proxy well offers COMPANY NETWORK, which opens it |
 
 ## Install
 
@@ -177,7 +181,10 @@ A clone needs the spectrum tool built once for Sinestesia:
 `cargo build --release` in `tools/sinestesia-bands` (see its README).
 
 `scripts/install` says what is missing first, and stops if anything required is.
-Then it writes the keys and tells niri where Bioma is:
+It names the system services that are not enabled — NetworkManager, Bluetooth,
+CUPS, Avahi — with the one `sudo systemctl enable --now` line that enables
+them; it does not run it, because a machine that keeps its network another way
+would lose it. Then it writes the keys and tells niri where Bioma is:
 
 - `bioma-binds.kdl`, next to niri's `config.kdl`, from
   `config/niri/bioma-binds.kdl.in` with the repository's path filled in. The
@@ -243,6 +250,15 @@ controllers. Be aware of what that means: **any program you run can then
 synthesise keyboard and mouse input.** Without it, dictation still works: the
 text is left on the clipboard, and a notification says to paste it.
 
+Dictation is the one feature the package leaves optional, for the size of its
+model. To add it:
+
+```sh
+paru -S whisper-cpp ggml-vulkan whisper.cpp-model-large-v3-turbo-q5_0 python-evdev
+```
+
+Without them, pressing DICTATION says that whisper-cli or its model is missing.
+
 The model is `large-v3-turbo`, quantised (547 MB). It runs on the GPU through
 Vulkan when there is one, and on the CPU otherwise.
 `capture.dictation` in the configuration picks another model, the language,
@@ -267,7 +283,7 @@ over with a plain field. The worst case is a plainer lock screen.
 
 #### If the lock screen fails
 
-If neither is installed, or both fail, niri keeps the screens locked, red, with
+If both fail, niri keeps the screens locked, red, with
 nothing to type into. Nothing is lost; the way back is a text console:
 
 1. Press `Ctrl+Alt+F2` and log in.

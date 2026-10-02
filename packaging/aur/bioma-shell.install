@@ -14,11 +14,16 @@ post_install() {
 
     It writes Bioma's keys next to niri's config.kdl and includes Bioma's
     niri files (config.kdl is copied aside first and checked with
-    `niri validate`). Then start it with
+    `niri validate`). It also names the system services that are not
+    enabled yet (NetworkManager, Bluetooth, CUPS, Avahi), with the
+    command that enables them. Then start it with
     `/usr/share/bioma/scripts/shell bioma`, or log in again.
 
     Palettes reach niri only by default; other applications are switched on
     under APPS in the theme cell (Mod+Alt+T).
+
+    Dictation (Mod+Alt+D) is optional, for the size of its model:
+      paru -S whisper-cpp ggml-vulkan whisper.cpp-model-large-v3-turbo-q5_0 python-evdev
 MSG
 }
 
