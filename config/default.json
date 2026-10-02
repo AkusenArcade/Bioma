@@ -136,6 +136,12 @@
     "before_sleep": true
   },
 
+  "power": {
+    "$comment": "The power profile to switch to when the machine goes on battery and when it is plugged in again: saver, balanced, performance, or keep to leave it alone. Needs a battery and power-profiles-daemon (or tuned-ppd). A profile chosen by hand holds until the power source next changes.",
+    "on_battery": "keep",
+    "on_mains": "keep"
+  },
+
   "vitals": {
     "interval": 2000,
     "clock_average": 5,

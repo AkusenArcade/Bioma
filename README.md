@@ -146,7 +146,7 @@ Linux (CachyOS). Package names below are Arch's.
 | ddcutil | `ddcutil` | the brightness of external monitors |
 | PipeWire | `pipewire` | audio, and the alarm's sound |
 | UPower | `upower` | the battery, on a laptop |
-| power-profiles-daemon or tuned-ppd | `power-profiles-daemon`, `tuned-ppd` | the power profile in the System cell — saver, balanced, performance |
+| power-profiles-daemon or tuned-ppd | `power-profiles-daemon`, `tuned-ppd` | the power profile in the System cell — saver, balanced, performance — and, on a laptop, switching it with the plug |
 | pciutils, libnotify | `pciutils`, `libnotify` | the graphics card in the System cell; timer and alarm notifications |
 | hyprlock or swaylock | `hyprlock`, `swaylock` | the fallback lock screen, which takes over if Bioma's own fails. Without one, a lock screen that fails leaves only the TTY way back in |
 | Spectral, Orbitron | `ttf-spectral`, AUR `ttf-orbitron` | the two voices, expressive and technical. Declared as roles, so their absence degrades rather than breaks. Both are SIL OFL, and the Google Fonts families dropped into `~/.local/share/fonts` work too |

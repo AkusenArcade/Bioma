@@ -3,6 +3,7 @@ import Quickshell
 import Quickshell.Io
 import qs.core
 import qs.components
+import qs.services
 
 // When the session locks by itself.
 //
@@ -21,6 +22,11 @@ import qs.components
 // and said nothing a person could check against (Akusen, 2026-09-29). The
 // third well is not a setting: it says what takes over if the lock screen
 // fails, because that is the part of locking nobody sees until it matters.
+//
+// The fourth is the power profile following the plug, and it is there only on
+// a machine with a battery and a daemon to ask: elsewhere there is no plug to
+// follow. It lives here because, like locking, it is the session doing
+// something by itself; choosing a profile by hand stays in the System cell.
 Item {
     id: root
 
@@ -99,6 +105,48 @@ Item {
         }
     }
 
+    // A profile setting's row: what it is for, and the choice beside it.
+    component ProfileRow: Item {
+        id: profileRow
+
+        property string label: ""
+        property string path: ""
+        property string value: "keep"
+
+        width: parent.width
+        height: profileChoice.implicitHeight
+
+        Text {
+            anchors.left: parent.left
+            anchors.verticalCenter: parent.verticalCenter
+            text: profileRow.label
+            color: Theme.textFaint
+            font: Qt.font({
+                "family": Typography.technical,
+                "pixelSize": root.metrics.fontMeta,
+                "letterSpacing": Typography.tracking(root.metrics.fontMeta,
+                                                     Typography.labelTracking)
+            })
+        }
+
+        Segmented {
+            id: profileChoice
+            anchors.right: parent.right
+            metrics: root.metrics
+            fontSize: root.metrics.fontMeta
+            buttonPadding: 10 * root.factor
+            options: [
+                { "key": "keep", "label": "Keep" },
+                { "key": "saver", "label": "Saver" },
+                { "key": "balanced", "label": "Balanced" },
+                { "key": "performance", "label": "Performance",
+                  "dimmed": !Power.performanceAvailable }
+            ]
+            current: profileRow.value
+            onChose: key => Config.set(profileRow.path, key)
+        }
+    }
+
     // What a person reads, so the human voice.
     component Line: Text {
         width: parent.width
@@ -169,6 +217,38 @@ Item {
                       : `${root.fallback} takes over, so the session is never left open.`
                 // The one sentence here that reports a risk.
                 color: root.fallback === "none" ? Theme.alert : Theme.text
+            }
+        }
+
+        // The profile the machine switches to when the plug changes.
+        Section {
+            label: "POWER PROFILE"
+            visible: Power.present && Power.hasBattery
+
+            ProfileRow {
+                label: "ON BATTERY"
+                path: "power.on_battery"
+                value: Power.onBatteryProfile
+            }
+
+            ProfileRow {
+                label: "PLUGGED IN"
+                path: "power.on_mains"
+                value: Power.onMainsProfile
+            }
+
+            Line {
+                text: {
+                    const battery = Power.onBatteryProfile;
+                    const mains = Power.onMainsProfile;
+                    if (battery === "keep" && mains === "keep")
+                        return "The profile is left alone, on battery and plugged in. It is chosen in the System cell.";
+                    const unplugged = battery === "keep" ? "On battery the profile is left alone"
+                                                         : `On battery the machine switches to ${battery}`;
+                    const plugged = mains === "keep" ? "plugged in, it is left alone"
+                                                     : `plugged in, to ${mains}`;
+                    return `${unplugged}; ${plugged}. A profile chosen by hand holds until the plug next changes.`;
+                }
             }
         }
     }

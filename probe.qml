@@ -528,6 +528,9 @@ ShellRoot {
         line("profile", root.powerProfile);
         line("performance", Power.performanceAvailable ? "offered" : "not offered");
         line("held back", Power.heldBack || "no");
+        line("battery", Power.hasBattery ? (Power.onBattery ? "on battery" : "plugged in") : "none");
+        line("follows", `battery ${Power.onBatteryProfile}, mains ${Power.onMainsProfile}`
+             + (Power.settled ? ` — wants ${Power.wanted}` : " — not settled"));
     }
 
     function probeScreens() {

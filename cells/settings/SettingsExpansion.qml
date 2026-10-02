@@ -52,7 +52,7 @@ Item {
         { "key": "keybinds", "label": "KEYBINDS", "glyph": "keyboard",
           "hint": "shortcuts · niri.kdl", "width": 560 },
         { "key": "session", "label": "SESSION", "glyph": "lock",
-          "hint": "locking when idle", "width": 540 }
+          "hint": "locking, power profile", "width": 540 }
     ]
 
     readonly property string chosen: root.cell ? root.cell.category : "appearance"

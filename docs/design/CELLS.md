@@ -438,7 +438,9 @@ appears only here, on the button that performs the action.
   `org.freedesktop.UPower.PowerProfiles` (power-profiles-daemon or tuned-ppd). A machine with no
   performance profile shows the word faint and does not take the press. When the daemon holds
   performance back — on a lap, running hot — a line in Spectral says so; the shell does not
-  overrule it.
+  overrule it. On a machine with a battery the profile can also follow the plug (Settings,
+  Session): it is set when the power source changes, when the shell starts and when the setting
+  changes, so a profile chosen here holds until the plug next does something.
 
 **Why** — the labels are in Orbitron: they are commands, not human language; the person's name
 is in Spectral. Red only on the confirmation: colouring "shut down" red all the time would make
@@ -680,7 +682,10 @@ typing it.
 **Session** — when the screen locks by itself, in three wells: **lock after** idle (Never, 5,
 10, 15, 30 min), **before sleep** (a switch on the label's line), and **if the lock fails**,
 which is not a setting but says what takes over (hyprlock, swaylock, or in the alert colour
-nothing but a TTY). Each well ends with a line in Spectral saying what the current choice does.
+nothing but a TTY). On a machine with a battery and a power-profile daemon a fourth well,
+**power profile**, sets what the machine switches to **on battery** and **plugged in** (Keep,
+Saver, Balanced, Performance); elsewhere there is no plug to follow and the well is not there.
+Each well ends with a line in Spectral saying what the current choice does.
 
 **Behaviour**
 - Fixed height, scrolling inside: a settings window that changes height on every category is
