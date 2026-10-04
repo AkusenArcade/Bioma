@@ -59,12 +59,7 @@ ShellRoot {
     // compositor reports — niri has no notion of a primary output — and `all`
     // puts the same membrane on every one of them.
     function membraneMatches(entry, screen) {
-        const monitor = entry.monitor || "primary";
-        if (monitor === "all" || monitor === "*")
-            return true;
-        if (monitor === "primary")
-            return Quickshell.screens.length > 0 && Quickshell.screens[0] === screen;
-        return screen && screen.name === monitor;
+        return Strips.belongs(entry, screen);
     }
 
     Variants {
@@ -89,9 +84,11 @@ ShellRoot {
 
             // Above the wallpaper and under every window: the organisms placed
             // on this screen. docs/design/ORGANISMS.md.
+            //
+            // While they are being placed, they read the list being edited.
             OrganismSurface {
                 screenItem: perScreen.modelData
-                entries: root.organismConfig.filter(entry => root.membraneMatches(entry, perScreen.modelData))
+                all: Arranging.active ? Arranging.working : root.organismConfig
             }
 
             // Over everything, and only while a cell is open: the surface that
@@ -197,6 +194,32 @@ ShellRoot {
         // against rather than guessed at.
         function list(): string {
             return Focus.domains.join("\n");
+        }
+    }
+
+    // Placing the organisms: the mode that lifts them above the windows and
+    // lets them be dragged. `arrange` enters it or leaves it; `done` only
+    // leaves. docs/design/ORGANISMS.md.
+    IpcHandler {
+        target: "organisms"
+
+        function arrange(): string {
+            Arranging.toggle();
+            return Arranging.active ? "arranging" : "done";
+        }
+
+        function done(): string {
+            Arranging.finish();
+            return "done";
+        }
+
+        function state(): string {
+            return Arranging.active ? "arranging" : "at rest";
+        }
+
+        // Where each one is — the list being edited while the mode lasts.
+        function list(): string {
+            return JSON.stringify(Arranging.active ? Arranging.working : Config.get("organisms", []));
         }
     }
 

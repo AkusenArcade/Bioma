@@ -82,21 +82,31 @@ since beta.20. One organism can override it with its own `size`.
 
 Organisms take no input at rest, so they are placed in a mode of their own.
 
-- **Entered** from Settings → Cells → Organisms → *Arrange*, or by IPC
-  (`qs ipc call organisms arrange`).
-- **While arranging**, every screen gets a surface on the **Top** layer that holds a copy of its
-  organisms *above* the windows, and the windows behind are dimmed by the scrim. The free area
-  is drawn: a dashed outline in `line`, 1 px (never under 2 physical px), radius 20.
-- Each organism wears a **dashed primary outline** and its name in Orbitron 11 above its top-left
-  corner. Hover brightens the outline; press and drag moves it. Drag is not scaled, not tilted:
-  the panel moves whole.
+- **Entered** from Settings → Cells → Organisms → *Arrange*, or by IPC: `organisms arrange`
+  enters or leaves, `organisms done` leaves, `organisms state` and `organisms list` say where
+  things are (`qs -p …/shell.qml ipc call organisms arrange`).
+- **While arranging**, every screen's organism surface comes up from the Bottom layer to the
+  **Top** layer — the organisms are lifted, not copied — takes the pointer, and dims the windows
+  behind. The free area is drawn: a dashed outline in `line`, 1 px (never under 2 physical px),
+  radius 20.
+- Each organism wears a **dashed primary outline** 8 px outside its panel, and its name and
+  position — `CLOCK  X 0.31 · Y 0.51`, Orbitron 11 — above its top-left corner. Hover brightens
+  the outline; press and drag moves it. Drag is not scaled, not tilted: the panel moves whole,
+  and where the press landed inside it stays under the pointer.
 - **Snapping** (magnetic, 8 px reach): the edges of the free area; the screen's centre lines;
   the edges and centre lines of the other organisms, and the 24 px gap beside them. A guide line
   in primary, 1.3 px, shows the snap that holds.
 - An organism dropped onto **another monitor** moves there; its position is recomputed in that
-  monitor's free area.
-- **Done** — a primary button centred at the top of the free area — or Escape leaves the mode.
-  The positions are written to the override layer on leaving, in one write.
+  monitor's free area. It leaves the first screen from where it was let go and grows on the
+  second. (Every surface keeps one organism for every block and shows only its own, so a drop
+  never destroys what the hand is holding.)
+- **Done** — a primary button centred at the top of every screen's free area — or Escape leaves
+  the mode. The positions are written to the override layer on leaving, in one write.
+- **The keyboard is on demand, never exclusive.** niri gives it to the surface that is pressed,
+  so Escape is heard from the first press on; before it, Done or the same keybind leave. Held
+  exclusively by one screen, every press on the other one was cancelled the moment it landed
+  (found 2026-10-04 with a synthetic pointer: once an organism had been carried there, every
+  press failed until the shell restarted).
 
 ## Settings
 

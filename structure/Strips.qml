@@ -17,6 +17,18 @@ import qs.services
 Singleton {
     id: root
 
+    // Which monitor a block belongs to — a membrane's, a floating tissue's or
+    // an organism's. `primary` is the first screen the compositor reports
+    // (niri has no notion of a primary output) and `all` is every one.
+    function belongs(entry, screen) {
+        const monitor = entry.monitor || "primary";
+        if (monitor === "all" || monitor === "*")
+            return true;
+        if (monitor === "primary")
+            return Quickshell.screens.length > 0 && Quickshell.screens[0] === screen;
+        return screen && screen.name === monitor;
+    }
+
     // The density the membranes run at — this screen's, else any — for an
     // edge that has no membrane of its own. The register holds the floating
     // surfaces too; only what has a strip is a membrane.
