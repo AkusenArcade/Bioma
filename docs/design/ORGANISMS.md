@@ -119,10 +119,12 @@ membrane and one panel standing on it), laid out in wells like the Session page:
 - a chip's × takes it away: it shrinks into its centre on the desktop, and the list is written
   without it once it has gone;
 - a press on a chip's name shows its options in the well: SIZE (the membranes' step, or its own),
-  VISUALISER for media, LAYOUT for vitals;
-- **ARRANGE** — the button that closes the settings and enters the mode;
-- **WEATHER** — the city, a field that keeps what was typed when the place is not found and
-  says why under it, in the alert colour.
+  VISUALISER for media, LAYOUT for vitals, HEIGHT and FILE for a note, CITY for weather. Every
+  option of an organism is found the same way, under its chip (Akusen, 2026-10-04: the city had a
+  well of its own and was the one exception). The city is one place for every weather organism, so
+  the same field stands under each of them; it keeps what was typed when the place is not found
+  and says why under it, in the alert colour;
+- **ARRANGE** — the button that closes the settings and enters the mode.
 
 Blocks written from the shell carry an `id`, so a surface keeps each organism's delegate across
 a change to the list: one taken away from the middle does not take the ones after it with it.

@@ -569,12 +569,122 @@ Item {
                         }
                     }
 
+                    // A weather organism's city: one place for every weather
+                    // organism, so it is the same field under each of them.
+                    Column {
+                        id: weatherCity
+
+                        readonly property bool shown: screenSection.open >= 0
+                                                      && root.organisms[screenSection.open].type === "weather"
+                        readonly property bool wrong: Weather.problem.length > 0 && Weather.city.length > 0
+
+                        visible: weatherCity.shown
+                        width: parent.width
+                        spacing: 8 * root.factor
+
+                        Item {
+                            width: parent.width
+                            height: 34 * root.factor
+
+                            Text {
+                                id: cityLabel
+                                anchors.left: parent.left
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "CITY"
+                                color: Theme.textFaint
+                                font: root.chipFont
+                            }
+
+                            Rectangle {
+                                anchors.left: cityLabel.right
+                                anchors.leftMargin: 14 * root.factor
+                                anchors.right: parent.right
+                                height: parent.height
+                                radius: Metrics.radiusFor(height, root.metrics)
+                                antialiasing: true
+                                color: "transparent"
+                                border.width: Metrics.rim(Screen.devicePixelRatio)
+                                border.color: weatherCity.wrong ? Theme.alert
+                                            : cityField.activeFocus ? Theme.primary : Theme.line
+
+                                TextInput {
+                                    id: cityField
+
+                                    anchors.left: parent.left
+                                    anchors.leftMargin: 14 * root.factor
+                                    anchors.right: parent.right
+                                    anchors.rightMargin: 14 * root.factor
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Theme.text
+                                    font.family: Typography.expressive
+                                    font.pixelSize: root.metrics.fontSecondary
+                                    clip: true
+                                    selectByMouse: true
+
+                                    // Not cleared when the city is not found:
+                                    // making someone type it again is a
+                                    // punishment, not information.
+                                    text: Weather.city
+
+                                    onActiveFocusChanged: if (root.cell && activeFocus) root.cell.fieldEngaged = true
+                                    onAccepted: {
+                                        Config.set("weather.city", text.trim());
+                                        focus = false;
+                                    }
+                                    Keys.onEscapePressed: {
+                                        text = Weather.city;
+                                        focus = false;
+                                    }
+
+                                    Text {
+                                        visible: cityField.text.length === 0
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: "A city"
+                                        color: Theme.textFaint
+                                        font: cityField.font
+                                    }
+                                }
+                            }
+                        }
+
+                        // The reason, where it happened.
+                        Row {
+                            visible: weatherCity.wrong
+                            spacing: 8 * root.factor
+
+                            Icon {
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: 14 * root.factor
+                                height: width
+                                name: "error"
+                                colour: Theme.alert
+                            }
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: Weather.problem
+                                color: Theme.alert
+                                font.family: Typography.expressive
+                                font.pixelSize: root.metrics.fontSecondary
+                            }
+                        }
+                    }
+
                     Line {
-                        text: screenSection.here.length === 0
-                              ? "Nothing stands on this desktop. The dashed chip adds an organism here."
-                              : screenSection.open >= 0
-                                ? "Its size follows the membranes unless it is given its own."
-                                : "Press an organism for its options, or its cross to take it away."
+                        text: {
+                            if (screenSection.here.length === 0)
+                                return "Nothing stands on this desktop. The dashed chip adds an organism here.";
+                            if (screenSection.open < 0)
+                                return "Press an organism for its options, or its cross to take it away.";
+                            if (weatherCity.shown) {
+                                if (Weather.city.length === 0)
+                                    return "Every weather organism reads this city. Enter keeps it.";
+                                return Weather.located
+                                    ? `Read for ${Weather.place}, every ${Config.get("weather.minutes", 30)} minutes, from Open-Meteo — the same place for every weather organism.`
+                                    : "Looking for it…";
+                            }
+                            return "Its size follows the membranes unless it is given its own.";
+                        }
                     }
                 }
             }
@@ -594,100 +704,6 @@ Item {
 
                 Line {
                     text: "Lifts the organisms above the windows, to be dragged into place on any screen. Done, or Escape, puts them back."
-                }
-            }
-
-            // ---- The weather's place ----------------------------------------------------
-
-            Section {
-                id: weather
-
-                label: "WEATHER"
-
-                readonly property bool wrong: Weather.problem.length > 0 && Weather.city.length > 0
-
-                Item {
-                    width: parent.width
-                    height: 34 * root.factor
-
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: Metrics.radiusFor(height, root.metrics)
-                        antialiasing: true
-                        color: "transparent"
-                        border.width: Metrics.rim(Screen.devicePixelRatio)
-                        border.color: weather.wrong ? Theme.alert
-                                    : cityField.activeFocus ? Theme.primary : Theme.line
-                    }
-
-                    TextInput {
-                        id: cityField
-
-                        anchors.left: parent.left
-                        anchors.leftMargin: 14 * root.factor
-                        anchors.right: parent.right
-                        anchors.rightMargin: 14 * root.factor
-                        anchors.verticalCenter: parent.verticalCenter
-                        color: Theme.text
-                        font.family: Typography.expressive
-                        font.pixelSize: root.metrics.fontSecondary
-                        clip: true
-                        selectByMouse: true
-
-                        // Not cleared when the city is not found: making
-                        // someone type it again is a punishment, not
-                        // information.
-                        text: Weather.city
-
-                        onActiveFocusChanged: if (root.cell && activeFocus) root.cell.fieldEngaged = true
-                        onAccepted: {
-                            Config.set("weather.city", text.trim());
-                            focus = false;
-                        }
-                        Keys.onEscapePressed: {
-                            text = Weather.city;
-                            focus = false;
-                        }
-
-                        Text {
-                            visible: cityField.text.length === 0
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "A city"
-                            color: Theme.textFaint
-                            font: cityField.font
-                        }
-                    }
-                }
-
-                // The reason, where it happened.
-                Row {
-                    visible: weather.wrong
-                    width: parent.width
-                    spacing: 8 * root.factor
-
-                    Icon {
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 14 * root.factor
-                        height: width
-                        name: "error"
-                        colour: Theme.alert
-                    }
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: Weather.problem
-                        color: Theme.alert
-                        font.family: Typography.expressive
-                        font.pixelSize: root.metrics.fontSecondary
-                    }
-                }
-
-                Line {
-                    text: Weather.city.length === 0
-                          ? "The weather organism reads the weather for this city. Enter keeps it."
-                          : Weather.located
-                            ? `Read for ${Weather.place}, every ${Config.get("weather.minutes", 30)} minutes, from Open-Meteo.`
-                            : "Looking for it…"
                 }
             }
         }
