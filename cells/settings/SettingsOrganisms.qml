@@ -104,47 +104,17 @@ Item {
         return path.startsWith("~") ? root.home + path.slice(1) : path;
     }
 
-    // Written with the home as `~`, so the block reads the same on a machine
-    // with another user name.
     function setFile(index, path) {
-        let wanted = String(path).trim();
-        if (wanted.length === 0)
-            return;
-        if (root.home.length > 0 && wanted.startsWith(root.home + "/"))
-            wanted = "~" + wanted.slice(root.home.length);
-        root.setOption(index, "file", wanted);
+        Arranging.setFile(index, path);
     }
 
-    property int choosingFile: -1
-
+    // The picker is a window: the settings step out of its way, or the first
+    // press on it would close them — and it lives in Arranging, so it outlives
+    // them.
     function chooseFile(index) {
-        const current = root.expanded(root.organisms[index]?.file || "");
-        root.choosingFile = index;
-        filePicker.start = current.length > 0 ? current : root.home + "/";
-        filePicker.running = true;
-    }
-
-    property string pickerError: ""
-
-    Process {
-        id: filePicker
-
-        property string start: ""
-
-        // 127 is the shell's own answer for a command it cannot find, so a
-        // missing zenity is told apart from a picker that was cancelled (1).
-        command: ["sh", "-c", 'command -v zenity >/dev/null || exit 127; '
-                  + 'exec zenity --file-selection --title="Note" '
-                  + '--file-filter="Markdown | *.md *.markdown" --file-filter="All files | *" '
-                  + '--filename="$1"', "sh", filePicker.start]
-        running: false
-        stdout: StdioCollector { id: pickedFile }
-        onExited: code => {
-            root.pickerError = code === 127 ? "zenity is not installed, so there is no file picker." : "";
-            if (code === 0 && root.choosingFile >= 0)
-                root.setFile(root.choosingFile, pickedFile.text);
-            root.choosingFile = -1;
-        }
+        if (root.cell)
+            root.cell.open = false;
+        Arranging.chooseFile(index);
     }
 
     // The service runs while this page is open, so a city typed here is
@@ -577,7 +547,7 @@ Item {
                         }
 
                         Row {
-                            visible: noteFile.wrong || root.pickerError.length > 0
+                            visible: noteFile.wrong || Arranging.pickerError.length > 0
                             spacing: 8 * root.factor
 
                             Icon {
@@ -590,7 +560,7 @@ Item {
 
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
-                                text: root.pickerError.length > 0 ? root.pickerError
+                                text: Arranging.pickerError.length > 0 ? Arranging.pickerError
                                       : "This file cannot be read, so the note is not shown."
                                 color: Theme.alert
                                 font.family: Typography.expressive

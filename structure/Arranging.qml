@@ -2,6 +2,7 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import qs.core
 
 // Placing the organisms.
@@ -119,6 +120,74 @@ Singleton {
             const kept = Config.get("organisms", []).filter((_, i) => root.retiring.indexOf(i) < 0);
             root.retiring = [];
             Config.set("organisms", root.named(kept));
+        }
+    }
+
+    // ---- A note's file ------------------------------------------------------------------
+
+    // Chosen with zenity, from here rather than from the settings page: the
+    // picker is a window, a press on it lands outside the settings and closes
+    // them, and a picker owned by the page died with it — the window closed
+    // under the first click (Akusen, 2026-10-04). The wallpaper's folder
+    // picker lives in its service for the same reason.
+    //
+    // A note that had no file yet has never been on the desktop, so once it
+    // has one the mode begins and it can be put where it belongs.
+    readonly property string home: Quickshell.env("HOME")
+    property int choosingFor: -1
+    property bool placeAfter: false
+    property string pickerError: ""
+
+    function chooseFile(index) {
+        const list = Config.get("organisms", []);
+        if (index < 0 || index >= list.length || filePicker.running)
+            return;
+        const current = list[index].file || "";
+        root.choosingFor = index;
+        root.placeAfter = current.length === 0;
+        filePicker.start = current.length > 0
+            ? (current.startsWith("~") ? root.home + current.slice(1) : current)
+            : root.home + "/";
+        filePicker.running = true;
+    }
+
+    // Written with the home as `~`, so the block reads the same on a machine
+    // with another user name.
+    function setFile(index, path) {
+        let wanted = String(path).trim();
+        if (wanted.length === 0)
+            return null;
+        if (root.home.length > 0 && wanted.startsWith(root.home + "/"))
+            wanted = "~" + wanted.slice(root.home.length);
+        const next = root.named(JSON.parse(JSON.stringify(Config.get("organisms", []))));
+        if (!next[index])
+            return null;
+        next[index].file = wanted;
+        Config.set("organisms", next);
+        return next;
+    }
+
+    Process {
+        id: filePicker
+
+        property string start: ""
+
+        // 127 is the shell's own answer for a command it cannot find, so a
+        // missing zenity is told apart from a picker that was cancelled (1).
+        command: ["sh", "-c", 'command -v zenity >/dev/null || exit 127; '
+                  + 'exec zenity --file-selection --title="Note" '
+                  + '--file-filter="Markdown | *.md *.markdown" --file-filter="All files | *" '
+                  + '--filename="$1"', "sh", filePicker.start]
+        running: false
+        stdout: StdioCollector { id: pickedFile }
+        onExited: code => {
+            root.pickerError = code === 127 ? "zenity is not installed, so there is no file picker." : "";
+            if (code === 0 && root.choosingFor >= 0) {
+                const next = root.setFile(root.choosingFor, pickedFile.text);
+                if (next && root.placeAfter)
+                    root.start(next);
+            }
+            root.choosingFor = -1;
         }
     }
 
