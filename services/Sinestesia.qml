@@ -24,9 +24,21 @@ import qs.core
 Singleton {
     id: root
 
-    // Bound by the cell. Nothing runs until it is true, and the process is shut
-    // by closing it: it exits when its stdout does.
-    property bool active: false
+    // Held by whatever is drawing the band — a sinestesia cell on screen, a
+    // media organism on a desktop that shows. Nothing runs while nobody holds
+    // it, and the process is shut by closing it: it exits when its stdout
+    // does. A list rather than a switch: with one switch, two holders — two
+    // membranes' cells, or a cell and an organism — turned each other off.
+    property var holders: []
+    readonly property bool active: root.holders.length > 0
+
+    function hold(owner, wanted) {
+        const held = root.holders.indexOf(owner) >= 0;
+        if (wanted && !held)
+            root.holders = root.holders.concat([owner]);
+        else if (!wanted && held)
+            root.holders = root.holders.filter(h => h !== owner);
+    }
 
     readonly property int bandCount: Config.get("sinestesia.bands", 64)
     readonly property int fps: Config.get("sinestesia.fps", 60)

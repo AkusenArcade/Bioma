@@ -40,7 +40,7 @@ Cell {
     // The bands cost a process, so it runs only while the cell is on screen —
     // and whether it is on screen is decided by the peak monitor, which is
     // already running for everything else.
-    onPlacedChanged: Sinestesia.active = root.placed
+    onPlacedChanged: Sinestesia.hold(root, root.placed)
 
     // Half the bars to a channel: the row is mirrored about its middle.
     // Half the bars to a channel: the row is mirrored about its middle.
@@ -154,6 +154,8 @@ Cell {
 
     Component.onCompleted: {
         label.text = root.track;
-        Sinestesia.active = root.placed;
+        Sinestesia.hold(root, root.placed);
     }
+
+    Component.onDestruction: Sinestesia.hold(root, false)
 }

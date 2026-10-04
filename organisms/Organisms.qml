@@ -13,12 +13,18 @@ Singleton {
     id: root
 
     readonly property var files: ({
-        "clock": "clock/ClockOrganism.qml"
+        "clock": "clock/ClockOrganism.qml",
+        "media": "media/MediaOrganism.qml",
+        "vitals": "vitals/VitalsOrganism.qml",
+        "calendar": "calendar/CalendarOrganism.qml"
     })
 
     // What an organism is called when it is spoken about rather than drawn.
     readonly property var names: ({
-        "clock": "Clock"
+        "clock": "Clock",
+        "media": "Media",
+        "vitals": "Vitals",
+        "calendar": "Calendar"
     })
 
     function fileFor(type) {

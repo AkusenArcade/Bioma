@@ -1,6 +1,6 @@
 # Bioma — organisms
 
-*Approved 2026-10-04, media redrawn at Akusen's request. Being built: the structure and the clock exist.*
+*Approved 2026-10-04, media redrawn at Akusen's request. Built: the structure, arranging, clock, media, vitals, calendar. Still to come: weather, the Settings section.*
 
 The visual specification of the organisms: read-only surfaces that live on the desktop, under
 the windows, in the part of the screen the top and bottom membranes leave free. Read it with
@@ -166,6 +166,12 @@ capture as the sinestesia cell (one capture, never two); the track is the active
 source has a track. Paused: the band lies still as a row of dots (there is no sound) and the
 progress holds — the organism stays, because a paused track is still the track.
 
+**The band runs only while it can be seen**: while this screen's active workspace has no window
+(the desktop is showing), or while the organisms are being arranged. Under the windows it would
+cost a capture process and sixty frames a second for nobody, so it lies still there.
+`Sinestesia.hold(owner, on)` keeps the capture running while anything holds it — a cell on
+screen, an organism on a showing desktop.
+
 **Track change** — the new cover cross-fades over the old one (`contentFade`), then the words;
 the panel does not move or resize.
 
@@ -187,7 +193,7 @@ rhythms, same state colours — an organism does not get a second vocabulary for
 
 | Measure | Value | Note |
 |---|---|---|
-| panel | 4 columns × 96 + 3 × 16 gap + padding = 472 × 172 | 3 columns without a battery: 360 × 172 |
+| panel | 4 columns × 96 + 3 × 16 gap + padding = 472 × 176 | 3 columns without a battery: 360 × 176. A column widens to its longest line (`6.7 / 30.5 GB`) rather than cutting a figure short |
 | indicator | 62 | 1.5 px ring, as in the pods |
 | label | Orbitron 15 / 500, +0.06 em | `CPU` `RAM` `GPU` `BAT` |
 | value | Orbitron 20 / 500 | state gradient fill (calm / active / alert) |
@@ -206,15 +212,16 @@ not a planner. Today is the only lit day.
 
 | Measure | Value | Note |
 |---|---|---|
-| panel | 300 × 300 | padding 20 |
+| panel | 299 × 302 | padding 20: 7 × 37 wide, header + weekdays + 6 × 34 tall |
 | month | Spectral 19 / 700 | `October`, year in Orbitron 13 muted beside it |
-| weekdays | Orbitron 11 | text faint, first letter, week start from the clock cell |
+| weekdays | Orbitron 11 | text faint, first letter; the week starts on Monday, as in the clock cell |
 | days | Orbitron 13 / 400 | 7 columns × 37, rows of 34 |
 | outside days | Orbitron 13 | text faint |
 | today | 28 px disc | primary gradient, figure in `background`, weight 700 |
 
-**Limit cases** — a six-week month adds a row: the panel grows by 34 at the bottom, from its
-top edge (the top stays where it was placed). Midnight: today moves; nothing else animates.
+**Six weeks always**, as in the clock cell: every month fits, and the panel never changes
+height — an organism that grew a row would move on the desktop by itself, since it is placed by
+its centre. Midnight: today moves; nothing else animates.
 
 **Options** — `size`.
 

@@ -243,12 +243,15 @@ specification. The base layer ships none.
 
 | Key | Meaning |
 |---|---|
-| `type` | Which organism: `clock` |
+| `type` | Which organism: `clock`, `media`, `vitals`, `calendar` |
 | `monitor` | As for a membrane: an output name, `primary` (the default) or `all` |
 | `x`, `y` | The organism's **centre**, as fractions (0–1) of the free area: the screen minus what the membranes hold, measured to the line the windows begin on. An organism is always held wholly inside it |
 | `size` | `compact` \| `normal` \| `comfortable`. Without it, the membranes' `scale` |
 
-The clock organism shows 12 or 24 hours as the clock cell's `format` says.
+The clock organism shows 12 or 24 hours as the clock cell's `format` says. The
+media organism takes `"band": false` to show the cover without the
+visualiser; the vitals organism takes `"layout": "square"` for a 2 × 2 block
+instead of a row.
 
 ### cells
 

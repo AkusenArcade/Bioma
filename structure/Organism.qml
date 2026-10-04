@@ -58,7 +58,15 @@ Item {
 
     // ---- Size and place ---------------------------------------------------------
 
-    readonly property real padding: 20 * root.metrics.factor
+    // An organism whose content is its surface — the media organism's cover,
+    // edge to edge — says `bleeds` and is given no padding; the rim is then
+    // drawn over its content rather than under it.
+    readonly property bool bleeds: root.body !== null && root.body.bleeds === true
+    readonly property real padding: root.bleeds ? 0 : 20 * root.metrics.factor
+
+    // The screen it is on, for content that asks whether the desktop there is
+    // showing at all.
+    readonly property string output: root.surface && root.surface.screenItem ? root.surface.screenItem.name : ""
     readonly property real targetWidth: root.body ? root.body.implicitWidth + root.padding * 2 : 0
     readonly property real targetHeight: root.body ? root.body.implicitHeight + root.padding * 2 : 0
 
@@ -169,9 +177,22 @@ Item {
             onLoaded: {
                 item.metrics = Qt.binding(() => root.metrics);
                 item.entry = Qt.binding(() => root.entry);
+                if (item.organism !== undefined)
+                    item.organism = root;
                 root.decide();
             }
         }
+    }
+
+    // The rim over content that bleeds: the cover reaches the edge, and the
+    // light on the top edge is still the surface's.
+    Rim {
+        visible: root.bleeds && panel.visible
+        x: panel.x
+        y: panel.y
+        width: panel.width
+        height: panel.height
+        radius: panel.radius
     }
 
     // ---- Being placed -------------------------------------------------------------------
