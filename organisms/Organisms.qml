@@ -17,7 +17,8 @@ Singleton {
         "media": "media/MediaOrganism.qml",
         "vitals": "vitals/VitalsOrganism.qml",
         "calendar": "calendar/CalendarOrganism.qml",
-        "weather": "weather/WeatherOrganism.qml"
+        "weather": "weather/WeatherOrganism.qml",
+        "note": "note/NoteOrganism.qml"
     })
 
     // What an organism is called when it is spoken about rather than drawn.
@@ -26,7 +27,8 @@ Singleton {
         "media": "Media",
         "vitals": "Vitals",
         "calendar": "Calendar",
-        "weather": "Weather"
+        "weather": "Weather",
+        "note": "Note"
     })
 
     function fileFor(type) {

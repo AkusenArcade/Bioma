@@ -194,6 +194,29 @@
   .o-weather .h .hr { font-family: var(--machine); font-size: 11px; color: var(--text-faint); line-height: 13px; }
   .o-weather .h .ht { font-family: var(--machine); font-size: 13px; line-height: 16px; }
 
+  /* note */
+  .o-note { width: 360px; }
+  .o-note .hd { display: flex; align-items: baseline; gap: 12px; height: 22px; }
+  .o-note .ti { font-family: var(--human); font-size: 15px; font-weight: 700; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .o-note .wh { font-family: var(--machine); font-size: 11px; letter-spacing: 0.06em; color: var(--text-faint); white-space: nowrap; }
+  .o-note .body { position: relative; margin-top: 12px; overflow: hidden;
+    -webkit-mask: linear-gradient(180deg, #000 calc(100% - 36px), transparent);
+    mask: linear-gradient(180deg, #000 calc(100% - 36px), transparent); }
+  .o-note .body.all { -webkit-mask: none; mask: none; }
+  .o-note .more { position: absolute; right: 20px; bottom: 16px; font-family: var(--machine); font-size: 11px; letter-spacing: 0.06em; color: var(--text-faint); }
+  .o-note p, .o-note .li, .o-note .h2 { margin: 0; font-family: var(--human); font-size: 14px; line-height: 18px; }
+  .o-note .blk + .blk { margin-top: 6px; }
+  .o-note .h2 { font-weight: 700; margin-top: 10px !important; }
+  .o-note .li { display: flex; gap: 10px; align-items: flex-start; }
+  .o-note .li .mk { flex: none; width: 12px; height: 18px; display: flex; align-items: center; justify-content: center; }
+  .o-note .node { width: 4px; height: 4px; border-radius: 2px; background: var(--node); }
+  .o-note .ring { width: 10px; height: 10px; border-radius: 6px; border: 1.5px solid var(--line); }
+  .o-note .disc { width: 12px; height: 12px; border-radius: 6px; background: var(--grad-primary); }
+  .o-note .ticked { color: var(--text-muted); }
+  .o-note code { font-family: var(--machine); font-size: 11px; }
+  .o-note .quote { border-left: 2px solid var(--line); padding-left: 10px; font-style: italic; color: var(--text-muted); }
+  .o-note .empty { font-family: var(--human); font-size: 14px; font-style: italic; color: var(--text-faint); }
+
   /* ---- the desktop ---- */
   .controls { display: flex; gap: 2px; padding: 2px; border-radius: 16px; background: var(--well); width: max-content; margin-bottom: 14px; }
   .controls button {
@@ -387,6 +410,15 @@
   </section>
 
   <section>
+    <div class="celltitle"><span class="num">06</span><span class="nm">Note</span><span class="tag">present while its file exists</span></div>
+    <p class="note">A Markdown file, read and never written: edit it anywhere and the desktop follows. Drawn by the organism, not handed to Qt's Markdown — a task is a ring or a lit disc, a list item a node. Nothing scrolls: the text fades at the foot and says how much more there is.</p>
+    <div class="stage">
+      <div class="state"><div class="org o-note" data-org="note" style="height:300px"></div><div class="caption">medium — 300, longer than the panel</div></div>
+      <div class="state"><div class="org o-note" data-org="note-empty" style="height:220px"></div><div class="caption">short — 220, an empty file</div></div>
+    </div>
+  </section>
+
+  <section>
     <h2>On a light wallpaper</h2>
     <p class="note">The glass and the rim carry the surface on a pale picture too; no halo, no glow.</p>
     <div class="stage light">
@@ -541,7 +573,31 @@
       <div class="hours">${hours}</div>`;
   }
 
+  function note(empty) {
+    if (empty)
+      return `<div class="hd"><span class="ti">Reading list</span><span class="wh">EDITED JUST NOW</span></div>
+        <div class="body all"><div class="empty">Nothing written yet.</div></div>`;
+    const li = (mark, text, cls = "") => `<div class="blk li ${cls}"><span class="mk"><span class="${mark}"></span></span><span>${text}</span></div>`;
+    return `<div class="hd"><span class="ti">Next for Bioma</span><span class="wh">EDITED 2 H AGO</span></div>
+      <div class="body" style="height:226px">
+        <p class="blk">What is left before the next beta, in the order it will be done.</p>
+        <div class="blk h2">Organisms</div>
+        ${li("disc", "Arrange mode with snapping", "ticked")}
+        ${li("disc", "Weather from Open-Meteo", "ticked")}
+        ${li("ring", "The note organism, reading a <b>Markdown</b> file")}
+        ${li("ring", "Ticking a task from the desktop — <i>maybe, later</i>")}
+        <div class="blk h2">Launcher</div>
+        ${li("node", "Files under the applications, from <code>fd</code>")}
+        ${li("node", "Ctrl+Enter shows the file in its folder")}
+        <div class="blk quote">A launcher filling the screen with results is saying the search did not work.</div>
+        ${li("ring", "Recent files first when the field is empty")}
+      </div>
+      <div class="more">12 MORE LINES</div>`;
+  }
+
   const render = {
+    "note": el => el.innerHTML = note(false),
+    "note-empty": el => el.innerHTML = note(true),
     "clock": el => el.innerHTML = clock(false),
     "clock12": el => el.innerHTML = clock(true),
     "media": el => el.innerHTML = media(false),

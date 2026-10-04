@@ -82,8 +82,9 @@ Singleton {
     // ---- Adding and taking away -----------------------------------------------------
 
     // A new organism appears in the middle of its screen's free area, and the
-    // mode begins so it can be put where it belongs.
-    function add(type, monitor) {
+    // mode begins so it can be put where it belongs — unless `quietly`: a note
+    // with no file yet has nothing to show, and is given its file first.
+    function add(type, monitor, quietly) {
         const next = root.named(JSON.parse(JSON.stringify(root.active ? root.working
                                                                        : Config.get("organisms", []))));
         next.push({ "id": root.newId(), "type": type, "monitor": monitor, "x": 0.5, "y": 0.5 });
@@ -92,7 +93,8 @@ Singleton {
             return;
         }
         Config.set("organisms", next);
-        root.start(next);
+        if (!quietly)
+            root.start(next);
     }
 
     // Taken away, it leaves the way everything in the shell leaves — content,

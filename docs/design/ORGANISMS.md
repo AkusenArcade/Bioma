@@ -269,6 +269,64 @@ nothing: the field's error, as every field's — outline in alert, reason under 
 
 **Options** — `size`, `city` (shared by every weather organism, stored once under `weather`).
 
+## 06 · Note
+
+*Approved 2026-10-04. Present while its file exists · a Markdown file, read.*
+
+A Markdown file on the desktop, read and never written. The text lives where it is written — an
+Obsidian vault, a repository — and the organism shows it: edit the file anywhere and the note
+changes on the desktop, watched by `FileView` rather than polled. Writing inside the organism was
+considered and refused (Akusen, 2026-10-04): an organism takes no input, and a second, poorer
+editor of a file that already has a good one is not a feature.
+
+**Drawn, not handed to Qt's Markdown.** The file is read line by line into blocks the organism
+draws itself, so a task is a shell control rather than a font's ☐ and the two voices hold:
+
+| Block | Drawn as | Note |
+|---|---|---|
+| title | Spectral 15 / 700, one line, ellipsis | the file's first `# heading`, else its name without `.md` |
+| when | Orbitron 11, text faint, right of the title | `EDITED 2 H AGO` — when the file last changed; a figure, so allowed |
+| `## heading` | Spectral 14 / 700, 10 above | `###` and below the same size, text muted |
+| paragraph | Spectral 14 / 400, line height 1.3 | wraps; `**bold**` 700, `*italic*` italic, `` `code` `` Orbitron 11 |
+| `- item` | a 4 px node in `node`, 14 in, the text beside it | nested items 14 further in |
+| `- [ ] task` | a 12 px ring in `line`, the text beside it | open |
+| `- [x] task` | a 12 px disc with the primary light, the text in text muted | done — muted, not struck through: a struck line is heavier, not lighter |
+| `> quote` | a 2 px bar in `line`, the text in italic | |
+| code block | a well (radius 10), Orbitron 11, no wrapping, elided | |
+| `[text](url)`, `[[Note]]` | the text, plain | there is nothing to press |
+| `---` front matter | not drawn | Obsidian's properties are not the note |
+| `---` rule | a 1 px line in `line` | |
+
+| Measure | Value | Note |
+|---|---|---|
+| panel | 360 × 300 | padding 20; `height` short 220 · medium 300 · tall 460 |
+| header | 22 | title and when, then 12 to the text |
+| block gap | 6 | 10 before a heading |
+
+**Longer than the panel.** Nothing scrolls — there is no hand to scroll it. The text runs to the
+panel's foot and fades out over the last 36 px, and in the bottom-right corner, over the fade,
+`12 MORE LINES` in Orbitron 11, text faint, says how much is not shown. A taller `height`, or a
+shorter note, is the answer; the organism does not shrink its type to fit.
+
+**A change to the file** — the text cross-fades (`contentFade`); the panel does not move. A change
+that only touches what is below the fold changes the count and nothing else.
+
+**Limit cases** — the file missing or unreadable: the organism is absent, and Settings says why
+under the file's field, in the alert colour. An empty file: the title and *Nothing written yet.*
+in Spectral italic, text faint. A file of a megabyte: read up to what the panel can hold plus the
+count; the rest is never parsed.
+
+**Options** — `size`, `file` (a path; `~` is the home), `height` (`short` · `medium` · `tall`).
+
+**Settings** — the note's chip opens FILE, a field with the path and a CHOOSE button that opens
+the file picker (zenity, already a dependency, limited to `*.md`), and HEIGHT. A note added with
+the dashed chip does not start the arranging mode: with no file it has nothing to show, so the
+settings stay open on its options, and it is placed once it has one.
+
+**Not now** — ticking a task from the desktop would be the one input that made sense, and it is
+still input; the edit stays where the file is. A keybind or IPC call that opens the file in its
+default application could come later, outside the organism.
+
 ---
 
 ## Configuration
@@ -279,7 +337,9 @@ nothing: the field's error, as every field's — outline in alert, reason under 
   { "type": "calendar", "monitor": "DP-1", "x": 0.18, "y": 0.62 },
   { "type": "vitals",   "monitor": "DP-1", "x": 0.80, "y": 0.80, "layout": "row" },
   { "type": "media",    "monitor": "DP-1", "x": 0.80, "y": 0.25 },
-  { "type": "weather",  "monitor": "HDMI-A-1", "x": 0.5, "y": 0.5, "size": "comfortable" }
+  { "type": "weather",  "monitor": "HDMI-A-1", "x": 0.5, "y": 0.5, "size": "comfortable" },
+  { "type": "note",     "monitor": "DP-1", "x": 0.5, "y": 0.4,
+    "file": "~/Documents/Vault/Next.md", "height": "medium" }
 ],
 "weather": { "city": "Milan" }   // place, latitude, longitude, located_for are written back
 ```

@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import qs.core
 import qs.components
 import qs.services
@@ -83,9 +84,67 @@ Item {
 
     function add(type, screen) {
         root.picking = "";
+        // A note has nothing to show until it has a file, so the settings
+        // stay and open its options instead; it is placed once it has one.
+        if (type === "note") {
+            root.chosen = root.organisms.length;
+            Arranging.add(type, screen.name, true);
+            return;
+        }
         if (root.cell)
             root.cell.open = false;
         Arranging.add(type, screen.name);
+    }
+
+    // ---- A note's file --------------------------------------------------------------
+
+    readonly property string home: Quickshell.env("HOME")
+
+    function expanded(path) {
+        return path.startsWith("~") ? root.home + path.slice(1) : path;
+    }
+
+    // Written with the home as `~`, so the block reads the same on a machine
+    // with another user name.
+    function setFile(index, path) {
+        let wanted = String(path).trim();
+        if (wanted.length === 0)
+            return;
+        if (root.home.length > 0 && wanted.startsWith(root.home + "/"))
+            wanted = "~" + wanted.slice(root.home.length);
+        root.setOption(index, "file", wanted);
+    }
+
+    property int choosingFile: -1
+
+    function chooseFile(index) {
+        const current = root.expanded(root.organisms[index]?.file || "");
+        root.choosingFile = index;
+        filePicker.start = current.length > 0 ? current : root.home + "/";
+        filePicker.running = true;
+    }
+
+    property string pickerError: ""
+
+    Process {
+        id: filePicker
+
+        property string start: ""
+
+        // 127 is the shell's own answer for a command it cannot find, so a
+        // missing zenity is told apart from a picker that was cancelled (1).
+        command: ["sh", "-c", 'command -v zenity >/dev/null || exit 127; '
+                  + 'exec zenity --file-selection --title="Note" '
+                  + '--file-filter="Markdown | *.md *.markdown" --file-filter="All files | *" '
+                  + '--filename="$1"', "sh", filePicker.start]
+        running: false
+        stdout: StdioCollector { id: pickedFile }
+        onExited: code => {
+            root.pickerError = code === 127 ? "zenity is not installed, so there is no file picker." : "";
+            if (code === 0 && root.choosingFile >= 0)
+                root.setFile(root.choosingFile, pickedFile.text);
+            root.choosingFile = -1;
+        }
     }
 
     // The service runs while this page is open, so a city typed here is
@@ -398,6 +457,145 @@ Item {
                             current: screenSection.open >= 0 && root.organisms[screenSection.open].layout === "square"
                                      ? "square" : "row"
                             onChose: key => root.setOption(screenSection.open, "layout", key === "square" ? key : null)
+                        }
+                    }
+
+                    OptionRow {
+                        visible: screenSection.open >= 0 && root.organisms[screenSection.open].type === "note"
+                        label: "HEIGHT"
+
+                        Segmented {
+                            metrics: root.metrics
+                            fontSize: root.metrics.fontMeta
+                            buttonPadding: 10 * root.factor
+                            options: [
+                                { "key": "short", "label": "Short" },
+                                { "key": "medium", "label": "Medium" },
+                                { "key": "tall", "label": "Tall" }
+                            ]
+                            current: screenSection.open >= 0 ? (root.organisms[screenSection.open].height || "medium") : "medium"
+                            onChose: key => root.setOption(screenSection.open, "height", key === "medium" ? null : key)
+                        }
+                    }
+
+                    // A note's file: the path, typed or chosen, and why it
+                    // cannot be read when it cannot.
+                    Column {
+                        id: noteFile
+
+                        readonly property bool shown: screenSection.open >= 0
+                                                      && root.organisms[screenSection.open].type === "note"
+                        readonly property string path: noteFile.shown ? (root.organisms[screenSection.open].file || "") : ""
+
+                        visible: noteFile.shown
+                        width: parent.width
+                        spacing: 8 * root.factor
+
+                        // Whether it can be read, asked the way the organism asks.
+                        property bool readable: false
+                        FileView {
+                            path: noteFile.shown ? root.expanded(noteFile.path) : ""
+                            printErrors: false
+                            watchChanges: true
+                            onLoaded: noteFile.readable = true
+                            onLoadFailed: noteFile.readable = false
+                            onFileChanged: reload()
+                        }
+                        onPathChanged: noteFile.readable = false
+
+                        readonly property bool wrong: noteFile.path.length > 0 && !noteFile.readable
+
+                        Item {
+                            width: parent.width
+                            height: 34 * root.factor
+
+                            Text {
+                                id: fileLabel
+                                anchors.left: parent.left
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "FILE"
+                                color: Theme.textFaint
+                                font: root.chipFont
+                            }
+
+                            Rectangle {
+                                anchors.left: fileLabel.right
+                                anchors.leftMargin: 14 * root.factor
+                                anchors.right: choose.left
+                                anchors.rightMargin: 8 * root.factor
+                                height: parent.height
+                                radius: Metrics.radiusFor(height, root.metrics)
+                                antialiasing: true
+                                color: "transparent"
+                                border.width: Metrics.rim(Screen.devicePixelRatio)
+                                border.color: noteFile.wrong ? Theme.alert
+                                            : fileField.activeFocus ? Theme.primary : Theme.line
+
+                                TextInput {
+                                    id: fileField
+
+                                    anchors.left: parent.left
+                                    anchors.leftMargin: 14 * root.factor
+                                    anchors.right: parent.right
+                                    anchors.rightMargin: 14 * root.factor
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Theme.text
+                                    font.family: Typography.expressive
+                                    font.pixelSize: root.metrics.fontSecondary
+                                    clip: true
+                                    selectByMouse: true
+                                    text: noteFile.path
+
+                                    onActiveFocusChanged: if (root.cell && activeFocus) root.cell.fieldEngaged = true
+                                    onAccepted: {
+                                        root.setFile(screenSection.open, text);
+                                        focus = false;
+                                    }
+                                    Keys.onEscapePressed: {
+                                        text = noteFile.path;
+                                        focus = false;
+                                    }
+
+                                    Text {
+                                        visible: fileField.text.length === 0
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: "A Markdown file"
+                                        color: Theme.textFaint
+                                        font: fileField.font
+                                    }
+                                }
+                            }
+
+                            Choice {
+                                id: choose
+                                anchors.right: parent.right
+                                anchors.verticalCenter: parent.verticalCenter
+                                metrics: root.metrics
+                                label: "Choose"
+                                onActivated: root.chooseFile(screenSection.open)
+                            }
+                        }
+
+                        Row {
+                            visible: noteFile.wrong || root.pickerError.length > 0
+                            spacing: 8 * root.factor
+
+                            Icon {
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: 14 * root.factor
+                                height: width
+                                name: "error"
+                                colour: Theme.alert
+                            }
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: root.pickerError.length > 0 ? root.pickerError
+                                      : "This file cannot be read, so the note is not shown."
+                                color: Theme.alert
+                                font.family: Typography.expressive
+                                font.pixelSize: root.metrics.fontSecondary
+                            }
                         }
                     }
 
