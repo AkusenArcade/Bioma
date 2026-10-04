@@ -38,23 +38,17 @@ Item {
     readonly property real radius: root.metrics.radiusPanel
     readonly property real inset: 20 * root.factor
 
-    // ---- The band, only while someone can see it --------------------------------
+    // ---- The band ------------------------------------------------------------------
 
-    // The band costs a process and a frame sixty times a second. Under the
-    // windows nobody sees it, so it runs while this screen's workspace has
-    // no window — the desktop is showing — or while the organisms are being
-    // placed, and lies still otherwise.
-    readonly property bool desktopShowing: {
-        Niri.workspaceList;
-        Niri.windows;
-        const output = root.organism ? root.organism.output : "";
-        const workspace = Niri.activeWorkspaceForOutput(output);
-        return workspace ? Niri.windowsOnWorkspace(workspace.id).length === 0 : false;
-    }
-
-    readonly property bool arranging: root.organism !== null && root.organism.arranging
+    // It moves whenever there is sound. It was held still while the screen's
+    // workspace had a window on it, to spare the frames nobody saw — but niri
+    // leaves the desktop showing between and beside the windows, and there a
+    // still band beside a playing track said silence while the music played
+    // (Akusen, 2026-10-04). Where the windows are on screen is not something
+    // niri tells a shell — a tiled window has no position in its reports — so
+    // the organism cannot know it is covered, and a band that may be seen
+    // has to be true.
     readonly property bool sounding: root.present && root.showsBand && Media.playing
-                                     && (root.desktopShowing || root.arranging)
 
     onSoundingChanged: Sinestesia.hold(root, root.sounding)
     Component.onCompleted: {

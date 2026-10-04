@@ -178,11 +178,12 @@ capture as the sinestesia cell (one capture, never two); the track is the active
 source has a track. Paused: the band lies still as a row of dots (there is no sound) and the
 progress holds — the organism stays, because a paused track is still the track.
 
-**The band runs only while it can be seen**: while this screen's active workspace has no window
-(the desktop is showing), or while the organisms are being arranged. Under the windows it would
-cost a capture process and sixty frames a second for nobody, so it lies still there.
-`Sinestesia.hold(owner, on)` keeps the capture running while anything holds it — a cell on
-screen, an organism on a showing desktop.
+**The band moves whenever there is sound.** It was first held still while the screen's workspace
+had any window, but niri leaves the desktop showing beside and between the windows, and there a
+still band beside a playing track said silence (Akusen, 2026-10-04). niri does not report where a
+tiled window is on screen, so the organism cannot know it is covered; a band that may be seen
+has to be true. `Sinestesia.hold(owner, on)` keeps the one capture running while anything holds
+it — the sinestesia cell, which already holds it whenever there is sound, or the organism.
 
 **Track change** — the new cover cross-fades over the old one (`contentFade`), then the words;
 the panel does not move or resize.
