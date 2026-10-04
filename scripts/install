@@ -92,6 +92,7 @@ need matugen    matugen         "palettes computed from the wallpaper"
 need zenity     zenity          "the wallpaper folder picker"
 need fd         fd              "files found by name in the launcher"
 need xdg-open   xdg-utils       "files and folders opened with their default application"
+need curl       curl            "the weather organism's forecast"
 need grim       grim            "screenshots"
 need tesseract  tesseract       "text recognition from a region"
 need_part "$(tesseract --list-langs 2>/dev/null | grep -qx eng && echo yes)" \

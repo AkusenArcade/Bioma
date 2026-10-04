@@ -34,6 +34,8 @@ depends=(
     # Launcher: files found by name in the home, and opened.
     'fd'
     'xdg-utils'
+    # The weather organism: Open-Meteo, through the proxy when one is on.
+    'curl'
     # Capture: screenshots, text recognition (capture.ocr_language is eng),
     # screen recording.
     'grim'

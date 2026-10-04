@@ -1,6 +1,6 @@
 # Bioma icons
 
-33 glyphs, 24 × 24, `currentColor`, no width/height assumptions beyond the viewBox.
+62 glyphs, 24 × 24, `currentColor`, no width/height assumptions beyond the viewBox.
 
 Icons are the one graphic alphabet in Bioma that is not an indicator: they say **what**
 something is, never **how hard** it is working.
@@ -58,6 +58,7 @@ something is, never **how hard** it is working.
 | `plus.svg` `close.svg` `edit.svg` | add, remove, edit |
 | `error.svg` | beside the reason, in the alert colour, under the field that refused the input |
 | `clock.svg` | ring plus minute pie |
+| `weather-clear.svg` `weather-clear-night.svg` `weather-partly.svg` `weather-cloudy.svg` `weather-fog.svg` `weather-rain.svg` `weather-snow.svg` `weather-storm.svg` | the weather organism: now, and each of the next hours. The snow's flakes are nodes, the one fill |
 | `clipboard.svg` | the clipboard cell: what was copied, kept |
 | `keyboard.svg` | the keyboard cell's header: the layout, and switching it |
 | `brightness.svg` | the sun in the middle of the brightness display's dial |

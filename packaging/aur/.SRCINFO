@@ -27,6 +27,7 @@ pkgbase = bioma-shell
 	depends = zenity
 	depends = fd
 	depends = xdg-utils
+	depends = curl
 	depends = grim
 	depends = tesseract
 	depends = tesseract-data-eng

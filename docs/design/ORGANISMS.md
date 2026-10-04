@@ -1,6 +1,6 @@
 # Bioma — organisms
 
-*Approved 2026-10-04, media redrawn at Akusen's request. Built: the structure, arranging, clock, media, vitals, calendar. Still to come: weather, the Settings section.*
+*Approved 2026-10-04, media redrawn at Akusen's request. Built: the structure, arranging, clock, media, vitals, calendar, weather. Still to come: the Settings section.*
 
 The visual specification of the organisms: read-only surfaces that live on the desktop, under
 the windows, in the part of the screen the top and bottom membranes leave free. Read it with
@@ -271,7 +271,7 @@ nothing: the field's error, as every field's — outline in alert, reason under 
   { "type": "media",    "monitor": "DP-1", "x": 0.80, "y": 0.25 },
   { "type": "weather",  "monitor": "HDMI-A-1", "x": 0.5, "y": 0.5, "size": "comfortable" }
 ],
-"weather": { "city": "", "latitude": null, "longitude": null }
+"weather": { "city": "Milan" }   // place, latitude, longitude, located_for are written back
 ```
 
 The base layer ships `"organisms": []`: nobody's desktop gains furniture by updating. Adding an

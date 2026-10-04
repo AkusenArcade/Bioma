@@ -243,7 +243,7 @@ specification. The base layer ships none.
 
 | Key | Meaning |
 |---|---|
-| `type` | Which organism: `clock`, `media`, `vitals`, `calendar` |
+| `type` | Which organism: `clock`, `media`, `vitals`, `calendar`, `weather` |
 | `monitor` | As for a membrane: an output name, `primary` (the default) or `all` |
 | `x`, `y` | The organism's **centre**, as fractions (0–1) of the free area: the screen minus what the membranes hold, measured to the line the windows begin on. An organism is always held wholly inside it |
 | `size` | `compact` \| `normal` \| `comfortable`. Without it, the membranes' `scale` |
@@ -252,6 +252,22 @@ The clock organism shows 12 or 24 hours as the clock cell's `format` says. The
 media organism takes `"band": false` to show the cover without the
 visualiser; the vitals organism takes `"layout": "square"` for a 2 × 2 block
 instead of a row.
+
+### weather
+
+Where the weather organism reads the weather for. The settings write the
+city; the shell finds it with Open-Meteo's geocoder the first time and writes
+the rest beside it, so later starts go straight to the forecast.
+
+| Key | Meaning |
+|---|---|
+| `city` | The place, as typed |
+| `place` | The place's name as the geocoder spells it — what the organism shows |
+| `latitude`, `longitude`, `located_for` | Written by the shell. Coordinates are trusted only while `located_for` is the `city`; change the city and it is looked up again |
+| `minutes` | How often the forecast is asked for while an organism shows it. Default 30 |
+
+The forecast comes from Open-Meteo (no key, metric units), through the proxy
+when one is on. A reading older than two hours is not shown.
 
 ### cells
 
