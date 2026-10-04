@@ -118,6 +118,7 @@ structure/         Membrane, Tissue, Cell — the layout engine
 components/        Shared primitives (capsules, threads, indicators)
 services/          One singleton per system domain (ported from Prisma)
 cells/<name>/      One directory per cell: contracted, expanded, logic
+organisms/<name>/  One directory per organism: read-only desktop surfaces
 config/            default.json (base layer) + palettes/
 assets/            icons, fonts
 docs/              PRD and design material

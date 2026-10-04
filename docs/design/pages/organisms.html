@@ -1,0 +1,697 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bioma organisms</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&family=Spectral:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
+<style>
+  :root {
+    --bg: #0a0d08;
+    --bg-panel: #12160f;
+    --text: #eaf1e6;
+    --text-muted: rgba(234, 241, 230, 0.56);
+    --text-faint: rgba(234, 241, 230, 0.38);
+    --border: rgba(255, 255, 255, 0.09);
+    --line: #4f6340;
+    --node: #6b8457;
+    --rim: #8ba86e;
+    --primary: #b9de6b;
+    --calm: #6ee7a6;
+    --active: #f2c14e;
+    --alert: #ff6b5d;
+    --grad-primary: linear-gradient(165deg, #ddf5a4, #8cbb43);
+    --grad-calm: linear-gradient(165deg, #b0f7d0, #36bf7e);
+    --grad-active: linear-gradient(165deg, #ffe08f, #dd8f26);
+    --grad-alert: linear-gradient(165deg, #ffa88c, #da3947);
+    --glass: rgba(35, 42, 30, 0.72);
+    --well: rgba(24, 30, 20, 0.80);
+    --tissue: rgba(27, 33, 23, 0.50);
+    --wallpaper:
+      radial-gradient(ellipse 60% 70% at 30% 70%, rgba(214, 206, 166, 0.30), transparent 60%),
+      radial-gradient(ellipse 50% 60% at 78% 25%, rgba(46, 150, 118, 0.45), transparent 65%),
+      radial-gradient(ellipse 40% 50% at 55% 10%, rgba(230, 226, 196, 0.22), transparent 60%),
+      linear-gradient(180deg, #13201c 0%, #0e1512 100%);
+    --machine: 'Orbitron', 'Helvetica Neue', Arial, sans-serif;
+    --human: 'Spectral', Georgia, 'Times New Roman', serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--human);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 48px 16px 96px; }
+
+  .eyebrow {
+    font-family: var(--machine); font-size: 11px; font-weight: 600;
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted);
+  }
+  h1 { font-family: var(--machine); font-size: clamp(30px, 6vw, 44px); font-weight: 900; line-height: 1.05; margin: 14px 0 0; }
+  .lede { max-width: 62ch; font-size: 17px; color: rgba(234, 241, 230, 0.82); margin: 16px 0 0; }
+  header { padding-bottom: 30px; border-bottom: 1px solid var(--border); }
+  section { margin-top: 64px; }
+  h2 {
+    font-family: var(--machine); font-size: 13px; font-weight: 700; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--primary); margin: 0 0 6px;
+  }
+  h3 { font-family: var(--machine); font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; margin: 0 0 12px; }
+  .note { max-width: 66ch; color: var(--text-muted); font-size: 15px; margin: 0 0 24px; }
+  p { margin: 0 0 12px; }
+  ul { margin: 0; padding-left: 20px; }
+  li { margin-bottom: 6px; }
+
+  .grid { display: grid; gap: 20px; }
+  .g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .panel { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; }
+  .panel ul, .panel p { font-size: 14px; color: rgba(234, 241, 230, 0.78); }
+
+  .celltitle { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; }
+  .celltitle .num { font-family: var(--machine); font-size: 26px; font-weight: 900; color: var(--primary); }
+  .celltitle .nm { font-family: var(--machine); font-size: 22px; font-weight: 700; }
+  .celltitle .tag {
+    font-family: var(--machine); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--text-muted); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px;
+  }
+  .stage {
+    position: relative; border-radius: 14px; overflow: hidden; background: var(--wallpaper);
+    padding: 32px; display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start; justify-content: center;
+  }
+  .stage.light {
+    background:
+      radial-gradient(ellipse 60% 70% at 30% 70%, rgba(255, 250, 225, 0.9), transparent 60%),
+      linear-gradient(180deg, #d8e2cf 0%, #b7c8ad 100%);
+  }
+  .caption { font-family: var(--machine); font-size: 11px; letter-spacing: 0.04em; color: var(--text-muted); margin-top: 10px; }
+  .state { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .state .caption { margin: 0; text-align: center; }
+
+  /* ---- the organism surface ---- */
+  .org {
+    position: relative;
+    border-radius: 20px;
+    padding: 20px;
+    background: var(--glass);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid transparent;
+    flex: none;
+  }
+  .org::before {
+    content: ""; position: absolute; inset: -1px; border-radius: inherit; padding: 1px;
+    background: linear-gradient(180deg, var(--rim) 0%, var(--line) 45%, var(--line) 100%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+    pointer-events: none;
+  }
+  .gradtext { background: var(--grad-primary); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .g-calm { background: var(--grad-calm); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .g-active { background: var(--grad-active); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .g-alert { background: var(--grad-alert); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .tab { font-variant-numeric: tabular-nums; }
+
+  /* clock */
+  .o-clock { width: 340px; height: 168px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+  .o-clock .time { font-family: var(--human); font-size: 72px; font-weight: 500; line-height: 84px; display: flex; align-items: baseline; gap: 10px; }
+  .o-clock .ampm { font-family: var(--machine); font-size: 15px; font-weight: 500; letter-spacing: 0.06em; line-height: 1; color: var(--text-muted); }
+  .o-clock .date { font-family: var(--human); font-size: 19px; color: var(--text-muted); margin-top: 4px; line-height: 24px; white-space: nowrap; }
+
+  /* media */
+  .o-media { width: 420px; height: 420px; padding: 0; }
+  .o-media::before { z-index: 3; }
+  .o-media .art {
+    position: absolute; inset: 0; border-radius: 20px; overflow: hidden;
+    background:
+      radial-gradient(circle at 31% 30%, #f6dfae 0 13%, rgba(246, 223, 174, 0.35) 14%, transparent 22%),
+      radial-gradient(ellipse 85% 55% at 72% 88%, #2f6b5e, transparent 70%),
+      linear-gradient(160deg, #d39250 0%, #8a4630 42%, #2b3c3a 100%);
+  }
+  .o-media .art.missing { background: transparent; display: flex; justify-content: center; padding-top: 52px; }
+  .o-media .art::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(18, 22, 15, 0) 0%, rgba(18, 22, 15, 0) 36%, rgba(18, 22, 15, 0.80) 60%, rgba(18, 22, 15, 0.92) 100%);
+  }
+  .o-media .art.missing::after { display: none; }
+  .o-media .content { position: absolute; left: 20px; right: 20px; bottom: 20px; z-index: 2; display: flex; flex-direction: column; }
+  .o-media .t { font-family: var(--human); font-size: 22px; font-weight: 700; line-height: 28px; margin-top: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .o-media .a { font-family: var(--human); font-size: 16px; line-height: 21px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .o-media .al { font-family: var(--human); font-size: 13px; font-style: italic; line-height: 18px; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .o-media .prog { margin-top: 14px; }
+  .o-media .track { position: relative; height: 3px; border-radius: 2px; background: rgba(234, 241, 230, 0.16); }
+  .o-media .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 2px; background: var(--primary); }
+  .o-media .head { position: absolute; top: 50%; width: 7px; height: 7px; border-radius: 4px; background: var(--primary); transform: translate(-50%, -50%); }
+  .o-media .times { display: flex; justify-content: space-between; font-family: var(--machine); font-size: 11px; color: var(--text-muted); margin-top: 5px; line-height: 14px; }
+  .band { height: var(--bh); display: flex; align-items: center; justify-content: center; gap: 4px; }
+  .band i { display: block; width: 4px; border-radius: 2px; background: var(--grad-primary); background-size: 4px var(--bh); background-position: center; height: 4px; }
+  .playing .band i { animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
+  @keyframes vb1 { 0%, 100% { height: 16%; } 21% { height: 74%; } 47% { height: 32%; } 72% { height: 96%; } }
+  @keyframes vb2 { 0%, 100% { height: 34%; } 18% { height: 92%; } 44% { height: 20%; } 69% { height: 62%; } }
+  @keyframes vb3 { 0%, 100% { height: 62%; } 26% { height: 24%; } 52% { height: 88%; } 78% { height: 38%; } }
+  @keyframes vb4 { 0%, 100% { height: 24%; } 15% { height: 56%; } 46% { height: 100%; } 80% { height: 28%; } }
+  @keyframes vb5 { 0%, 100% { height: 80%; } 23% { height: 36%; } 55% { height: 66%; } 84% { height: 18%; } }
+
+  /* vitals */
+  .o-vitals { display: grid; grid-template-columns: repeat(var(--cols), 96px); gap: 16px; }
+  .o-vitals .col { display: flex; flex-direction: column; align-items: center; height: 136px; }
+  .o-vitals .lbl { font-family: var(--machine); font-size: 15px; font-weight: 500; letter-spacing: 0.06em; line-height: 19px; margin-top: 10px; }
+  .o-vitals .val { font-family: var(--machine); font-size: 20px; font-weight: 500; line-height: 24px; margin-top: 2px; }
+  .o-vitals .sec { font-family: var(--machine); font-size: 13px; line-height: 17px; color: var(--text-muted); margin-top: 2px; white-space: nowrap; }
+  @keyframes beat { 0% { transform: scale(1); } 9% { transform: scale(1.45); } 24% { transform: scale(1); } 100% { transform: scale(1); } }
+  @keyframes drift { to { transform: translateX(46px); } }
+  @keyframes orbit { to { transform: rotate(360deg); } }
+  .beat { transform-box: fill-box; transform-origin: center; animation: beat 0.97s ease-in-out infinite; }
+  .drift { animation: drift 2.4s linear infinite; }
+  .orbit { transform-origin: 32px 32px; animation: orbit 2.6s linear infinite; }
+
+  /* calendar */
+  .o-cal { width: 300px; }
+  .o-cal .hd { display: flex; align-items: baseline; gap: 10px; height: 26px; }
+  .o-cal .mo { font-family: var(--human); font-size: 19px; font-weight: 700; }
+  .o-cal .yr { font-family: var(--machine); font-size: 13px; color: var(--text-muted); }
+  .o-cal .days { display: grid; grid-template-columns: repeat(7, 37px); margin-top: 10px; }
+  .o-cal .wd { font-family: var(--machine); font-size: 11px; color: var(--text-faint); height: 22px; display: flex; align-items: center; justify-content: center; }
+  .o-cal .d { font-family: var(--machine); font-size: 13px; height: 34px; display: flex; align-items: center; justify-content: center; font-variant-numeric: tabular-nums; }
+  .o-cal .d.out { color: var(--text-faint); }
+  .o-cal .d.today span { width: 28px; height: 28px; border-radius: 14px; background: var(--grad-primary); color: #12160f; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+
+  /* weather */
+  .o-weather { width: 340px; height: 196px; display: flex; flex-direction: column; }
+  .o-weather .city { font-family: var(--human); font-size: 15px; font-weight: 700; line-height: 19px; }
+  .o-weather .now { display: flex; align-items: center; gap: 14px; margin-top: 6px; }
+  .o-weather .temp { font-family: var(--machine); font-size: 40px; font-weight: 500; line-height: 46px; }
+  .o-weather .cond { font-family: var(--human); font-size: 15px; color: var(--text-muted); line-height: 19px; }
+  .o-weather .hl { font-family: var(--machine); font-size: 13px; color: var(--text-muted); line-height: 17px; }
+  .o-weather .hours { margin-top: auto; height: 64px; border-radius: 10px; background: var(--well); display: grid; grid-template-columns: repeat(5, 1fr); align-items: center; }
+  .o-weather .h { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .o-weather .h .hr { font-family: var(--machine); font-size: 11px; color: var(--text-faint); line-height: 13px; }
+  .o-weather .h .ht { font-family: var(--machine); font-size: 13px; line-height: 16px; }
+
+  /* ---- the desktop ---- */
+  .controls { display: flex; gap: 2px; padding: 2px; border-radius: 16px; background: var(--well); width: max-content; margin-bottom: 14px; }
+  .controls button {
+    font-family: var(--machine); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+    height: 28px; padding: 0 14px; border-radius: 14px; border: none; cursor: pointer;
+    background: transparent; color: var(--text-muted);
+  }
+  .controls button.on { background: var(--grad-primary); color: #12160f; font-weight: 600; }
+  .deskframe { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden; }
+  .desk { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; background: var(--wallpaper); }
+  .mem { position: absolute; left: 12px; right: 12px; height: 44px; display: flex; align-items: center; justify-content: space-between; }
+  .mem.top { top: 12px; }
+  .mem.bottom { bottom: 12px; justify-content: center; }
+  .tis { height: 44px; padding: 2px; border-radius: 22px; background: var(--tissue); display: flex; gap: 4px; }
+  .c { position: relative; height: 40px; border-radius: 20px; background: var(--glass); display: flex; align-items: center; padding: 0 16px; font-family: var(--human); font-size: 15px; }
+  .c::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; background: linear-gradient(180deg, var(--rim) 0%, var(--line) 45%, var(--line) 100%); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); }
+  .win {
+    position: absolute; left: 1060px; top: 72px; width: 844px; height: 936px; border-radius: 14px;
+    background: #1a1e1b; border: 2px solid #8cbb43; z-index: 5;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .win .bar { height: 44px; background: #222723; display: flex; align-items: center; padding: 0 18px; font-family: var(--human); font-size: 15px; color: var(--text-muted); }
+  .win .body { flex: 1; padding: 30px; display: flex; flex-direction: column; gap: 14px; }
+  .win .body i { display: block; height: 14px; border-radius: 7px; background: rgba(234, 241, 230, 0.07); }
+  .desk.empty .win { opacity: 0; pointer-events: none; }
+  .placed { position: absolute; transform: translate(-50%, -50%); z-index: 2; }
+  .scrim { position: absolute; inset: 0; background: rgba(6, 8, 5, 0.55); z-index: 8; opacity: 0; pointer-events: none; }
+  .free { position: absolute; z-index: 9; border-radius: 20px; opacity: 0; pointer-events: none; }
+  .free svg { position: absolute; inset: 0; overflow: visible; }
+  .desk.arranging .scrim, .desk.arranging .free { opacity: 1; }
+  .desk.arranging .placed { z-index: 10; cursor: grab; }
+  .desk.arranging .placed.dragging { cursor: grabbing; }
+  .outline { position: absolute; inset: -8px; border-radius: 26px; border: 2px dashed rgba(185, 222, 107, 0.55); display: none; pointer-events: none; }
+  .desk.arranging .outline { display: block; }
+  .desk.arranging .placed:hover .outline, .placed.dragging .outline { border-color: var(--primary); }
+  .tagname { position: absolute; left: -8px; top: -34px; font-family: var(--machine); font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--primary); white-space: nowrap; display: none; }
+  .tagname em { font-style: normal; color: var(--text-muted); margin-left: 10px; font-variant-numeric: tabular-nums; }
+  .desk.arranging .tagname { display: block; }
+  .guide { position: absolute; background: var(--primary); z-index: 11; display: none; pointer-events: none; }
+  .guide.v { width: 2px; top: 0; bottom: 0; }
+  .guide.h { height: 2px; left: 0; right: 0; }
+  .done {
+    position: absolute; left: 50%; top: 84px; transform: translateX(-50%); z-index: 12;
+    font-family: var(--machine); font-size: 14px; font-weight: 600; letter-spacing: 0.04em;
+    height: 40px; padding: 0 26px; border-radius: 20px; border: none; cursor: pointer;
+    background: var(--grad-primary); color: #12160f; display: none;
+  }
+  .desk.arranging .done { display: block; }
+  .desk * { user-select: none; }
+
+  .open-q { border-left: 2px solid var(--active); padding: 2px 0 2px 16px; margin-top: 22px; font-size: 14.5px; color: rgba(234, 241, 230, 0.8); }
+  .open-q b { font-family: var(--machine); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--active); display: block; margin-bottom: 4px; }
+
+  .glyphs { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 12px; }
+  .glyph { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 18px 6px; border-radius: 12px; background: var(--bg-panel); border: 1px solid var(--border); }
+  .glyph .n { font-family: var(--machine); font-size: 10px; color: var(--text-muted); text-align: center; letter-spacing: 0.02em; }
+  .glyph .row { display: flex; align-items: end; gap: 14px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 9px 14px 9px 0; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-family: var(--machine); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); font-weight: 600; }
+  td.k { font-family: var(--machine); font-size: 13px; white-space: nowrap; }
+  td.v { font-family: var(--machine); font-size: 13px; color: var(--text-muted); white-space: nowrap; }
+
+  footer { margin-top: 64px; padding-top: 22px; border-top: 1px solid var(--border); font-size: 13.5px; color: var(--text-muted); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .beat, .drift, .orbit, .band i { animation: none !important; }
+  }
+  @media (max-width: 760px) {
+    .g2 { grid-template-columns: minmax(0, 1fr); }
+    .glyphs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .stage { padding: 16px; overflow-x: auto; justify-content: flex-start; }
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="gp" x1="0" y1="0" x2="0.27" y2="1"><stop offset="0" stop-color="#ddf5a4"/><stop offset="1" stop-color="#8cbb43"/></linearGradient>
+    <linearGradient id="gc" x1="0" y1="0" x2="0.27" y2="1"><stop offset="0" stop-color="#b0f7d0"/><stop offset="1" stop-color="#36bf7e"/></linearGradient>
+    <linearGradient id="ga" x1="0" y1="0" x2="0.27" y2="1"><stop offset="0" stop-color="#ffe08f"/><stop offset="1" stop-color="#dd8f26"/></linearGradient>
+    <linearGradient id="gl" x1="0" y1="0" x2="0.27" y2="1"><stop offset="0" stop-color="#ffa88c"/><stop offset="1" stop-color="#da3947"/></linearGradient>
+  </defs>
+</svg>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Bioma · approved 2026-10-04</div>
+    <h1>Organisms</h1>
+    <p class="lede">Read-only surfaces on the desktop, under the windows, in the part of the screen the top and bottom membranes leave free. A cell speaks when something happens; an organism is there because it was put there to be looked at. The specification is <b>ORGANISMS.md</b>; this page is how it looks and moves.</p>
+  </header>
+
+  <section>
+    <h2>The contract</h2>
+    <p class="note">Three rules change; the rest of the style guide holds as it is.</p>
+    <div class="grid g2">
+      <div class="panel">
+        <h3>Changed</h3>
+        <ul>
+          <li><b>It speaks at rest.</b> Figures are allowed: the eye goes to an organism on purpose, it does not pass it a hundred times an hour.</li>
+          <li><b>No thread, no origin.</b> Born in place, growing from its own centre, like the launcher.</li>
+          <li><b>No input.</b> The pointer passes through to the desktop. Only while arranging can it be dragged.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>Kept</h3>
+        <ul>
+          <li>Colour is state, form is domain — the CPU ring is the CPU ring.</li>
+          <li>Motion is data: no seconds ticking, no idle animation.</li>
+          <li>Two voices, glass with rim, panel radius 20, <b>no shadow</b> — it stands on the wallpaper, not above something.</li>
+          <li>Conditional where it means something: media and weather leave when they have nothing true to say.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>On the desktop</h2>
+    <p class="note">A 1920 × 1080 screen with a top and a bottom membrane. On an empty workspace the organisms are the desktop; open a window and they are simply under it. <i>Arrange</i> lifts them above the windows: drag them — they snap to the free area's edges, the screen's centre lines, each other's edges and the 24 px gap.</p>
+    <div class="controls" role="tablist">
+      <button type="button" data-mode="empty" class="on">Empty workspace</button>
+      <button type="button" data-mode="window">With a window</button>
+      <button type="button" data-mode="arranging">Arranging</button>
+    </div>
+    <div class="deskframe" id="deskframe">
+      <div class="desk empty" id="desk">
+        <div class="mem top">
+          <div class="tis"><div class="c">Workspace 1</div></div>
+          <div class="tis"><div class="c tab" id="memclock">17:20</div></div>
+          <div class="tis"><div class="c" style="width:130px"></div></div>
+        </div>
+        <div class="mem bottom"><div class="tis"><div class="c" style="width:360px"></div></div></div>
+        <div class="win"><div class="bar">Zen Browser</div><div class="body"><i style="width:70%"></i><i style="width:90%"></i><i style="width:55%"></i><i style="width:82%"></i></div></div>
+        <div class="scrim"></div>
+        <div class="free" id="free"><svg><rect x="1" y="1" rx="20" fill="none" stroke="#4f6340" stroke-width="2" stroke-dasharray="10 8" id="freerect"/></svg></div>
+        <div class="guide v" id="gv"></div>
+        <div class="guide h" id="gh"></div>
+        <button class="done" type="button" id="done">Done</button>
+      </div>
+    </div>
+    <div class="caption">Free area: the screen minus the membranes' strips minus the 12 px edge margin. Positions are stored as the centre in fractions of it.</div>
+  </section>
+
+  <section>
+    <div class="celltitle"><span class="num">01</span><span class="nm">Clock</span><span class="tag">always present</span></div>
+    <p class="note">The time in Spectral, the date in words under it. No dial and no seconds: a second hand moving at a fixed rate on the desktop is the one clock motion that carries nothing the minute does not.</p>
+    <div class="stage">
+      <div class="state"><div class="org o-clock" data-org="clock"></div><div class="caption">24 h</div></div>
+      <div class="state"><div class="org o-clock" data-org="clock12"></div><div class="caption">12 h — PM in Orbitron beside the figures</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="celltitle"><span class="num">02</span><span class="nm">Media</span><span class="tag">present while a track is loaded</span></div>
+    <p class="note">Not the cell's track panel made bigger: here the cover <i>is</i> the surface. It fills the panel edge to edge, and the band — more than three times the cell's height — rises out of it where the theme's background comes up to carry the words. Paused, the band lies still and the progress holds. Stopped, it leaves.</p>
+    <div class="stage">
+      <div class="state"><div class="org o-media playing" data-org="media"></div><div class="caption">playing — the band is the sound</div></div>
+      <div class="state"><div class="org o-media" data-org="media-paused"></div><div class="caption">paused, no cover — glass, the glyph in the picture's place</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="celltitle"><span class="num">03</span><span class="nm">Vitals</span><span class="tag">always present</span></div>
+    <p class="note">The vitals cell's pods, gathered and never closed. Same rings, same rhythms, values filled with their state gradient. Battery only on a machine that has one.</p>
+    <div class="stage">
+      <div class="state"><div class="org o-vitals" data-org="vitals" style="--cols:4"></div><div class="caption">row, laptop — 472 × 176</div></div>
+      <div class="state"><div class="org o-vitals" data-org="vitals-square" style="--cols:2"></div><div class="caption">2 × 2 — 248 × 328</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="celltitle"><span class="num">04</span><span class="nm">Calendar</span><span class="tag">always present</span></div>
+    <p class="note">The clock cell's month, alone and read-only — a calendar on the wall, not a planner. Today is the only lit day. A six-week month grows by one row downward; the top stays where it was placed.</p>
+    <div class="stage">
+      <div class="state"><div class="org o-cal" data-org="calendar"></div><div class="caption">this month, live</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="celltitle"><span class="num">05</span><span class="nm">Weather</span><span class="tag">present with a reading under 2 h old</span></div>
+    <p class="note">The city from Settings, geocoded once; Open-Meteo every 30 minutes, through the proxy when one is on. The temperature measures the weather, not the machine: it is primary and never takes a state colour.</p>
+    <div class="stage">
+      <div class="state"><div class="org o-weather" data-org="weather"></div><div class="caption">now, high and low, the next five hours</div></div>
+      <div class="state"><div class="org o-weather" data-org="weather-night"></div><div class="caption">night, clear</div></div>
+    </div>
+    <h3 style="margin-top:30px">Eight new glyphs</h3>
+    <p class="note">Grid 24, stroke 1.5, round caps, no fills except the snow's nodes. Shown at 44 (the organism), 20 (the hours) and 16 (survival).</p>
+    <div class="glyphs" id="glyphs"></div>
+  </section>
+
+  <section>
+    <h2>On a light wallpaper</h2>
+    <p class="note">The glass and the rim carry the surface on a pale picture too; no halo, no glow.</p>
+    <div class="stage light">
+      <div class="org o-clock" data-org="clock"></div>
+      <div class="org o-cal" data-org="calendar"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Open</h2>
+    <div class="open-q"><b>Bare or glass</b>Every organism here is a glass panel. A bare clock — figures straight on the wallpaper — would read as part of the picture, but on a light or busy wallpaper only a glow would keep it legible, and the style guide forbids glow. Kept as a question rather than as an option.</div>
+    <div class="open-q"><b>niri's overview — settled</b>Verified on the first build: the Bottom layer is drawn inside each workspace, like the wallpaper, so the organisms zoom out with every workspace. Nothing to hide.</div>
+  </section>
+
+  <footer>Every string inside the mockups is the shell's own. Durations, colours and sizes are the tokens of tokens.css; nothing here introduces a new one except the eight glyphs.</footer>
+</div>
+
+<script>
+(() => {
+  const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const weekdays = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  const pad = n => String(n).padStart(2, "0");
+
+  // ---- glyphs ---------------------------------------------------------------
+  const cloud = b => `M7.5 ${b}h9a3.5 3.5 0 0 0 .6-6.95A5 5 0 0 0 7.4 ${b - 7.9}a3.95 3.95 0 0 0 .1 7.9z`;
+  const rays = (cx, cy, r1, r2, n, start) => Array.from({ length: n }, (_, i) => {
+    const a = (start + i * 360 / n) * Math.PI / 180;
+    return `M${(cx + r1 * Math.cos(a)).toFixed(2)} ${(cy + r1 * Math.sin(a)).toFixed(2)}L${(cx + r2 * Math.cos(a)).toFixed(2)} ${(cy + r2 * Math.sin(a)).toFixed(2)}`;
+  }).join("");
+  const glyphs = {
+    "weather-clear": `<circle cx="12" cy="12" r="4"/><path d="${rays(12, 12, 6.6, 8.6, 8, 0)}"/>`,
+    "weather-clear-night": `<path d="M15.6 4.4A7.8 7.8 0 1 0 19.6 15.2 6.3 6.3 0 0 1 15.6 4.4z"/>`,
+    "weather-partly": `<circle cx="9" cy="8.5" r="3"/><path d="${rays(9, 8.5, 4.9, 6.2, 5, 150)}"/><path d="M10 19.5h7.2a2.9 2.9 0 0 0 .5-5.75A4.1 4.1 0 0 0 9.9 13a3.25 3.25 0 0 0 .1 6.5z"/>`,
+    "weather-cloudy": `<path d="${cloud(17.5)}"/>`,
+    "weather-fog": `<path d="M4 8.5h16M6 12.5h14M4 16.5h12"/>`,
+    "weather-rain": `<path d="${cloud(14)}"/><path d="M8.6 16.8l-1 2.6M12.6 16.8l-1 2.6M16.6 16.8l-1 2.6"/>`,
+    "weather-snow": `<path d="${cloud(14)}"/><circle cx="8" cy="17.6" r="1.2" fill="url(#gp)" stroke="none"/><circle cx="12" cy="19.6" r="1.2" fill="url(#gp)" stroke="none"/><circle cx="16" cy="17.6" r="1.2" fill="url(#gp)" stroke="none"/>`,
+    "weather-storm": `<path d="${cloud(14)}"/><path d="M12.8 15.2l-2.2 3.4h3l-2.2 3.4"/>`
+  };
+  const glyph = (name, size, stroke = "url(#gp)") =>
+    `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${stroke}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${glyphs[name]}</svg>`;
+
+  document.getElementById("glyphs").innerHTML = Object.keys(glyphs).map(n =>
+    `<div class="glyph"><div class="row">${glyph(n, 44)}${glyph(n, 20)}${glyph(n, 16)}</div><div class="n">${n.replace("weather-", "")}</div></div>`).join("");
+
+  // ---- organisms --------------------------------------------------------------
+  function clock(twelve) {
+    const now = new Date();
+    let h = now.getHours();
+    let suffix = "";
+    if (twelve) { suffix = h >= 12 ? "PM" : "AM"; h = h % 12 || 12; }
+    const time = `${twelve ? h : pad(h)}:${pad(now.getMinutes())}`;
+    return `<div class="time"><span class="gradtext tab">${time}</span>${twelve ? `<span class="ampm">${suffix}</span>` : ""}</div>
+            <div class="date">${weekdays[now.getDay()]} ${now.getDate()} ${months[now.getMonth()]}</div>`;
+  }
+
+  // The band, symmetric from its centre line. The gradient runs over the
+  // band's height, not the bar's, so a short bar samples its middle.
+  function band(playing, n, height) {
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      const d = Math.abs(i - (n - 1) / 2);
+      const k = 1 + Math.floor(d * 7 % 5);
+      const style = playing
+        ? `animation-name:vb${k};animation-duration:${(1.1 + (d % 3) * 0.23).toFixed(2)}s;animation-delay:-${(d * 0.11).toFixed(2)}s;max-height:${Math.max(30, 100 - d * 2.6).toFixed(0)}%`
+        : "";
+      out.push(`<i style="${style}"></i>`);
+    }
+    return `<div class="band" style="--bh:${height}px">${out.join("")}</div>`;
+  }
+
+  // The cover is the surface: it fills the panel, and the scrim under the
+  // words is the theme's background, so the text is read on the shell's own
+  // colour whatever the picture is. Without a cover the panel is glass and
+  // the sinestesia glyph holds the picture's place.
+  function media(paused) {
+    const sinestesia = `<svg width="96" height="96" viewBox="0 0 24 24" fill="none" stroke="rgba(234,241,230,0.56)" stroke-width="1.2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M4.6 14.5 C8 10.5, 9.5 15.5, 12.6 11.5 S17 12.8, 19.4 9.6"/></svg>`;
+    return `<div class="art${paused ? " missing" : ""}">${paused ? sinestesia : ""}</div>
+      <div class="content">
+        ${band(!paused, 48, 96)}
+        <div class="t">${paused ? "Live at the Forum, Part Two — Extended Session" : "Holocene"}</div>
+        <div class="a">${paused ? "Unknown artist" : "Bon Iver"}</div>
+        ${paused ? "" : `<div class="al">Bon Iver, Bon Iver</div>`}
+        <div class="prog" data-prog="${paused ? "hold" : "run"}">
+          <div class="track"><div class="fill"></div><div class="head"></div></div>
+          <div class="times tab"><span class="pos">0:00</span><span>${paused ? "12:48" : "5:36"}</span></div>
+        </div>
+      </div>`;
+  }
+
+  function ring(kind, grad, size, extra = "") {
+    const id = "c" + Math.random().toString(36).slice(2, 8);
+    const ringEl = `<circle cx="32" cy="32" r="24" stroke="url(#${grad})" stroke-width="1.5"/>`;
+    if (kind === "cpu") return `<svg width="${size}" height="${size}" viewBox="0 0 64 64" fill="none">${ringEl}<circle class="beat" style="animation-duration:${extra}" cx="32" cy="32" r="8" fill="url(#${grad})"/></svg>`;
+    if (kind === "ram") return `<svg width="${size}" height="${size}" viewBox="0 0 64 64" fill="none">${ringEl}<clipPath id="${id}"><circle cx="32" cy="32" r="23.2"/></clipPath><g clip-path="url(#${id})"><path class="drift" d="M-60 ${extra} q11.5 -6 23 0 t23 0 t23 0 t23 0 t23 0 t23 0 t23 0 t23 0 t23 0 t23 0 L170 64 L-60 64 Z" fill="url(#${grad})"/></g></svg>`;
+    if (kind === "gpu") return `<svg width="${size}" height="${size}" viewBox="0 0 64 64" fill="none">${ringEl}<g class="orbit" style="animation-duration:${extra}"><circle cx="49" cy="15" r="6" fill="url(#${grad})"/></g></svg>`;
+    return `<svg width="${size}" height="${size}" viewBox="0 0 64 64" fill="none">${ringEl}<clipPath id="${id}"><circle cx="32" cy="32" r="23.2"/></clipPath><g clip-path="url(#${id})"><rect x="8" y="8" width="${extra}" height="48" fill="url(#${grad})"/></g></svg>`;
+  }
+
+  function vitals(battery) {
+    const cols = [
+      ["CPU", ring("cpu", "ga", 62, "0.62s"), "47%", "g-active", "4.8 GHz"],
+      ["RAM", ring("ram", "gc", 62, "36"), "22%", "g-calm", "7 / 32 GB"],
+      ["GPU", ring("gpu", "gc", 62, "3.4s"), "12%", "g-calm", "1.9 GHz"],
+    ];
+    if (battery) cols.push(["BAT", ring("bat", "gc", 62, "34"), "71%", "g-calm", "2 h 10"]);
+    return cols.map(([l, svg, v, g, s]) =>
+      `<div class="col">${svg}<div class="lbl">${l}</div><div class="val ${g} tab">${v}</div><div class="sec tab">${s}</div></div>`).join("");
+  }
+
+  function calendar() {
+    const now = new Date();
+    const y = now.getFullYear(), m = now.getMonth();
+    const first = new Date(y, m, 1);
+    const start = (first.getDay() + 6) % 7;            // the week starts on Monday
+    const cells = [];
+    for (const w of ["M", "T", "W", "T", "F", "S", "S"]) cells.push(`<div class="wd">${w}</div>`);
+    const total = Math.ceil((start + new Date(y, m + 1, 0).getDate()) / 7) * 7;
+    for (let i = 0; i < total; i++) {
+      const d = new Date(y, m, 1 - start + i);
+      const out = d.getMonth() !== m;
+      const today = !out && d.getDate() === now.getDate();
+      cells.push(`<div class="d${out ? " out" : ""}${today ? " today" : ""}"><span>${d.getDate()}</span></div>`);
+    }
+    return `<div class="hd"><span class="mo">${months[m]}</span><span class="yr tab">${y}</span></div><div class="days">${cells.join("")}</div>`;
+  }
+
+  function weather(night) {
+    const now = new Date();
+    const hours = [1, 2, 3, 4, 5].map((k, i) => {
+      const h = (now.getHours() + k) % 24;
+      const g = night ? ["weather-clear-night", "weather-clear-night", "weather-partly", "weather-cloudy", "weather-fog"][i]
+                      : ["weather-partly", "weather-rain", "weather-rain", "weather-storm", "weather-cloudy"][i];
+      const t = night ? [9, 8, 8, 7, 7][i] : [18, 17, 16, 15, 15][i];
+      return `<div class="h"><span class="hr tab">${pad(h)}</span>${glyph(g, 20)}<span class="ht tab">${t}°</span></div>`;
+    }).join("");
+    return `<div class="city">Milan</div>
+      <div class="now">${glyph(night ? "weather-clear-night" : "weather-rain", 44)}
+        <div><div class="temp gradtext tab">${night ? "9°" : "18°"}</div></div>
+        <div><div class="cond">${night ? "Clear" : "Light rain"}</div><div class="hl tab">${night ? "16° · 6°" : "21° · 12°"}</div></div>
+      </div>
+      <div class="hours">${hours}</div>`;
+  }
+
+  const render = {
+    "clock": el => el.innerHTML = clock(false),
+    "clock12": el => el.innerHTML = clock(true),
+    "media": el => el.innerHTML = media(false),
+    "media-paused": el => el.innerHTML = media(true),
+    "vitals": el => el.innerHTML = vitals(true),
+    "vitals-square": el => el.innerHTML = vitals(true),
+    "calendar": el => el.innerHTML = calendar(),
+    "weather": el => el.innerHTML = weather(false),
+    "weather-night": el => el.innerHTML = weather(true),
+  };
+
+  function renderAll(root = document) {
+    root.querySelectorAll("[data-org]").forEach(el => render[el.dataset.org](el));
+  }
+
+  // ---- the desktop ------------------------------------------------------------
+  const desk = document.getElementById("desk");
+  const frame = document.getElementById("deskframe");
+  const free = { x: 12, y: 68, w: 1896, h: 944 };      // strips 56 px + 12 px edge
+  const freeEl = document.getElementById("free");
+  Object.assign(freeEl.style, { left: free.x + "px", top: free.y + "px", width: free.w + "px", height: free.h + "px" });
+  const rect = document.getElementById("freerect");
+  rect.setAttribute("width", free.w - 2); rect.setAttribute("height", free.h - 2);
+
+  const placed = [
+    { org: "clock", cls: "o-clock", name: "clock", x: 0.115, y: 0.135 },
+    { org: "calendar", cls: "o-cal", name: "calendar", x: 0.107, y: 0.475 },
+    { org: "vitals", cls: "o-vitals", name: "vitals", x: 0.4, y: 0.84, style: "--cols:4" },
+    { org: "media", cls: "o-media playing", name: "media", x: 0.4, y: 0.3 },
+    { org: "weather", cls: "o-weather", name: "weather", x: 0.82, y: 0.5 },
+  ];
+  for (const p of placed) {
+    const wrap = document.createElement("div");
+    wrap.className = "placed";
+    wrap.innerHTML = `<div class="outline"></div><div class="tagname">${p.name}<em></em></div><div class="org ${p.cls}" data-org="${p.org}" style="${p.style || ""}"></div>`;
+    desk.appendChild(wrap);
+    p.el = wrap;
+  }
+  renderAll();
+
+  function place(p) {
+    p.el.style.left = (free.x + p.x * free.w) + "px";
+    p.el.style.top = (free.y + p.y * free.h) + "px";
+    p.el.querySelector("em").textContent = `x ${p.x.toFixed(2)} · y ${p.y.toFixed(2)}`;
+  }
+  placed.forEach(place);
+
+  function fit() {
+    const s = frame.clientWidth / 1920;
+    desk.style.transform = `scale(${s})`;
+  }
+  new ResizeObserver(fit).observe(frame);
+  fit();
+
+  function setMode(mode) {
+    document.querySelectorAll(".controls button").forEach(b => b.classList.toggle("on", b.dataset.mode === mode));
+    desk.classList.toggle("empty", mode === "empty");
+    desk.classList.toggle("arranging", mode === "arranging");
+  }
+  document.querySelectorAll(".controls button").forEach(b => b.addEventListener("click", () => setMode(b.dataset.mode)));
+  if (["empty", "window", "arranging"].includes(location.hash.slice(1))) setMode(location.hash.slice(1));
+  document.getElementById("done").addEventListener("click", () => setMode("window"));
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && desk.classList.contains("arranging")) setMode("window"); });
+
+  // Dragging, with the snaps of the spec: the free area's edges, the screen's
+  // centre lines, the other organisms' edges and centres, and the 24 px gap.
+  const gv = document.getElementById("gv"), gh = document.getElementById("gh");
+  const reach = 8, gap = 24;
+  let drag = null;
+
+  function box(p, cx, cy) {
+    const o = p.el.querySelector(".org");
+    const w = o.offsetWidth, h = o.offsetHeight;
+    return { l: cx - w / 2, r: cx + w / 2, t: cy - h / 2, b: cy + h / 2, cx, cy, w, h };
+  }
+
+  function snapAxis(edges, targets) {
+    let best = null;
+    for (const [offset, value] of edges)
+      for (const t of targets) {
+        const d = t - value;
+        if (Math.abs(d) <= reach && (!best || Math.abs(d) < Math.abs(best.d))) best = { d, at: t };
+      }
+    return best;
+  }
+
+  desk.addEventListener("pointerdown", e => {
+    if (!desk.classList.contains("arranging")) return;
+    const p = placed.find(q => q.el.contains(e.target));
+    if (!p) return;
+    const s = frame.clientWidth / 1920;
+    drag = { p, s, sx: e.clientX, sy: e.clientY, ox: free.x + p.x * free.w, oy: free.y + p.y * free.h };
+    p.el.classList.add("dragging");
+    p.el.setPointerCapture(e.pointerId);
+  });
+
+  desk.addEventListener("pointermove", e => {
+    if (!drag) return;
+    const { p, s } = drag;
+    let cx = drag.ox + (e.clientX - drag.sx) / s;
+    let cy = drag.oy + (e.clientY - drag.sy) / s;
+    let b = box(p, cx, cy);
+
+    const xs = [free.x, free.x + free.w, 960];
+    const ys = [free.y, free.y + free.h, 540];
+    for (const q of placed) {
+      if (q === p) continue;
+      const o = box(q, free.x + q.x * free.w, free.y + q.y * free.h);
+      xs.push(o.l, o.r, o.cx, o.l - gap, o.r + gap);
+      ys.push(o.t, o.b, o.cy, o.t - gap, o.b + gap);
+    }
+    const sx = snapAxis([["l", b.l], ["r", b.r], ["c", b.cx]], xs);
+    const sy = snapAxis([["t", b.t], ["b", b.b], ["c", b.cy]], ys);
+    if (sx) cx += sx.d;
+    if (sy) cy += sy.d;
+
+    b = box(p, cx, cy);
+    cx = Math.min(Math.max(cx, free.x + b.w / 2), free.x + free.w - b.w / 2);
+    cy = Math.min(Math.max(cy, free.y + b.h / 2), free.y + free.h - b.h / 2);
+
+    gv.style.display = sx ? "block" : "none";
+    gh.style.display = sy ? "block" : "none";
+    if (sx) gv.style.left = (sx.at - 1) + "px";
+    if (sy) gh.style.top = (sy.at - 1) + "px";
+
+    p.x = (cx - free.x) / free.w;
+    p.y = (cy - free.y) / free.h;
+    place(p);
+  });
+
+  const end = () => {
+    if (!drag) return;
+    drag.p.el.classList.remove("dragging");
+    drag = null;
+    gv.style.display = gh.style.display = "none";
+  };
+  desk.addEventListener("pointerup", end);
+  desk.addEventListener("pointercancel", end);
+
+  // ---- live values --------------------------------------------------------------
+  // The clock and the calendar follow real time; the track's progress runs at
+  // one second per second, which is what it measures.
+  const started = Date.now();
+  function tick() {
+    document.querySelectorAll("[data-org^=clock]").forEach(el => render[el.dataset.org](el));
+    const now = new Date();
+    document.getElementById("memclock").textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    document.querySelectorAll(".prog").forEach(pr => {
+      const run = pr.dataset.prog === "run";
+      const total = run ? 336 : 768;
+      const pos = run ? (95 + (Date.now() - started) / 1000) % total : 301;
+      const f = pos / total;
+      pr.querySelector(".fill").style.width = (f * 100) + "%";
+      pr.querySelector(".head").style.left = (f * 100) + "%";
+      pr.querySelector(".pos").textContent = `${Math.floor(pos / 60)}:${pad(Math.floor(pos % 60))}`;
+    });
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
+</script>
+</body>
+</html>

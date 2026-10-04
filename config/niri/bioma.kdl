@@ -11,10 +11,11 @@
 // A membrane's surface is as tall as the screen, to hold the panels that hang
 // from it, so xray there covered every window with the wallpaper (tried as a
 // setting, 2026-09-29). The floating tissues had no rule and blurred the
-// wallpaper while the membranes blurred the windows; one rule now.
+// wallpaper while the membranes blurred the windows; one rule now. The
+// organisms are a full-screen surface too, on the Bottom layer.
 
 layer-rule {
-    match namespace="^bioma-(membrane-.+|float|osd)$"
+    match namespace="^bioma-(membrane-.+|float|osd|organisms)$"
     background-effect {
         xray false
     }

@@ -30,6 +30,7 @@ ShellRoot {
     // configuration actually says something different.
     property var membraneConfig: []
     property var floatingConfig: []
+    property var organismConfig: []
 
     function refreshLayout() {
         if (!Config.ready)
@@ -42,6 +43,10 @@ ShellRoot {
         const floating = Config.get("floating", []);
         if (JSON.stringify(floating) !== JSON.stringify(root.floatingConfig))
             root.floatingConfig = floating;
+
+        const organisms = Config.get("organisms", []);
+        if (JSON.stringify(organisms) !== JSON.stringify(root.organismConfig))
+            root.organismConfig = organisms;
     }
 
     Connections {
@@ -80,6 +85,13 @@ ShellRoot {
             WallpaperSurface {
                 screen: perScreen.modelData
                 backdrop: true
+            }
+
+            // Above the wallpaper and under every window: the organisms placed
+            // on this screen. docs/design/ORGANISMS.md.
+            OrganismSurface {
+                screenItem: perScreen.modelData
+                entries: root.organismConfig.filter(entry => root.membraneMatches(entry, perScreen.modelData))
             }
 
             // Over everything, and only while a cell is open: the surface that

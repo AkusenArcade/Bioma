@@ -9,6 +9,7 @@ audio band, the workspaces icon shifting on a workspace change.
 | `cells.html` | the design page: all thirteen cells, every state, with the reasoning |
 | `style-guide.html` | the style guide, with live component examples |
 | `icons.html` | the icon set with SVG source |
+| `organisms.html` | the organisms on a desktop, with arranging you can drag; `#window` and `#arranging` open it in those modes |
 
 Two notes:
 

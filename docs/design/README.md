@@ -26,6 +26,7 @@ This package is English throughout.
 |---|---|
 | `STYLE_GUIDE.md` | the rules that apply to every component: principles, type, colour, form, motion, controls |
 | `CELLS.md` | the thirteen cells, one section each: states, behaviour, measurements, decisions |
+| `ORGANISMS.md` | read-only surfaces on the desktop, under the windows — approved, being built |
 | `IMPLEMENTATION.md` | the traps — things that look like design detail and are technical constraints |
 | `tokens.css` | the design tokens as custom properties, ready to translate into QML singletons |
 | `icons/` | 33 SVG glyphs, 24×24, `currentColor`, plus their own README |

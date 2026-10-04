@@ -170,47 +170,14 @@ PanelWindow {
     readonly property var edgeMargins: config.margins || ({})
 
     // A margin the block writes is measured from the screen's edge and is
-    // obeyed. Otherwise a tissue anchored to the top or the bottom never takes
-    // a membrane's place: it sits past the strip, on the line the windows
-    // begin on — where every expansion hangs from. At the top of a screen with
-    // a top band the top anchor was the band's own place (Akusen, 2026-09-28),
-    // and at the bottom of a screen with no band a bottom-left notification
-    // sat exactly where a cell on the left of a bottom membrane would
-    // (2026-10-02). So the strip is held whether or not a membrane is there,
-    // and whether or not it is hidden at the moment: one that hides comes
-    // back to the same place. With no membrane on that edge it is the strip
-    // one would take at the density the membranes run at — this screen's,
-    // else any — so it follows the three steps with them.
-    //
-    // A side edge has no such strip unless a membrane is on it.
-    //
-    // The register holds the floating surfaces too, this one included; only
-    // what has a strip is a membrane.
-    readonly property var stripMetrics: {
-        let any = null;
-        for (const membrane of Focus.membranes) {
-            if (!membrane || membrane.strip === undefined)
-                continue;
-            if (membrane.screenItem === root.screenItem)
-                return membrane.metrics;
-            any = any || membrane.metrics;
-        }
-        return any || root.metrics;
-    }
-
+    // obeyed. Otherwise a tissue anchored to an edge sits on the line the
+    // windows begin on — where every expansion hangs from — which is
+    // `Strips.windowLine`: past a membrane's strip whether or not it is there.
     function margin(side) {
         const value = root.edgeMargins[side];
         if (value !== undefined)
             return value * root.metrics.factor;
-        for (const membrane of Focus.membranes)
-            if (membrane && membrane.screenItem === root.screenItem && membrane.edge === side)
-                return membrane.strip + membrane.windowInset;
-        if (side === "top" || side === "bottom") {
-            const step = root.stripMetrics;
-            return step.marginEdge + step.cellHeight + step.tissuePadding * 2
-                + Niri.windowGap + Niri.strutFor(side);
-        }
-        return root.metrics.marginEdge;
+        return Strips.windowLine(root.screenItem, side, root.metrics);
     }
 
     // ---- At the pointer --------------------------------------------------------

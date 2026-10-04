@@ -47,8 +47,8 @@ declares a blur region through `ext-background-effect`, which is exactly how
 Bioma asks for it — the shape of each cell and nothing else, never the whole
 membrane.
 
-What the file does say is `xray false`, for the membranes, the floating tissues
-and the OSD alike, so every Bioma surface blurs what is really underneath it.
+What the file does say is `xray false`, for the membranes, the floating tissues,
+the organisms and the OSD alike, so every Bioma surface blurs what is really underneath it.
 niri defaults xray to true whenever a background effect is visible, and on
 niri 26.04 xray paints the backdrop over the whole layer surface rather than
 the declared blur region. A membrane's surface is as tall as the screen, to
@@ -228,6 +228,27 @@ away is a tissue that breaks when one arrives. The arithmetic is `Metrics.roomFo
 and `Registry.roomFor` answers it for a list of cell blocks — which is how the
 settings cell can refuse to add a cell to a tissue that cannot hold it, before
 the cell exists.
+
+### organisms
+
+Read-only surfaces on the desktop, under the windows: the desktop's own
+furniture, seen on an empty workspace. `docs/design/ORGANISMS.md` is the
+specification. The base layer ships none.
+
+```json
+"organisms": [
+  { "type": "clock", "monitor": "DP-1", "x": 0.18, "y": 0.22 }
+]
+```
+
+| Key | Meaning |
+|---|---|
+| `type` | Which organism: `clock` |
+| `monitor` | As for a membrane: an output name, `primary` (the default) or `all` |
+| `x`, `y` | The organism's **centre**, as fractions (0–1) of the free area: the screen minus what the membranes hold, measured to the line the windows begin on. An organism is always held wholly inside it |
+| `size` | `compact` \| `normal` \| `comfortable`. Without it, the membranes' `scale` |
+
+The clock organism shows 12 or 24 hours as the clock cell's `format` says.
 
 ### cells
 

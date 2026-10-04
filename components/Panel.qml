@@ -36,6 +36,10 @@ Item {
     property real padding: 10 * metrics.factor
     property real radius: metrics.radiusPanel
 
+    // The shadow says the panel stands above something. An organism stands on
+    // the wallpaper, and casts none (docs/design/ORGANISMS.md).
+    property bool shadowed: true
+
     // A panel is as wide as its job: the content declares the size, the panel
     // adds its padding. Symmetry is not a reason to narrow one.
     default property alias content: contentSlot.data
@@ -75,6 +79,7 @@ Item {
     // translucent fill it darkened what the blur showed through.
     OuterShadow {
         anchors.fill: parent
+        visible: root.shadowed
         radius: root.radius
         blur: 28
         spread: 0
