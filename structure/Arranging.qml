@@ -24,10 +24,14 @@ Singleton {
     // copied when the mode begins.
     property var working: []
 
-    function start() {
+    // From the configuration's list, or from one just written that the
+    // configuration has not caught up with yet — an organism just added.
+    function start(from) {
         if (root.active)
             return;
-        root.working = JSON.parse(JSON.stringify(Config.get("organisms", [])));
+        // Named only when written: renaming the list now would make every
+        // surface rebuild its organisms the moment the mode begins.
+        root.working = JSON.parse(JSON.stringify(from || Config.get("organisms", [])));
         root.active = true;
     }
 
@@ -35,8 +39,22 @@ Singleton {
         if (!root.active)
             return;
         if (JSON.stringify(root.working) !== JSON.stringify(Config.get("organisms", [])))
-            Config.set("organisms", root.working);
+            Config.set("organisms", root.named(root.working));
         root.active = false;
+    }
+
+    // Every block written from here carries an `id`, so a surface can tell
+    // one organism from another when the list changes around it: taken away
+    // from the middle of the list, an organism must not take the ones after
+    // it with it. A block written by hand without one gets one the first
+    // time the list is written from here.
+    function named(list) {
+        return list.map(entry => entry.id ? entry
+                                          : Object.assign({ "id": root.newId() }, entry));
+    }
+
+    function newId() {
+        return Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);
     }
 
     function toggle() {
@@ -59,6 +77,47 @@ Singleton {
         if (monitor && entry.monitor !== "all" && entry.monitor !== "*")
             entry.monitor = monitor;
         root.working = next;
+    }
+
+    // ---- Adding and taking away -----------------------------------------------------
+
+    // A new organism appears in the middle of its screen's free area, and the
+    // mode begins so it can be put where it belongs.
+    function add(type, monitor) {
+        const next = root.named(JSON.parse(JSON.stringify(root.active ? root.working
+                                                                       : Config.get("organisms", []))));
+        next.push({ "id": root.newId(), "type": type, "monitor": monitor, "x": 0.5, "y": 0.5 });
+        if (root.active) {
+            root.working = next;
+            return;
+        }
+        Config.set("organisms", next);
+        root.start(next);
+    }
+
+    // Taken away, it leaves the way everything in the shell leaves — content,
+    // then shape, into its own centre — and only then is the list written
+    // without it. Until then it is held here, by its place in the list.
+    property var retiring: []
+
+    function remove(index) {
+        if (root.active) {
+            root.working = root.working.filter((_, i) => i !== index);
+            return;
+        }
+        if (root.retiring.indexOf(index) < 0)
+            root.retiring = root.retiring.concat([index]);
+        gone.restart();
+    }
+
+    Timer {
+        id: gone
+        interval: Timing.contentFade + Timing.close
+        onTriggered: {
+            const kept = Config.get("organisms", []).filter((_, i) => root.retiring.indexOf(i) < 0);
+            root.retiring = [];
+            Config.set("organisms", root.named(kept));
+        }
     }
 
     // ---- The surfaces ---------------------------------------------------------------

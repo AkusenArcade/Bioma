@@ -47,6 +47,8 @@ Item {
           "hint": "membranes, tissues, order", "width": 644 },
         { "key": "cells", "label": "CELLS", "glyph": "cells",
           "hint": "options and visibility", "width": 560 },
+        { "key": "organisms", "label": "ORGANISMS", "glyph": "organisms",
+          "hint": "on the desktop, by hand", "width": 560 },
         { "key": "monitors", "label": "MONITORS", "glyph": "monitors",
           "hint": "position, scale, snapping", "width": 720 },
         { "key": "keybinds", "label": "KEYBINDS", "glyph": "keyboard",
@@ -82,7 +84,7 @@ Item {
 
     // ---- The cascade --------------------------------------------------------
 
-    // Every shape that arrives in order: the five capsules, the thread, the
+    // Every shape that arrives in order: the capsules, the thread, the
     // panel. The stagger's span is measured from this — a cascade told it has
     // three shapes when it has seven never finishes the last of them.
     readonly property int shapeCount: root.categories.length + 2
@@ -312,6 +314,8 @@ Item {
                         return Qt.resolvedUrl("SettingsCells.qml");
                     if (root.chosen === "structure")
                         return Qt.resolvedUrl("SettingsStructure.qml");
+                    if (root.chosen === "organisms")
+                        return Qt.resolvedUrl("SettingsOrganisms.qml");
                     if (root.chosen === "monitors")
                         return Qt.resolvedUrl("SettingsMonitors.qml");
                     if (root.chosen === "keybinds")

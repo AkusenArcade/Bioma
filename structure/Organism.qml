@@ -53,7 +53,8 @@ Item {
     readonly property string source: Organisms.fileFor(root.type)
 
     readonly property Item body: loader.item
-    readonly property bool present: root.here && root.body !== null
+    readonly property bool retiring: Arranging.retiring.indexOf(root.place) >= 0
+    readonly property bool present: root.here && !root.retiring && root.body !== null
                                     && (root.body.present === undefined || root.body.present === true)
 
     // ---- Size and place ---------------------------------------------------------

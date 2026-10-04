@@ -145,17 +145,50 @@ PanelWindow {
     // organism was carried away — destroyed inside the release that let it
     // go — and a drag on that screen was then cancelled the moment it was
     // pressed, now and then (2026-10-04).
+    //
+    // Kept by each block's `id`, not by its place: taken away from the middle
+    // of the list, an organism must not hand its delegate to the one after
+    // it, which would vanish and grow back somewhere else. A block written by
+    // hand without an `id` is known by its place until the list is next
+    // written from the shell.
+    readonly property var keys: root.all.map((entry, i) => entry.id ? String(entry.id) : `@${i}`)
+
+    ListModel { id: rows }
+
+    function sync() {
+        const keys = root.keys;
+        for (let i = rows.count - 1; i >= 0; i--)
+            if (keys.indexOf(rows.get(i).key) < 0)
+                rows.remove(i);
+        for (let i = 0; i < keys.length; i++) {
+            if (i < rows.count && rows.get(i).key === keys[i])
+                continue;
+            let found = -1;
+            for (let j = i + 1; j < rows.count; j++)
+                if (rows.get(j).key === keys[i]) {
+                    found = j;
+                    break;
+                }
+            if (found >= 0)
+                rows.move(found, i, 1);
+            else
+                rows.insert(i, { "key": keys[i] });
+        }
+    }
+
+    onKeysChanged: root.sync()
+
     Repeater {
         id: organisms
 
-        model: root.all.length
+        model: rows
 
         delegate: Organism {
-            required property int index
+            required property string key
 
             surface: root
-            place: index
-            entry: root.all[index] ?? ({})
+            place: root.keys.indexOf(key)
+            entry: root.all[place] ?? ({})
             here: Strips.belongs(entry, root.screenItem)
             free: root.free
             baseMetrics: root.metrics
@@ -255,6 +288,7 @@ PanelWindow {
     onBlursChanged: root.refreshRegions()
 
     Component.onCompleted: {
+        root.sync();
         Arranging.register(root);
         root.refreshRegions();
     }

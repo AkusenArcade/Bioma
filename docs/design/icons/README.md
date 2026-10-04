@@ -1,6 +1,6 @@
 # Bioma icons
 
-62 glyphs, 24 × 24, `currentColor`, no width/height assumptions beyond the viewBox.
+63 glyphs, 24 × 24, `currentColor`, no width/height assumptions beyond the viewBox.
 
 Icons are the one graphic alphabet in Bioma that is not an indicator: they say **what**
 something is, never **how hard** it is working.
@@ -38,7 +38,7 @@ something is, never **how hard** it is working.
 | `workspaces.svg` | workspaces cell; shifts one step on workspace change |
 | `capture.svg` | utility cell at rest |
 | `screen.svg` `window.svg` `region.svg` | capture targets |
-| `appearance.svg` `structure.svg` `cells.svg` `monitors.svg` | settings categories, beside `keyboard.svg` and `lock.svg` |
+| `appearance.svg` `structure.svg` `cells.svg` `monitors.svg` `organisms.svg` | settings categories, beside `keyboard.svg` and `lock.svg`. `organisms` is a desktop with its membrane and one panel standing on it |
 | `microphone.svg` | dictation: the Text tab's middle source, and the utility cell while it listens |
 | `lock.svg` | session command; also the secured-network marker at 12 px |
 | `suspend.svg` `restart.svg` `power.svg` `logout.svg` | session commands |

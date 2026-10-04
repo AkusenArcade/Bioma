@@ -247,6 +247,7 @@ specification. The base layer ships none.
 | `monitor` | As for a membrane: an output name, `primary` (the default) or `all` |
 | `x`, `y` | The organism's **centre**, as fractions (0–1) of the free area: the screen minus what the membranes hold, measured to the line the windows begin on. An organism is always held wholly inside it |
 | `size` | `compact` \| `normal` \| `comfortable`. Without it, the membranes' `scale` |
+| `id` | Written by the shell, so an organism keeps its place on screen while the list changes around it. A block written by hand needs none |
 
 The clock organism shows 12 or 24 hours as the clock cell's `format` says. The
 media organism takes `"band": false` to show the cover without the

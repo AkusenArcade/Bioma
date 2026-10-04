@@ -1,6 +1,6 @@
 # Bioma — organisms
 
-*Approved 2026-10-04, media redrawn at Akusen's request. Built: the structure, arranging, clock, media, vitals, calendar, weather. Still to come: the Settings section.*
+*Approved 2026-10-04, media redrawn at Akusen's request. Built: the structure, arranging, the five organisms, the Settings category.*
 
 The visual specification of the organisms: read-only surfaces that live on the desktop, under
 the windows, in the part of the screen the top and bottom membranes leave free. Read it with
@@ -110,13 +110,22 @@ Organisms take no input at rest, so they are placed in a mode of their own.
 
 ## Settings
 
-Settings → Cells gets a section **Organisms**, after the membranes:
+Settings has a category of its own, **ORGANISMS** (glyph `organisms`: a desktop with its
+membrane and one panel standing on it), laid out in wells like the Session page:
 
-- one row per monitor, its organisms as chips (`cellchip`), a dashed **+** chip to add one —
-  the added organism appears at the centre of the free area and the mode enters *Arrange*;
-- a chip's × removes it (the organism shrinks into its centre on the desktop);
-- *Arrange* — the button that enters the mode;
-- per organism, the options below.
+- one well per monitor, its organisms as chips, a dashed **+** chip to add one: the kinds appear
+  as a row of chips, and the one chosen appears at the centre of that screen's free area while
+  the settings close and the mode enters *Arrange*;
+- a chip's × takes it away: it shrinks into its centre on the desktop, and the list is written
+  without it once it has gone;
+- a press on a chip's name shows its options in the well: SIZE (the membranes' step, or its own),
+  VISUALISER for media, LAYOUT for vitals;
+- **ARRANGE** — the button that closes the settings and enters the mode;
+- **WEATHER** — the city, a field that keeps what was typed when the place is not found and
+  says why under it, in the alert colour.
+
+Blocks written from the shell carry an `id`, so a surface keeps each organism's delegate across
+a change to the list: one taken away from the middle does not take the ones after it with it.
 
 ---
 
