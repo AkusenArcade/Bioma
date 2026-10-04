@@ -120,7 +120,7 @@ Cell {
         return { "hit": true, "at": at, "score": score };
     }
 
-    readonly property var results: {
+    readonly property var applications: {
         const wanted = root.query.trim().toLowerCase();
         const out = [];
 
@@ -131,10 +131,15 @@ Cell {
             const found = root.match(name, wanted);
             if (!found.hit)
                 continue;
+            const categories = entry.categories || [];
             out.push({
+                "kind": "app",
+                "group": "",
                 "entry": entry,
                 "name": name,
                 "at": found.at,
+                "icon": entry.icon || "",
+                "detail": categories.length > 0 ? String(categories[0]).toUpperCase() : "",
                 "score": found.score,
                 "used": root.usesOf(entry)
             });
@@ -149,15 +154,53 @@ Cell {
         return wanted.length === 0 ? out.slice(0, root.shownRows * 3) : out.slice(0, 40);
     }
 
-    onQueryChanged: root.chosen = 0
+    // Files, under the applications and set apart from them. They come from a
+    // walk of the home that lands a moment after the applications do, so the
+    // first result — the one Enter takes — is an application whenever one
+    // answers: two letters and Enter still launch, and the files arrive below
+    // without moving what is already chosen.
+    readonly property var files: Files.results.map(file => ({
+        "kind": "file",
+        "group": "FILES",
+        "file": file,
+        "name": file.name,
+        "at": file.at,
+        "icon": file.icon,
+        "detail": file.folder
+    }))
+
+    // With files to show, the applications are the few that answer best: a
+    // subsequence over three letters matches half the menu, and the tail of it
+    // would push every file out of sight.
+    readonly property var results: root.files.length > 0
+        ? root.applications.slice(0, root.shownRows).concat(root.files)
+        : root.applications
+
+    readonly property bool searching: Files.searching
+
+    onQueryChanged: {
+        root.chosen = 0;
+        Files.query = root.query;
+    }
     onResultsChanged: if (root.chosen >= root.results.length) root.chosen = 0
 
     // ---- Doing it ------------------------------------------------------------
 
-    function launch(index) {
+    // A file is opened by whatever opens it; with Ctrl it is shown where it
+    // lives instead. Ctrl means nothing to an application, which launches.
+    function launch(index, reveal) {
         const result = root.results[index];
         if (!result)
             return;
+
+        if (result.kind === "file") {
+            if (reveal)
+                Files.reveal(result.file.path, Proxy.environment);
+            else
+                Files.open(result.file.path, Proxy.environment);
+            root.dismiss();
+            return;
+        }
 
         const counted = JSON.parse(JSON.stringify(root.uses));
         counted[result.entry.id] = (counted[result.entry.id] ?? 0) + 1;

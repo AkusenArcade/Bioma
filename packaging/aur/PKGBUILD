@@ -31,6 +31,9 @@ depends=(
     # Theme: palettes from the wallpaper, the wallpaper folder picker.
     'matugen'
     'zenity'
+    # Launcher: files found by name in the home, and opened.
+    'fd'
+    'xdg-utils'
     # Capture: screenshots, text recognition (capture.ocr_language is eng),
     # screen recording.
     'grim'

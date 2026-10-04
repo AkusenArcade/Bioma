@@ -769,8 +769,16 @@ cell inside a cell.
 | field | 44 px | Spectral 16, lens 17, 1 px caret |
 | result row | 52 px | icon 36, name Spectral 15, category Orbitron 11 |
 | visible rows | 6 | then scrolls, with the selection always inside |
+| files label | 26 px | FILES, Orbitron 11, faint; the folder under each name, Orbitron 11, elided in the middle |
 | selection | radius 14 | primary fill at 12%, icon outline in primary |
 | opening | 250 ms | grows from the centre in width and height, no thread |
+
+**Files** — from the third letter, files and folders in the home whose names hold the words
+typed, in order, arrive under the applications, set apart by the FILES label. They land a moment
+after the applications and never move the first result: two letters and Enter still launch. Six
+applications at most while files are shown. Enter opens a file with its default application;
+Ctrl+Enter, or Ctrl+click, shows it selected in the file manager. Hidden and git-ignored paths are
+not searched — that is where the noise lives. "Nothing answers" waits until the walk is back.
 
 **Decided** — with an empty field, the most used. The PRD puts the launcher last because it
 carries identity, and a launcher's identity is entirely in what it shows *before* you type. An

@@ -36,6 +36,8 @@ Item {
     readonly property var results: root.cell ? root.cell.results : []
     readonly property int chosen: root.cell ? root.cell.chosen : 0
 
+    readonly property real sectionHeight: 26 * root.metrics.factor
+
     // It measures itself from what it was given rather than from the cell:
     // the cell is a panel in one form and a twenty-pixel button in the other,
     // and its content width is the button's.
@@ -92,8 +94,9 @@ Item {
             // already chosen: two letters and Enter has to be enough.
             Keys.onDownPressed: cell.move(1)
             Keys.onUpPressed: cell.move(-1)
-            Keys.onReturnPressed: cell.launch(cell.chosen)
-            Keys.onEnterPressed: cell.launch(cell.chosen)
+            // Ctrl with it shows a file where it lives rather than opening it.
+            Keys.onReturnPressed: event => cell.launch(cell.chosen, event.modifiers & Qt.ControlModifier)
+            Keys.onEnterPressed: event => cell.launch(cell.chosen, event.modifiers & Qt.ControlModifier)
             Keys.onEscapePressed: cell.dismiss()
 
             Text {
@@ -116,7 +119,10 @@ Item {
         height: root.resultHeight
         verticalAlignment: Text.AlignVCenter
         horizontalAlignment: Text.AlignHCenter
+        // Not while the home is still being walked: "nothing" said before
+        // the files are back would be said too early, and then taken back.
         visible: root.query.length > 0 && root.results.length === 0
+                 && !(root.cell && root.cell.searching)
         text: "Nothing answers to that"
         color: Theme.textMuted
         font.family: Typography.expressive
@@ -140,6 +146,32 @@ Item {
         model: root.results
         boundsBehavior: Flickable.StopAtBounds
         clip: true
+
+        // The files are set apart from the applications by their word for
+        // what they are, as the notification history sets one application's
+        // run apart from the next. The applications' own group has no name
+        // and takes no room.
+        section.property: "group"
+        section.criteria: ViewSection.FullString
+        section.delegate: Text {
+            required property string section
+
+            width: ListView.view.width
+            height: section.length > 0 ? root.sectionHeight : 0
+            visible: section.length > 0
+            leftPadding: 8 * root.metrics.factor
+            bottomPadding: 4 * root.metrics.factor
+            verticalAlignment: Text.AlignBottom
+            text: section
+            color: Theme.textFaint
+            font: Qt.font({
+                "family": Typography.technical,
+                "pixelSize": root.metrics.fontMeta,
+                "weight": Typography.weightLabel,
+                "letterSpacing": Typography.tracking(root.metrics.fontMeta,
+                                                     Typography.labelTracking)
+            })
+        }
 
         delegate: Item {
             id: result
@@ -173,8 +205,8 @@ Item {
                 width: 36 * root.metrics.factor
                 height: width
 
-                readonly property string source: result.modelData.entry.icon
-                    ? Quickshell.iconPath(result.modelData.entry.icon, true) : ""
+                readonly property string source: result.modelData.icon
+                    ? Quickshell.iconPath(result.modelData.icon, true) : ""
 
                 Ring {
                     anchors.fill: parent
@@ -207,8 +239,9 @@ Item {
             }
 
             // The name, with the letters the search matched lit. A name is
-            // human language; the category under it is the system's own word
-            // for what the thing is, and takes the other voice.
+            // human language; the line under it is the system's own word —
+            // the category of an application, the folder a file lives in —
+            // and takes the other voice.
             Text {
                 id: name
 
@@ -237,11 +270,10 @@ Item {
                 anchors.topMargin: 2 * root.metrics.factor
                 visible: category.text.length > 0 && name.anchors.bottomMargin === 0
 
-                text: {
-                    const list = result.modelData.entry.categories || [];
-                    return list.length > 0 ? String(list[0]).toUpperCase() : "";
-                }
-                elide: Text.ElideRight
+                // A folder keeps its end, where the file actually is; the
+                // home it starts from is the part everybody knows.
+                text: result.modelData.detail
+                elide: result.modelData.kind === "file" ? Text.ElideMiddle : Text.ElideRight
                 maximumLineCount: 1
                 color: Theme.textFaint
                 font: Qt.font({
@@ -257,7 +289,13 @@ Item {
             }
 
             TapHandler {
-                onTapped: cell.launch(result.index)
+                acceptedModifiers: Qt.NoModifier
+                onTapped: cell.launch(result.index, false)
+            }
+
+            TapHandler {
+                acceptedModifiers: Qt.ControlModifier
+                onTapped: cell.launch(result.index, true)
             }
         }
     }

@@ -137,6 +137,7 @@ the whole shell. Only the second table is left to you.
 | ImageMagick | `imagemagick` | wallpaper thumbnails |
 | Spectral, Orbitron | AUR `ttf-spectral`, AUR `ttf-orbitron` | the two voices, expressive and technical. Both are SIL OFL |
 | matugen, zenity | `matugen`, `zenity` | palettes computed from the wallpaper; the wallpaper folder picker |
+| fd, xdg-utils | `fd`, `xdg-utils` | files found by name in the launcher, and opened with their default application |
 | grim, tesseract, wl-screenrec | `grim`, `tesseract`, `tesseract-data-eng`, AUR `wl-screenrec` | screenshots, text recognition, screen recording (VAAPI) |
 | PipeWire | `pipewire`, `pipewire-audio` | audio, the alarm's sound, the microphone |
 | NetworkManager | `networkmanager` | Wi-Fi, wired, VPN profiles, proxy triggers |

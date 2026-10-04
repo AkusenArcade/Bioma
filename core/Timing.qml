@@ -77,6 +77,12 @@ Singleton {
     // not answer faster because the shell was asked to move slower.
     readonly property int locate: Config.get("timing.locate", 120)
 
+    // How long the launcher waits after the last letter before it walks the
+    // home for files: one walk per word rather than one per keystroke. Not an
+    // animation, so not scaled — the disk does not answer slower because the
+    // shell was asked to move slower.
+    readonly property int search: Config.get("timing.search", 150)
+
     // How long an event is held as a condition — long enough for the
     // visibility's confirm step to see it, and then the dwell carries the
     // cell. Not an animation, so not scaled.

@@ -888,7 +888,10 @@ screenshots, OCR and recording. The Utility cell reads both.
 ### 9.13 Launcher
 
 - **Contracted.** None — invoked only.
-- **Expanded.** Application search and launch.
+- **Expanded.** Application search and launch, and files in the home found by
+  name (added 2026-10-04): below the applications, from the third letter, Enter
+  opens, Ctrl+Enter shows the file in the file manager. No index — `fd` walks the
+  home on each settled query, skipping hidden and git-ignored paths.
 - **Notes.** Deliberately last. It is the largest single item in the catalogue and
   the one the author most wants to own, because it carries identity. Prisma's
   launcher provides the easy 20% (desktop file enumeration, launching); **fuzzy
