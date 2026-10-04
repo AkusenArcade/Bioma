@@ -120,7 +120,7 @@
 
   /* clock */
   .o-clock { width: 340px; height: 168px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-  .o-clock .time { font-family: var(--human); font-size: 72px; font-weight: 500; line-height: 84px; display: flex; align-items: baseline; gap: 10px; }
+  .o-clock .time { font-family: var(--human); font-size: 72px; font-weight: 500; line-height: 84px; display: flex; align-items: center; gap: 10px; }
   .o-clock .ampm { font-family: var(--machine); font-size: 15px; font-weight: 500; letter-spacing: 0.06em; line-height: 1; color: var(--text-muted); }
   .o-clock .date { font-family: var(--human); font-size: 19px; color: var(--text-muted); margin-top: 4px; line-height: 24px; white-space: nowrap; }
 
@@ -341,7 +341,7 @@
 
   <section>
     <div class="celltitle"><span class="num">01</span><span class="nm">Clock</span><span class="tag">always present</span></div>
-    <p class="note">The time in Spectral, the date in words under it. No dial and no seconds: a second hand moving at a fixed rate on the desktop is the one clock motion that carries nothing the minute does not.</p>
+    <p class="note">The time in Spectral, the clock cell's face beside it — the hour filling, the disc round the rim where the second hand is — and the date in words under them.</p>
     <div class="stage">
       <div class="state"><div class="org o-clock" data-org="clock"></div><div class="caption">24 h</div></div>
       <div class="state"><div class="org o-clock" data-org="clock12"></div><div class="caption">12 h — PM in Orbitron beside the figures</div></div>
@@ -439,7 +439,17 @@
     let suffix = "";
     if (twelve) { suffix = h >= 12 ? "PM" : "AM"; h = h % 12 || 12; }
     const time = `${twelve ? h : pad(h)}:${pad(now.getMinutes())}`;
-    return `<div class="time"><span class="gradtext tab">${time}</span>${twelve ? `<span class="ampm">${suffix}</span>` : ""}</div>
+    // The clock cell's face: the hour filling, and round the rim the disc
+    // where the second hand is, the minute's track lit behind it.
+    const s = now.getSeconds(), m = now.getMinutes();
+    const a = (s / 60) * 2 * Math.PI, f = (m * 60 + s) / 3600, b = f * 2 * Math.PI;
+    const px = (r, t) => (32 + r * Math.sin(t)).toFixed(2), py = (r, t) => (32 - r * Math.cos(t)).toFixed(2);
+    const pie = f > 0 ? `<path d="M32 32 L32 ${32 - 12} A12 12 0 ${b > Math.PI ? 1 : 0} 1 ${px(12, b)} ${py(12, b)} Z" fill="url(#gp)"/>` : "";
+    const face = `<svg width="62" height="62" viewBox="0 0 64 64" fill="none" style="margin-left:6px">
+        <circle cx="32" cy="32" r="24" stroke="rgba(234,241,230,0.16)" stroke-width="1.5"/>
+        <path d="M32 8 A24 24 0 ${a > Math.PI ? 1 : 0} 1 ${px(24, a)} ${py(24, a)}" stroke="url(#gp)" stroke-width="1.5" stroke-linecap="round"/>
+        ${pie}<circle cx="${px(24, a)}" cy="${py(24, a)}" r="4" fill="url(#gp)"/></svg>`;
+    return `<div class="time"><span class="gradtext tab">${time}</span>${twelve ? `<span class="ampm">${suffix}</span>` : ""}${face}</div>
             <div class="date">${weekdays[now.getDay()]} ${now.getDate()} ${months[now.getMonth()]}</div>`;
   }
 

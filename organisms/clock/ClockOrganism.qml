@@ -3,12 +3,16 @@ import Quickshell
 import qs.core
 import qs.components
 import qs.organisms
+import qs.services
 
-// The time, large, and the date in words under it.
+// The time, large, the clock cell's face beside it, and the date in words
+// under them.
 //
-// Mostly text, and the text is the content: no dial and no seconds. A second
-// hand moving at a fixed rate on the desktop is the one clock motion that
-// carries nothing the minute does not.
+// The face is the cell's own: the hour filling and starting again empty — or,
+// while a timer runs, what is left of it — and round the rim the disc that is
+// where the second hand is. Without it the organism read as unfinished
+// (Akusen, 2026-10-04), and it is the same live value the cell shows, not a
+// motion chosen to look alive.
 //
 // 12 or 24 hours as the clock cell was told, so the desktop does not answer
 // the same question two ways.
@@ -26,7 +30,12 @@ Item {
 
     SystemClock {
         id: clock
-        precision: SystemClock.Minutes
+        precision: SystemClock.Seconds
+    }
+
+    // The second hand, continuous: see components/MinuteHand.qml.
+    MinuteHand {
+        id: hand
     }
 
     readonly property string figures: {
@@ -62,7 +71,7 @@ Item {
 
         Row {
             anchors.horizontalCenter: parent.horizontalCenter
-            spacing: 10 * root.factor
+            spacing: 16 * root.factor
 
             LitText {
                 id: time
@@ -85,6 +94,19 @@ Item {
                     "weight": Typography.weightLabel,
                     "letterSpacing": Typography.tracking(root.metrics.fontLabel, Typography.labelTracking)
                 })
+            }
+
+            // The size of the vitals organism's rings, so the clock's face
+            // and the graphics card's satellite are one size on the desktop
+            // too.
+            Dial {
+                anchors.verticalCenter: time.verticalCenter
+                width: 62 * root.factor
+                height: width
+                fraction: Time.running ? Time.fractionLeft
+                                       : (clock.minutes * 60 + clock.seconds) / 3600
+                orbit: hand.value
+                orbitEased: false
             }
         }
 

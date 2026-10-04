@@ -124,14 +124,17 @@ Settings → Cells gets a section **Organisms**, after the membranes:
 
 *Always present · the time, large.*
 
-The time in Spectral, the date under it in words. It is the one organism that is mostly text,
-and the text is the content: no dial, no seconds.
+The time in Spectral, the clock cell's face beside it, the date under them in words. The face
+is the cell's own — the hour filling (or, while a timer runs, what is left of it emptying) and
+the disc round the rim where the second hand is, moving continuously. Without it the organism
+read as unfinished (Akusen, 2026-10-04); it is the same live value the cell shows.
 
 | Measure | Value | Note |
 |---|---|---|
 | panel | 340 × 168 | padding 20 |
 | time | Spectral 72 / 500 | tabular figures, primary gradient fill |
 | date | Spectral 19 / 400 | `Sunday 4 October`, text muted |
+| face | 62 | the cell's `Dial`, the size of the vitals organism's rings, 16 right of the figures |
 | gap time → date | 4 | |
 | format | the clock cell's | 24 h / 12 h, read from the clock cell's option |
 
