@@ -87,6 +87,16 @@ sync_system_appearance() {
                 gsettings set org.gnome.desktop.interface gtk-theme "$target_theme" \
                     || echo "Error running gsettings set gtk-theme" >&2
             fi
+            # GTK 4 reads the user's gtk.css when an application starts, and
+            # again only when the colour scheme it is told changes: the
+            # stylesheet is bound to it (gtk/gtksettings.c). A new palette in
+            # the same mode changes nothing it watches, so open windows kept
+            # the old colours. Stepping the scheme away and back makes them
+            # read the new file. Only on a full apply: the colours changed.
+            if [ "$update_gtk_theme" = "true" ]; then
+                gsettings set org.gnome.desktop.interface color-scheme default \
+                    || echo "Error running gsettings set color-scheme" >&2
+            fi
             gsettings set org.gnome.desktop.interface color-scheme "prefer-$mode" \
                 || echo "Error running gsettings set color-scheme" >&2
             return

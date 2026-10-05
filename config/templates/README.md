@@ -22,6 +22,9 @@ hooks never touch each other's. Bioma's changes on top:
   config with their defaults.
 - `scripts/themes` runs every hook after every file is written, and one shared
   command once: GTK's hook rewrites both gtk.css files.
+- `gtk/apply.sh` steps `color-scheme` to `default` and back after writing the
+  colours. GTK 4 rereads the user's gtk.css only when that scheme changes, so
+  a new palette in the same mode never reached open windows.
 
 `scripts/themes` renders them. Colours are named as matugen names them
 (`{{colors.primary.default.hex}}`, `rgb_csv`, `hex_stripped`, `| darken x`);
