@@ -30,6 +30,10 @@ Item {
     // still the track; stopped, or a source with nothing to say, it leaves.
     readonly property bool present: Media.available && Media.hasMetadata && (Media.playing || Media.paused)
 
+    // Absent, it is drawn only while being placed, and then blank: glass,
+    // the glyph in the cover's place, the band lying still, and no track.
+    readonly property bool hasArt: root.present && Media.hasArt
+
     readonly property bool showsBand: root.entry.band !== false
 
     implicitWidth: 420 * root.factor
@@ -68,7 +72,7 @@ Item {
     property bool showingSecond: false
     property string shown: ""
 
-    readonly property string art: Media.hasArt ? Media.artUrl : ""
+    readonly property string art: root.hasArt ? Media.artUrl : ""
 
     onArtChanged: root.present_(root.art)
 
@@ -137,7 +141,7 @@ Item {
 
     OpacityMask {
         anchors.fill: parent
-        visible: Media.hasArt
+        visible: root.hasArt
         source: art
         maskSource: shape
     }
@@ -146,7 +150,7 @@ Item {
     // picture's place in the upper half. A record without a picture, not the
     // shell introducing itself.
     Icon {
-        visible: !Media.hasArt
+        visible: !root.hasArt
         name: "sinestesia"
         colour: Theme.textMuted
         width: 96 * root.factor
@@ -184,10 +188,10 @@ Item {
 
         Text {
             width: parent.width
-            text: Media.title
+            text: root.present ? Media.title : "Nothing playing"
             elide: Text.ElideRight
             maximumLineCount: 1
-            color: Theme.text
+            color: root.present ? Theme.text : Theme.textFaint
             font.family: Typography.expressive
             font.pixelSize: Math.round(22 * root.factor)
             font.weight: Font.Bold
@@ -195,7 +199,7 @@ Item {
 
         Text {
             width: parent.width
-            visible: text.length > 0
+            visible: root.present && text.length > 0
             text: Media.artist
             elide: Text.ElideRight
             maximumLineCount: 1
@@ -206,7 +210,7 @@ Item {
 
         Text {
             width: parent.width
-            visible: text.length > 0
+            visible: root.present && text.length > 0
             text: Media.album
             elide: Text.ElideRight
             maximumLineCount: 1
@@ -220,11 +224,11 @@ Item {
         // length to measure against.
         Item {
             width: 1
-            height: Media.hasLength ? 14 * root.factor : 0
+            height: root.present && Media.hasLength ? 14 * root.factor : 0
         }
 
         Item {
-            visible: Media.hasLength
+            visible: root.present && Media.hasLength
             width: parent.width
             height: track.height + 5 * root.factor + times.height
 

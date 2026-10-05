@@ -32,8 +32,8 @@ That changes three rules and keeps the rest.
 - Motion is data: what moves encodes a live value, and nothing moves at a fixed rate for its own
   sake. A clock organism does not tick seconds.
 - Two voices: Orbitron for measurements, Spectral for human language.
-- Conditional presence where it has a meaning: media is absent with nothing playing, weather is
-  absent when there is no reading young enough to trust.
+- Conditional presence where it has a meaning: media is absent with nothing playing, a note
+  when its file cannot be read. Weather is not conditional: without a reading it is blank.
 - Every colour comes from `Theme`, every duration from `Timing`, every size from `Metrics`.
 
 ## Where they live
@@ -93,6 +93,12 @@ Organisms take no input at rest, so they are placed in a mode of their own.
   position — `CLOCK  X 0.31 · Y 0.51`, Orbitron 11 — above its top-left corner. Hover brightens
   the outline; press and drag moves it. Drag is not scaled, not tilted: the panel moves whole,
   and where the press landed inside it stays under the pointer.
+- **Absent organisms are placed in their blank form.** While arranging, an organism with nothing
+  to show comes up anyway — its own panel at its own size, empty, saying in Spectral italic, text
+  faint, what is missing — so it can be dragged; leaving the mode, it leaves with it (Akusen,
+  2026-10-05: a media organism added with nothing playing opened the mode with nothing to drag).
+  Media blank: glass, the `sinestesia` glyph, the band lying still, *Nothing playing*. Note
+  blank: the file's name (or *Note*) and *No file chosen…* or *This file cannot be read.*
 - **Snapping** (magnetic, 8 px reach): the edges of the free area; the screen's centre lines;
   the edges and centre lines of the other organisms, and the 24 px gap beside them. A guide line
   in primary, 1.3 px, shows the snap that holds.
@@ -242,7 +248,7 @@ its centre. Midnight: today moves; nothing else animates.
 
 ## 05 · Weather
 
-*Present with a reading under two hours old · now, and the next hours.*
+*Always present · now, and the next hours; blank without a reading under two hours old.*
 
 The weather where Akusen is: the city from Settings, geocoded once by Open-Meteo, then the
 forecast every 30 minutes through the proxy when one is on. No key, metric units.
@@ -266,7 +272,11 @@ and never calm, active or alert — the same reason a timezone dial never change
 WMO codes map onto them.
 
 **Limit cases** — offline: the last reading stays until it is two hours old, then the organism
-leaves. No city set: absent, and Settings says why under the field. A city that geocodes to
+turns blank. **Blank** (Akusen, 2026-10-05: always visible, and it must say how to set the
+city): the place's name or *Weather*, the glyph unlit in text faint, no figures, what is missing
+in the condition's place (*No city set* · *No forecast* · *Asking…*), and in the hours well, in
+Spectral italic, why — *Type a city under Settings → Organisms → Weather → City.*, or the
+service's reason. No city set: blank, and Settings says why under the field too. A city that geocodes to
 nothing: the field's error, as every field's — outline in alert, reason under it.
 
 **Options** — `size`, `city` (shared by every weather organism, stored once under `weather`).

@@ -7,9 +7,14 @@ import qs.services
 //
 // The temperature measures the weather, not the machine, so it is primary and
 // never takes a state colour — the same reason a timezone dial never changes
-// colour. It is there while there is a reading young enough to trust: no city
-// set, a city nobody could find, or two hours without the network, and it
-// leaves rather than say something old as though it were now.
+// colour.
+//
+// It is always there. Without a reading young enough to trust — no city set,
+// a city nobody could find, two hours without the network — it is blank
+// rather than absent: the glyph unlit, no figures, and in the well why, or
+// where the city is typed (Akusen, 2026-10-05: an organism that needs a city
+// before it shows cannot be placed, nor tell anyone it wants one). A reading
+// too old is not shown as though it were now.
 //
 // See docs/design/ORGANISMS.md §05.
 Item {
@@ -28,8 +33,17 @@ Item {
     Component.onCompleted: Weather.hold(root, root.wanted)
     Component.onDestruction: Weather.hold(root, false)
 
-    readonly property bool present: Weather.fresh
-    readonly property var now: Weather.current
+    readonly property bool present: true
+    readonly property bool blank: !Weather.fresh
+    readonly property var now: root.blank ? null : Weather.current
+
+    // What the blank form says: in the row, what is missing; in the well,
+    // why, or what to do about it.
+    readonly property bool noCity: Weather.city.length === 0
+    readonly property string missing: root.noCity ? "No city set"
+        : Weather.problem.length > 0 ? "No forecast" : "Asking…"
+    readonly property string reason: root.noCity ? "Type a city under Settings → Organisms → Weather → City."
+        : Weather.problem.length > 0 ? Weather.problem : "The forecast is on its way."
 
     implicitWidth: 300 * root.factor
     implicitHeight: 156 * root.factor
@@ -50,7 +64,7 @@ Item {
     Text {
         id: city
         width: parent.width
-        text: Weather.place
+        text: Weather.place.length > 0 ? Weather.place : "Weather"
         elide: Text.ElideRight
         maximumLineCount: 1
         color: Theme.text
@@ -70,10 +84,12 @@ Item {
             width: 44 * root.factor
             height: width
             name: root.now ? Weather.glyphFor(root.now.code, root.now.day) : "weather-cloudy"
-            gradient: true
+            gradient: !root.blank
+            colour: Theme.textFaint
         }
 
         LitText {
+            visible: !root.blank
             anchors.verticalCenter: parent.verticalCenter
             text: root.now ? root.degrees(root.now.temperature) : ""
             font: root.technical(Math.round(40 * root.factor), Typography.weightValue)
@@ -84,13 +100,14 @@ Item {
             spacing: 2 * root.factor
 
             Text {
-                text: root.now ? Weather.wordsFor(root.now.code) : ""
+                text: root.now ? Weather.wordsFor(root.now.code) : root.missing
                 color: Theme.textMuted
                 font.family: Typography.expressive
                 font.pixelSize: Math.round(15 * root.factor)
             }
 
             Text {
+                visible: !root.blank
                 text: root.now ? `${root.degrees(root.now.high)} · ${root.degrees(root.now.low)}` : ""
                 color: Theme.textMuted
                 font: root.technical(root.metrics.fontSecondary)
@@ -108,7 +125,25 @@ Item {
         width: parent.width
         height: 64 * root.factor
 
+        Text {
+            visible: root.blank
+            anchors.fill: parent
+            anchors.leftMargin: 14 * root.factor
+            anchors.rightMargin: 14 * root.factor
+            text: root.reason
+            wrapMode: Text.Wrap
+            maximumLineCount: 2
+            elide: Text.ElideRight
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+            color: Theme.textMuted
+            font.family: Typography.expressive
+            font.pixelSize: Math.round(14 * root.factor)
+            font.italic: true
+        }
+
         Row {
+            visible: !root.blank
             anchors.centerIn: parent
 
             Repeater {

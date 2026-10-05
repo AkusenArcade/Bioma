@@ -40,6 +40,12 @@ Item {
 
     readonly property bool present: root.readable
 
+    // Absent, it is drawn only while being placed, and then blank: the
+    // file's name if it has one, and what is wrong in place of the text.
+    readonly property string reason: (root.entry.file || "").trim().length === 0
+        ? "No file chosen. Choose one under Settings → Organisms → Note → File."
+        : "This file cannot be read."
+
     FileView {
         id: file
 
@@ -96,8 +102,8 @@ Item {
     readonly property int readAtMost: 400
 
     readonly property var parsed: root.parse(root.source)
-    readonly property string title: root.parsed.title.length > 0 ? root.parsed.title
-        : root.path.split("/").pop().replace(/\.md$/i, "")
+    readonly property string title: root.readable && root.parsed.title.length > 0 ? root.parsed.title
+        : root.path.length > 0 ? root.path.split("/").pop().replace(/\.md$/i, "") : "Note"
 
     function escaped(text) {
         return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -247,7 +253,7 @@ Item {
             id: whenText
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
-            text: root.when
+            text: root.readable ? root.when : ""
             color: Theme.textFaint
             font: root.technical
         }
@@ -255,8 +261,22 @@ Item {
 
     // ---- The text --------------------------------------------------------------------------
 
+    Text {
+        visible: !root.readable
+        y: header.height + 12 * root.factor
+        width: parent.width
+        text: root.reason
+        wrapMode: Text.Wrap
+        color: Theme.textFaint
+        font.family: Typography.expressive
+        font.pixelSize: Math.round(14 * root.factor)
+        font.italic: true
+    }
+
     Item {
         id: page
+
+        visible: root.readable
 
         y: header.height + 12 * root.factor
         width: parent.width

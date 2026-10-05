@@ -15,7 +15,11 @@ import qs.organisms
 // What it shows is the organism's own file, found by type in
 // `organisms/Organisms.qml`. That file is an Item with an implicit size and, if
 // its presence is conditional, a `present` property: media leaves when nothing
-// is loaded, weather when its reading is too old to trust.
+// is loaded, a note when its file cannot be read. Absent, it is still placed:
+// while arranging it comes up in its blank form — the body draws itself empty,
+// saying why, whenever its `present` is false — so the hand has something to
+// take (Akusen, 2026-10-05: a media organism added with nothing playing was
+// nowhere to be dragged).
 //
 // See docs/design/ORGANISMS.md.
 Item {
@@ -55,7 +59,7 @@ Item {
     readonly property Item body: loader.item
     readonly property bool retiring: Arranging.retiring.indexOf(root.place) >= 0
     readonly property bool present: root.here && !root.retiring && root.body !== null
-                                    && (root.body.present === undefined || root.body.present === true)
+                                    && (root.arranging || root.body.present === undefined || root.body.present === true)
 
     // ---- Size and place ---------------------------------------------------------
 
