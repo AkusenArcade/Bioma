@@ -990,10 +990,13 @@ Item {
                         width: parent.width
                         height: looks.height
 
+                        // From the left edge, like the folder and the templates
+                        // below: centred, the two columns stopped lining up with
+                        // anything once the icons grew a base under them
+                        // (Akusen, 2026-10-06).
                         Row {
                             id: looks
 
-                            anchors.horizontalCenter: parent.horizontalCenter
                             spacing: 24 * root.factor
 
                             Column {
@@ -1011,8 +1014,10 @@ Item {
                                 // The shell's own icons are the one thing that cannot follow a
                                 // change live; it says so rather than looking as though the
                                 // choice half failed. Held to the dropdown's width, so the
-                                // capsule's row does not grow when it appears.
+                                // capsule's row does not grow when it appears, and taking no
+                                // room while it has nothing to say.
                                 Item {
+                                    visible: Looks.iconsPending
                                     width: iconsDrop.width
                                     height: pending.implicitHeight
 
@@ -1036,8 +1041,13 @@ Item {
                                 // applications and everything else come from the theme
                                 // they sit on, chosen here. Only there while one of
                                 // them is on the desktop: no other theme has a base.
+                                //
+                                // Set off from the icons by the gap between sections, so
+                                // BASE reads as a group of its own and not as a second
+                                // line of the icons'.
                                 LookLabel {
                                     visible: root.biomaIcons
+                                    topPadding: 20 * root.factor - root.stackSpacing
                                     text: "BASE"
                                 }
 
