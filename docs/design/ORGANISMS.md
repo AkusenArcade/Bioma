@@ -1,6 +1,6 @@
 # Bioma — organisms
 
-*Approved 2026-10-04, media redrawn at Akusen's request. Built: the structure, arranging, the five organisms, the Settings category; since then the note, the lava lamp and the cytoplasm.*
+*Approved 2026-10-04, media redrawn at Akusen's request. Built: the structure, arranging, the five organisms, the Settings category; since then the note, the lava lamp, the cytoplasm and the growth rings.*
 
 The visual specification of the organisms: read-only surfaces that live on the desktop, under
 the windows, in the part of the screen the top and bottom membranes leave free. Read it with
@@ -455,6 +455,45 @@ ticks between two samples, never `ps`'s lifetime average.
 
 ---
 
+## 09 · Growth rings
+
+*Built 2026-10-06, from "Nuove idee". Present once the record is read · the days spent at this
+machine, laid down like a tree's.*
+
+One ring per day, the oldest at the heart and today outermost. A ring is as thick as the hours
+that day was active, so a long day is a wide band and a weekend away a thin one; a day not here
+leaves no ring, as a tree that does not grow lays down nothing. The disc is always full: the
+rings share its radius in proportion, so a fortnight is a few broad bands and a year is grain.
+
+**Today is the cambium** — lit at its edge, and growing a little each minute somebody is here.
+It is the only thing that moves, and only while it grows: the canvas is redrawn once per
+change, never animated, so the disc costs nothing between minutes.
+
+**Wood, not a target.** Every ring follows one fixed distortion of the trunk, with a small
+wobble of its own seeded by its date. Days alternate a shade apart so thin rings stay apart,
+and a darker line marks where each day ended — the late wood.
+
+| Measure | Value | Note |
+|---|---|---|
+| disc | 240 | pith 3, the outermost ring inside the wobble |
+| early wood | primary at 16 % / 22 % | alternating; today 34 % |
+| late wood | primary at 55 %, 1 px | |
+| cambium | primary, 1.8 px | today's edge |
+| caption | 14 below | `TODAY 3 H 20 M` lit · `90 DAYS · 474 H` muted |
+
+**Active** is `services/Activity.qml`: neither idle — ext-idle-notify after
+`activity.idle_minutes` (5), inhibitors respected, so a film is somebody watching — nor locked.
+The minutes before idle was declared are taken back. There was no history to start from (the
+journal kept three days), so the record begins when the organism is first placed, and it is only
+kept while one exists: `activity.json` beside `wallpaper.json`, minutes by local date, the last
+400 days.
+
+**Options** — `size`, `days` (30 · 90 · 365), `figures`.
+
+**Settings** — the rings' chip opens DAYS.
+
+---
+
 ## Configuration
 
 ```json
@@ -467,7 +506,8 @@ ticks between two samples, never `ps`'s lifetime average.
   { "type": "note",     "monitor": "DP-1", "x": 0.5, "y": 0.4,
     "file": "~/Documents/Vault/Next.md", "height": "medium" },
   { "type": "lava",     "monitor": "HDMI-A-1", "x": 0.05, "y": 0.17, "colour": "theme" },
-  { "type": "cytoplasm", "monitor": "HDMI-A-1", "x": 0.9, "y": 0.13, "labels": false }
+  { "type": "cytoplasm", "monitor": "HDMI-A-1", "x": 0.9, "y": 0.13, "labels": false },
+  { "type": "rings",    "monitor": "DP-1", "x": 0.94, "y": 0.19, "days": 90 }
 ],
 "weather": { "city": "Milan" }   // place, latitude, longitude, located_for are written back
 ```

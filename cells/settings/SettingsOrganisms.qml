@@ -424,6 +424,24 @@ Item {
                     }
 
                     OptionRow {
+                        visible: screenSection.open >= 0 && root.organisms[screenSection.open].type === "rings"
+                        label: "DAYS"
+
+                        Segmented {
+                            metrics: root.metrics
+                            fontSize: root.metrics.fontMeta
+                            buttonPadding: 10 * root.factor
+                            options: [
+                                { "key": "30", "label": "30" },
+                                { "key": "90", "label": "90" },
+                                { "key": "365", "label": "365" }
+                            ]
+                            current: screenSection.open >= 0 ? String(root.organisms[screenSection.open].days || 90) : "90"
+                            onChose: key => root.setOption(screenSection.open, "days", key === "90" ? null : parseInt(key, 10))
+                        }
+                    }
+
+                    OptionRow {
                         visible: screenSection.open >= 0 && root.organisms[screenSection.open].type === "vitals"
                         label: "LAYOUT"
 

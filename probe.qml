@@ -77,6 +77,8 @@ ShellRoot {
     readonly property bool hasBattery: SystemMonitor.hasBattery
     readonly property real cpuTemperature: SystemMonitor.cpuTemperature
     readonly property var appLoad: AppLoad.apps
+    readonly property var activityDays: Activity.days
+    readonly property bool activityPresent: Activity.present
     readonly property var trayItems: Tray.items
     readonly property bool trayAttention: Tray.attention
     readonly property string captureFolder: Capture.folder
@@ -559,7 +561,18 @@ ShellRoot {
         }
     }
 
+    // Presence by day: whether the file was read, whether this session counts
+    // as present right now, and the days on record.
+    function probeActivity() {
+        console.log("── Activity ──────────────────────────────────────");
+        line("loaded", `${Activity.loaded}  today ${Activity.today}  ${Activity.todayMinutes} min`);
+        line("present", `${root.activityPresent}  (locked ${Locker.locked}, idle after ${Activity.idleMinutes} min)`);
+        const keys = Object.keys(root.activityDays).sort();
+        line("days on record", `${keys.length}${keys.length > 0 ? `, ${keys[0]} … ${keys[keys.length - 1]}` : ""}`);
+    }
+
     Component.onCompleted: {
+        Activity.hold(root, true);
         AppLoad.hold(root, true);
         SystemMonitor.listProcesses = true;
         Keybinds.askActions();
@@ -583,6 +596,7 @@ ShellRoot {
             probePrinters();
             probeVitals();
             probeAppLoad();
+            probeActivity();
             probeTray();
             probeKeybinds();
             probeMonitors();

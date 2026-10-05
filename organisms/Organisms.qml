@@ -20,7 +20,8 @@ Singleton {
         "weather": "weather/WeatherOrganism.qml",
         "note": "note/NoteOrganism.qml",
         "lava": "lava/LavaOrganism.qml",
-        "cytoplasm": "cytoplasm/CytoplasmOrganism.qml"
+        "cytoplasm": "cytoplasm/CytoplasmOrganism.qml",
+        "rings": "rings/RingsOrganism.qml"
     })
 
     // What an organism is called when it is spoken about rather than drawn.
@@ -32,7 +33,8 @@ Singleton {
         "weather": "Weather",
         "note": "Note",
         "lava": "Lava lamp",
-        "cytoplasm": "Cytoplasm"
+        "cytoplasm": "Cytoplasm",
+        "rings": "Growth rings"
     })
 
     function fileFor(type) {
