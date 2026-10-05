@@ -10,6 +10,7 @@ audio band, the workspaces icon shifting on a workspace change.
 | `style-guide.html` | the style guide, with live component examples |
 | `icons.html` | the icon set with SVG source |
 | `organisms.html` | the organisms on a desktop, with arranging you can drag; `#window` and `#arranging` open it in those modes |
+| `cursors.html` | the cursor set in both themes and any palette; hover a drawing to wear it. Its drawings are a copy of `assets/cursors/drawings.json` (`scripts/cursors page`) |
 
 Two notes:
 

@@ -19,6 +19,11 @@ meaning is gone and so is the motion.
 That is why the loader is never decorative, never "nice while we wait", and never runs on a
 timer.
 
+The **wait** and **progress cursors** carry the same loader (`../CURSORS.md`): same geometry,
+same `--t-loader` and `--ease-sweep`. A busy cursor means exactly "no value yet", and the
+application that shows it takes it away when it is no longer busy, so the exception covers it
+without stretching.
+
 ---
 
 ## 2. Geometry

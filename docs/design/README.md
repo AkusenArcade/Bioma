@@ -30,8 +30,9 @@ This package is English throughout.
 | `IMPLEMENTATION.md` | the traps — things that look like design detail and are technical constraints |
 | `tokens.css` | the design tokens as custom properties, ready to translate into QML singletons |
 | `icons/` | 33 SVG glyphs, 24×24, `currentColor`, plus their own README |
+| `CURSORS.md` | the cursor theme: drawings on the icon grid, two colourings from the palette, how it is rebuilt |
 | `mockups/` | 68 renders at 2×: every state of every cell, indexed in its own README |
-| `pages/` | the three design pages as live HTML — the animated indicators actually move there |
+| `pages/` | the design pages as live HTML — the animated indicators actually move there, and `cursors.html` lets you wear every cursor |
 
 **Text wins over pictures.** Where a measurement in `CELLS.md` and a mockup disagree, the
 measurement is right: the images show the result, they are not there to be pixel-measured.

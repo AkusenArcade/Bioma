@@ -16,6 +16,7 @@ pkgbase = bioma-shell
 	depends = glib2
 	depends = wl-clipboard
 	depends = imagemagick
+	depends = librsvg
 	depends = libpipewire
 	depends = gcc-libs
 	depends = glibc

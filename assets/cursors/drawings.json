@@ -1,0 +1,221 @@
+{
+  "$comment": "Bioma's cursors as data: the drawn source scripts/cursors renders into XCursor themes, and docs/design/pages/cursors.html draws for review. Keep the copy embedded in that page identical. The grammar and the decisions are docs/design/CURSORS.md.",
+
+  "grid": 24,
+  "outline": 1.25,
+  "line": 1.6,
+  "halo": 1.1,
+  "badge_shift": [0.8, 1.0],
+  "sizes": [24, 32, 48, 64, 72, 96],
+
+  "loader": {
+    "$comment": "How many steps the XCursor animation takes through one loader cycle. The cycle's length and easing are core/Timing.qml's loader and sweep, sent by the shell.",
+    "frames": 24
+  },
+
+  "themes": {
+    "bioma": {
+      "name": "Bioma",
+      "comment": "Background body, text contour; the primary is only the node.",
+      "inks": { "fill": "background", "outline": "text", "line": "text", "halo": "background", "ink": "text", "accent": "primary" }
+    },
+    "bioma-cell": {
+      "name": "Bioma Cell",
+      "comment": "Cell body, rim contour lit from above, like a contracted cell.",
+      "inks": { "fill": "cell", "outline": "@rim", "line": "rim", "halo": "background", "ink": "rim", "accent": "primary" }
+    }
+  },
+
+  "shapes": {
+    "arrow": { "path": "M6.6 5 L6.6 18.6 Q10.6 15 17 14 Z", "soft": 1.6 },
+    "arrow_node": { "circle": [7.9, 9.5, 1.2] },
+    "badge": { "circle": [17.6, 17.6, 4.1] }
+  },
+
+  "drawings": [
+    {
+      "id": "default", "name": "Pointer", "hot": [5.9, 3.6],
+      "body": ["arrow"], "accent": ["arrow_node"],
+      "names": ["default", "left_ptr", "arrow", "top_left_arrow", "wayland-cursor", "center_ptr", "right_ptr",
+                "draft", "draft_large", "draft_small", "pencil", "X_cursor", "x-cursor", "pirate"]
+    },
+    {
+      "id": "pointer", "name": "Link", "hot": [10.4, 3.2],
+      "body": [
+        { "rect": [8.6, 3.2, 3.6, 11, 1.8] },
+        { "rect": [11.6, 9.4, 3.8, 5.6, 1.6] },
+        { "rect": [14.8, 10.4, 3.6, 5.2, 1.5] },
+        { "rect": [7.2, 12, 11.2, 9, 3.5] },
+        { "path": "M8.6 17 L5.2 13.2", "round": 3.0 }
+      ],
+      "names": ["pointer", "hand2", "pointing_hand", "9d800788f1b08800ae810202380a0822", "e29285e634086352946a0e7090d73106"]
+    },
+    {
+      "id": "text", "name": "Text", "hot": [12, 12],
+      "line": [{ "path": "M12 5.5 V18.5" }],
+      "accent": [{ "circle": [12, 4.6, 1.5] }, { "circle": [12, 19.4, 1.5] }], "accent_halo": true,
+      "names": ["text", "xterm", "ibeam"]
+    },
+    {
+      "id": "vertical-text", "name": "Vertical text", "hot": [12, 12], "turn": 90,
+      "line": [{ "path": "M12 5.5 V18.5" }],
+      "accent": [{ "circle": [12, 4.6, 1.5] }, { "circle": [12, 19.4, 1.5] }], "accent_halo": true,
+      "names": ["vertical-text"]
+    },
+    {
+      "id": "crosshair", "name": "Crosshair", "hot": [12, 12],
+      "line": [{ "path": "M12 3.5 V9 M12 15 V20.5 M3.5 12 H9 M15 12 H20.5" }],
+      "accent": [{ "circle": [12, 12, 1.15] }], "accent_halo": true,
+      "names": ["crosshair", "cross", "tcross", "cross_reverse", "diamond_cross", "color-picker",
+                "dotbox", "dot_box_mask", "draped_box", "icon", "target"]
+    },
+    {
+      "id": "wait", "name": "Wait", "hot": [12, 12],
+      "loader": [3, 8.5, 18, 7],
+      "names": ["wait", "watch"]
+    },
+    {
+      "id": "progress", "name": "Progress", "hot": [5.9, 3.6],
+      "body": ["arrow"], "accent": ["arrow_node"],
+      "loader": [12.6, 17.8, 9.8, 4.3],
+      "names": ["progress", "left_ptr_watch", "half-busy", "00000000000000020006000e7e9ffc3f",
+                "08e8e1c95fe2fc01f976f1e063a24ccd", "3ecb610c1bf2410f44200f48c40d3599"]
+    },
+    {
+      "id": "help", "name": "Help", "hot": [5.9, 3.6],
+      "body": ["arrow"], "badge": ["badge"], "accent": ["arrow_node"],
+      "ink": [
+        { "path": "M16.1 16.4 a1.55 1.55 0 1 1 2.3 1.35 c-0.55 0.3 -0.8 0.6 -0.8 1.15", "stroke": 1.1 },
+        { "circle": [17.6, 20.6, 0.6] }
+      ],
+      "names": ["help", "question_arrow", "whats_this", "left_ptr_help", "dnd-ask",
+                "5c6cd98b3f3ebcb1f9c7f1c204630408", "d9ce0ab605698f320427677b458ad60b"]
+    },
+    {
+      "id": "context-menu", "name": "Context menu", "hot": [5.9, 3.6],
+      "body": ["arrow"], "badge": [{ "rect": [13.4, 13.6, 8.4, 8.2, 2.2] }], "accent": ["arrow_node"],
+      "ink": [{ "path": "M15.5 16.3 H19.7 M15.5 18.7 H19.7", "stroke": 1.0 }],
+      "names": ["context-menu"]
+    },
+    {
+      "id": "copy", "name": "Copy", "hot": [5.9, 3.6],
+      "body": ["arrow"], "badge": ["badge"], "accent": ["arrow_node"],
+      "ink": [{ "path": "M17.6 15.6 V19.6 M15.6 17.6 H19.6", "stroke": 1.2 }],
+      "names": ["copy", "dnd-copy", "1081e37283d90000800003c07f3ef6bf", "6407b0e94181790501fd1e167b474872",
+                "b66166c04f8c3109214a4fbd64a50fc8"]
+    },
+    {
+      "id": "alias", "name": "Alias", "hot": [5.9, 3.6],
+      "body": ["arrow"], "badge": ["badge"], "accent": ["arrow_node"],
+      "ink": [{ "path": "M15.9 19.3 L19.2 16 M16.6 16 H19.2 V18.6", "stroke": 1.1 }],
+      "names": ["alias", "link", "dnd-link", "3085a0e285430894940527032f8b26df", "640fb0e74195791501fd1ed57b41487f",
+                "a2a266d0498c3104214a47bd64ab0fc8"]
+    },
+    {
+      "id": "no-drop", "name": "No drop", "hot": [5.9, 3.6],
+      "body": ["arrow"], "badge": ["badge"], "accent": ["arrow_node"],
+      "ink": [{ "circle": [17.6, 17.6, 2.3], "ring": 1.1 }, { "path": "M16 19.2 L19.2 16", "stroke": 1.1 }],
+      "names": ["no-drop", "dnd-no-drop", "dnd_no_drop"]
+    },
+    {
+      "id": "not-allowed", "name": "Not allowed", "hot": [12, 12],
+      "line": [{ "circle": [12, 12, 7.2] }, { "path": "M7 17 L17 7" }],
+      "names": ["not-allowed", "crossed_circle", "forbidden", "circle", "03b6e0fcb3499374a867c041f52298f0"]
+    },
+    {
+      "id": "grab", "name": "Grab", "hot": [12, 12],
+      "body": [
+        { "rect": [6.6, 5.6, 3.5, 11, 1.75] },
+        { "rect": [9.3, 4.2, 3.5, 10, 1.75] },
+        { "rect": [12.0, 4.8, 3.5, 10, 1.75] },
+        { "rect": [14.7, 6.4, 3.5, 10, 1.75] },
+        { "rect": [6.6, 11.6, 11.6, 9.4, 3.5] },
+        { "path": "M7.4 17.4 L4.4 14.4", "round": 2.8 }
+      ],
+      "names": ["grab", "openhand", "hand1", "hand"]
+    },
+    {
+      "id": "grabbing", "name": "Grabbing", "hot": [12, 12],
+      "body": [
+        { "rect": [6.6, 8.6, 3.5, 8, 1.75] },
+        { "rect": [9.3, 8.0, 3.5, 6, 1.75] },
+        { "rect": [12.0, 8.2, 3.5, 6, 1.75] },
+        { "rect": [14.7, 8.8, 3.5, 8, 1.75] },
+        { "rect": [6.6, 11.2, 11.6, 9.4, 3.5] }
+      ],
+      "names": ["grabbing", "closedhand", "dnd-move", "dnd-none", "fcf21c00b30f7e3f83fe0dfd12e71cff"]
+    },
+    {
+      "id": "move", "name": "Move", "hot": [12, 12],
+      "line": [{ "path": "M12 7 V17 M7 12 H17" }],
+      "body": [
+        { "path": "M12 2.6 L14.6 6.4 H9.4 Z" },
+        { "path": "M12 21.4 L14.6 17.6 H9.4 Z" },
+        { "path": "M2.6 12 L6.4 14.6 V9.4 Z" },
+        { "path": "M21.4 12 L17.6 14.6 V9.4 Z" }
+      ],
+      "accent": [{ "circle": [12, 12, 1.15] }], "accent_halo": true,
+      "names": ["move", "all-scroll", "fleur", "size_all", "pointer-move", "4498f0e0c1937ffe01fd06f973665830",
+                "9081237383d90e509aa00f00170e968f"]
+    },
+    {
+      "id": "ew-resize", "name": "Resize ↔", "hot": [12, 12], "turn": 0,
+      "line": [{ "path": "M7.4 12 H16.6" }],
+      "body": [{ "path": "M3 12 L7.6 8.4 V15.6 Z" }, { "path": "M21 12 L16.4 8.4 V15.6 Z" }],
+      "names": ["ew-resize", "e-resize", "w-resize", "h_double_arrow", "size_hor", "size-hor", "right_side", "left_side",
+                "sb_left_arrow", "sb_right_arrow", "left-arrow", "right-arrow", "left_tee", "right_tee"]
+    },
+    {
+      "id": "ns-resize", "name": "Resize ↕", "hot": [12, 12], "turn": 90,
+      "line": [{ "path": "M7.4 12 H16.6" }],
+      "body": [{ "path": "M3 12 L7.6 8.4 V15.6 Z" }, { "path": "M21 12 L16.4 8.4 V15.6 Z" }],
+      "names": ["ns-resize", "n-resize", "s-resize", "v_double_arrow", "double_arrow", "size_ver", "size-ver", "top_side",
+                "bottom_side", "sb_up_arrow", "sb_down_arrow", "up-arrow", "down-arrow", "top_tee", "bottom_tee"]
+    },
+    {
+      "id": "nwse-resize", "name": "Resize ⤡", "hot": [12, 12], "turn": 45,
+      "line": [{ "path": "M7.4 12 H16.6" }],
+      "body": [{ "path": "M3 12 L7.6 8.4 V15.6 Z" }, { "path": "M21 12 L16.4 8.4 V15.6 Z" }],
+      "names": ["nwse-resize", "nw-resize", "se-resize", "bd_double_arrow", "size_fdiag", "top_left_corner",
+                "bottom_right_corner", "ul_angle", "lr_angle", "c7088f0f3e6c8088236ef8e1e3e70000"]
+    },
+    {
+      "id": "nesw-resize", "name": "Resize ⤢", "hot": [12, 12], "turn": -45,
+      "line": [{ "path": "M7.4 12 H16.6" }],
+      "body": [{ "path": "M3 12 L7.6 8.4 V15.6 Z" }, { "path": "M21 12 L16.4 8.4 V15.6 Z" }],
+      "names": ["nesw-resize", "ne-resize", "sw-resize", "fd_double_arrow", "size_bdiag", "top_right_corner",
+                "bottom_left_corner", "ur_angle", "ll_angle", "fcf1c3c7cd4491d801f1e1c78f100000"]
+    },
+    {
+      "id": "col-resize", "name": "Column", "hot": [12, 12], "turn": 0,
+      "line": [{ "path": "M6.6 12 H9.2 M14.8 12 H17.4" }],
+      "body": [{ "rect": [11, 4, 2, 16, 1] }, { "path": "M2.6 12 L6.8 8.8 V15.2 Z" }, { "path": "M21.4 12 L17.2 8.8 V15.2 Z" }],
+      "names": ["col-resize", "sb_h_double_arrow", "split_h", "028006030e0e7ebffc7f7070c0600140",
+                "14fef782d02440884392942c1120523"]
+    },
+    {
+      "id": "row-resize", "name": "Row", "hot": [12, 12], "turn": 90,
+      "line": [{ "path": "M6.6 12 H9.2 M14.8 12 H17.4" }],
+      "body": [{ "rect": [11, 4, 2, 16, 1] }, { "path": "M2.6 12 L6.8 8.8 V15.2 Z" }, { "path": "M21.4 12 L17.2 8.8 V15.2 Z" }],
+      "names": ["row-resize", "sb_v_double_arrow", "split_v", "00008160000006810000408080010102",
+                "2870a09082c103050810ffdffffe0204"]
+    },
+    {
+      "id": "cell", "name": "Cell", "hot": [12, 12],
+      "body": [{ "rect": [10.2, 4, 3.6, 16, 1.2] }, { "rect": [4, 10.2, 16, 3.6, 1.2] }],
+      "names": ["cell", "plus"]
+    },
+    {
+      "id": "zoom-in", "name": "Zoom in", "hot": [10.4, 10.4],
+      "body": [{ "path": "M15 15 L19.8 19.8", "round": 3.2 }, { "circle": [10.4, 10.4, 6.2] }],
+      "ink": [{ "path": "M10.4 7.8 V13 M7.8 10.4 H13", "stroke": 1.2 }],
+      "names": ["zoom-in"]
+    },
+    {
+      "id": "zoom-out", "name": "Zoom out", "hot": [10.4, 10.4],
+      "body": [{ "path": "M15 15 L19.8 19.8", "round": 3.2 }, { "circle": [10.4, 10.4, 6.2] }],
+      "ink": [{ "path": "M7.8 10.4 H13", "stroke": 1.2 }],
+      "names": ["zoom-out"]
+    }
+  ]
+}

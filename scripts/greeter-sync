@@ -18,6 +18,7 @@
 #                  the user's own appearance through the ordinary paths
 #   wallpapers/    the images the wallpaper state names
 #   data/fonts/    Bioma's two faces, when they are installed in the home
+#   data/icons/    the cursor theme, when it is installed in the home
 #   niri/          the outputs, the keyboard and the cursor, so the greeter's
 #                  niri lays the screens out as the session does — a spanned
 #                  wallpaper has to cross the same seam — and the password is
@@ -144,6 +145,28 @@ for part in outputs.kdl bioma-keyboard.kdl bioma-cursor.kdl; do
 done
 
 sed -e "s|@GREETER@|$live|g" "$here/config/niri/greeter.kdl.in" > "$next/niri.kdl"
+
+# ---- The cursor ----------------------------------------------------------------------
+
+# The theme bioma-cursor.kdl names, and those it inherits from, when they are
+# installed in the home: the greeter cannot read the home, and one the system
+# has is there already. Bioma's own cursors always live in the home, under a
+# slot name that inherits the theme itself (scripts/cursors), so both come.
+# scripts/greeter-session puts this directory on the greeter's cursor path.
+mkdir -p "$next/data/icons"
+theme="$(sed -n 's/^[[:space:]]*xcursor-theme[[:space:]]*"\(.*\)".*/\1/p' "$niri_config/bioma-cursor.kdl" 2>/dev/null | tail -1)"
+while [ -n "$theme" ] && [ ! -e "$next/data/icons/$theme" ]; do
+    found=""
+    for root in "${XDG_DATA_HOME:-$HOME/.local/share}/icons" "$HOME/.icons"; do
+        if [ -d "$root/$theme" ]; then
+            found="$root/$theme"
+            break
+        fi
+    done
+    [ -n "$found" ] || break
+    cp -R "$found" "$next/data/icons/"
+    theme="$(sed -n 's/^Inherits=\([^,]*\).*/\1/p' "$found/index.theme" 2>/dev/null | head -1)"
+done
 
 # The directory's group reads everything; the setgid bit already gave it the
 # group.

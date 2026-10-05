@@ -1,14 +1,21 @@
 #!/usr/bin/env python3
 # The icon and cursor themes installed on this machine, and setting them.
 #
-#     looks list                 {"icons": [{"id", "name"}], "cursors": [...],
-#                                 "current": {"icons", "cursor", "size"}}
+#     looks list                 {"icons": [{"id", "name"}], "cursors": [{"id", "name", "slotted"}],
+#                                 "current": {"icons", "cursor", "live", "size"}}
 #     looks icons ID             GTK (gsettings) and qt5ct/qt6ct
 #     looks cursor ID SIZE       GTK (gsettings); niri is written by the shell
 #
 # A theme is a directory under the XDG icon paths. It is an icon theme when its
 # index.theme lists Directories, and a cursor theme when it has a cursors/
 # directory; some are both. The names are the themes' own, from index.theme.
+#
+# A cursor theme is `slotted` when it has the two slots Bioma's own cursors
+# carry (scripts/cursors): <id>.a and <id>.b, empty themes inheriting from it,
+# which the desktop is pointed at instead of <id> so that a rebuilt theme can be
+# shown by changing the name. They are not themes anybody picks, so they are not
+# listed, and `current` names the theme a slot stands for; `live` is the name
+# the desktop is actually set to.
 import configparser
 import json
 import os
@@ -58,7 +65,25 @@ def catalogue():
                 cursors[entry] = name
     as_list = lambda found: sorted(({"id": k, "name": v} for k, v in found.items()),
                                   key=lambda t: t["name"].lower())
-    return as_list(icons), as_list(cursors)
+    cursor_list = as_list(cursors)
+    for theme in cursor_list:
+        theme["slotted"] = all(slot_of(f"{theme['id']}.{s}") == theme["id"] for s in "ab")
+    return as_list(icons), cursor_list
+
+
+def slot_of(name):
+    """The theme a slot stands for, or None when `name` is not a slot."""
+    match = re.match(r"^(.+)\.[ab]$", name)
+    if not match:
+        return None
+    for root in ROOTS:
+        index = index_of(os.path.join(root, name))
+        if index is not None:
+            if index.get("Inherits", "").strip() == match.group(1) and \
+                    not os.path.isdir(os.path.join(root, name, "cursors")):
+                return match.group(1)
+            return None
+    return None
 
 
 def gsettings(*args):
@@ -72,8 +97,10 @@ def gsettings(*args):
 def current():
     unquote = lambda value: value.strip("'\"")
     size = gsettings("get", "org.gnome.desktop.interface", "cursor-size")
+    live = unquote(gsettings("get", "org.gnome.desktop.interface", "cursor-theme"))
     return {"icons": unquote(gsettings("get", "org.gnome.desktop.interface", "icon-theme")),
-            "cursor": unquote(gsettings("get", "org.gnome.desktop.interface", "cursor-theme")),
+            "cursor": slot_of(live) or live,
+            "live": live,
             "size": int(size) if size.isdigit() else 24}
 
 

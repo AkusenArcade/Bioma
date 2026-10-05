@@ -34,6 +34,8 @@ fi
 export BIOMA_GREETER_DIR="$live"
 export XDG_CONFIG_HOME="$live/config"
 export XDG_DATA_HOME="$live/data"
+# The cursor theme the copy carries comes first; the system's after it.
+export XCURSOR_PATH="$live/data/icons:/usr/local/share/icons:/usr/share/icons:/usr/share/pixmaps"
 export XDG_CACHE_HOME="/tmp/bioma-greeter-cache-$(id -u)"
 export XDG_STATE_HOME="/tmp/bioma-greeter-state-$(id -u)"
 

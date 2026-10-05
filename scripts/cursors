@@ -1,0 +1,404 @@
+#!/usr/bin/env python3
+# Bioma's cursor themes, drawn in the palette.
+#
+#     cursors build < request.json    {"colours": {"background", "text", "primary",
+#                                                  "cell", "rim", "line"},
+#                                      "loader": {"ms", "ease": [x1, y1, x2, y2]}}
+#                                     prints {"built": true | false}
+#     cursors page                    copies the drawings into
+#                                     docs/design/pages/cursors.html, the page
+#                                     they are reviewed on
+#
+# The drawings are data, assets/cursors/drawings.json; what they mean and why
+# they look the way they do is docs/design/CURSORS.md. Every theme listed there
+# becomes an XCursor theme under $XDG_DATA_HOME/icons/<id>, at every size the
+# drawings list, with the loader sweeping through wait and progress. The colours
+# are the shell's own (services/Looks.qml derives them from core/Theme.qml), and
+# so is the loader's timing (core/Timing.qml): nothing here decides a colour or
+# a duration. A loader of 0 ms — the animations switched off — leaves the
+# segment still at the left end. Nothing is rebuilt when neither the request
+# nor the drawings have changed.
+#
+# niri and the toolkits load a cursor theme once per name: a theme rewritten in
+# place is not seen until the name it is asked for changes. So every theme has
+# two slots, <id>.a and <id>.b — themes with no cursors of their own that
+# inherit everything from <id> — and after a build the shell moves the desktop
+# from one slot to the other, which is what makes the new colours appear.
+#
+# Rendering is librsvg (rsvg-convert): one sheet per size holding every drawing
+# and every frame, then ImageMagick turns it into premultiplied BGRA, the order
+# an XCursor image is stored in.
+import hashlib
+import json
+import math
+import os
+import shutil
+import struct
+import subprocess
+import sys
+import tempfile
+
+HERE = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+DRAWINGS = os.path.join(HERE, "assets", "cursors", "drawings.json")
+PAGE = os.path.join(HERE, "docs", "design", "pages", "cursors.html")
+PAGE_OPEN = '<script type="application/json" id="drawings">'
+
+
+HOME = os.environ["HOME"]
+DATA_HOME = os.environ.get("XDG_DATA_HOME") or os.path.join(HOME, ".local", "share")
+ICONS = os.path.join(DATA_HOME, "icons")
+
+SLOTS = ("a", "b")
+ROLES = ("background", "text", "primary", "cell", "rim", "line")
+
+# Bumped when the rendering changes in a way the drawings do not show, so the
+# themes on disk are rebuilt.
+RENDERER = 1
+
+
+# ---- Drawing --------------------------------------------------------------------
+
+
+def shape_el(shape, attrs):
+    if "path" in shape:
+        return f'<path d="{shape["path"]}" {attrs}/>'
+    if "rect" in shape:
+        x, y, w, h, r = shape["rect"]
+        return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{r}" {attrs}/>'
+    cx, cy, r = shape["circle"]
+    return f'<circle cx="{cx}" cy="{cy}" r="{r}" {attrs}/>'
+
+
+class Painter:
+    """One theme's inks over the drawings' grammar."""
+
+    def __init__(self, data, inks, colours):
+        self.data = data
+        self.outline_w = data["outline"]
+        self.line_w = data["line"]
+        self.halo_w = data["halo"]
+        self.colours = colours
+        self.inks = inks
+
+    def resolve(self, part):
+        return self.data["shapes"][part] if isinstance(part, str) else part
+
+    def parts(self, drawing, key):
+        return [self.resolve(p) for p in drawing.get(key, [])]
+
+    def ink(self, role, gid):
+        value = self.inks[role]
+        if value.startswith("@"):
+            return f"url(#{gid}-{value[1:]})"
+        return self.colours[value]
+
+    def contour(self, s, colour):
+        # Under the fill, twice the contour wide, so parts that overlap read as
+        # one silhouette. A `round` part is a capped stroke; a `soft` one is a
+        # sharp core grown with round joins, so every corner is a true arc.
+        if "round" in s:
+            return shape_el(s, f'fill="none" stroke="{colour}" stroke-width="{s["round"] + self.outline_w * 2}" stroke-linecap="round"')
+        grow = s.get("soft", 0)
+        return shape_el(s, f'fill="{colour}" stroke="{colour}" stroke-width="{(grow + self.outline_w) * 2}" stroke-linejoin="round"')
+
+    def fill(self, s, colour):
+        if "round" in s:
+            return shape_el(s, f'fill="none" stroke="{colour}" stroke-width="{s["round"]}" stroke-linecap="round"')
+        if "soft" in s:
+            return shape_el(s, f'fill="{colour}" stroke="{colour}" stroke-width="{s["soft"] * 2}" stroke-linejoin="round"')
+        return shape_el(s, f'fill="{colour}"')
+
+    @staticmethod
+    def stroke(s, colour, width):
+        return shape_el(s, f'fill="none" stroke="{colour}" stroke-width="{width}" stroke-linecap="round" stroke-linejoin="round"')
+
+    def svg(self, drawing, gid, sweep=0.0):
+        """The drawing as an SVG fragment in its 24-unit grid; `sweep` is the
+        loader's position along its travel, 0 to 1."""
+        c = self.colours
+        # 165°, the shell's one light, from above and slightly from the left.
+        a = math.radians(165)
+        dx, dy = math.sin(a) * 12, -math.cos(a) * 12
+        defs = (f'<linearGradient id="{gid}-rim" gradientUnits="userSpaceOnUse" '
+                f'x1="{12 - dx:.3f}" y1="{12 - dy:.3f}" x2="{12 + dx:.3f}" y2="{12 + dy:.3f}">'
+                f'<stop offset="0" stop-color="{c["rim"]}"/><stop offset="1" stop-color="{c["line"]}"/></linearGradient>')
+        fill, outline = self.ink("fill", gid), self.ink("outline", gid)
+        line, halo = self.ink("line", gid), self.ink("halo", gid)
+        ink, accent = self.ink("ink", gid), self.ink("accent", gid)
+
+        under, over, top, overlay, badge = [], [], [], [], []
+        for s in self.parts(drawing, "line"):
+            under.append(self.stroke(s, halo, self.line_w + self.halo_w * 2))
+        if drawing.get("accent_halo"):
+            for s in self.parts(drawing, "accent"):
+                under.append(shape_el(s, f'fill="{halo}" stroke="{halo}" stroke-width="{self.halo_w * 2}"'))
+        for s in self.parts(drawing, "body"):
+            under.append(self.contour(s, outline))
+        for s in self.parts(drawing, "body"):
+            over.append(self.fill(s, fill))
+        for s in self.parts(drawing, "line"):
+            over.append(self.stroke(s, line, self.line_w))
+
+        if "loader" in drawing:
+            # LOADER.md's geometry scaled to the track: the segment is inset
+            # 2.2/7 of the track's height and is 6/18 of its width.
+            x, y, w, h = drawing["loader"]
+            inset = h * 2.2 / 7
+            seg_w, seg_h = w * 6 / 18, h - inset * 2
+            track = {"rect": [x, y, w, h, h / 2]}
+            overlay.append(self.contour(track, outline))
+            overlay.append(self.fill(track, fill))
+            travel = w - inset * 2 - seg_w
+            overlay.append(f'<rect x="{x + inset + travel * sweep:.3f}" y="{y + inset:.3f}" width="{seg_w:.3f}" '
+                           f'height="{seg_h:.3f}" rx="{seg_h / 2:.3f}" fill="{ink}"/>')
+
+        for s in self.parts(drawing, "badge"):
+            badge.append(self.contour(s, outline))
+        for s in self.parts(drawing, "badge"):
+            badge.append(self.fill(s, fill))
+        inked = badge if "badge" in drawing else top
+        for s in self.parts(drawing, "ink"):
+            if "stroke" in s:
+                inked.append(self.stroke(s, ink, s["stroke"]))
+            elif "ring" in s:
+                inked.append(shape_el(s, f'fill="none" stroke="{ink}" stroke-width="{s["ring"]}"'))
+            else:
+                inked.append(shape_el(s, f'fill="{ink}"'))
+        for s in self.parts(drawing, "accent"):
+            top.append(shape_el(s, f'fill="{accent}"'))
+        if badge:
+            sx, sy = self.data["badge_shift"]
+            overlay.append(f'<g transform="translate({sx} {sy})">{"".join(badge)}</g>')
+
+        turn = f' transform="rotate({drawing["turn"]} 12 12)"' if drawing.get("turn") else ""
+        return f'<defs>{defs}</defs><g{turn}>{"".join(under + over + top + overlay)}</g>'
+
+
+def hotspot(drawing):
+    x, y = drawing["hot"]
+    turn = drawing.get("turn", 0)
+    if not turn:
+        return x, y
+    a = math.radians(turn)
+    x, y = x - 12, y - 12
+    return 12 + x * math.cos(a) - y * math.sin(a), 12 + x * math.sin(a) + y * math.cos(a)
+
+
+# ---- The loader's sweep -------------------------------------------------------------
+
+
+def bezier(p1x, p1y, p2x, p2y):
+    """CSS cubic-bezier(p1x, p1y, p2x, p2y) as a function of progress."""
+    def at(t, a, b):
+        return 3 * (1 - t) ** 2 * t * a + 3 * (1 - t) * t ** 2 * b + t ** 3
+
+    def solve(x):
+        lo, hi = 0.0, 1.0
+        for _ in range(40):
+            mid = (lo + hi) / 2
+            if at(mid, p1x, p2x) < x:
+                lo = mid
+            else:
+                hi = mid
+        return at((lo + hi) / 2, p1y, p2y)
+    return solve
+
+
+def sweeps(frames, timing):
+    """Where the segment is in each frame: there in the first half of the
+    cycle, back in the second, eased at both ends."""
+    if timing["ms"] <= 0:
+        return [0.0]
+    ease = bezier(*timing["ease"])
+    n = frames
+    out = []
+    for i in range(n):
+        t = i / n
+        out.append(ease(t * 2) if t < 0.5 else ease((1 - t) * 2))
+    return out
+
+
+# ---- Raster -------------------------------------------------------------------------
+
+
+def render_sheet(painter, tiles, size, workdir):
+    """Every tile at `size` pixels, as premultiplied BGRA rows, in one call to
+    librsvg."""
+    cols = 16
+    rows = (len(tiles) + cols - 1) // cols
+    width, height = cols * size, rows * size
+    body = []
+    for i, (drawing, sweep) in enumerate(tiles):
+        x, y = (i % cols) * size, (i // cols) * size
+        body.append(f'<svg x="{x}" y="{y}" width="{size}" height="{size}" viewBox="0 0 24 24">'
+                    f'{painter.svg(drawing, f"t{i}", sweep)}</svg>')
+    svg = (f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" '
+           f'viewBox="0 0 {width} {height}">{"".join(body)}</svg>')
+    path = os.path.join(workdir, f"sheet-{size}.svg")
+    with open(path, "w", encoding="utf-8") as handle:
+        handle.write(svg)
+    png = subprocess.run(["rsvg-convert", path], capture_output=True, check=True).stdout
+    raw = subprocess.run(["magick", "png:-", "-alpha", "associate", "-depth", "8", "BGRA:-"],
+                         input=png, capture_output=True, check=True).stdout
+    if len(raw) != width * height * 4:
+        raise RuntimeError(f"the {size} px sheet came back {len(raw)} bytes, not {width * height * 4}")
+    stride = width * 4
+    images = []
+    for i in range(len(tiles)):
+        x, y = (i % cols) * size, (i // cols) * size
+        images.append(b"".join(raw[(y + r) * stride + x * 4:(y + r) * stride + (x + size) * 4] for r in range(size)))
+    return images
+
+
+def xcursor(images):
+    """An XCursor file from [(size, width, xhot, yhot, delay, bgra)]."""
+    header, toc_entry, chunk_header = 16, 12, 36
+    image_type = 0xFFFD0002
+    position = header + toc_entry * len(images)
+    toc, chunks = [], []
+    for size, side, xhot, yhot, delay, pixels in images:
+        toc.append(struct.pack("<III", image_type, size, position))
+        chunk = struct.pack("<IIIIIIIII", chunk_header, image_type, size, 1, side, side, xhot, yhot, delay) + pixels
+        chunks.append(chunk)
+        position += len(chunk)
+    return b"Xcur" + struct.pack("<III", header, 0x10000, len(images)) + b"".join(toc) + b"".join(chunks)
+
+
+# ---- Themes --------------------------------------------------------------------------
+
+
+def write_theme(theme_id, theme, data, colours, timing, root):
+    painter = Painter(data, theme["inks"], colours)
+    drawings = data["drawings"]
+    frames = sweeps(data["loader"]["frames"], timing)
+    delay = round(timing["ms"] / len(frames))
+
+    # A tile per drawing, and one per frame for those that carry the loader.
+    tiles, index = [], {}
+    for d in drawings:
+        index[d["id"]] = []
+        for sweep in (frames if "loader" in d else [0.0]):
+            index[d["id"]].append(len(tiles))
+            tiles.append((d, sweep))
+
+    target = os.path.join(root, theme_id)
+    os.makedirs(os.path.join(target, "cursors"))
+    with tempfile.TemporaryDirectory() as work:
+        sheets = {size: render_sheet(painter, tiles, size, work) for size in data["sizes"]}
+
+    for d in drawings:
+        hx, hy = hotspot(d)
+        animated = len(index[d["id"]]) > 1
+        images = []
+        for size in data["sizes"]:
+            k = size / data["grid"]
+            xhot = min(size - 1, max(0, round(hx * k)))
+            yhot = min(size - 1, max(0, round(hy * k)))
+            for tile in index[d["id"]]:
+                images.append((size, size, xhot, yhot, delay if animated else 0, sheets[size][tile]))
+        names = d["names"]
+        with open(os.path.join(target, "cursors", names[0]), "wb") as handle:
+            handle.write(xcursor(images))
+        for alias in names[1:]:
+            os.symlink(names[0], os.path.join(target, "cursors", alias))
+
+    with open(os.path.join(target, "index.theme"), "w", encoding="utf-8") as handle:
+        handle.write(f"[Icon Theme]\nName={theme['name']}\nComment={theme['comment']}\n")
+
+
+def slot(theme_id, theme, letter):
+    path = os.path.join(ICONS, f"{theme_id}.{letter}")
+    os.makedirs(path, exist_ok=True)
+    body = (f"[Icon Theme]\nName={theme['name']}\nComment=Bioma's live copy of {theme_id}; "
+            f"the shell switches between its two slots to make a new palette show.\nInherits={theme_id}\n")
+    index = os.path.join(path, "index.theme")
+    try:
+        with open(index, encoding="utf-8") as handle:
+            if handle.read() == body:
+                return
+    except OSError:
+        pass
+    with open(index, "w", encoding="utf-8") as handle:
+        handle.write(body)
+
+
+def build(request):
+    colours = request.get("colours") or {}
+    missing = [role for role in ROLES if not colours.get(role)]
+    if missing:
+        raise ValueError("missing colours: " + ", ".join(missing))
+    loader = request.get("loader") or {}
+    timing = {"ms": max(0, int(loader.get("ms", 0))), "ease": [float(v) for v in loader.get("ease", [])][:4]}
+    if timing["ms"] and len(timing["ease"]) != 4:
+        raise ValueError("the loader needs its four easing points")
+
+    with open(DRAWINGS, "rb") as handle:
+        source = handle.read()
+    data = json.loads(source)
+    names = [n for d in data["drawings"] for n in d["names"]]
+    if len(names) != len(set(names)):
+        raise ValueError("a cursor name is given to two drawings")
+
+    stamp = hashlib.sha256(json.dumps([RENDERER, {r: colours[r].lower() for r in ROLES}, timing]).encode()
+                           + source).hexdigest()
+    os.makedirs(ICONS, exist_ok=True)
+    for theme_id, theme in data["themes"].items():
+        for letter in SLOTS:
+            slot(theme_id, theme, letter)
+
+    fresh = all(_read(os.path.join(ICONS, t, ".stamp")) == stamp for t in data["themes"])
+    if fresh:
+        return False
+
+    # Built beside the old ones and swapped in whole, so a cursor loaded during
+    # a build comes from one theme or the other, never from half of each.
+    staging = tempfile.mkdtemp(prefix=".bioma-cursors-", dir=ICONS)
+    try:
+        for theme_id, theme in data["themes"].items():
+            write_theme(theme_id, theme, data, colours, timing, staging)
+            with open(os.path.join(staging, theme_id, ".stamp"), "w", encoding="utf-8") as handle:
+                handle.write(stamp)
+        for theme_id in data["themes"]:
+            live = os.path.join(ICONS, theme_id)
+            old = os.path.join(staging, theme_id + ".old")
+            if os.path.isdir(live):
+                os.rename(live, old)
+            os.rename(os.path.join(staging, theme_id), live)
+    finally:
+        shutil.rmtree(staging, ignore_errors=True)
+    return True
+
+
+def page():
+    with open(DRAWINGS, encoding="utf-8") as handle:
+        source = handle.read()
+    json.loads(source)
+    with open(PAGE, encoding="utf-8") as handle:
+        text = handle.read()
+    start = text.index(PAGE_OPEN) + len(PAGE_OPEN)
+    end = text.index("</script>", start)
+    with open(PAGE, "w", encoding="utf-8") as handle:
+        handle.write(text[:start] + "\n" + source.rstrip() + "\n" + text[end:])
+
+
+def _read(path):
+    try:
+        with open(path, encoding="utf-8") as handle:
+            return handle.read().strip()
+    except OSError:
+        return ""
+
+
+if __name__ == "__main__":
+    if sys.argv[1:] == ["page"]:
+        page()
+    elif sys.argv[1:] == ["build"]:
+        try:
+            built = build(json.load(sys.stdin))
+        except (ValueError, OSError, RuntimeError, subprocess.CalledProcessError) as error:
+            print(f"cursors: {error}", file=sys.stderr)
+            sys.exit(1)
+        print(json.dumps({"built": built}))
+    else:
+        print("usage: cursors build < request.json | page", file=sys.stderr)
+        sys.exit(1)

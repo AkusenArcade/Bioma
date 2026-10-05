@@ -23,13 +23,16 @@ happening. The composition of the desktop changes with the state of the machine.
 
 ## 2. Scope
 
-**In scope.** The shell surfaces, their behaviour, their configuration, and the
-generation of a colour palette that other applications can consume.
+**In scope.** The shell surfaces, their behaviour, their configuration, the
+generation of a colour palette that other applications can consume, and a
+cursor theme of Bioma's own, drawn in that palette and redrawn when it changes
+(reopened 2026-10-05; `docs/design/CURSORS.md`).
 
 **Out of scope for v1.**
-- Theming third-party components: cursor themes, GTK icon themes, system UI
-  fonts. Bioma themes itself. (Working code for this exists in Prisma and can be
-  ported later if wanted.)
+- Theming third-party components: GTK icon themes, system UI fonts. Bioma
+  themes itself. (Working code for this exists in Prisma and can be ported
+  later if wanted. An icon theme of Bioma's own, in the palette like the
+  cursors, is the next candidate.)
 - Lock screen / greeter — use an external one. A bug here locks the user out of
   their session.
 - Localisation. English only; the i18n layer from Prisma is deliberately dropped.

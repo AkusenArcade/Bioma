@@ -20,6 +20,7 @@ depends=(
     'glib2'
     'wl-clipboard'
     'imagemagick'
+    'librsvg'
     'libpipewire'
     'gcc-libs'
     'glibc'
