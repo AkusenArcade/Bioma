@@ -20,7 +20,6 @@ depends=(
     'glib2'
     'wl-clipboard'
     'imagemagick'
-    'librsvg'
     'libpipewire'
     'gcc-libs'
     'glibc'
@@ -29,9 +28,13 @@ depends=(
     # The two voices (Typography): expressive and technical.
     'ttf-spectral'
     'ttf-orbitron'
-    # Theme: palettes from the wallpaper, the wallpaper folder picker.
+    # Theme: palettes from the wallpaper, the wallpaper folder picker, and
+    # Bioma's own cursors, rendered from SVG in the palette (scripts/cursors).
+    # The cursor and icon themes are built per user, in their palette, by the
+    # shell's first start, and put on the desktop then (services/Looks.qml).
     'matugen'
     'zenity'
+    'librsvg'
     # Launcher: files found by name in the home, and opened.
     'fd'
     'xdg-utils'

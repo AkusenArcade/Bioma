@@ -110,6 +110,10 @@ itself. After a rebuild, the shell moves it to the other slot. That change of na
 makes the new colours appear. The theme cell lists the themes, not the slots
 (`scripts/looks`).
 
+**On the first start** the shell puts **Bioma** on the desktop once it is built, at the size
+already set — with the icons (`ICON_THEME.md` §4), and only once: `theme.looks_adopted`
+records it, and a desktop already on Bioma Cell keeps it.
+
 **The greeter** gets the theme and the slot in its copy (`scripts/greeter-sync`, `data/icons/`),
 and finds them first on its cursor path (`scripts/greeter-session`).
 

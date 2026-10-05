@@ -61,6 +61,12 @@ they did. From then on the theme cell shows **BASE** under ICONS while a Bioma t
 and the base can be changed there. It is kept in the configuration as `theme.icon_base`
 (Adwaita until one is chosen).
 
+**On the first start** the shell builds the themes in the user's palette and puts **Bioma** on
+the desktop, with the cursor (`CURSORS.md` §4) — once, recorded as `theme.looks_adopted`, so a
+theme chosen afterwards is never taken back. A desktop already on one of Bioma's themes keeps
+it. The package cannot do this at install time: the themes are drawn in each user's palette,
+which only the running shell knows (Akusen, 2026-10-06).
+
 **Rebuilt with the palette** by `scripts/icon-theme`, which writes plain SVG: a few
 milliseconds, and nothing when the request has not changed. The colours come from
 `core/Theme.qml`'s targets through `services/Looks.qml`, never from the script.

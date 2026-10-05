@@ -389,6 +389,9 @@ ShellRoot {
 
     Component.onCompleted: {
         root.refreshLayout();
+        // A fresh install puts Bioma's own icons and cursor on the desktop,
+        // once (Looks.adopt).
+        Looks.adopting = true;
         console.log("Bioma: configuration", Config.ready ? "loaded" : "pending");
     }
 }

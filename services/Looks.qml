@@ -114,9 +114,41 @@ Singleton {
                     root.cursorTheme = data.current.cursor || "";
                     root.cursorLive = data.current.live || root.cursorTheme;
                     root.cursorSize = data.current.size || 24;
+                    root.adopt();
                 } catch (e) {}
             }
         }
+    }
+
+    // ---- The first start ---------------------------------------------------------------
+
+    // Bioma's own looks are put on the desktop once, the first time they have
+    // been built: a fresh install comes up in its own icons and cursor rather
+    // than in whatever was there (Akusen, 2026-10-06). Once — `looks_adopted`
+    // is written either way — so a theme chosen afterwards is never taken
+    // back, and not over one of Bioma's themes already chosen. The icon theme
+    // that was on the desktop becomes the base, as `setIcons` does whenever
+    // one of Bioma's is chosen.
+    readonly property bool adopted: Config.get("theme.looks_adopted", false)
+
+    // Set by the shell, and only by it: the probe binds this service too, and
+    // a probe touches nothing.
+    property bool adopting: false
+    onAdoptingChanged: root.adopt()
+    readonly property string adoptedIcons: "bioma-icons"
+    readonly property string adoptedCursor: "bioma"
+
+    function adopt() {
+        if (!root.adopting || root.adopted || !settle.settled)
+            return;
+        // Not built yet: the next listing, after the builders, tries again.
+        if (!root.isSlotted(root.icons, root.adoptedIcons) || !root.isSlotted(root.cursors, root.adoptedCursor))
+            return;
+        if (!root.isSlotted(root.icons, root.iconTheme))
+            root.setIcons(root.adoptedIcons);
+        if (!root.isSlotted(root.cursors, root.cursorTheme))
+            root.applyCursor(root.adoptedCursor, root.cursorSize > 0 ? root.cursorSize : 24);
+        Config.set("theme.looks_adopted", true);
     }
 
     // ---- Setting -------------------------------------------------------------------
@@ -254,6 +286,9 @@ Singleton {
             settled = true;
             cursorBuilder.build(root.cursorRequest);
             iconBuilder.build(root.iconRequest);
+            // Themes built by an earlier start are listed already, and an
+            // unchanged build lists nothing again.
+            root.adopt();
         }
     }
 

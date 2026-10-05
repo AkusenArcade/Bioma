@@ -135,7 +135,7 @@ the whole shell. Only the second table is left to you.
 | gsettings | `glib2` | the desktop's settings: palette, icons, cursor, proxy |
 | wl-clipboard | `wl-clipboard` | the clipboard cell |
 | ImageMagick | `imagemagick` | wallpaper thumbnails, and the cursors' pixels |
-| librsvg | `librsvg` | Bioma's cursors, drawn in the palette (`scripts/cursors`) |
+| librsvg | `librsvg` | Bioma's cursors, drawn in the palette (`scripts/cursors`); with the icons, built and put on the desktop at the first start |
 | Spectral, Orbitron | AUR `ttf-spectral`, AUR `ttf-orbitron` | the two voices, expressive and technical. Both are SIL OFL |
 | matugen, zenity | `matugen`, `zenity` | palettes computed from the wallpaper; the wallpaper folder picker |
 | fd, xdg-utils | `fd`, `xdg-utils` | files found by name in the launcher, and opened with their default application |
