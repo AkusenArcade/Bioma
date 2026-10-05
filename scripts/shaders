@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Compiles every fragment shader in the tree to the .qsb Qt loads.
+#
+#     shaders           rebuild each *.frag next to itself, as <name>.frag.qsb
+#
+# The .qsb files are committed: the package installs them as they are, so
+# nobody needs qt6-shadertools to run Bioma — only to change a shader. Run
+# this after editing a .frag and commit both.
+set -euo pipefail
+
+qsb=$(command -v qsb || echo /usr/lib/qt6/bin/qsb)
+[ -x "$qsb" ] || { echo "shaders: qsb not found (qt6-shadertools)" >&2; exit 1; }
+
+root=$(cd "$(dirname "$0")/.." && pwd)
+find "$root" -name '*.frag' -not -path '*/.git/*' -print0 |
+    while IFS= read -r -d '' frag; do
+        "$qsb" --glsl "100es,120,150" --hlsl 50 --msl 12 -o "$frag.qsb" "$frag"
+        echo "${frag#"$root"/}.qsb"
+    done

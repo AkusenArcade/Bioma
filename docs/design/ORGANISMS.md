@@ -1,6 +1,6 @@
 # Bioma — organisms
 
-*Approved 2026-10-04, media redrawn at Akusen's request. Built: the structure, arranging, the five organisms, the Settings category.*
+*Approved 2026-10-04, media redrawn at Akusen's request. Built: the structure, arranging, the five organisms, the Settings category; since then the note and the lava lamp.*
 
 The visual specification of the organisms: read-only surfaces that live on the desktop, under
 the windows, in the part of the screen the top and bottom membranes leave free. Read it with
@@ -341,6 +341,66 @@ default application could come later, outside the organism.
 
 ---
 
+## 07 · Lava lamp
+
+*Built 2026-10-05 as Bioma's metaball proof of concept, at Akusen's request. Present while the
+machine reports a CPU temperature · the processor's heat, drawn as wax.*
+
+A lava lamp heated by the processor. The one place Bioma draws metaballs: PRD §6.5 rejected them
+for the shapes of the interface, because a soft union has no outline anyone can predict and a
+surface that is pressed needs one. An organism is never pressed, and here the union is the
+point — wax melts together where it meets. The silhouette stays inside the glass panel: the
+panel is still a rectangle and the blur still follows it.
+
+**Every motion is the temperature.** Wax sits on the heater and warms towards the heater's heat;
+once it is as warm as the heater will make it, it lets go, rises, cools as it climbs and sinks
+back. How high it climbs is how hot the processor is: 0.2 of the lamp at the start of the scale,
+the whole lamp at its end, and hotter wax is also quicker. Below the start nothing warms enough
+to leave the bottom, so a cool machine is a still pool that draws no frames.
+
+| Measure | Value | Note |
+|---|---|---|
+| panel | 200 × 320 | bleeds: the wax fills the glass, the rim is drawn over it |
+| blobs | 7 | radii 0.07–0.12 of the width; at rest they overlap into one pool on the heater |
+| field | Σ (1 − d²/R²)³, R = 2 r | compact: smooth everywhere, a crowd does not swell into one mass |
+| scale | `cold` 48 °C · `hot` 90 °C | heat = (T − cold) / (hot − cold); nothing rises below heat 0.16 |
+| cap | the caption | the wax never climbs over the figure |
+
+**The wax is translucent.** Its opacity follows the depth inside the merged surface, not the
+field's value — the field peaks at every blob's centre and would show the spheres the mass is made
+of: about 0.55 at the edge and in the necks between blobs, 0.88 and lighter in the thick of a
+mass. A band just inside the edge is lit, brightest where the surface faces up, as the lit border
+runs along every cell's top. The heater's light at the foot of the glass is as strong as it is
+hot.
+
+**Colour** — the state colours by default (calm, active, alert by heat), like every reading of
+load. With `colour: "theme"` the wax and the figure take `Theme.primary`, the light the icons are
+lit with, and the heat is said by motion and the heater alone (Akusen, 2026-10-05).
+
+**Figure** — `CPU` in Orbitron label, the temperature below it in the value size, lit with the
+wax colour, in the top-left of the cap. `figures: false` hides them.
+
+**Frames** — at the monitor's rate while the wax moves. Thirty a second showed as stutter at once,
+and a timer at sixty is not tied to the refresh. Measured on this machine: about 5.6 % of one
+core at 165 Hz while moving (0.17 % of the 32-thread total), nothing at rest. The cost is Qt
+redrawing the whole organism surface each frame, not the shader.
+
+**Sensor** — `SystemMonitor.cpuTemperature`: k10temp `Tctl` (AMD), zenpower `Tdie`, coretemp
+`Package id 0` (Intel), then the thermal zones `x86_pkg_temp`, a CPU zone, `acpitz`.
+`vitals.temperature_sensor` overrides the choice with any part of the input file's path.
+
+**Limit cases** — no sensor: the organism is absent; while arranging its blank form says *No
+temperature sensor*.
+
+**Options** — `size`, `colour` (`theme`, or absent for state), `cold`, `hot`, `figures`.
+
+**Settings** — the lava lamp's chip opens COLOUR: State · Theme.
+
+**Shader** — `organisms/lava/lava.frag`, compiled by `scripts/shaders` to the committed
+`lava.frag.qsb`, so running Bioma never needs `qt6-shadertools`; changing the shader does.
+
+---
+
 ## Configuration
 
 ```json
@@ -351,7 +411,8 @@ default application could come later, outside the organism.
   { "type": "media",    "monitor": "DP-1", "x": 0.80, "y": 0.25 },
   { "type": "weather",  "monitor": "HDMI-A-1", "x": 0.5, "y": 0.5, "size": "comfortable" },
   { "type": "note",     "monitor": "DP-1", "x": 0.5, "y": 0.4,
-    "file": "~/Documents/Vault/Next.md", "height": "medium" }
+    "file": "~/Documents/Vault/Next.md", "height": "medium" },
+  { "type": "lava",     "monitor": "HDMI-A-1", "x": 0.05, "y": 0.17, "colour": "theme" }
 ],
 "weather": { "city": "Milan" }   // place, latitude, longitude, located_for are written back
 ```

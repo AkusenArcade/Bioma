@@ -75,6 +75,7 @@ ShellRoot {
     readonly property real gpuClock: SystemMonitor.gpuClock
     readonly property var vitalProcesses: SystemMonitor.processes
     readonly property bool hasBattery: SystemMonitor.hasBattery
+    readonly property real cpuTemperature: SystemMonitor.cpuTemperature
     readonly property var trayItems: Tray.items
     readonly property bool trayAttention: Tray.attention
     readonly property string captureFolder: Capture.folder
@@ -433,6 +434,9 @@ ShellRoot {
              : "unknown — no cpufreq, the beat has no ceiling to map onto");
         line("ram", `${SystemMonitor.ramUsedGb}/${SystemMonitor.ramTotalGb} GiB`
              + `  ${Math.round(root.ramPercent)}%`);
+        line("cpu temperature", SystemMonitor.cpuTemperatureKnown
+             ? `${root.cpuTemperature.toFixed(1)} °C  ${SystemMonitor.temperaturePath}`
+             : "no sensor found");
         line("swap", SystemMonitor.swapTotal > 0
              ? `${Math.round(SystemMonitor.swapUsed)}/${Math.round(SystemMonitor.swapTotal)} MiB`
              : "none");

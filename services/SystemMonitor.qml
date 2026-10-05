@@ -52,6 +52,8 @@ Singleton {
             gpuClockFile.reload();
             gpuVramFile.reload();
         }
+        if (root.temperaturePath.length > 0)
+            temperatureFile.reload();
     }
 
     // `reload()` is asynchronous, and this is the trap in it: the text is
@@ -387,6 +389,94 @@ Singleton {
         blockLoading: true
         printErrors: false
         onLoaded: root.vramUsed = (parseInt(gpuVramFile.text().trim(), 10) || 0) / (1024 * 1024)
+    }
+
+    // ── CPU temperature ──────────────────────────────────────────────────
+    //
+    // What the lava organism is heated by. One figure for the package, the one
+    // the fans follow: `Tctl` on AMD (k10temp; `Tdie` under zenpower), `Package
+    // id 0` on Intel (coretemp). A machine with neither falls back to the
+    // thermal zones — `x86_pkg_temp`, then a CPU zone on ARM, then `acpitz`,
+    // which on many laptops is the closest thing to a CPU reading there is.
+    //
+    // Found once at startup by the same kind of glob as the GPU. Which hwmon
+    // is which changes between boots, so the index is never trusted; the name
+    // and the label are. `vitals.temperature_sensor` overrides the choice with
+    // any part of the input file's path.
+
+    property string temperaturePath: ""
+    property real cpuTemperature: 0   // °C
+    readonly property bool cpuTemperatureKnown: temperaturePath.length > 0
+
+    readonly property string configuredSensor: Config.get("vitals.temperature_sensor", "")
+
+    Process {
+        id: temperatureProbe
+        property var found: []
+
+        command: ["sh", "-c",
+                  "for h in /sys/class/hwmon/hwmon*; do "
+                  + "n=$(cat \"$h/name\" 2>/dev/null); "
+                  + "for i in \"$h\"/temp*_input; do [ -e \"$i\" ] || continue; "
+                  + "l=$(cat \"${i%_input}_label\" 2>/dev/null); "
+                  + "printf 'hwmon\\t%s\\t%s\\t%s\\n' \"$n\" \"$l\" \"$i\"; done; done; "
+                  + "for z in /sys/class/thermal/thermal_zone*; do [ -e \"$z/temp\" ] || continue; "
+                  + "printf 'zone\\t%s\\t\\t%s\\n' \"$(cat \"$z/type\" 2>/dev/null)\" \"$z/temp\"; done"]
+        running: true
+
+        onRunningChanged: if (running) temperatureProbe.found = []
+
+        stdout: SplitParser {
+            splitMarker: "\n"
+            onRead: line => {
+                const parts = line.split("\t");
+                if (parts.length < 4)
+                    return;
+                temperatureProbe.found.push({ kind: parts[0], name: parts[1], label: parts[2], path: parts[3] });
+            }
+        }
+
+        onExited: {
+            const found = temperatureProbe.found;
+            let chosen = null;
+
+            if (root.configuredSensor.length > 0)
+                chosen = found.find(s => s.path.indexOf(root.configuredSensor) >= 0) ?? null;
+
+            // In order of trust: the vendor's package sensor, then the zones.
+            const wanted = [
+                s => s.name === "k10temp" && s.label === "Tctl",
+                s => s.name === "zenpower" && s.label === "Tdie",
+                s => s.name === "k10temp",
+                s => s.name === "coretemp" && s.label.indexOf("Package") === 0,
+                s => s.kind === "zone" && s.name === "x86_pkg_temp",
+                s => s.kind === "zone" && /^cpu/.test(s.name),
+                s => s.kind === "zone" && s.name === "acpitz"
+            ];
+            for (const test of wanted) {
+                if (chosen)
+                    break;
+                chosen = found.find(test) ?? null;
+            }
+
+            if (!chosen)
+                return;
+            root.temperaturePath = chosen.path;
+            temperatureFile.reload();
+        }
+    }
+
+    FileView {
+        id: temperatureFile
+        path: root.temperaturePath
+        blockLoading: true
+        printErrors: false
+        // Millidegrees, for hwmon and the zones alike.
+        onLoaded: {
+            const value = parseInt(temperatureFile.text().trim(), 10);
+            if (!isNaN(value))
+                root.cpuTemperature = value / 1000;
+        }
     }
 
     // ── Battery ──────────────────────────────────────────────────────────

@@ -146,6 +146,7 @@
     "interval": 2000,
     "clock_average": 5,
     "gpu_card": "",
+    "temperature_sensor": "",
     "process_interval": 3000,
     "process_count": 60
   },

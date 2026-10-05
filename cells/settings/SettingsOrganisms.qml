@@ -431,6 +431,24 @@ Item {
                     }
 
                     OptionRow {
+                        visible: screenSection.open >= 0 && root.organisms[screenSection.open].type === "lava"
+                        label: "COLOUR"
+
+                        Segmented {
+                            metrics: root.metrics
+                            fontSize: root.metrics.fontMeta
+                            buttonPadding: 10 * root.factor
+                            options: [
+                                { "key": "state", "label": "State" },
+                                { "key": "theme", "label": "Theme" }
+                            ]
+                            current: screenSection.open >= 0 && root.organisms[screenSection.open].colour === "theme"
+                                     ? "theme" : "state"
+                            onChose: key => root.setOption(screenSection.open, "colour", key === "theme" ? key : null)
+                        }
+                    }
+
+                    OptionRow {
                         visible: screenSection.open >= 0 && root.organisms[screenSection.open].type === "note"
                         label: "HEIGHT"
 
