@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # The icon and cursor themes installed on this machine, and setting them.
 #
-#     looks list                 {"icons": [{"id", "name"}], "cursors": [{"id", "name", "slotted"}],
-#                                 "current": {"icons", "cursor", "live", "size"}}
+#     looks list                 {"icons": [{"id", "name", "slotted"}], "cursors": [{"id", "name", "slotted"}],
+#                                 "current": {"icons", "iconsLive", "cursor", "live", "size"}}
 #     looks icons ID             GTK (gsettings) and qt5ct/qt6ct
 #     looks cursor ID SIZE       GTK (gsettings); niri is written by the shell
 #
@@ -10,8 +10,9 @@
 # index.theme lists Directories, and a cursor theme when it has a cursors/
 # directory; some are both. The names are the themes' own, from index.theme.
 #
-# A cursor theme is `slotted` when it has the two slots Bioma's own cursors
-# carry (scripts/cursors): <id>.a and <id>.b, empty themes inheriting from it,
+# A theme is `slotted` when it has the two slots Bioma's own cursors and icons
+# carry (scripts/cursors, scripts/icon-theme): <id>.a and <id>.b, empty themes
+# inheriting from it,
 # which the desktop is pointed at instead of <id> so that a rebuilt theme can be
 # shown by changing the name. They are not themes anybody picks, so they are not
 # listed, and `current` names the theme a slot stands for; `live` is the name
@@ -65,10 +66,10 @@ def catalogue():
                 cursors[entry] = name
     as_list = lambda found: sorted(({"id": k, "name": v} for k, v in found.items()),
                                   key=lambda t: t["name"].lower())
-    cursor_list = as_list(cursors)
-    for theme in cursor_list:
+    icon_list, cursor_list = as_list(icons), as_list(cursors)
+    for theme in icon_list + cursor_list:
         theme["slotted"] = all(slot_of(f"{theme['id']}.{s}") == theme["id"] for s in "ab")
-    return as_list(icons), cursor_list
+    return icon_list, cursor_list
 
 
 def slot_of(name):
@@ -98,7 +99,9 @@ def current():
     unquote = lambda value: value.strip("'\"")
     size = gsettings("get", "org.gnome.desktop.interface", "cursor-size")
     live = unquote(gsettings("get", "org.gnome.desktop.interface", "cursor-theme"))
-    return {"icons": unquote(gsettings("get", "org.gnome.desktop.interface", "icon-theme")),
+    icons = unquote(gsettings("get", "org.gnome.desktop.interface", "icon-theme"))
+    return {"icons": slot_of(icons) or icons,
+            "iconsLive": icons,
             "cursor": slot_of(live) or live,
             "live": live,
             "size": int(size) if size.isdigit() else 24}

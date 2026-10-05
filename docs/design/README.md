@@ -31,6 +31,7 @@ This package is English throughout.
 | `tokens.css` | the design tokens as custom properties, ready to translate into QML singletons |
 | `icons/` | 33 SVG glyphs, 24×24, `currentColor`, plus their own README |
 | `CURSORS.md` | the cursor theme: drawings on the icon grid, two colourings from the palette, how it is rebuilt |
+| `ICON_THEME.md` | the icon theme: folders and files in the palette, over a base theme for everything else |
 | `mockups/` | 68 renders at 2×: every state of every cell, indexed in its own README |
 | `pages/` | the design pages as live HTML — the animated indicators actually move there, and `cursors.html` lets you wear every cursor |
 

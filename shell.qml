@@ -239,13 +239,15 @@ ShellRoot {
     // And the services that act by themselves, with nothing on screen reading
     // them: the proxy that follows the networks, the display that answers a
     // key, the timer and alarm that ring, the palette carried to the
-    // applications, the power profile that follows the plug. Unbound, they
-    // would start only when their panel was first opened.
+    // applications, the cursors and icons redrawn in it, the power profile
+    // that follows the plug. Unbound, they would start only when their panel
+    // was first opened.
     readonly property bool proxyOn: Proxy.on
     readonly property string osdKind: Osd.kind
     readonly property bool alarmOn: Time.alarm.on === true
     readonly property int clipboardKept: Clipboard.entries.length
     readonly property string templatesSignature: Templates.signature
+    readonly property string looksDrawn: Looks.iconRequest + Looks.cursorRequest
     readonly property bool sessionLocked: Locker.locked
     readonly property bool greeterSynced: GreeterSync.synced
     readonly property string powerWanted: Power.wanted

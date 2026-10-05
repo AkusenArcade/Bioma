@@ -1031,6 +1031,23 @@ Item {
                                         })
                                     }
                                 }
+
+                                // Bioma's icon themes draw folders and files only; the
+                                // applications and everything else come from the theme
+                                // they sit on, chosen here. Only there while one of
+                                // them is on the desktop: no other theme has a base.
+                                LookLabel {
+                                    visible: root.biomaIcons
+                                    text: "BASE"
+                                }
+
+                                LookDropdown {
+                                    id: baseDrop
+                                    visible: root.biomaIcons
+                                    label: Looks.nameOf(Looks.icons, Looks.iconBase)
+                                    open: root.listing === "base"
+                                    onPressed: root.toggleList("base", baseDrop)
+                                }
                             }
 
                             Column {
@@ -1212,8 +1229,8 @@ Item {
     // is a shape of the cell: the membrane masks and blurs it with the rest, so
     // a press inside it is not a press outside the cell.
 
-    // Which list is open: the palette's, the icon themes, the cursors — or
-    // none. One at a time, because they all open in the same place.
+    // Which list is open: the palette's, the icon themes, the base under
+    // Bioma's, the cursors — or none. One at a time, because they all open in the same place.
     property string listing: ""
 
     // The list that is showing, kept while it closes: the one being put away
@@ -1254,13 +1271,17 @@ Item {
     // never stands open over a list of Bioma palettes.
     onFromWallpaperChanged: if (root.listing === "palette") root.listing = ""
 
+    readonly property bool biomaIcons: Looks.isSlotted(Looks.icons, Looks.iconTheme)
+
     readonly property var listOptions: root.listShown === "palette" ? root.options
         : root.listShown === "icons" ? Looks.icons.map(t => ({ "key": t.id, "label": t.name }))
+        : root.listShown === "base" ? Looks.icons.filter(t => !t.slotted).map(t => ({ "key": t.id, "label": t.name }))
         : root.listShown === "cursor" ? Looks.cursors.map(t => ({ "key": t.id, "label": t.name }))
         : []
 
     readonly property string listChosen: root.listShown === "palette" ? root.chosen
         : root.listShown === "icons" ? Looks.iconTheme
+        : root.listShown === "base" ? Looks.iconBase
         : root.listShown === "cursor" ? Looks.cursorTheme
         : ""
 
@@ -1269,6 +1290,8 @@ Item {
             root.choose(key);
         else if (root.listShown === "icons")
             Looks.setIcons(key);
+        else if (root.listShown === "base")
+            Looks.setIconBase(key);
         else if (root.listShown === "cursor")
             Looks.setCursor(key, 0);
         root.listing = "";

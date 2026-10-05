@@ -1,0 +1,238 @@
+#!/usr/bin/env python3
+# Bioma's icon themes, drawn in the palette.
+#
+#     icon-theme build < request.json   {"colours": {"background", "primary", "cell", "raised",
+#                                                    "rim", "line", "grad_top", "grad_bottom",
+#                                                    "back_top", "back_bottom"},
+#                                        "base": "<icon theme id>"}
+#                                       prints {"built": true | false}
+#
+# The drawings are data, assets/icon-theme/drawings.json; what they mean and why
+# they look the way they do is docs/design/ICON_THEME.md. Every theme listed
+# there becomes an icon theme under $XDG_DATA_HOME/icons/<id>: folders, places
+# and file types as scalable SVG in four size ranges, each drawn for its own. The colours are the
+# shell's own (services/Looks.qml takes them from core/Theme.qml): nothing here
+# decides a colour.
+#
+# Bioma draws only what it has something to say about. Everything else —
+# applications first — comes from `base`, the theme the user chose under it,
+# which the themes inherit from, then hicolor.
+#
+# GTK and Qt keep an icon theme loaded by its name, so, as with the cursors
+# (scripts/cursors), each theme has two slots, <id>.a and <id>.b: hidden themes
+# with no icons of their own that inherit everything from <id>. The shell moves
+# the desktop from one to the other after a build, and the new name is what
+# makes the toolkits draw the new colours. Nothing is rebuilt when neither the
+# request nor the drawings have changed.
+import hashlib
+import json
+import math
+import os
+import shutil
+import sys
+import tempfile
+
+HERE = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+DRAWINGS = os.path.join(HERE, "assets", "icon-theme", "drawings.json")
+
+HOME = os.environ["HOME"]
+DATA_HOME = os.environ.get("XDG_DATA_HOME") or os.path.join(HOME, ".local", "share")
+ICONS = os.path.join(DATA_HOME, "icons")
+
+SLOTS = ("a", "b")
+ROLES = ("background", "primary", "cell", "raised", "rim", "line",
+         "grad_top", "grad_bottom", "back_top", "back_bottom")
+
+# Bumped when the drawing changes in a way the data does not show.
+RENDERER = 1
+
+
+# ---- Drawing --------------------------------------------------------------------
+
+
+def glyph(parts, colour, stroke):
+    out = []
+    for p in parts:
+        if "node" in p:
+            cx, cy, r = p["node"]
+            out.append(f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="{colour}"/>')
+        else:
+            out.append(f'<path d="{p["d"]}" fill="none" stroke="{colour}" stroke-width="{stroke:.3f}" '
+                       f'stroke-linecap="round" stroke-linejoin="round"/>')
+    return "".join(out)
+
+
+def placed(parts, colour, centre, scale, stroke):
+    """A 24-grid glyph centred on a 64-grid surface, `scale` units per grid
+    unit; `stroke` is in the surface's units."""
+    cx, cy = centre
+    return (f'<g transform="translate({cx - 12 * scale:.3f} {cy - 12 * scale:.3f}) scale({scale})">'
+            f'{glyph(parts, colour, stroke / scale)}</g>')
+
+
+def gradient(gid, top, bottom, x1, y1, x2, y2):
+    return (f'<linearGradient id="{gid}" gradientUnits="userSpaceOnUse" x1="{x1:.3f}" y1="{y1:.3f}" '
+            f'x2="{x2:.3f}" y2="{y2:.3f}"><stop offset="0" stop-color="{top}"/>'
+            f'<stop offset="1" stop-color="{bottom}"/></linearGradient>')
+
+
+def light(cx, cy, r):
+    """The shell's one light, 165°: from above and slightly from the left."""
+    a = math.radians(165)
+    return cx - math.sin(a) * r, cy + math.cos(a) * r, cx + math.sin(a) * r, cy - math.cos(a) * r
+
+
+def svg(body, defs=""):
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">'
+            f'<defs>{defs}</defs>{body}</svg>\n')
+
+
+def folder(data, c, treatment, emblem, stroke):
+    s = data["shapes"]
+    x, y, w, h, r = s["folder_front"]
+    front = lambda fill: f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{r}" fill="{fill}"/>'
+    e = data["emblem"]
+    if treatment == "primary":
+        defs = (gradient("face", c["grad_top"], c["grad_bottom"], *light(x + w / 2, y + h / 2, w / 2))
+                + gradient("back", c["back_top"], c["back_bottom"], 32, 8, 32, y + h))
+        body = f'<path d="{s["folder_back"]}" fill="url(#back)"/>' + front("url(#face)")
+        ink = c["background"]
+    else:
+        k = s["rim"]
+        defs = gradient("rim", c["rim"], c["line"], 32, y, 32, y + h / 2)
+        body = (f'<path d="{s["folder_back"]}" fill="{c["line"]}"/>' + front(c["cell"])
+                + f'<rect x="{x + k / 2}" y="{y + k / 2}" width="{w - k}" height="{h - k}" rx="{r - k / 2}" '
+                  f'fill="none" stroke="url(#rim)" stroke-width="{k}"/>')
+        ink = c["primary"]
+    if emblem:
+        body += placed(emblem, ink, e["centre"], e["scale"], stroke)
+    return svg(body, defs)
+
+
+def page(data, c, mark, stroke):
+    s = data["shapes"]
+    k = s["rim"]
+    defs = gradient("rim", c["rim"], c["line"], 32, 5, 32, 32)
+    body = (f'<path d="{s["page"]}" fill="{c["cell"]}"/>'
+            f'<path d="{s["page"]}" fill="none" stroke="url(#rim)" stroke-width="{k}"/>'
+            f'<path d="{s["page_fold"]}" fill="{c["raised"]}" stroke="url(#rim)" stroke-width="{k}" '
+            f'stroke-linejoin="round"/>')
+    if mark:
+        m = data["mark"]
+        body += placed(mark, c["primary"], m["centre"], m["scale"], stroke)
+    return svg(body, defs)
+
+
+# ---- Themes --------------------------------------------------------------------
+
+
+def write_theme(theme_id, theme, data, colours, base, root):
+    target = os.path.join(root, theme_id)
+    directories = []
+    for rng in data["sizes"]:
+        for context, entries in (("places", data["folders"]), ("mimetypes", data["files"])):
+            where = os.path.join(target, rng["dir"], context)
+            os.makedirs(where)
+            directories.append((f'{rng["dir"]}/{context}', rng, context))
+            for entry in entries:
+                parts = data["glyphs"][entry["glyph"]] if entry["glyph"] else None
+                if context == "places":
+                    text = folder(data, colours, theme["folders"], parts if rng["emblem"] else None, rng["stroke"])
+                else:
+                    text = page(data, colours, parts if rng["mark"] else None, rng["stroke"])
+                names = entry["names"]
+                with open(os.path.join(where, names[0] + ".svg"), "w", encoding="utf-8") as handle:
+                    handle.write(text)
+                for alias in names[1:]:
+                    os.symlink(names[0] + ".svg", os.path.join(where, alias + ".svg"))
+
+    inherits = [t for t in (base, "hicolor") if t and t != theme_id]
+    lines = ["[Icon Theme]", f"Name={theme['name']}", f"Comment={theme['comment']}",
+             f"Inherits={','.join(dict.fromkeys(inherits))}",
+             f"Directories={','.join(d for d, _, _ in directories)}", ""]
+    for d, rng, context in directories:
+        lines += [f"[{d}]", f"Size={rng['size']}", f"MinSize={rng['min']}", f"MaxSize={rng['max']}",
+                  f"Context={'Places' if context == 'places' else 'MimeTypes'}", "Type=Scalable", ""]
+    with open(os.path.join(target, "index.theme"), "w", encoding="utf-8") as handle:
+        handle.write("\n".join(lines))
+
+
+def slot(theme_id, theme, letter):
+    path = os.path.join(ICONS, f"{theme_id}.{letter}")
+    os.makedirs(path, exist_ok=True)
+    body = (f"[Icon Theme]\nName={theme['name']}\nComment=Bioma's live copy of {theme_id}; "
+            f"the shell switches between its two slots to make a new palette show.\n"
+            f"Inherits={theme_id}\nDirectories=\nHidden=true\n")
+    index = os.path.join(path, "index.theme")
+    if _read(index) == body.strip():
+        return
+    with open(index, "w", encoding="utf-8") as handle:
+        handle.write(body)
+
+
+def build(request):
+    colours = request.get("colours") or {}
+    missing = [role for role in ROLES if not colours.get(role)]
+    if missing:
+        raise ValueError("missing colours: " + ", ".join(missing))
+    base = str(request.get("base") or "").strip()
+    if "/" in base or base.startswith("."):
+        raise ValueError(f"not an icon theme: {base}")
+
+    with open(DRAWINGS, "rb") as handle:
+        source = handle.read()
+    data = json.loads(source)
+    for group in ("folders", "files"):
+        names = [n for e in data[group] for n in e["names"]]
+        if len(names) != len(set(names)):
+            raise ValueError(f"a name is given twice among the {group}")
+        for e in data[group]:
+            if e["glyph"] and e["glyph"] not in data["glyphs"]:
+                raise ValueError(f"no glyph called {e['glyph']}")
+
+    stamp = hashlib.sha256(json.dumps([RENDERER, {r: colours[r].lower() for r in ROLES}, base]).encode()
+                           + source).hexdigest()
+    os.makedirs(ICONS, exist_ok=True)
+    for theme_id, theme in data["themes"].items():
+        for letter in SLOTS:
+            slot(theme_id, theme, letter)
+
+    if all(_read(os.path.join(ICONS, t, ".stamp")) == stamp for t in data["themes"]):
+        return False
+
+    # Built beside the old ones and swapped in whole.
+    staging = tempfile.mkdtemp(prefix=".bioma-icons-", dir=ICONS)
+    try:
+        for theme_id, theme in data["themes"].items():
+            write_theme(theme_id, theme, data, colours, base, staging)
+            with open(os.path.join(staging, theme_id, ".stamp"), "w", encoding="utf-8") as handle:
+                handle.write(stamp)
+        for theme_id in data["themes"]:
+            live = os.path.join(ICONS, theme_id)
+            if os.path.isdir(live):
+                os.rename(live, os.path.join(staging, theme_id + ".old"))
+            os.rename(os.path.join(staging, theme_id), live)
+    finally:
+        shutil.rmtree(staging, ignore_errors=True)
+    return True
+
+
+def _read(path):
+    try:
+        with open(path, encoding="utf-8") as handle:
+            return handle.read().strip()
+    except OSError:
+        return ""
+
+
+if __name__ == "__main__":
+    if sys.argv[1:] == ["build"]:
+        try:
+            built = build(json.load(sys.stdin))
+        except (ValueError, OSError) as error:
+            print(f"icon-theme: {error}", file=sys.stderr)
+            sys.exit(1)
+        print(json.dumps({"built": built}))
+    else:
+        print("usage: icon-theme build < request.json", file=sys.stderr)
+        sys.exit(1)

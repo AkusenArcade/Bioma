@@ -1,0 +1,107 @@
+{
+  "$comment": "Bioma's icon themes as data: folders and files drawn in the palette by scripts/icon-theme. Glyphs are on the 24 grid of docs/design/icons, stroked unless they are nodes; folders and pages are on a 64 grid. The decisions are docs/design/ICON_THEME.md.",
+
+  "themes": {
+    "bioma-icons": {
+      "name": "Bioma",
+      "comment": "Folders and files as cells: the cell fill, the rim lit from above, the glyph in the primary.",
+      "folders": "cell"
+    },
+    "bioma-icons-primary": {
+      "name": "Bioma Primary",
+      "comment": "Folders in the primary gradient, the glyph cut in the background; files as cells.",
+      "folders": "primary"
+    }
+  },
+
+  "shapes": {
+    "folder_back": "M8 13 A5 5 0 0 1 13 8 H23.5 A5 5 0 0 1 27.4 9.9 L29.6 12.6 A3 3 0 0 0 31.9 13.7 H51 A5 5 0 0 1 56 18.7 V46 H8 Z",
+    "folder_front": [6, 20, 52, 35, 6],
+    "page": "M19.5 5.5 H38 L50 17.5 V53.5 A5 5 0 0 1 45 58.5 H19.5 A5 5 0 0 1 14.5 53.5 V10.5 A5 5 0 0 1 19.5 5.5 Z",
+    "page_fold": "M38 5.5 V13.5 A4 4 0 0 0 42 17.5 H50",
+    "rim": 1.2
+  },
+
+  "$sizes": "Scalable directories, each drawn for its own range. Below 24 px a file loses its glyph, below 32 px a folder loses its emblem: the shape alone has to carry them there. `stroke` is the glyphs' weight in the 64 grid, chosen so it lands near 1.5 px across the range, the weight of the shell's own icons: 1.5 at 64 px, 2.4 at 40 px, 3.0 at 28 px. A weight that scales with the icon clogs on screen (Akusen, 2026-10-05).",
+  "sizes": [
+    { "dir": "tiny", "size": 16, "min": 8, "max": 23, "emblem": false, "mark": false, "stroke": 3.0 },
+    { "dir": "small", "size": 28, "min": 24, "max": 31, "emblem": false, "mark": true, "stroke": 3.0 },
+    { "dir": "medium", "size": 40, "min": 32, "max": 47, "emblem": true, "mark": true, "stroke": 2.4 },
+    { "dir": "scalable", "size": 64, "min": 48, "max": 1024, "emblem": true, "mark": true, "stroke": 1.5 }
+  ],
+
+  "emblem": { "centre": [32, 38], "scale": 1.02 },
+  "mark": { "centre": [32, 37], "scale": 0.95 },
+
+  "glyphs": {
+    "home": [{ "d": "M4.5 11 L12 4.5 L19.5 11" }, { "d": "M6.5 9.5 V17.5 A2 2 0 0 0 8.5 19.5 H15.5 A2 2 0 0 0 17.5 17.5 V9.5" }, { "d": "M10.5 19.5 V15.5 H13.5 V19.5" }],
+    "desktop": [{ "d": "M6 5 H18 A3 3 0 0 1 21 8 V14.5 A3 3 0 0 1 18 17.5 H6 A3 3 0 0 1 3 14.5 V8 A3 3 0 0 1 6 5 Z" }, { "d": "M9.5 21 h5" }],
+    "documents": [{ "d": "M8 3.5 H14 L18 7.5 V18.5 A2 2 0 0 1 16 20.5 H8 A2 2 0 0 1 6 18.5 V5.5 A2 2 0 0 1 8 3.5 Z" }, { "d": "M9 11.5 H15 M9 15 H13" }],
+    "downloads": [{ "d": "M12 4 V14 M7.5 9.5 L12 14 L16.5 9.5" }, { "d": "M5 19.5 H19" }],
+    "music": [{ "d": "M10 17.5 V6.5 L18 5 V15" }, { "node": [8, 17.5, 2.2] }, { "node": [16, 15, 2.2] }],
+    "pictures": [{ "d": "M6.5 5 H17.5 A3 3 0 0 1 20.5 8 V16 A3 3 0 0 1 17.5 19 H6.5 A3 3 0 0 1 3.5 16 V8 A3 3 0 0 1 6.5 5 Z" }, { "d": "M4 17 L9 12 L12.5 15.5 L14.5 13.5 L20 18" }, { "node": [15.5, 9.2, 1.5] }],
+    "videos": [{ "d": "M6.5 5 H17.5 A3 3 0 0 1 20.5 8 V16 A3 3 0 0 1 17.5 19 H6.5 A3 3 0 0 1 3.5 16 V8 A3 3 0 0 1 6.5 5 Z" }, { "d": "M10.3 9.4 L14.8 12 L10.3 14.6 Z" }],
+    "templates": [{ "d": "M8 3.5 H16 A2 2 0 0 1 18 5.5 V18.5 A2 2 0 0 1 16 20.5 H8 A2 2 0 0 1 6 18.5 V5.5 A2 2 0 0 1 8 3.5 Z" }, { "d": "M9.5 8 H14.5 V11.5 H9.5 Z M9.5 15 H14.5" }],
+    "public": [{ "node": [6, 12, 2.2] }, { "node": [18, 6, 2.2] }, { "node": [18, 18, 2.2] }, { "d": "M8 11 L16 7 M8 13 L16 17" }],
+    "remote": [{ "d": "M10 17 A3 3 0 1 1 4 17 A3 3 0 1 1 10 17 Z" }, { "d": "M20 7 A3 3 0 1 1 14 7 A3 3 0 1 1 20 7 Z" }, { "d": "M9.1 14.9 L14.9 9.1" }],
+    "recent": [{ "d": "M21 12 A9 9 0 1 1 3 12 A9 9 0 1 1 21 12 Z" }, { "d": "M12 7 V12 L15.5 14.5" }],
+    "bookmarks": [{ "d": "M12.00 4.40 L14.12 9.69 L19.80 10.07 L15.42 13.71 L16.82 19.23 L12.00 16.20 L7.18 19.23 L8.58 13.71 L4.20 10.07 L9.88 9.69 Z" }],
+    "search": [{ "d": "M17.4 11 A6.4 6.4 0 1 1 4.6 11 A6.4 6.4 0 1 1 17.4 11 Z" }, { "d": "M15.8 15.8 L20 20" }],
+    "trash": [{ "d": "M5 7 H19 M9.5 7 V5 H14.5 V7" }, { "d": "M7 7 L7.9 18.6 A2 2 0 0 0 9.9 20.5 H14.1 A2 2 0 0 0 16.1 18.6 L17 7" }],
+    "trash-full": [{ "d": "M5 7 H19 M9.5 7 V5 H14.5 V7" }, { "d": "M7 7 L7.9 18.6 A2 2 0 0 0 9.9 20.5 H14.1 A2 2 0 0 0 16.1 18.6 L17 7" }, { "node": [12, 13.5, 2.2] }],
+
+    "text": [{ "d": "M7 8 H17 M7 12 H17 M7 16 H13" }],
+    "document": [{ "d": "M7 6.5 H14" }, { "d": "M7 11 H17 M7 14.5 H17 M7 18 H13" }],
+    "image": [{ "d": "M3.5 17.5 L9 12 L13 16 L15.5 13.5 L20.5 18" }, { "node": [15.5, 7.5, 1.8] }],
+    "audio": [{ "d": "M10 17.5 V6.5 L18 5 V15" }, { "node": [8, 17.5, 2.2] }, { "node": [16, 15, 2.2] }],
+    "video": [{ "d": "M8.5 5.5 L18 12 L8.5 18.5 Z" }],
+    "archive": [{ "d": "M5 4.5 H19 A1.5 1.5 0 0 1 20.5 6 V7 A1.5 1.5 0 0 1 19 8.5 H5 A1.5 1.5 0 0 1 3.5 7 V6 A1.5 1.5 0 0 1 5 4.5 Z" }, { "d": "M5 8.5 V17.5 A2 2 0 0 0 7 19.5 H17 A2 2 0 0 0 19 17.5 V8.5" }, { "d": "M10 12.5 H14" }],
+    "code": [{ "d": "M9 7 L4 12 L9 17 M15 7 L20 12 L15 17" }],
+    "pdf": [{ "d": "M6.5 4.5 H17.5 A1.5 1.5 0 0 1 19 6 V10 A1.5 1.5 0 0 1 17.5 11.5 H6.5 A1.5 1.5 0 0 1 5 10 V6 A1.5 1.5 0 0 1 6.5 4.5 Z" }, { "d": "M5 15 H19 M5 19 H14" }],
+    "spreadsheet": [{ "d": "M6 5 H18 A2 2 0 0 1 20 7 V17 A2 2 0 0 1 18 19 H6 A2 2 0 0 1 4 17 V7 A2 2 0 0 1 6 5 Z" }, { "d": "M4 10 H20 M4 14.5 H20 M10 5 V19" }],
+    "presentation": [{ "d": "M6 4.5 H18 A2.5 2.5 0 0 1 20.5 7 V13.5 A2.5 2.5 0 0 1 18 16 H6 A2.5 2.5 0 0 1 3.5 13.5 V7 A2.5 2.5 0 0 1 6 4.5 Z" }, { "d": "M12 16 V19.5 M8.5 20 H15.5" }],
+    "font": [{ "d": "M5.5 19 L12 5 L18.5 19 M8 14 H16" }],
+    "executable": [{ "d": "M5 7.5 L10 12 L5 16.5" }, { "d": "M12.5 17 H19" }],
+    "disc": [{ "d": "M21 12 A9 9 0 1 1 3 12 A9 9 0 1 1 21 12 Z" }, { "node": [12, 12, 2.2] }],
+    "calendar": [{ "d": "M6 5.5 H18 A2.5 2.5 0 0 1 20.5 8 V17.5 A2.5 2.5 0 0 1 18 20 H6 A2.5 2.5 0 0 1 3.5 17.5 V8 A2.5 2.5 0 0 1 6 5.5 Z" }, { "d": "M3.5 10 H20.5 M8 3.5 V7 M16 3.5 V7" }, { "node": [15.5, 15, 1.6] }],
+    "app": [{ "d": "M8.5 4.5 H15.5 A4 4 0 0 1 19.5 8.5 V15.5 A4 4 0 0 1 15.5 19.5 H8.5 A4 4 0 0 1 4.5 15.5 V8.5 A4 4 0 0 1 8.5 4.5 Z" }, { "d": "M9.5 12 H14.5" }]
+  },
+
+  "folders": [
+    { "glyph": null, "names": ["folder", "folder-open", "folder-drag-accept", "folder-visiting", "inode-directory"] },
+    { "glyph": "home", "names": ["user-home", "folder-home"] },
+    { "glyph": "desktop", "names": ["user-desktop", "folder-desktop"] },
+    { "glyph": "documents", "names": ["folder-documents"] },
+    { "glyph": "downloads", "names": ["folder-download", "folder-downloads"] },
+    { "glyph": "music", "names": ["folder-music"] },
+    { "glyph": "pictures", "names": ["folder-pictures", "folder-images"] },
+    { "glyph": "videos", "names": ["folder-videos", "folder-video"] },
+    { "glyph": "templates", "names": ["folder-templates"] },
+    { "glyph": "public", "names": ["folder-publicshare", "folder-public"] },
+    { "glyph": "remote", "names": ["folder-remote", "folder-network", "network-workgroup"] },
+    { "glyph": "recent", "names": ["folder-recent"] },
+    { "glyph": "bookmarks", "names": ["user-bookmarks", "folder-favorites"] },
+    { "glyph": "search", "names": ["folder-saved-search"] },
+    { "glyph": "trash", "names": ["user-trash"] },
+    { "glyph": "trash-full", "names": ["user-trash-full"] }
+  ],
+
+  "files": [
+    { "glyph": null, "names": ["application-octet-stream", "unknown", "application-x-generic"] },
+    { "glyph": "text", "names": ["text-x-generic", "text-plain", "text-markdown", "text-x-markdown", "text-x-readme", "text-x-log", "text-x-changelog", "text-x-copying", "text-x-authors", "text-x-install"] },
+    { "glyph": "code", "names": ["text-x-script", "application-x-shellscript", "text-x-csrc", "text-x-chdr", "text-x-c++src", "text-x-c++hdr", "text-x-python", "text-x-java", "text-x-rust", "text-x-go", "text-x-makefile", "text-x-cmake", "text-html", "text-css", "text-xml", "application-xml", "application-json", "application-javascript", "text-javascript", "application-x-yaml", "application-toml", "text-x-qml", "text-x-patch", "text-x-diff"] },
+    { "glyph": "document", "names": ["x-office-document", "application-vnd.oasis.opendocument.text", "application-msword", "application-vnd.openxmlformats-officedocument.wordprocessingml.document", "application-rtf", "text-rtf", "application-epub+zip"] },
+    { "glyph": "spreadsheet", "names": ["x-office-spreadsheet", "application-vnd.oasis.opendocument.spreadsheet", "application-vnd.ms-excel", "application-vnd.openxmlformats-officedocument.spreadsheetml.sheet", "text-csv"] },
+    { "glyph": "presentation", "names": ["x-office-presentation", "application-vnd.oasis.opendocument.presentation", "application-vnd.ms-powerpoint", "application-vnd.openxmlformats-officedocument.presentationml.presentation"] },
+    { "glyph": "pdf", "names": ["application-pdf", "application-postscript", "image-vnd.djvu"] },
+    { "glyph": "image", "names": ["image-x-generic", "image-png", "image-jpeg", "image-gif", "image-webp", "image-svg+xml", "image-bmp", "image-tiff", "image-avif", "image-heif", "image-x-xcf", "x-office-drawing"] },
+    { "glyph": "audio", "names": ["audio-x-generic", "audio-mpeg", "audio-flac", "audio-ogg", "audio-x-wav", "audio-x-vorbis+ogg", "audio-aac", "audio-mp4", "audio-x-opus+ogg"] },
+    { "glyph": "video", "names": ["video-x-generic", "video-mp4", "video-x-matroska", "video-webm", "video-quicktime", "video-x-msvideo", "video-mpeg"] },
+    { "glyph": "archive", "names": ["package-x-generic", "application-zip", "application-x-tar", "application-x-compressed-tar", "application-x-bzip-compressed-tar", "application-x-xz-compressed-tar", "application-x-zstd-compressed-tar", "application-gzip", "application-x-xz", "application-zstd", "application-x-7z-compressed", "application-x-rar", "application-vnd.rar", "application-x-archive", "application-x-rpm", "application-vnd.debian.binary-package", "application-x-arch-package"] },
+    { "glyph": "font", "names": ["font-x-generic", "font-ttf", "font-otf", "font-woff", "font-woff2", "application-x-font-ttf"] },
+    { "glyph": "executable", "names": ["application-x-executable", "application-x-sharedlib", "application-x-object", "application-x-appimage"] },
+    { "glyph": "disc", "names": ["application-x-cd-image", "application-x-iso9660-image", "application-x-raw-disk-image"] },
+    { "glyph": "calendar", "names": ["text-calendar", "x-office-calendar"] },
+    { "glyph": "app", "names": ["application-x-desktop", "application-x-addon"] }
+  ]
+}
