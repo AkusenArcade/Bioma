@@ -19,7 +19,8 @@ Singleton {
         "calendar": "calendar/CalendarOrganism.qml",
         "weather": "weather/WeatherOrganism.qml",
         "note": "note/NoteOrganism.qml",
-        "lava": "lava/LavaOrganism.qml"
+        "lava": "lava/LavaOrganism.qml",
+        "cytoplasm": "cytoplasm/CytoplasmOrganism.qml"
     })
 
     // What an organism is called when it is spoken about rather than drawn.
@@ -30,7 +31,8 @@ Singleton {
         "calendar": "Calendar",
         "weather": "Weather",
         "note": "Note",
-        "lava": "Lava lamp"
+        "lava": "Lava lamp",
+        "cytoplasm": "Cytoplasm"
     })
 
     function fileFor(type) {

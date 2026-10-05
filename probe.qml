@@ -76,6 +76,7 @@ ShellRoot {
     readonly property var vitalProcesses: SystemMonitor.processes
     readonly property bool hasBattery: SystemMonitor.hasBattery
     readonly property real cpuTemperature: SystemMonitor.cpuTemperature
+    readonly property var appLoad: AppLoad.apps
     readonly property var trayItems: Tray.items
     readonly property bool trayAttention: Tray.attention
     readonly property string captureFolder: Capture.folder
@@ -544,7 +545,22 @@ ShellRoot {
                         + `  at ${s.x},${s.y}`);
     }
 
+    // Applications as groups of processes: names, memory, the processor over
+    // the last interval, and the heaviest processes of each — which is where a
+    // wrong attribution shows.
+    function probeAppLoad() {
+        console.log("── App load ──────────────────────────────────────");
+        line("groups", `${root.appLoad.length}, ${Math.round(AppLoad.totalRam)} MiB in all`);
+        for (const app of root.appLoad.slice(0, 12)) {
+            const parts = app.processes.slice(0, 4).map(p => `${p.comm} ${Math.round(p.ram)}`);
+            console.log(`    ${app.name.padEnd(22)} ${String(Math.round(app.ram)).padStart(6)} MiB`
+                        + `  ${app.cpu.toFixed(1).padStart(5)}%  ${app.processes.length} procs`
+                        + `  [${app.key}]  ${parts.join(", ")}`);
+        }
+    }
+
     Component.onCompleted: {
+        AppLoad.hold(root, true);
         SystemMonitor.listProcesses = true;
         Keybinds.askActions();
         Machine.ask();
@@ -566,6 +582,7 @@ ShellRoot {
             probeBluetooth();
             probePrinters();
             probeVitals();
+            probeAppLoad();
             probeTray();
             probeKeybinds();
             probeMonitors();

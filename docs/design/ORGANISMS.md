@@ -1,6 +1,6 @@
 # Bioma — organisms
 
-*Approved 2026-10-04, media redrawn at Akusen's request. Built: the structure, arranging, the five organisms, the Settings category; since then the note and the lava lamp.*
+*Approved 2026-10-04, media redrawn at Akusen's request. Built: the structure, arranging, the five organisms, the Settings category; since then the note, the lava lamp and the cytoplasm.*
 
 The visual specification of the organisms: read-only surfaces that live on the desktop, under
 the windows, in the part of the screen the top and bottom membranes leave free. Read it with
@@ -401,6 +401,60 @@ temperature sensor*.
 
 ---
 
+## 08 · Cytoplasm
+
+*Built 2026-10-05, from "Nuove idee". Present while any application runs · what each
+application costs, as cells pressed together.*
+
+Each running application is a cell — the biological kind — and its heaviest processes are its
+lobes: a browser is a body with its content processes melted into its side, Telegram a single
+round cell. Lobes of one application fuse; two applications never do — where they meet, each
+keeps its own edge and a pixel of glass shows between them. What melts together is what belongs
+together, which is the condition on which Bioma draws metaballs at all (see §07).
+
+**Size is memory.** A cell's area is its share of the machine's memory: the panel's area stands
+for all of it, so the cytoplasm fills as the memory fills. Past 45 % of the panel the cells are
+scaled down together and keep their proportions.
+
+**Motion is processor.** Lobes circle their cell at 0.03 rad/s per percent of one core, at most
+3 rad/s — cytoplasmic streaming. An idle application is still; when every application is idle
+and every cell has its size, the organism draws no frames. A starting application grows from
+nothing where there is most room; a closing one is taken back in, its radius falling to nothing,
+and the others close over the space.
+
+| Measure | Value | Note |
+|---|---|---|
+| panel | 360 × 240 | bleeds, like the lava lamp |
+| cells | 6 at most, the heaviest by memory | `count` |
+| lobes | 4 per cell | the three heaviest processes and the rest; a share under 8 % joins the body |
+| packing | lobe against lobe | pulled to the centre, pushed apart 2 px; a circle per cell left gaps on lobed sides |
+| names | inside cells at least 24 px across | name in Orbitron meta, memory below it at 80 % |
+
+**Wax** — the lava lamp's: translucent, denser and lighter with depth, lit along the top of
+every edge — the seams between cells included.
+
+**Colour** — state by the application's processor, 100 % of one core being the top of the scale;
+or `colour: "theme"`, the theme's primary.
+
+**Names** — the one shadow on an organism: words over translucent wax of any colour need ground
+of their own (Akusen, 2026-10-05), so they carry a close, soft shadow in the theme's background
+colour. Not coloured, so not the halo §4 of the style guide forbids. `labels: false` hides them.
+
+**Grouping** — `services/AppLoad.qml`, sampled every `vitals.process_interval` while an organism
+holds it. A process belongs to the nearest ancestor that owns a window (Xwayland's pid excluded);
+otherwise to its ancestor just below the session; a windowless group holding a process named
+after an open application joins it — Steam's helpers, launched under a shell script, join the
+Steam window. Bioma's own process is a cell named *Bioma*. Processor is the difference in clock
+ticks between two samples, never `ps`'s lifetime average.
+
+**Options** — `size`, `count` (1–6), `colour`, `labels`.
+
+**Settings** — the cytoplasm's chip opens COLOUR (State · Theme) and NAMES.
+
+**Shader** — `organisms/cytoplasm/cytoplasm.frag`, compiled like the lava lamp's.
+
+---
+
 ## Configuration
 
 ```json
@@ -412,7 +466,8 @@ temperature sensor*.
   { "type": "weather",  "monitor": "HDMI-A-1", "x": 0.5, "y": 0.5, "size": "comfortable" },
   { "type": "note",     "monitor": "DP-1", "x": 0.5, "y": 0.4,
     "file": "~/Documents/Vault/Next.md", "height": "medium" },
-  { "type": "lava",     "monitor": "HDMI-A-1", "x": 0.05, "y": 0.17, "colour": "theme" }
+  { "type": "lava",     "monitor": "HDMI-A-1", "x": 0.05, "y": 0.17, "colour": "theme" },
+  { "type": "cytoplasm", "monitor": "HDMI-A-1", "x": 0.9, "y": 0.13, "labels": false }
 ],
 "weather": { "city": "Milan" }   // place, latitude, longitude, located_for are written back
 ```

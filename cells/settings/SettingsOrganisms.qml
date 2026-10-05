@@ -413,6 +413,17 @@ Item {
                     }
 
                     OptionRow {
+                        visible: screenSection.open >= 0 && root.organisms[screenSection.open].type === "cytoplasm"
+                        label: "NAMES"
+
+                        Switch {
+                            factor: root.factor
+                            on: screenSection.open >= 0 && root.organisms[screenSection.open].labels !== false
+                            onToggled: value => root.setOption(screenSection.open, "labels", value ? null : false)
+                        }
+                    }
+
+                    OptionRow {
                         visible: screenSection.open >= 0 && root.organisms[screenSection.open].type === "vitals"
                         label: "LAYOUT"
 
@@ -431,7 +442,8 @@ Item {
                     }
 
                     OptionRow {
-                        visible: screenSection.open >= 0 && root.organisms[screenSection.open].type === "lava"
+                        visible: screenSection.open >= 0
+                                 && ["lava", "cytoplasm"].indexOf(root.organisms[screenSection.open].type) >= 0
                         label: "COLOUR"
 
                         Segmented {
