@@ -1,6 +1,6 @@
 # Bioma — organisms
 
-*Approved 2026-10-04, media redrawn at Akusen's request. Built: the structure, arranging, the five organisms, the Settings category; since then the note, the lava lamp, the cytoplasm and the growth rings.*
+*Approved 2026-10-04, media redrawn at Akusen's request. Built: the structure, arranging, the five organisms, the Settings category; since then the note, the lava lamp, the cytoplasm, the growth rings and osmosis.*
 
 The visual specification of the organisms: read-only surfaces that live on the desktop, under
 the windows, in the part of the screen the top and bottom membranes leave free. Read it with
@@ -494,6 +494,54 @@ kept while one exists: `activity.json` beside `wallpaper.json`, minutes by local
 
 ---
 
+## 10 · Osmosis
+
+*Built 2026-10-07, from "Nuove idee". Present while the machine has a network link · the traffic
+on it, as water crossing a membrane.*
+
+A membrane across the top is the link; a pool at the bottom is the machine. What arrives buds off
+the underside of the membrane and falls into the pool; what leaves buds off the pool's surface and
+rises into the membrane. A drop grows out of the water it comes from and is taken into the water
+it reaches, where it shrinks in place — carried on into the pool, its own field showed through as
+a darker bubble. The lava lamp's metaballs (§07), for the same reason: the union is the point.
+
+**Every drop is traffic.** Drops come each way as often as bytes cross that way, on a logarithmic
+scale from 0.4 a second at `quiet` to 6 a second at `ceiling`, at random intervals around that
+rate (exponential waits, so never on a beat). A drop crosses in about a second whatever the
+traffic: how many cross is what the traffic says, not how fast. Below `quiet` nothing buds — a
+machine at rest still trades a few hundred bytes a second — and once the last drop is taken in
+the water is still and draws no frames.
+
+| Measure | Value | Note |
+|---|---|---|
+| panel | 240 × 320 | bleeds, like the lava lamp |
+| membrane | 6 thick | under the figures, so no drop crosses them; at the top inset without them |
+| pool | from 0.8 of the height | |
+| drops | radius 0.045–0.07 of the width | 20 in flight at most |
+| scale | `quiet` 4 KB/s · `ceiling` 100 000 KB/s | about a gigabit link at the top |
+| fall | 2.2 spans/s² | gathering 0.35 s, taken in 0.18 s |
+
+**Water** — the wax shader's field and light with two reservoirs added, thinner than wax: 0.45
+at the edge, 0.78 in the thick, lit along the top of every edge. `Theme.primary`: traffic has no
+calm or alert, so there is no state colour to say.
+
+**Figures** — `IN` and `OUT` in Orbitron label, each rate beside it in the value size, lit with
+the water's colour: B/s, KB/s, MB/s (one decimal under 10). `figures: false` hides them.
+
+**Traffic** — `SystemMonitor.netIn` / `netOut`, bytes per second from `/proc/net/dev` at the
+vitals cadence, summed over the machine's own links. Loopback and virtual links (VPN tunnels,
+WireGuard, bridges, veth, container and VM interfaces, bonds) are left out by name: each carries
+packets a physical link counts already.
+
+**Limit cases** — no link: the organism is absent; while arranging its blank form says *No
+network link*.
+
+**Options** — `size`, `quiet`, `ceiling` (both KB/s), `figures`.
+
+**Shader** — `organisms/osmosis/osmosis.frag`, compiled like the lava lamp's.
+
+---
+
 ## Configuration
 
 ```json
@@ -507,7 +555,8 @@ kept while one exists: `activity.json` beside `wallpaper.json`, minutes by local
     "file": "~/Documents/Vault/Next.md", "height": "medium" },
   { "type": "lava",     "monitor": "HDMI-A-1", "x": 0.05, "y": 0.17, "colour": "theme" },
   { "type": "cytoplasm", "monitor": "HDMI-A-1", "x": 0.9, "y": 0.13, "labels": false },
-  { "type": "rings",    "monitor": "DP-1", "x": 0.94, "y": 0.19, "days": 90 }
+  { "type": "rings",    "monitor": "DP-1", "x": 0.94, "y": 0.19, "days": 90 },
+  { "type": "osmosis",  "monitor": "DP-1", "x": 0.06, "y": 0.5, "quiet": 8 }
 ],
 "weather": { "city": "Milan" }   // place, latitude, longitude, located_for are written back
 ```

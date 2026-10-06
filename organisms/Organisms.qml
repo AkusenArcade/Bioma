@@ -21,7 +21,8 @@ Singleton {
         "note": "note/NoteOrganism.qml",
         "lava": "lava/LavaOrganism.qml",
         "cytoplasm": "cytoplasm/CytoplasmOrganism.qml",
-        "rings": "rings/RingsOrganism.qml"
+        "rings": "rings/RingsOrganism.qml",
+        "osmosis": "osmosis/OsmosisOrganism.qml"
     })
 
     // What an organism is called when it is spoken about rather than drawn.
@@ -34,7 +35,8 @@ Singleton {
         "note": "Note",
         "lava": "Lava lamp",
         "cytoplasm": "Cytoplasm",
-        "rings": "Growth rings"
+        "rings": "Growth rings",
+        "osmosis": "Osmosis"
     })
 
     function fileFor(type) {

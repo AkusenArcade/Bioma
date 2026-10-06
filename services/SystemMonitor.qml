@@ -7,7 +7,8 @@ import Quickshell.Io
 import Quickshell.Services.UPower
 import qs.core
 
-// The machine's vital signs: load, memory, clock, GPU, battery, processes.
+// The machine's vital signs: load, memory, clock, GPU, battery, processes,
+// and the traffic on its network links.
 //
 // A rewrite, not a port. Prisma's service had CPU percent, RAM and a process
 // list and nothing else — no clock, no GPU, no battery — which is to say it had
@@ -54,6 +55,7 @@ Singleton {
         }
         if (root.temperaturePath.length > 0)
             temperatureFile.reload();
+        networkFile.reload();
     }
 
     // `reload()` is asynchronous, and this is the trap in it: the text is
@@ -477,6 +479,64 @@ Singleton {
             if (!isNaN(value))
                 root.cpuTemperature = value / 1000;
         }
+    }
+
+    // ── Network traffic ──────────────────────────────────────────────────
+    //
+    // What the osmosis organism's drops are made of: bytes in and out per
+    // second, across the machine's own links. /proc/net/dev counts every
+    // interface, and most of the virtual ones carry traffic a physical one
+    // carries too — a VPN's tunnel is the Wi-Fi's payload again, a container's
+    // bridge and veth pair count each packet twice more — so they are left out
+    // by name, with the loopback. A link that comes and goes (a USB adapter, a
+    // phone's tethering) is simply a line that appears in the file.
+
+    readonly property var virtualLinks: /^(lo|veth|docker|br-|virbr|vnet|tun|tap|wg|tailscale|zt|vboxnet|vmnet|nm-|dummy|bond|team)/
+
+    property real netIn: 0     // bytes per second
+    property real netOut: 0
+    property bool netKnown: false
+
+    // Cumulative counters and when they were read: a rate is a delta, so the
+    // first sample reports nothing rather than a guess, as the CPU load does.
+    property var previousNet: null
+
+    FileView {
+        id: networkFile
+        path: "/proc/net/dev"
+        blockLoading: true
+        printErrors: false
+        onLoaded: root.readNetwork(networkFile.text())
+    }
+
+    function readNetwork(text) {
+        let received = 0;
+        let sent = 0;
+        let links = 0;
+        for (const line of text.split("\n")) {
+            const colon = line.indexOf(":");
+            if (colon < 0)
+                continue;
+            const name = line.slice(0, colon).trim();
+            if (root.virtualLinks.test(name))
+                continue;
+            const fields = line.slice(colon + 1).trim().split(/\s+/);
+            received += Number(fields[0]) || 0;
+            sent += Number(fields[8]) || 0;
+            links++;
+        }
+        root.netKnown = links > 0;
+
+        const now = Date.now();
+        const last = root.previousNet;
+        // A counter that went backwards is a link that left, taking its bytes
+        // with it: that sample says nothing about traffic.
+        if (last && now > last.time && received >= last.received && sent >= last.sent) {
+            const seconds = (now - last.time) / 1000;
+            root.netIn = (received - last.received) / seconds;
+            root.netOut = (sent - last.sent) / seconds;
+        }
+        root.previousNet = { "received": received, "sent": sent, "time": now };
     }
 
     // ── Battery ──────────────────────────────────────────────────────────
