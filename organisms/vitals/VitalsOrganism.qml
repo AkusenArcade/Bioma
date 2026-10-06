@@ -74,17 +74,18 @@ Item {
         return SystemMonitor.batteryDetail;
     }
 
-    readonly property real column: 96 * root.factor
+    // A row is two units by one — three with four domains — and the square
+    // two by two (`Organisms.template`): the domains share the width, the
+    // grid centred in what the template gives.
     readonly property real columnHeight: 136 * root.factor
     readonly property real gap: 16 * root.factor
     readonly property int columns: root.square ? 2 : root.domains.length
-
-    implicitWidth: grid.implicitWidth
-    implicitHeight: grid.implicitHeight
+    readonly property real column: (root.width - root.gap * (root.columns - 1)) / root.columns
 
     Grid {
         id: grid
 
+        anchors.centerIn: parent
         columns: root.columns
         columnSpacing: root.gap
         rowSpacing: root.gap
@@ -99,8 +100,8 @@ Item {
                 readonly property string key: pod.modelData.key
                 readonly property real load: root.loadOf(pod.key)
 
-                // As wide as its widest line: `6.6 / 30.5 GB` is wider than the
-                // ring, and a figure cut short is not a figure.
+                // Its share of the width, or its widest line where that is
+                // wider: a figure cut short is not a figure.
                 width: Math.max(root.column, detail.implicitWidth)
                 height: root.columnHeight
 

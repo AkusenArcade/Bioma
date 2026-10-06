@@ -37,8 +37,7 @@ Item {
 
     readonly property bool present: SystemMonitor.cpuTemperatureKnown
 
-    implicitWidth: 200 * root.factor
-    implicitHeight: 320 * root.factor
+    // One unit by two: a tall glass.
 
     // ---- The scale --------------------------------------------------------------
 

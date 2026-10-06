@@ -12,9 +12,12 @@ import qs.organisms
 // input — it is a glass panel with the rim, without the shadow that would lift
 // it off the wallpaper, born in place by growing from its own centre.
 //
-// What it shows is the organism's own file, found by type in
-// `organisms/Organisms.qml`. That file is an Item with an implicit size and, if
-// its presence is conditional, a `present` property: media leaves when nothing
+// Its size is its template — so many units of the grid across and down
+// (`Organisms.template`) — and it sits on the grid at a point written as
+// `col` and `row`. What it shows is the organism's own file, found by type in
+// `organisms/Organisms.qml`. That file is an Item laid out in whatever room
+// the template leaves it and, if its presence is conditional, a `present`
+// property: media leaves when nothing
 // is loaded, a note when its file cannot be read. Absent, it is still placed:
 // while arranging it comes up in its blank form — the body draws itself empty,
 // saying why, whenever its `present` is false — so the hand has something to
@@ -25,8 +28,8 @@ import qs.organisms
 Item {
     id: root
 
-    // The block from the configuration: type, monitor, x, y, size and the
-    // organism's own options.
+    // The block from the configuration: type, monitor, col, row, size and
+    // the organism's own options.
     property var entry: ({})
 
     // Its place in the whole list, which is what a drop writes back to, and
@@ -43,10 +46,6 @@ Item {
     // screen, an organism leaves this one and arrives on that one, and
     // nothing is destroyed under the hand that let it go.
     property bool here: true
-
-    // What the membranes leave free on this screen, in the surface's
-    // coordinates — the box the organism is placed in and never leaves.
-    property rect free: Qt.rect(0, 0, 0, 0)
 
     // The density it is drawn at: its own `size` if it says one, else the
     // membranes'.
@@ -72,31 +71,60 @@ Item {
     // The screen it is on, for content that asks whether the desktop there is
     // showing at all.
     readonly property string output: root.surface && root.surface.screenItem ? root.surface.screenItem.name : ""
-    readonly property real targetWidth: root.body ? root.body.implicitWidth + root.padding * 2 : 0
-    readonly property real targetHeight: root.body ? root.body.implicitHeight + root.padding * 2 : 0
+    // The template: so many units across and down, a gap between each two.
+    readonly property var template: Organisms.template(root.entry)
+    readonly property real unit: root.metrics.organismUnit
+    readonly property real span: root.metrics.gap
+    readonly property real targetWidth: root.body ? root.template[0] * root.unit + (root.template[0] - 1) * root.span : 0
+    readonly property real targetHeight: root.body ? root.template[1] * root.unit + (root.template[1] - 1) * root.span : 0
 
-    // The block keeps the centre as fractions of the free area, so a change of
-    // resolution, scale or membranes leaves it in the same part of the screen.
-    // The panel is held wholly inside: a centre that would push it past an
-    // edge is pulled back, and one too large for the area sits in its middle.
-    function placed(fraction, start, length, extent) {
-        const wanted = start + Math.max(0, Math.min(1, fraction)) * length;
-        if (extent >= length)
-            return start + length / 2;
-        return Math.max(start + extent / 2, Math.min(start + length - extent / 2, wanted));
+    // What it covers on the grid: the panel and half the grid's gap around
+    // it, so two organisms on neighbouring squares stand one gap apart and
+    // every edge falls on a line. At the membranes' step that is whole
+    // modules; an organism with a SIZE of its own covers what it covers.
+    readonly property real gridGap: root.surface ? root.surface.metrics.gap : root.span
+    readonly property real coverWidth: root.targetWidth + root.gridGap
+    readonly property real coverHeight: root.targetHeight + root.gridGap
+
+    // Its grid point. A block written before the grid — or just added, with
+    // no point yet — has its centre as fractions of the free area instead,
+    // and goes to the grid point nearest to it until it is next dropped.
+    readonly property point gridPoint: {
+        const surface = root.surface;
+        const entry = root.entry;
+        if (!surface)
+            return Qt.point(0, 0);
+        const p = entry.col !== undefined && entry.row !== undefined
+            ? surface.kept(root.coverWidth, root.coverHeight, entry.col, entry.row)
+            : surface.point(root.coverWidth, root.coverHeight,
+                            surface.free.x + (entry.x ?? 0.5) * surface.free.width - root.coverWidth / 2,
+                            surface.free.y + (entry.y ?? 0.5) * surface.free.height - root.coverHeight / 2);
+        return Qt.point(p.col, p.row);
     }
 
-    readonly property real restX: root.placed(root.entry.x ?? 0.5, root.free.x, root.free.width, root.targetWidth)
-    readonly property real restY: root.placed(root.entry.y ?? 0.5, root.free.y, root.free.height, root.targetHeight)
+    readonly property point restCorner: root.surface ? root.surface.corner(root.gridPoint.x, root.gridPoint.y)
+                                                     : Qt.point(0, 0)
+    readonly property real restX: root.restCorner.x + root.coverWidth / 2
+    readonly property real restY: root.restCorner.y + root.coverHeight / 2
 
-    // While it is held it is where the hand puts it, snapped; the moment it
-    // is let go the list is told and it is where the list says again.
+    // While it is held it is where the hand puts it, freely, and the surface
+    // shows the squares it would land on; let go, the list is told and it
+    // slides from the hand onto them.
     property bool held: false
     property real heldX: 0
     property real heldY: 0
 
-    readonly property real centreX: root.held ? root.heldX : root.restX
-    readonly property real centreY: root.held ? root.heldY : root.restY
+    property real driftX: 0
+    property real driftY: 0
+
+    readonly property real centreX: root.held ? root.heldX : root.restX + root.driftX
+    readonly property real centreY: root.held ? root.heldY : root.restY + root.driftY
+
+    ParallelAnimation {
+        id: settle
+        NumberAnimation { target: root; property: "driftX"; to: 0; duration: Timing.reflow; easing.type: Easing.BezierSpline; easing.bezierCurve: Timing.easeOpenFlat }
+        NumberAnimation { target: root; property: "driftY"; to: 0; duration: Timing.reflow; easing.type: Easing.BezierSpline; easing.bezierCurve: Timing.easeOpenFlat }
+    }
 
     // ---- Arriving and leaving -----------------------------------------------------
 
@@ -174,6 +202,10 @@ Item {
         Loader {
             id: loader
 
+            // The body is given the room the template leaves, not asked for
+            // its size.
+            anchors.fill: parent
+
             // Not loaded on a screen it does not belong to — once it has
             // finished leaving it.
             active: root.here || root.growth > 0
@@ -220,13 +252,24 @@ Item {
         space: 6 * root.metrics.factor
     }
 
-    // Its name and where it is, above its top-left corner: the figures are
-    // what will be written.
-    Row {
+    // Its name and template, and where it is on the grid — column and row in
+    // the squares as they are divided now, counted from one; where it would
+    // land while it is in the hand. Inside its top-left corner, on a plate of
+    // the background: above the panel, as it first was, the label of an
+    // organism one unit wide ran into its neighbour's, and the gap of a
+    // cluster is narrower than the line (2026-10-07).
+    Rectangle {
+        id: plate
+
+        readonly property real inset: 10 * root.metrics.factor
+
         visible: root.arranging && panel.visible
-        x: root.centreX - root.targetWidth / 2 - root.ring
-        y: root.centreY - root.targetHeight / 2 - root.ring - height - 6 * root.metrics.factor
-        spacing: 10 * root.metrics.factor
+        x: root.centreX - root.targetWidth / 2 + plate.inset
+        y: root.centreY - root.targetHeight / 2 + plate.inset
+        width: legend.implicitWidth + plate.inset * 2
+        height: legend.implicitHeight + plate.inset * 1.4
+        radius: Metrics.radiusFor(plate.height, root.metrics)
+        color: Qt.alpha(Theme.background, 0.88)
 
         readonly property font face: Typography.tabular(Qt.font({
             "family": Typography.technical,
@@ -235,18 +278,30 @@ Item {
             "letterSpacing": Typography.tracking(root.metrics.fontMeta, Typography.labelTracking)
         }))
 
-        Text {
-            text: (Organisms.names[root.type] || root.type).toUpperCase()
-            color: Theme.primary
-            font: parent.face
-        }
+        Column {
+            id: legend
 
-        Text {
-            readonly property real fx: root.free.width > 0 ? (root.centreX - root.free.x) / root.free.width : 0
-            readonly property real fy: root.free.height > 0 ? (root.centreY - root.free.y) / root.free.height : 0
-            text: `X ${fx.toFixed(2)} · Y ${fy.toFixed(2)}`
-            color: Theme.textMuted
-            font: parent.face
+            anchors.centerIn: parent
+            spacing: 3 * root.metrics.factor
+
+            Text {
+                text: `${(Organisms.names[root.type] || root.type).toUpperCase()} · ${root.template[0]} × ${root.template[1]}`
+                color: Theme.primary
+                font: plate.face
+            }
+
+            Text {
+                readonly property point at: root.held ? root.landingPoint : root.gridPoint
+
+                function counted(modules) {
+                    const squares = Math.round(modules * Arranging.grid * 1000) / 1000;
+                    return Number.isInteger(squares) ? String(squares + 1) : (squares + 1).toFixed(1);
+                }
+
+                text: `COL ${counted(at.x)} · ROW ${counted(at.y)}`
+                color: Theme.textMuted
+                font: plate.face
+            }
         }
     }
 
@@ -268,22 +323,24 @@ Item {
         property real offsetY: 0
 
         onPressed: mouse => {
+            settle.stop();
             grab.offsetX = mouse.x - root.targetWidth / 2;
             grab.offsetY = mouse.y - root.targetHeight / 2;
-            root.heldX = root.restX;
-            root.heldY = root.restY;
+            root.heldX = root.centreX;
+            root.heldY = root.centreY;
+            root.driftX = 0;
+            root.driftY = 0;
             root.held = true;
+            root.land();
         }
 
         onPositionChanged: mouse => {
             if (!root.held || !root.surface)
                 return;
             const at = grab.mapToItem(root, mouse.x, mouse.y);
-            const snapped = root.surface.snap(root, at.x - grab.offsetX, at.y - grab.offsetY);
-            root.heldX = snapped.x;
-            root.heldY = snapped.y;
-            root.surface.guideX = snapped.guideX;
-            root.surface.guideY = snapped.guideY;
+            root.heldX = at.x - grab.offsetX;
+            root.heldY = at.y - grab.offsetY;
+            root.land();
         }
 
         onReleased: mouse => {
@@ -296,9 +353,31 @@ Item {
         onCanceled: root.drop(NaN, NaN)
     }
 
+    // The grid point the hand is over, and the squares it would cover shown
+    // on the surface.
+    property point landingPoint: Qt.point(0, 0)
+
+    function land() {
+        const surface = root.surface;
+        if (!surface)
+            return;
+        // Carried off this screen, it lands on the other one, not here.
+        if (root.heldX < 0 || root.heldY < 0 || root.heldX > surface.width || root.heldY > surface.height) {
+            surface.landing = Qt.rect(0, 0, 0, 0);
+            return;
+        }
+        const p = surface.point(root.coverWidth, root.coverHeight,
+                                root.heldX - root.coverWidth / 2, root.heldY - root.coverHeight / 2);
+        root.landingPoint = Qt.point(p.col, p.row);
+        const corner = surface.corner(p.col, p.row);
+        surface.landing = Qt.rect(corner.x + root.gridGap / 2, corner.y + root.gridGap / 2,
+                                  root.targetWidth, root.targetHeight);
+        surface.landingRadius = panel.radius;
+    }
+
     // Let go. The screen under the pointer is where it now lives — its own,
-    // or another one it was carried to — and its centre is written as
-    // fractions of that screen's free area, held wholly inside it.
+    // or another one it was carried to — and it is written as the grid point
+    // of that screen nearest to where it was let go, wholly inside its grid.
     function drop(pointerX, pointerY) {
         const surface = root.surface;
         let target = surface;
@@ -315,22 +394,18 @@ Item {
             }
         }
 
-        if (surface) {
-            surface.guideX = NaN;
-            surface.guideY = NaN;
-        }
+        if (surface)
+            surface.landing = Qt.rect(0, 0, 0, 0);
         if (!target) {
             root.held = false;
             return;
         }
 
-        const free = target.free;
-        const x = root.placed((cx - free.x) / free.width, free.x, free.width, root.targetWidth);
-        const y = root.placed((cy - free.y) / free.height, free.y, free.height, root.targetHeight);
+        const cover = root.targetWidth + target.metrics.gap;
+        const coverDown = root.targetHeight + target.metrics.gap;
+        const p = target.point(cover, coverDown, cx - cover / 2, cy - coverDown / 2);
         const place = root.place;
         const monitor = target.screenItem.name;
-        const fx = free.width > 0 ? (x - free.x) / free.width : 0.5;
-        const fy = free.height > 0 ? (y - free.y) / free.height : 0.5;
 
         // Written once the release has been handled, not inside it. Carried to
         // another screen, the last organism of this one takes its delegate
@@ -341,11 +416,18 @@ Item {
         // Carried to another screen, it stays held here: it leaves this one
         // from where it was let go, rather than from where its new place
         // would be on a screen it no longer belongs to.
+        //
+        // Staying, it slides from where it was let go onto its squares: the
+        // distance is taken once the list has its new point, and run out.
         const away = target !== surface;
         Qt.callLater(() => {
-            Arranging.place(place, monitor, fx, fy);
-            if (!away)
-                root.held = false;
+            Arranging.place(place, monitor, p.col, p.row);
+            if (away)
+                return;
+            root.driftX = root.heldX - root.restX;
+            root.driftY = root.heldY - root.restY;
+            root.held = false;
+            settle.restart();
         });
     }
 

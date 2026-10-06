@@ -46,6 +46,7 @@
   --radius-panel:   20px;
   --radius-well:    10px;   /* concentric: panel radius minus padding */
   --pill-ceiling:   110px;  /* up to here radius 100%, above it --radius-panel */
+  --organism-unit:  200px;  /* one square of an organism's template; gap-shape between */
   --cell-height:    40px;
   --row-height:     30px;
   --thread:         1.3px;

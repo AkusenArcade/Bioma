@@ -45,9 +45,8 @@ Item {
     readonly property string reason: root.noCity ? "Type a city under Settings → Organisms → Weather → City."
         : Weather.problem.length > 0 ? Weather.problem : "The forecast is on its way."
 
-    implicitWidth: 300 * root.factor
-    implicitHeight: 156 * root.factor
-
+    // Two units by one: the place and the hour above, the next hours in a
+    // well along the bottom.
     function degrees(value) {
         return value === undefined || value === null ? "" : `${Math.round(value)}°`;
     }

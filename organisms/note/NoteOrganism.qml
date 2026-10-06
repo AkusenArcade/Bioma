@@ -212,14 +212,8 @@ Item {
 
     // ---- How tall ---------------------------------------------------------------------
 
-    // The panel is 220, 300 or 460 tall; the content is that less the padding.
-    readonly property real panelHeight: {
-        const height = root.entry.height || "medium";
-        return (height === "short" ? 220 : height === "tall" ? 460 : 300) * root.factor;
-    }
-
-    implicitWidth: 320 * root.factor
-    implicitHeight: root.panelHeight - 40 * root.factor
+    // Two units wide and one, two or three tall, as its HEIGHT says
+    // (`Organisms.template`): the page fills what that leaves.
 
     readonly property font technical: Qt.font({
         "family": Typography.technical,

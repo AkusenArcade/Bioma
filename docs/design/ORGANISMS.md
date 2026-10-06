@@ -48,11 +48,34 @@ That changes three rules and keeps the rest.
   membrane. It is the same line a floating tissue anchored to an edge sits on
   (`structure/Strips.qml`). An organism is always wholly inside it; when a membrane is added or
   changes density the free area changes and the organisms are clamped back into it, never cut.
-- **Position** is stored as the organism's centre in **fractions of the free area** (0–1 on each
-  axis), so it survives a resolution, scale or membrane change and stays in the same part of
-  the screen.
-- **Overlap** is not prevented, as with floating tissues — but snapping makes the 24 px gap the
-  natural distance, so it only happens on purpose.
+- **Size** is a **template**: so many **units** across and down, the shape gap (24) between
+  each two — a unit is 200 at the normal step and follows the organism's density. One template
+  per kind, so organisms of different kinds fall into tidy clusters (Akusen, 2026-10-07); the
+  content is laid out in what the template leaves, never the other way round.
+
+  | Template | Panel | Organisms |
+  |---|---|---|
+  | 1 × 2 | 200 × 424 | lava lamp, osmosis |
+  | 2 × 1 | 424 × 200 | clock, weather, cytoplasm, vitals in a row, note `short` |
+  | 3 × 1 | 648 × 200 | vitals in a row of four (with a battery): a figure cut short is not a figure |
+  | 2 × 2 | 424 × 424 | media, calendar, growth rings, vitals `square`, note `medium` |
+  | 2 × 3 | 424 × 648 | note `tall` |
+
+- **The grid.** Organisms stand on a grid of squares laid over the free area. Its **module** is
+  one unit and one gap (224), and it is divided into 1, 2, 4 or 8 squares — always a whole
+  number, so an organism's edges land on the lines and it covers whole squares, never halves.
+  An organism covers its panel and half a gap around it: two on neighbouring squares stand one
+  gap apart. The grid is the free area cut to the finest square, the remainder shared on both
+  sides, and every division counts from the same corner, so changing it moves nothing.
+- **Position** is stored as the grid point of the organism's top-left corner — `col` and `row`,
+  in modules from the grid's corner (`1.5` is a module and a half). A smaller screen or a new
+  membrane clamps it back inside the grid; it is never cut. A block with no point — written
+  before the grid, or just added — has its centre as fractions of the free area (`x`, `y`) and
+  stands on the nearest grid point until it is next dropped.
+- **Overlap** is not prevented, as with floating tissues — but on the grid neighbours stand one
+  gap apart, so it only happens on purpose.
+- An organism with a `size` of its own is a template at its own step, and covers what it covers;
+  its top-left corner still lands on the lines.
 
 ## Surface
 
@@ -88,9 +111,16 @@ Organisms take no input at rest, so they are placed in a mode of their own.
 - **While arranging**, every screen's organism surface comes up from the Bottom layer to the
   **Top** layer — the organisms are lifted, not copied — takes the pointer, and dims the windows
   behind. The free area is drawn: a dashed outline in `line`, 1 px (never under 2 physical px),
-  radius 20.
-- Each organism wears a **dashed primary outline** 8 px outside its panel, and its name and
-  position — `CLOCK  X 0.31 · Y 0.51`, Orbitron 11 — above its top-left corner. Hover brightens
+  radius 20. Over it, **the grid**: hairlines in primary, 8 % on every square, 22 % on every
+  module, so the units of the templates can be counted.
+- **The wheel** divides the grid — up for larger squares, down for smaller — anywhere on any
+  screen, over an organism too. Under Done: `GRID 1/2 · SCROLL TO CHANGE`, Orbitron 11 muted.
+  The division is written with the positions on leaving (`arrange.grid`, default 2).
+- Each organism wears a **dashed primary outline** 8 px outside its panel, and a plate inside its
+  top-left corner (10 in, the background at 88 %) with its name and template —
+  `CLOCK · 2 × 1`, Orbitron 11 primary — over its place on the grid, `COL 5 · ROW 3` muted:
+  column and row in the squares as they are divided now, counted from one. Above the panel, as
+  it first was, the label of an organism one unit wide ran into its neighbour's. Hover brightens
   the outline; press and drag moves it. Drag is not scaled, not tilted: the panel moves whole,
   and where the press landed inside it stays under the pointer.
 - **Absent organisms are placed in their blank form.** While arranging, an organism with nothing
@@ -99,11 +129,11 @@ Organisms take no input at rest, so they are placed in a mode of their own.
   2026-10-05: a media organism added with nothing playing opened the mode with nothing to drag).
   Media blank: glass, the `sinestesia` glyph, the band lying still, *Nothing playing*. Note
   blank: the file's name (or *Note*) and *No file chosen…* or *This file cannot be read.*
-- **Snapping** (magnetic, 8 px reach): the edges of the free area; the screen's centre lines;
-  the edges and centre lines of the other organisms, and the 24 px gap beside them. A guide line
-  in primary, 1.3 px, shows the snap that holds.
-- An organism dropped onto **another monitor** moves there; its position is recomputed in that
-  monitor's free area. It leaves the first screen from where it was let go and grows on the
+- **Landing.** In the hand the panel follows the pointer freely; the squares it would cover are
+  lit under it — its own shape, primary at 14 % with a 55 % hairline — and the plate says that
+  grid point. Let go, it slides onto them (`reflow`, flat open curve).
+- An organism dropped onto **another monitor** moves there; it lands on the nearest grid point of
+  that monitor. It leaves the first screen from where it was let go and grows on the
   second. (Every surface keeps one organism for every block and shows only its own, so a drop
   never destroys what the hand is holding.)
 - **Done** — a primary button centred at the top of every screen's free area — or Escape leaves
@@ -148,7 +178,7 @@ read as unfinished (Akusen, 2026-10-04); it is the same live value the cell show
 
 | Measure | Value | Note |
 |---|---|---|
-| panel | 340 × 168 | padding 20 |
+| panel | 424 × 200 | template 2 × 1; padding 20 |
 | time | Spectral 72 / 500 | tabular figures, primary gradient fill |
 | date | Spectral 19 / 400 | `Sunday 4 October`, text muted |
 | face | 62 | the cell's `Dial`, the size of the vitals organism's rings, 16 right of the figures |
@@ -156,7 +186,7 @@ read as unfinished (Akusen, 2026-10-04); it is the same live value the cell show
 | format | the clock cell's | 24 h / 12 h, read from the clock cell's option |
 
 **Limit cases** — 12 h: `9:41` with `PM` in Orbitron 15 beside it, baseline-aligned. A long date
-(`Wednesday 30 September`): the panel is as wide as its content, never ellipsed.
+(`Wednesday 30 September`) fits the template at every step, never ellipsed.
 
 **Options** — `size`.
 
@@ -172,10 +202,10 @@ capture as the sinestesia cell (one capture, never two); the track is the active
 
 | Measure | Value | Note |
 |---|---|---|
-| panel | 420 × 420 | square, like the art; radius 20 |
+| panel | 424 × 424 | template 2 × 2, square like the art; radius 20 |
 | cover | the whole panel | edge to edge, cropped to the panel's radius on the **image**, never by clipping the panel — the rim is drawn over it. Non-square art (a video thumbnail) is cropped centred |
 | scrim | over the cover | the theme's `background`, transparent down to 36 % of the height, 0.80 at 60 %, 0.92 at the bottom — the words are read on the shell's own colour whatever the picture is |
-| band | 380 × 96 | 48 bars of 4 px, 8 px pitch, symmetric from the centre line, primary gradient over the band's height; it rises out of the picture where the scrim begins |
+| band | 384 × 96 | 48 bars of 4 px, 8 px pitch, symmetric from the centre line, primary gradient over the band's height; it rises out of the picture where the scrim begins |
 | title | Spectral 22 / 700 | one line, ellipsis; 16 under the band |
 | artist | Spectral 16 / 400 | text muted, one line, ellipsis |
 | album | Spectral 13 / 400 | italic, text faint; omitted when absent |
@@ -214,7 +244,7 @@ rhythms, same state colours — an organism does not get a second vocabulary for
 
 | Measure | Value | Note |
 |---|---|---|
-| panel | 4 columns × 96 + 3 × 16 gap + padding = 472 × 176 | 3 columns without a battery: 360 × 176. A column widens to its longest line (`6.7 / 30.5 GB`) rather than cutting a figure short |
+| panel | 424 × 200 | template 2 × 1; 3 × 1 (648 × 200) with four domains. The columns share the width, 16 apart; a column widens to its longest line (`6.7 / 30.5 GB`) rather than cutting a figure short |
 | indicator | 62 | 1.5 px ring, as in the pods |
 | label | Orbitron 15 / 500, +0.06 em | `CPU` `RAM` `GPU` `BAT` |
 | value | Orbitron 20 / 500 | state gradient fill (calm / active / alert) |
@@ -222,7 +252,7 @@ rhythms, same state colours — an organism does not get a second vocabulary for
 
 Battery appears only on a machine that has one, as in the cell.
 
-**Options** — `size`, `layout` (row / 2 × 2 square: 232 × 316).
+**Options** — `size`, `layout` (row / `square`: template 2 × 2, the 2 × 2 block centred).
 
 ## 04 · Calendar
 
@@ -233,7 +263,7 @@ not a planner. Today is the only lit day.
 
 | Measure | Value | Note |
 |---|---|---|
-| panel | 299 × 302 | padding 20: 7 × 37 wide, header + weekdays + 6 × 34 tall |
+| panel | 424 × 424 | template 2 × 2; padding 20: the width in 7 days, the six weeks share what header and weekdays leave |
 | month | Spectral 19 / 700 | `October`, year in Orbitron 13 muted beside it |
 | weekdays | Orbitron 11 | text faint, first letter; the week starts on Monday, as in the clock cell |
 | days | Orbitron 13 / 400 | 7 columns × 37, rows of 34 |
@@ -255,13 +285,13 @@ forecast every 30 minutes through the proxy when one is on. No key, metric units
 
 | Measure | Value | Note |
 |---|---|---|
-| panel | 340 × 196 | padding 20 |
+| panel | 424 × 200 | template 2 × 1; padding 20 |
 | city | Spectral 15 / 700 | the name as geocoded |
 | condition glyph | 44 | primary gradient, new weather glyphs (below) |
 | temperature | Orbitron 40 / 500 | primary gradient, `18°` |
 | condition | Spectral 15 / 400 | `Light rain`, text muted |
 | high / low | Orbitron 13 | `24° · 12°`, text muted |
-| hours well | 300 × 64, radius 10 | next 5 hours: Orbitron 11 hour, 20 glyph, Orbitron 13 temperature |
+| hours well | 384 × 64, radius 10 | next 5 hours: Orbitron 11 hour, 20 glyph, Orbitron 13 temperature |
 
 The temperature is **not** a state: it measures the weather, not the machine, so it is primary
 and never calm, active or alert — the same reason a timezone dial never changes colour.
@@ -311,7 +341,7 @@ draws itself, so a task is a shell control rather than a font's ☐ and the two 
 
 | Measure | Value | Note |
 |---|---|---|
-| panel | 360 × 300 | padding 20; `height` short 220 · medium 300 · tall 460 |
+| panel | 424 × 424 | padding 20; `height` chooses the template: short 2 × 1 · medium 2 × 2 · tall 2 × 3 |
 | header | 22 | title and when, then 12 to the text |
 | block gap | 6 | 10 before a heading |
 
@@ -360,7 +390,7 @@ to leave the bottom, so a cool machine is a still pool that draws no frames.
 
 | Measure | Value | Note |
 |---|---|---|
-| panel | 200 × 320 | bleeds: the wax fills the glass, the rim is drawn over it |
+| panel | 200 × 424 | template 1 × 2; bleeds: the wax fills the glass, the rim is drawn over it |
 | blobs | 7 | radii 0.07–0.12 of the width; at rest they overlap into one pool on the heater |
 | field | Σ (1 − d²/R²)³, R = 2 r | compact: smooth everywhere, a crowd does not swell into one mass |
 | scale | `cold` 48 °C · `hot` 90 °C | heat = (T − cold) / (hot − cold); nothing rises below heat 0.16 |
@@ -424,7 +454,7 @@ and the others close over the space.
 
 | Measure | Value | Note |
 |---|---|---|
-| panel | 360 × 240 | bleeds, like the lava lamp |
+| panel | 424 × 200 | template 2 × 1; bleeds, like the lava lamp |
 | cells | 6 at most, the heaviest by memory | `count` |
 | lobes | 4 per cell | the three heaviest processes and the rest; a share under 8 % joins the body |
 | packing | lobe against lobe | pulled to the centre, pushed apart 2 px; a circle per cell left gaps on lobed sides |
@@ -475,7 +505,7 @@ and a darker line marks where each day ended — the late wood.
 
 | Measure | Value | Note |
 |---|---|---|
-| disc | 240 | pith 3, the outermost ring inside the wobble |
+| disc | 354 | template 2 × 2: as large as the square leaves above the caption, centred; pith 3, the outermost ring inside the wobble |
 | early wood | primary at 16 % / 22 % | alternating; today 34 % |
 | late wood | primary at 55 %, 1 px | |
 | cambium | primary, 1.8 px | today's edge |
@@ -514,7 +544,7 @@ the water is still and draws no frames.
 
 | Measure | Value | Note |
 |---|---|---|
-| panel | 240 × 320 | bleeds, like the lava lamp |
+| panel | 200 × 424 | template 1 × 2; bleeds, like the lava lamp |
 | membrane | 6 thick | under the figures, so no drop crosses them; at the top inset without them |
 | pool | from 0.8 of the height | |
 | drops | radius 0.045–0.07 of the width | 20 in flight at most |
@@ -546,19 +576,20 @@ network link*.
 
 ```json
 "organisms": [
-  { "type": "clock",    "monitor": "DP-1", "x": 0.18, "y": 0.22 },
-  { "type": "calendar", "monitor": "DP-1", "x": 0.18, "y": 0.62 },
-  { "type": "vitals",   "monitor": "DP-1", "x": 0.80, "y": 0.80, "layout": "row" },
-  { "type": "media",    "monitor": "DP-1", "x": 0.80, "y": 0.25 },
-  { "type": "weather",  "monitor": "HDMI-A-1", "x": 0.5, "y": 0.5, "size": "comfortable" },
-  { "type": "note",     "monitor": "DP-1", "x": 0.5, "y": 0.4,
+  { "type": "clock",    "monitor": "DP-1", "col": 0, "row": 0 },
+  { "type": "calendar", "monitor": "DP-1", "col": 0, "row": 1 },
+  { "type": "vitals",   "monitor": "DP-1", "col": 2, "row": 0, "layout": "row" },
+  { "type": "media",    "monitor": "DP-1", "col": 2, "row": 1 },
+  { "type": "weather",  "monitor": "HDMI-A-1", "col": 4, "row": 2, "size": "comfortable" },
+  { "type": "note",     "monitor": "DP-1", "col": 4, "row": 0,
     "file": "~/Documents/Vault/Next.md", "height": "medium" },
-  { "type": "lava",     "monitor": "HDMI-A-1", "x": 0.05, "y": 0.17, "colour": "theme" },
-  { "type": "cytoplasm", "monitor": "HDMI-A-1", "x": 0.9, "y": 0.13, "labels": false },
-  { "type": "rings",    "monitor": "DP-1", "x": 0.94, "y": 0.19, "days": 90 },
-  { "type": "osmosis",  "monitor": "DP-1", "x": 0.06, "y": 0.5, "quiet": 8 }
+  { "type": "lava",     "monitor": "HDMI-A-1", "col": 0, "row": 1, "colour": "theme" },
+  { "type": "cytoplasm", "monitor": "HDMI-A-1", "col": 0, "row": 0, "labels": false },
+  { "type": "rings",    "monitor": "DP-1", "col": 6, "row": 0, "days": 90 },
+  { "type": "osmosis",  "monitor": "DP-1", "col": 6, "row": 2, "quiet": 8 }
 ],
 "weather": { "city": "Milan" }   // place, latitude, longitude, located_for are written back
+"arrange": { "grid": 2 }         // squares per module: 1, 2, 4 or 8 — written on leaving Arrange
 ```
 
 The base layer ships `"organisms": []`: nobody's desktop gains furniture by updating. Adding an

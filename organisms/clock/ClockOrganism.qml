@@ -58,11 +58,7 @@ Item {
         return `${root.dayNames[day.getDay()]} ${day.getDate()} ${root.monthNames[day.getMonth()]}`;
     }
 
-    // The panel is 340 × 168 at the normal step: its content is that less the
-    // padding, or wider when a long date asks for it — never ellipsed.
-    implicitWidth: Math.max(300 * root.factor, column.implicitWidth)
-    implicitHeight: 128 * root.factor
-
+    // Two units by one (`Organisms.templates`), the figures centred in it.
     Column {
         id: column
 

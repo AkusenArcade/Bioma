@@ -19,8 +19,9 @@ import qs.structure
 // anchored to an edge sits on (`Strips.windowLine`).
 //
 // While they are being placed (`Arranging`) the same surface comes up to the
-// Top layer, dims the windows behind, takes the pointer and lets them be
-// dragged. The organisms are not copied for it: they are lifted.
+// Top layer, dims the windows behind, draws the grid, takes the pointer and
+// lets them be dragged onto it. The organisms are not copied for it: they are
+// lifted.
 //
 // See docs/design/ORGANISMS.md.
 PanelWindow {
@@ -81,6 +82,24 @@ PanelWindow {
         // Escape leaves the mode, from whichever screen holds the keyboard.
         focus: root.arranging
         Keys.onEscapePressed: Arranging.finish()
+
+        // The wheel makes the grid finer or coarser — up for larger squares,
+        // down for smaller — anywhere on any screen, over an organism too:
+        // the hand that places them does not take the wheel.
+        WheelHandler {
+            enabled: root.arranging
+            acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+
+            property real turned: 0
+
+            onWheel: event => {
+                turned += event.angleDelta.y;
+                while (Math.abs(turned) >= 120) {
+                    Arranging.finer(turned > 0 ? -1 : 1);
+                    turned -= turned > 0 ? 120 : -120;
+                }
+            }
+        }
     }
 
     onArrangingChanged: if (root.arranging) sheet.forceActiveFocus()
@@ -111,26 +130,121 @@ PanelWindow {
         Behavior on opacity { NumberAnimation { duration: Timing.transition } }
     }
 
-    // The snap that holds, while one is being dragged.
-    property real guideX: NaN
-    property real guideY: NaN
+    // ---- The grid ---------------------------------------------------------------------
 
-    Rectangle {
-        visible: root.arranging && !isNaN(root.guideX)
-        x: Math.round(root.guideX - width / 2)
-        y: root.free.y
-        width: Metrics.crisp(1.3, Screen.devicePixelRatio)
-        height: root.free.height
-        color: Theme.primary
+    // One module is a template's unit and the gap beside it, at the
+    // membranes' step; the wheel divides it into squares (`Arranging.grid`).
+    // An organism covers whole modules — its panel and half a gap around it —
+    // so at every division its edges fall on the lines.
+    readonly property real module: root.metrics.organismUnit + root.metrics.gap
+    readonly property real square: root.module / Arranging.grid
+    readonly property real finest: root.module / Arranging.divisions[Arranging.divisions.length - 1]
+
+    // The free area to the finest square, the little that is left over shared
+    // on both sides. Every division counts from the same corner, so the
+    // wheel never moves what has been placed.
+    readonly property rect grid: {
+        const w = Math.floor(root.free.width / root.finest + 1e-6) * root.finest;
+        const h = Math.floor(root.free.height / root.finest + 1e-6) * root.finest;
+        return Qt.rect(root.free.x + (root.free.width - w) / 2, root.free.y + (root.free.height - h) / 2,
+                       Math.max(0, w), Math.max(0, h));
     }
 
+    // Where an organism covering `w` × `h` lands when its top-left corner is
+    // wanted at (`left`, `top`): on the nearest line of the grid as it is
+    // divided now, and wholly inside it. In modules from the grid's corner.
+    // One too large for the area sits in its middle.
+    function point(w, h, left, top) {
+        const axis = (start, extent, size, wanted) => {
+            const room = extent - size;
+            if (room < 0)
+                return room / 2 / root.module;
+            const most = Math.floor(room / root.square + 1e-6);
+            const at = Math.max(0, Math.min(most, Math.round((wanted - start) / root.square)));
+            return at * root.square / root.module;
+        };
+        return {
+            "col": axis(root.grid.x, root.grid.width, w, left),
+            "row": axis(root.grid.y, root.grid.height, h, top)
+        };
+    }
+
+    // A point as it was written, held inside the grid as it is now — a
+    // smaller screen, a membrane added — but not moved onto the present
+    // division: a point written on a finer grid stays where it was put.
+    function kept(w, h, col, row) {
+        const axis = (extent, size, at) => {
+            const room = extent - size;
+            if (room < 0)
+                return room / 2 / root.module;
+            const most = Math.floor(room / root.finest + 1e-6) * root.finest / root.module;
+            return Math.max(0, Math.min(most, at));
+        };
+        return {
+            "col": axis(root.grid.width, w, Number(col) || 0),
+            "row": axis(root.grid.height, h, Number(row) || 0)
+        };
+    }
+
+    function corner(col, row) {
+        return Qt.point(root.grid.x + col * root.module, root.grid.y + row * root.module);
+    }
+
+    // The lines, while arranging: every square faint, every module a little
+    // stronger, so the units of the templates can be counted.
+    readonly property real hairline: Metrics.crisp(1, Screen.devicePixelRatio)
+
+    Item {
+        id: lines
+
+        x: root.grid.x
+        y: root.grid.y
+        width: root.grid.width
+        height: root.grid.height
+        opacity: root.arranging ? 1 : 0
+        visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: Timing.transition } }
+
+        Repeater {
+            model: lines.visible ? Math.floor(lines.width / root.square + 1e-6) + 1 : 0
+
+            delegate: Rectangle {
+                required property int index
+                x: Math.round(index * root.square - width / 2)
+                width: root.hairline
+                height: lines.height
+                color: Qt.alpha(Theme.primary, index % Arranging.grid === 0 ? 0.22 : 0.08)
+            }
+        }
+
+        Repeater {
+            model: lines.visible ? Math.floor(lines.height / root.square + 1e-6) + 1 : 0
+
+            delegate: Rectangle {
+                required property int index
+                y: Math.round(index * root.square - height / 2)
+                width: lines.width
+                height: root.hairline
+                color: Qt.alpha(Theme.primary, index % Arranging.grid === 0 ? 0.22 : 0.08)
+            }
+        }
+    }
+
+    // Where the one in the hand will land: its own shape, lit faintly on the
+    // squares it will cover.
+    property rect landing: Qt.rect(0, 0, 0, 0)
+    property real landingRadius: 0
+
     Rectangle {
-        visible: root.arranging && !isNaN(root.guideY)
-        x: root.free.x
-        y: Math.round(root.guideY - height / 2)
-        width: root.free.width
-        height: Metrics.crisp(1.3, Screen.devicePixelRatio)
-        color: Theme.primary
+        visible: root.arranging && root.landing.width > 0
+        x: root.landing.x
+        y: root.landing.y
+        width: root.landing.width
+        height: root.landing.height
+        radius: root.landingRadius
+        color: Qt.alpha(Theme.primary, 0.14)
+        border.width: root.hairline
+        border.color: Qt.alpha(Theme.primary, 0.55)
     }
 
     // ---- The organisms ----------------------------------------------------------------
@@ -190,7 +304,6 @@ PanelWindow {
             place: root.keys.indexOf(key)
             entry: root.all[place] ?? ({})
             here: Strips.belongs(entry, root.screenItem)
-            free: root.free
             baseMetrics: root.metrics
             arranging: root.arranging
 
@@ -205,6 +318,7 @@ PanelWindow {
     // the top of the free area, where it covers none of the places an
     // organism is likely to be put.
     Choice {
+        id: done
         visible: root.arranging
         metrics: root.metrics
         kind: "primary"
@@ -214,52 +328,21 @@ PanelWindow {
         onActivated: Arranging.finish()
     }
 
-    // ---- Snapping -----------------------------------------------------------------------
-
-    // The centre an organism dragged to (cx, cy) lands on: its edges and
-    // centre pulled onto the free area's edges, the screen's centre lines, the
-    // other organisms' edges and centres, and the 24 px gap beside them —
-    // whichever is nearest within reach, on each axis on its own.
-    function snap(organism, cx, cy) {
-        const reach = 8 * root.factor;
-        const gap = 24 * root.factor;
-        const w = organism.targetWidth;
-        const h = organism.targetHeight;
-
-        const xs = [root.free.x, root.free.x + root.free.width, root.width / 2];
-        const ys = [root.free.y, root.free.y + root.free.height, root.height / 2];
-        for (let i = 0; i < organisms.count; i++) {
-            const other = organisms.itemAt(i);
-            if (!other || other === organism || !other.visibleShape)
-                continue;
-            const ow = other.targetWidth / 2;
-            const oh = other.targetHeight / 2;
-            xs.push(other.centreX - ow, other.centreX + ow, other.centreX,
-                    other.centreX - ow - gap, other.centreX + ow + gap);
-            ys.push(other.centreY - oh, other.centreY + oh, other.centreY,
-                    other.centreY - oh - gap, other.centreY + oh + gap);
-        }
-
-        const nearest = (edges, targets) => {
-            let best = null;
-            for (const edge of edges)
-                for (const target of targets) {
-                    const d = target - edge;
-                    if (Math.abs(d) <= reach && (best === null || Math.abs(d) < Math.abs(best.d)))
-                        best = { "d": d, "at": target };
-                }
-            return best;
-        };
-
-        const sx = nearest([cx - w / 2, cx + w / 2, cx], xs);
-        const sy = nearest([cy - h / 2, cy + h / 2, cy], ys);
-        return {
-            "x": cx + (sx ? sx.d : 0),
-            "y": cy + (sy ? sy.d : 0),
-            "guideX": sx ? sx.at : NaN,
-            "guideY": sy ? sy.at : NaN
-        };
+    // How finely the grid is divided, and that the wheel changes it.
+    Text {
+        visible: root.arranging
+        anchors.horizontalCenter: done.horizontalCenter
+        y: done.y + done.height + 8 * root.factor
+        text: `GRID ${Arranging.grid === 1 ? "1" : "1/" + Arranging.grid} · SCROLL TO CHANGE`
+        color: Theme.textMuted
+        font: Qt.font({
+            "family": Typography.technical,
+            "pixelSize": root.metrics.fontMeta,
+            "weight": Typography.weightLabel,
+            "letterSpacing": Typography.tracking(root.metrics.fontMeta, Typography.labelTracking)
+        })
     }
+
 
     // ---- The glass ----------------------------------------------------------------------
 

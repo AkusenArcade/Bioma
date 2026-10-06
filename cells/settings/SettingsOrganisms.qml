@@ -487,9 +487,9 @@ Item {
                             fontSize: root.metrics.fontMeta
                             buttonPadding: 10 * root.factor
                             options: [
-                                { "key": "short", "label": "Short" },
-                                { "key": "medium", "label": "Medium" },
-                                { "key": "tall", "label": "Tall" }
+                                { "key": "short", "label": "2 × 1" },
+                                { "key": "medium", "label": "2 × 2" },
+                                { "key": "tall", "label": "2 × 3" }
                             ]
                             current: screenSection.open >= 0 ? (root.organisms[screenSection.open].height || "medium") : "medium"
                             onChose: key => root.setOption(screenSection.open, "height", key === "medium" ? null : key)

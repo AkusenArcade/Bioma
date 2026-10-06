@@ -40,11 +40,12 @@ Item {
 
     readonly property bool figures: root.entry.figures !== false
 
-    readonly property real disc: 240 * root.factor
+    // Two units by two: the disc as large as the square leaves once the
+    // figures have their line, centred across it.
     readonly property real gap: 14 * root.factor
-
-    implicitWidth: root.disc
-    implicitHeight: root.disc + (root.figures ? root.gap + caption.implicitHeight : 0)
+    readonly property real disc: Math.max(0, Math.min(root.width,
+        root.height - (root.figures ? root.gap + caption.implicitHeight : 0)))
+    readonly property real discX: (root.width - root.disc) / 2
 
     // ---- The record -----------------------------------------------------------------
 
@@ -94,6 +95,7 @@ Item {
     Canvas {
         id: wood
 
+        x: root.discX
         width: root.disc
         height: root.disc
         antialiasing: true
@@ -191,6 +193,7 @@ Item {
         id: caption
 
         visible: root.figures
+        x: root.discX
         y: root.disc + root.gap
         width: root.disc
         implicitHeight: today.implicitHeight

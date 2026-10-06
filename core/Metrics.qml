@@ -59,6 +59,12 @@ Singleton {
 
     readonly property real blurRadius: 20      // glass; niri owns the real one
 
+    // The side of one square of an organism's template. An organism is so
+    // many units wide and tall, with the shape gap between them — a 2 × 1
+    // weather is two units and one gap across — so organisms of different
+    // kinds line up in clusters (Akusen, 2026-10-07).
+    readonly property real organismUnit: 200
+
     // ---- Critical dimensions ----------------------------------------------
     //
     // Hairlines do not take the scale step: a thread is 1.3 px because that is
@@ -111,6 +117,7 @@ Singleton {
             "nodeSize": root.nodeSize,
             "rimWidth": root.rimWidth,
             "blurRadius": root.blurRadius * f,
+            "organismUnit": root.organismUnit * f,
 
             // Type scale. Sizes live here because they follow the density step;
             // families, weights and numeral features live in Typography.

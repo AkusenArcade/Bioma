@@ -36,8 +36,7 @@ Item {
 
     readonly property bool showsBand: root.entry.band !== false
 
-    implicitWidth: 420 * root.factor
-    implicitHeight: 420 * root.factor
+    // Two units by two, the cover edge to edge.
 
     readonly property real radius: root.metrics.radiusPanel
     readonly property real inset: 20 * root.factor

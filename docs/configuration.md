@@ -237,15 +237,16 @@ specification. The base layer ships none.
 
 ```json
 "organisms": [
-  { "type": "clock", "monitor": "DP-1", "x": 0.18, "y": 0.22 }
+  { "type": "clock", "monitor": "DP-1", "col": 0, "row": 0 }
 ]
 ```
 
 | Key | Meaning |
 |---|---|
-| `type` | Which organism: `clock`, `media`, `vitals`, `calendar`, `weather`, `note` |
+| `type` | Which organism: `clock`, `media`, `vitals`, `calendar`, `weather`, `note`, `lava`, `cytoplasm`, `rings`, `osmosis` |
 | `monitor` | As for a membrane: an output name, `primary` (the default) or `all` |
-| `x`, `y` | The organism's **centre**, as fractions (0–1) of the free area: the screen minus what the membranes hold, measured to the line the windows begin on. An organism is always held wholly inside it |
+| `col`, `row` | The grid point of the organism's **top-left corner**, in modules (one template unit and one gap, 224 at the normal step) from the corner of the grid laid over the free area: the screen minus what the membranes hold, measured to the line the windows begin on. Fractions of a module are fine (`1.5`). An organism is always held wholly inside the grid |
+| `x`, `y` | Read only when `col` and `row` are missing: the organism's **centre**, as fractions (0–1) of the free area. It stands on the nearest grid point, and the shell writes `col` and `row` the next time it is dropped |
 | `size` | `compact` \| `normal` \| `comfortable`. Without it, the membranes' `scale` |
 | `id` | Written by the shell, so an organism keeps its place on screen while the list changes around it. A block written by hand needs none |
 
@@ -254,6 +255,16 @@ media organism takes `"band": false` to show the cover without the
 visualiser; the vitals organism takes `"layout": "square"` for a 2 × 2 block
 instead of a row. The note organism takes `"file"` — a Markdown file, `~` for
 the home — and `"height"`: `short`, `medium` (the default) or `tall`.
+
+Every kind has a size of its own in grid units — its template, `docs/design/ORGANISMS.md` —
+and the options above choose among templates where a kind has more than one: the note's height
+is 2 × 1, 2 × 2 or 2 × 3, the vitals' square 2 × 2 rather than a row.
+
+### arrange
+
+| Key | Meaning |
+|---|---|
+| `grid` | How many squares the arrange grid divides one module into: `1`, `2` (the default), `4` or `8`. The wheel changes it while arranging, and it is written on leaving |
 
 ### weather
 

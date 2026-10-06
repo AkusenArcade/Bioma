@@ -3,6 +3,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import qs.core
+import qs.services
 
 // Which file is which organism.
 //
@@ -38,6 +39,40 @@ Singleton {
         "rings": "Growth rings",
         "osmosis": "Osmosis"
     })
+
+    // How many units of the grid each one covers, across and down
+    // (Metrics.organismUnit, the shape gap between them): one size per kind,
+    // so they fall into tidy clusters (Akusen, 2026-10-07). The body is laid
+    // out in what the template gives it, never the other way round.
+    readonly property var templates: ({
+        "clock": [2, 1],
+        "media": [2, 2],
+        "vitals": [2, 1],
+        "calendar": [2, 2],
+        "weather": [2, 1],
+        "note": [2, 2],
+        "lava": [1, 2],
+        "cytoplasm": [2, 1],
+        "rings": [2, 2],
+        "osmosis": [1, 2]
+    })
+
+    // The template of one block. Where an organism already has an option for
+    // its shape, the option chooses among templates: a note is one, two or
+    // three units tall, the vitals a row or a square. A row of four vitals is
+    // a unit wider, because a figure cut short is not a figure.
+    function template(entry) {
+        const type = entry.type || "";
+        if (type === "note")
+            return [2, entry.height === "short" ? 1 : entry.height === "tall" ? 3 : 2];
+        if (type === "vitals") {
+            if (entry.layout === "square")
+                return [2, 2];
+            const domains = 2 + (SystemMonitor.gpuPresent ? 1 : 0) + (SystemMonitor.hasBattery ? 1 : 0);
+            return [domains > 3 ? 3 : 2, 1];
+        }
+        return root.templates[type] || [1, 1];
+    }
 
     function fileFor(type) {
         return root.files[type] || "";

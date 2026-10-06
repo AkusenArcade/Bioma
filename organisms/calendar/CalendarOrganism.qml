@@ -49,11 +49,13 @@ Item {
         return out;
     }
 
-    readonly property real cellWidth: 37 * root.factor
-    readonly property real cellHeight: 34 * root.factor
-
-    implicitWidth: root.cellWidth * 7
-    implicitHeight: column.implicitHeight
+    // Two units by two: seven days across the width, the six weeks sharing
+    // what the month's name and the weekdays leave of the height.
+    readonly property real spacing: 10 * root.factor
+    readonly property real weekdayHeight: 22 * root.factor
+    readonly property real cellWidth: root.width / 7
+    readonly property real cellHeight: Math.max(0, (root.height - header.height - root.spacing
+                                                    - root.weekdayHeight) / 6)
 
     function technical(size, weight) {
         return Typography.tabular(Qt.font({
@@ -67,10 +69,11 @@ Item {
         id: column
 
         width: parent.width
-        spacing: 10 * root.factor
+        spacing: root.spacing
 
         // The month's name is language; the year is a figure.
         Row {
+            id: header
             spacing: 10 * root.factor
 
             Text {
@@ -99,7 +102,7 @@ Item {
                 delegate: Text {
                     required property string modelData
                     width: root.cellWidth
-                    height: 22 * root.factor
+                    height: root.weekdayHeight
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                     text: modelData

@@ -31,8 +31,7 @@ Item {
 
     readonly property bool present: SystemMonitor.netKnown
 
-    implicitWidth: 240 * root.factor
-    implicitHeight: 320 * root.factor
+    // One unit by two: the membrane above, the pool below.
 
     // ---- The scale --------------------------------------------------------------
 

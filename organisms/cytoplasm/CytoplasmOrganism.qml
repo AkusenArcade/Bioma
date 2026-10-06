@@ -38,8 +38,7 @@ Item {
     readonly property bool bleeds: true
     readonly property bool present: AppLoad.apps.length > 0
 
-    implicitWidth: 360 * root.factor
-    implicitHeight: 240 * root.factor
+    // Two units by one.
 
     Component.onCompleted: AppLoad.hold(root, true)
     Component.onDestruction: AppLoad.hold(root, false)

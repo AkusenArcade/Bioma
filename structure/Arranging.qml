@@ -25,6 +25,30 @@ Singleton {
     // copied when the mode begins.
     property var working: []
 
+    // ---- The grid ---------------------------------------------------------------------
+
+    // Organisms are placed on a grid of squares. Its module is one unit of a
+    // template and the gap beside it, and the wheel divides the module into
+    // 1, 2, 4 or 8 squares — always a whole number, so every organism's
+    // edges land on the lines and it covers whole squares, never halves
+    // (Akusen, 2026-10-07). The wheel changes how finely they are placed,
+    // never how large they are: that is each organism's SIZE.
+    readonly property var divisions: [1, 2, 4, 8]
+    property int grid: 2
+
+    function finer(steps) {
+        const at = root.divisions.indexOf(root.grid);
+        const next = Math.max(0, Math.min(root.divisions.length - 1, (at < 0 ? 1 : at) + steps));
+        root.grid = root.divisions[next];
+    }
+
+    function storedGrid() {
+        const wanted = Config.get("arrange.grid", 2);
+        return root.divisions.indexOf(wanted) >= 0 ? wanted : 2;
+    }
+
+    Component.onCompleted: root.grid = root.storedGrid()
+
     // From the configuration's list, or from one just written that the
     // configuration has not caught up with yet — an organism just added.
     function start(from) {
@@ -33,14 +57,20 @@ Singleton {
         // Named only when written: renaming the list now would make every
         // surface rebuild its organisms the moment the mode begins.
         root.working = JSON.parse(JSON.stringify(from || Config.get("organisms", [])));
+        root.grid = root.storedGrid();
         root.active = true;
     }
 
     function finish() {
         if (!root.active)
             return;
+        const pairs = [];
         if (JSON.stringify(root.working) !== JSON.stringify(Config.get("organisms", [])))
-            Config.set("organisms", root.named(root.working));
+            pairs.push(["organisms", root.named(root.working)]);
+        if (root.grid !== root.storedGrid())
+            pairs.push(["arrange.grid", root.grid]);
+        if (pairs.length > 0)
+            Config.setMany(pairs);
         root.active = false;
     }
 
@@ -65,16 +95,20 @@ Singleton {
             root.start();
     }
 
-    // An organism dropped: its new centre, as fractions of the free area of
-    // the screen it now belongs to. One that was on every screen stays on
-    // every screen — it moves on all of them.
-    function place(index, monitor, x, y) {
+    // An organism dropped: the grid point its top-left corner landed on, in
+    // modules from the grid's corner, on the screen it now belongs to. The
+    // fractions it may have been written with before are dropped with it.
+    // One that was on every screen stays on every screen — it moves on all
+    // of them.
+    function place(index, monitor, col, row) {
         if (index < 0 || index >= root.working.length)
             return;
         const next = JSON.parse(JSON.stringify(root.working));
         const entry = next[index];
-        entry.x = Math.round(x * 10000) / 10000;
-        entry.y = Math.round(y * 10000) / 10000;
+        entry.col = Math.round(col * 1000) / 1000;
+        entry.row = Math.round(row * 1000) / 1000;
+        delete entry.x;
+        delete entry.y;
         if (monitor && entry.monitor !== "all" && entry.monitor !== "*")
             entry.monitor = monitor;
         root.working = next;
@@ -82,7 +116,8 @@ Singleton {
 
     // ---- Adding and taking away -----------------------------------------------------
 
-    // A new organism appears in the middle of its screen's free area, and the
+    // A new organism appears in the middle of its screen's free area — it has
+    // no grid point yet, so it is centred and snapped — and the
     // mode begins so it can be put where it belongs — unless `quietly`: a note
     // with no file yet has nothing to show, and is given its file first.
     function add(type, monitor, quietly) {
