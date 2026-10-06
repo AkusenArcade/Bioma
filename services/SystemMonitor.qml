@@ -511,6 +511,23 @@ Singleton {
         ? (batteryDevice?.timeToFull ?? 0)
         : (batteryDevice?.timeToEmpty ?? 0)
 
+    // The line under the battery's figure: how long is left, not that it is
+    // discharging, and while charging how long until full. Nothing else draws
+    // the charge, so the second says FULL — "FULL IN" does not fit the matrix's
+    // 120 px pod. UPower answers 0 while it is still estimating, and then the
+    // state is all there is to say.
+    readonly property bool discharging: batteryState === UPowerDeviceState.Discharging
+    readonly property string batteryDetail: {
+        if ((discharging || batteryState === UPowerDeviceState.Charging) && batterySecondsLeft > 0) {
+            const minutes = Math.round(batterySecondsLeft / 60);
+            const h = Math.floor(minutes / 60);
+            const m = minutes % 60;
+            const time = h > 0 ? `${h} H ${String(m).padStart(2, "0")} M` : `${m} M`;
+            return discharging ? time : `FULL ${time}`;
+        }
+        return batteryStateName;
+    }
+
     readonly property bool onBattery: UPower.onBattery
 
     // ── Processes ────────────────────────────────────────────────────────

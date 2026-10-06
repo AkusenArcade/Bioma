@@ -118,7 +118,7 @@ Item {
             return `${SystemMonitor.ramUsedGb}/${SystemMonitor.ramTotalGb} GB`;
         if (key === "gpu")
             return SystemMonitor.gpuClock > 0 ? `${(SystemMonitor.gpuClock / 1000).toFixed(1)} GHz` : "";
-        return SystemMonitor.batteryStateName;
+        return SystemMonitor.batteryDetail;
     }
 
     // ---- The cascade -------------------------------------------------------
