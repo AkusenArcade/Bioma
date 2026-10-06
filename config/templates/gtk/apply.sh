@@ -138,27 +138,23 @@ main() {
         exit 1
     fi
 
-    mkdir -p "$config_dir/gtk-3.0" "$config_dir/gtk-4.0"
+    # gtk3 and gtk4 are two templates sharing this hook, and either may be on
+    # alone: a toolkit whose bioma.css was not rendered is off, not broken.
+    local applied=0 version
+    for version in 3 4; do
+        local dir="$config_dir/gtk-$version.0"
+        [ -f "$dir/bioma.css" ] || continue
+        ensure_gtk_css_import "$dir/gtk.css" "$dir/bioma.css" "GTK$version"
+        echo "GTK$version colors applied successfully"
+        applied=$((applied + 1))
+    done
 
-    local gtk3_ok=true gtk4_ok=true
-    if ! ensure_gtk_css_import \
-            "$config_dir/gtk-3.0/gtk.css" "$config_dir/gtk-3.0/bioma.css" "GTK3"; then
-        gtk3_ok=false
-    fi
-    if ! ensure_gtk_css_import \
-            "$config_dir/gtk-4.0/gtk.css" "$config_dir/gtk-4.0/bioma.css" "GTK4"; then
-        gtk4_ok=false
-    fi
-
-    [ "$gtk3_ok" = "true" ] && echo "GTK3 colors applied successfully"
-    [ "$gtk4_ok" = "true" ] && echo "GTK4 colors applied successfully"
-
-    if [ "$gtk3_ok" = "true" ] && [ "$gtk4_ok" = "true" ]; then
-        sync_system_appearance "$mode" "true"
-    else
+    if [ "$applied" -eq 0 ]; then
+        echo "Error: no bioma.css rendered for GTK 3 or GTK 4" >&2
         sync_system_appearance "$mode" "false"
         exit 1
     fi
+    sync_system_appearance "$mode" "true"
 }
 
 main "$@"

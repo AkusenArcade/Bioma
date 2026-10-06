@@ -24,7 +24,9 @@ hooks never touch each other's. Bioma's changes on top:
   command once: GTK's hook rewrites both gtk.css files.
 - `gtk/apply.sh` steps `color-scheme` to `default` and back after writing the
   colours. GTK 4 rereads the user's gtk.css only when that scheme changes, so
-  a new palette in the same mode never reached open windows.
+  a new palette in the same mode never reached open windows. It also hooks
+  only the toolkits whose `bioma.css` was rendered: upstream it failed unless
+  GTK 3 and GTK 4 were both on.
 
 `scripts/themes` renders them. Colours are named as matugen names them
 (`{{colors.primary.default.hex}}`, `rgb_csv`, `hex_stripped`, `| darken x`);
