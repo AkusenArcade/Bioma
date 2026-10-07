@@ -93,8 +93,32 @@ Singleton {
     readonly property bool canGoPrevious: player?.canGoPrevious ?? false
     readonly property bool canSeek: player?.canSeek ?? false
 
-    readonly property bool hasLength: (player?.lengthSupported ?? false) && length > 0
-    readonly property real length: player?.length ?? 0
+    // The track's length as the player last reported it. Firefox and Zen
+    // send the length with a track's metadata, then — once it plays — send
+    // metadata again without it; Quickshell then calls the length unsupported
+    // and answers the position in its place, which grows with it. Logged on
+    // 2026-10-07: `len` climbing in step with `pos`, `lengthSupported` false
+    // while playing, true again on every pause — the media organism's
+    // timeline went a few seconds after each play and came back on pause.
+    // So a length seen for this track is kept until the track changes.
+    readonly property string trackKey: player ? `${player.dbusName}\u0000${title}\u0000${artist}` : ""
+    readonly property real reportedLength: (player?.lengthSupported ?? false) ? (player?.length ?? 0) : 0
+
+    property var lastLength: ({ "key": "", "value": 0 })
+
+    function remember() {
+        if (root.reportedLength > 0 && root.trackKey.length > 0)
+            root.lastLength = { "key": root.trackKey, "value": root.reportedLength };
+    }
+
+    onReportedLengthChanged: root.remember()
+    // A new track's title and length arrive as two changes; remembered once
+    // both have landed, so the old length is never kept under the new title.
+    onTrackKeyChanged: Qt.callLater(root.remember)
+
+    readonly property real length: root.reportedLength > 0 ? root.reportedLength
+        : root.lastLength.key === root.trackKey ? root.lastLength.value : 0
+    readonly property bool hasLength: length > 0
 
     // ── Position ─────────────────────────────────────────────────────────
     //
