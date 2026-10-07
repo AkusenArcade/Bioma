@@ -710,6 +710,20 @@ Item {
             });
         }
 
+        // The timer started or paused from a key, without opening anything.
+        if (keep("Timer: start or pause"))
+            out.push({
+                "group": "CELLS",
+                "label": "Timer: start or pause",
+                "cell": "",
+                "title": "Bioma: timer",
+                "action": {
+                    "name": "spawn",
+                    "args": ["qs", "-p", Quickshell.shellPath("shell.qml"),
+                             "ipc", "call", "timer", "toggle"]
+                }
+            });
+
         for (const name of Keybinds.actions) {
             const label = Keybinds.humanize(name);
             if (!keep(label))

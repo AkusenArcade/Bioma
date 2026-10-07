@@ -309,6 +309,36 @@ ShellRoot {
         function stop(): string { Media.pause(); return "paused"; }
     }
 
+    // The timer, from a key: `start 25` starts twenty-five minutes — over one
+    // already running — `start 0` the length last set; `toggle` pauses,
+    // resumes, or starts; `stop` ends it. The timer cell appears while it
+    // runs (services/Time.qml).
+    IpcHandler {
+        target: "timer"
+
+        function start(minutes: int): string {
+            if (minutes > 0) {
+                Time.reset();
+                Time.setLength(minutes * 60);
+            }
+            Time.start();
+            return Time.running ? `${Math.round(Time.left / 60)} min` : "stopped";
+        }
+
+        function toggle(): string {
+            if (Time.running)
+                Time.pause();
+            else
+                Time.start();
+            return Time.running ? "running" : "paused";
+        }
+
+        function stop(): string {
+            Time.reset();
+            return "stopped";
+        }
+    }
+
     IpcHandler {
         target: "brightness"
 

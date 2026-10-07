@@ -233,6 +233,11 @@ answers `qs -p /path/to/Bioma/shell.qml ipc call cell toggle <name>`, so any
 key can be given to any cell from the Keybinds page. Escape, or a press
 anywhere else, closes what is open.
 
+The timer answers keys of its own: `ipc call timer start 25` starts twenty-five
+minutes (`start 0` the length last set), `timer toggle` pauses or resumes it,
+`timer stop` ends it. The Keybinds page offers *Timer: start or pause*; the
+timer cell is there while one runs.
+
 ### Dictation
 
 Speech to text, in the utility cell: under **Text** the middle button is

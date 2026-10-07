@@ -30,7 +30,8 @@ Singleton {
         "tray": "tray/TrayCell.qml",
         "clipboard": "clipboard/ClipboardCell.qml",
         "keyboard": "keyboard/KeyboardCell.qml",
-        "privacy": "privacy/PrivacyCell.qml"
+        "privacy": "privacy/PrivacyCell.qml",
+        "timer": "timer/TimerCell.qml"
     })
 
     // What a cell is called when it is spoken about rather than drawn — the
@@ -53,7 +54,8 @@ Singleton {
         "tray": "Tray",
         "clipboard": "Clipboard",
         "keyboard": "Keyboard",
-        "privacy": "Privacy"
+        "privacy": "Privacy",
+        "timer": "Timer"
     })
 
     // When each cell is there by itself, said the way the settings cell's
@@ -78,7 +80,8 @@ Singleton {
         "tray": "From the moment an application's icon changes state until the pointer has been over it, then five seconds.",
         "clipboard": "For five seconds after something is copied.",
         "keyboard": "For five seconds after the keyboard layout changes.",
-        "privacy": "While the microphone, a camera or the screen is being taken, and two seconds after."
+        "privacy": "While the microphone, a camera or the screen is being taken, and two seconds after.",
+        "timer": "While a timer runs, or waits, paused, to be resumed."
     })
 
     function conditionOf(type) {
@@ -159,7 +162,8 @@ Singleton {
         "tray": ["conditional", "always"],
         "clipboard": ["always", "conditional"],
         "keyboard": ["always", "conditional"],
-        "privacy": ["conditional"]
+        "privacy": ["conditional"],
+        "timer": ["conditional"]
     })
 
     // A cell whose form changes when it floats, and whose visibility changes
@@ -207,7 +211,8 @@ Singleton {
         "tray": 40,
         "clipboard": 40,
         "keyboard": 76,
-        "privacy": 64
+        "privacy": 64,
+        "timer": 40
     })
 
     function minimumOf(type) {
@@ -271,7 +276,9 @@ Singleton {
         "keyboard": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 5000 },
         // While something is taken, and a moment after: a call that drops
         // and rejoins is one call.
-        "privacy": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 2000 }
+        "privacy": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 2000 },
+        // Gone when it ends: the notification and the sound say so.
+        "timer": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 0 }
     })
 
     // Boolean, appearing promptly and leaving slowly, for a domain with

@@ -840,3 +840,34 @@ take a microphone back from an application, and pretending to would be worse tha
 dictation and recording appear too, as `pw-record` and the recorder: they are taking the
 microphone and the screen, and the cell says so.
 
+---
+
+## 15 · Timer
+
+*Conditional on a running timer · a ring at the speed of time.*
+
+*Built 2026-10-07, from "Nuove idee".* The cell exists while a timer runs, or waits, paused, to be
+resumed. Contracted it is the dial and nothing else: the notification's clock run backwards (§10)
+— the disc on the rim with the lit trail behind it, full when the timer starts and back at twelve
+when it ends. No figure at rest. Paused, the ring dims to 45 % and stops where it is.
+
+**Motion** — the ring drains continuously, measured from the moment the timer ends rather than
+from the last counted second, and redrawn only when it has half a pixel to move: a 25-minute
+timer costs a frame every ten seconds or so, a one-minute timer moves smoothly.
+
+**Expanded** — TIMER in the header with the dial as its mark; in the panel the time left (Orbitron
+34, lit; dimmed while not running), the presets 5 M · 10 M · 25 M · 1 H while it is still (the wheel
+on the figure turns a minute a notch, as on the clock), and START / PAUSE / RESUME with STOP.
+
+**The timer** is the clock's own (`services/Time.qml`): one timer wherever it is started — the
+clock cell, this cell, a key — ending in a critical notification and the alarm sound. Keys: `cell
+toggle timer` opens the cell to start one; `timer start <minutes>`, `timer toggle` and `timer stop`
+act without opening anything, and the Keybinds page offers *Timer: start or pause*.
+
+| Measure | Value | Note |
+|---|---|---|
+| dial | 22 px | centred in a glyph-sized pill |
+| panel | 280 px | a well; figure Orbitron 34 / 500 |
+| presets | 24 px pills | the clock's |
+| dwell | 0 | when it ends the notification and the sound say so |
+
