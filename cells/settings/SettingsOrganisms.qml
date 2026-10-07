@@ -338,6 +338,13 @@ Item {
                         }
                     }
 
+                    // Where what is on this desktop ends and what could be
+                    // added begins.
+                    DashedRule {
+                        visible: screenSection.choosing
+                        width: parent.width
+                    }
+
                     // The kinds there are, while one is being added.
                     Flow {
                         visible: screenSection.choosing

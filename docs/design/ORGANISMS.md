@@ -150,7 +150,8 @@ Settings has a category of its own, **ORGANISMS** (glyph `organisms`: a desktop 
 membrane and one panel standing on it), laid out in wells like the Session page:
 
 - one well per monitor, its organisms as chips, a dashed **+** chip to add one: the kinds appear
-  as a row of chips, and the one chosen appears at the centre of that screen's free area while
+  as a row of chips under a dashed rule — between what stands on the desktop and what could — and
+  the one chosen appears at the centre of that screen's free area while
   the settings close and the mode enters *Arrange*;
 - a chip's × takes it away: it shrinks into its centre on the desktop, and the list is written
   without it once it has gone;

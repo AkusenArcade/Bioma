@@ -1334,7 +1334,7 @@ Item {
         height: Math.max(root.height - y,
                          24 * root.factor + 30 * root.factor + 6 * root.factor + 22 * root.factor
                          + 12 * root.factor + root.chipRows * root.chipPitchY
-                         + (root.picking ? 8 * root.factor + kinds.height : 0))
+                         + (root.picking ? 12 * root.factor + kindsRule.height + kinds.height : 0))
 
         Item {
             anchors.fill: parent
@@ -1712,12 +1712,23 @@ Item {
             // so: seeing that the tissue is full is the answer to the question,
             // and hiding it would look like the cell not existing.
 
+            // Where what is in the tissue ends and what could be added begins.
+            DashedRule {
+                id: kindsRule
+
+                visible: root.picking
+                anchors.top: chips.bottom
+                anchors.topMargin: 2 * root.factor
+                anchors.left: parent.left
+                anchors.right: parent.right
+            }
+
             Flow {
                 id: kinds
 
                 visible: root.picking
-                anchors.top: chips.bottom
-                anchors.topMargin: 8 * root.factor
+                anchors.top: kindsRule.bottom
+                anchors.topMargin: 10 * root.factor
                 anchors.left: parent.left
                 anchors.right: parent.right
                 spacing: 6 * root.factor

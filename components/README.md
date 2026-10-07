@@ -17,6 +17,8 @@ Expected early residents:
 - **DashedSlot** — a dashed rounded rectangle: the rectangular sibling of
   `DashedRing`, and it says the same thing — the place exists and is free. The
   settings cell draws a membrane as three of them per edge.
+- **DashedRule** — the same dashes as a horizontal line: in the settings pages,
+  between the chips already placed and the kinds the dashed chip offers.
 - **Scroller** — the bar beside a list that is longer than its room. It exists
   only while the list is moving; a list that fits shows nothing. Four cells had
   written it out by hand before it was one file.

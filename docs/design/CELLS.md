@@ -670,7 +670,8 @@ membrane, three on the bottom. An unlit slot is dashed with a plus: click it to 
 it to switch it off. Each membrane is **fixed or auto-hide**, and that applies to the whole
 edge. The chosen tissue opens at the bottom with its max width and its cells: each cell is a
 chip with a cross to remove it, and a dashed chip adds one. **The dashed chip opens a row of
-kind chips under the tissue's own**, the way an organism is added (Akusen, 2026-10-07: one gesture
+kind chips under the tissue's own**, below a dashed rule (`DashedRule`) between what is placed and
+what could be, the way an organism is added (Akusen, 2026-10-07: one gesture
 for both pages), offering only the cells not yet on that monitor; one that would not fit stays,
 dimmed, saying `NO ROOM`. Chip names are upper case, as the organisms' are. **MOVE** and
 **COPY**, under the removal, take the chosen tissue in hand: every free place on the page — the
