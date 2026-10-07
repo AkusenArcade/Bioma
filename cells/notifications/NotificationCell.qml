@@ -16,6 +16,12 @@ import qs.services
 // At rest it is the icon and one line, in the expressive voice. The body stays
 // outside until the pointer comes near, or the membrane becomes a page.
 //
+// It can also be always there (Akusen, 2026-10-07). With nothing being said it
+// is then the bell and nothing else, like every glyph at rest; pressed, it
+// wears its name like every other cell and opens the history. A notification
+// arriving takes the pill over exactly as it does in the conditional cell, and
+// gives it back to the bell when it goes.
+//
 // See docs/design/CELLS.md §10, PRD §9.10.
 Cell {
     id: root
@@ -26,8 +32,25 @@ Cell {
     readonly property real spacing: 10 * metrics.factor
     readonly property real closeSize: 14 * metrics.factor
 
-    paddingLeading: 10 * metrics.factor
-    paddingTrailing: 14 * metrics.factor
+    // Always there, and with nothing to say: the bell alone, centred in its
+    // pill as every contracted glyph is.
+    readonly property bool resting: root.visibility.type === "always"
+                                    && root.shout === null && !root.flooding
+
+    paddingLeading: root.resting ? (metrics.cellHeight - iconSize) / 2 : 10 * metrics.factor
+    paddingTrailing: root.resting ? (metrics.cellHeight - iconSize) / 2 : 14 * metrics.factor
+
+    headerTitle: root.resting ? "NOTIFICATIONS" : ""
+    headerMark: root.resting ? bellMark : null
+
+    Component {
+        id: bellMark
+        Icon {
+            anchors.fill: parent
+            name: "bell"
+            gradient: true
+        }
+    }
 
     // Which notifications this cell shows (`options.show`). One cell shows
     // everything, the urgent one first. Two — `"urgent"` above `"ordinary"`,
@@ -71,8 +94,11 @@ Cell {
         };
     }
 
+    // An always-there cell does not fade when the notification goes — it
+    // goes back to the bell — so it keeps nothing.
     property var held: null
-    readonly property var displayed: root.shout !== null ? root.snapshot(root.shout) : root.held
+    readonly property var displayed: root.shout !== null ? root.snapshot(root.shout)
+                                   : root.resting ? null : root.held
 
     onDisplayedChanged: if (root.shout !== null) root.held = root.displayed
 
@@ -134,10 +160,20 @@ Cell {
     // out.
     property bool timed: false
     onLiveTimedChanged: if (root.shout !== null || root.liveTimed) root.timed = root.liveTimed
+    // Back to the bell, the face goes with the rest: the next one may be
+    // critical and have no clock.
+    onRestingChanged: if (root.resting) root.timed = false
     readonly property real timerSize: 16 * metrics.factor
     readonly property real timerRoom: root.timed ? root.timerSize + root.spacing : 0
 
-    contentWidth: iconSize + spacing + label.implicitWidth + spacing + timerRoom + closeSize
+    // The line's width is asked for even at rest. An elided Text measures its
+    // natural width only once somebody has asked for it, and a cell that first
+    // asked when its first notification arrived got the empty line's width:
+    // the pill came up with no words in it.
+    contentWidth: {
+        const line = label.implicitWidth;
+        return root.resting ? iconSize : iconSize + spacing + line + spacing + timerRoom + closeSize;
+    }
 
     readonly property real available: Math.max(0, width - paddingLeading - paddingTrailing
                                                  - iconSize - spacing
@@ -243,7 +279,19 @@ Cell {
 
     // ---- Contracted ---------------------------------------------------------
 
+    // The cell's only content at rest, so it wears the light gradient, as
+    // every contracted glyph does.
+    Icon {
+        anchors.centerIn: parent
+        visible: root.resting
+        width: root.iconSize
+        height: width
+        name: "bell"
+        gradient: true
+    }
+
     Row {
+        visible: !root.resting
         anchors.verticalCenter: parent.verticalCenter
         spacing: root.spacing
 
@@ -312,7 +360,7 @@ Cell {
         anchors.verticalCenter: parent.verticalCenter
         width: root.timerSize
         height: width
-        visible: root.timed
+        visible: root.timed && !root.resting
         // The orbit alone, no sector. Whole is drawn as just short of whole:
         // the rim wraps at 1, and a full one would read as empty.
         fraction: 0
@@ -323,6 +371,7 @@ Cell {
     Item {
         id: close
 
+        visible: !root.resting
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
         width: root.closeSize

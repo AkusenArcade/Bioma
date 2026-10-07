@@ -533,6 +533,12 @@ which to press.
 **At rest** — icon and title only, in Spectral. Body and actions do not appear until the pointer
 comes near.
 
+**Always there** (Akusen, 2026-10-07) — the cell may also be `always`. With nothing being said it
+is the bell alone, centred in its pill with the light gradient, like every contracted glyph;
+pressed, it wears its name — the bell and NOTIFICATIONS — and opens the history, like every other
+cell. A notification arriving takes the pill over exactly as in the conditional cell, and gives it
+back to the bell when it goes.
+
 **Limit cases** — critical urgency: outline in the alert colour, and it does not expire on its
 own. Past the queue cap: the cell becomes a count and defers to the history. Dwell expired: the
 cell disappears and the tissue closes — the timer resumes where it stopped, not from the start.

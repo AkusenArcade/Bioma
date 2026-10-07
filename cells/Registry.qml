@@ -149,7 +149,7 @@ Singleton {
         "theme": ["always", "conditional"],
         "system": ["always", "conditional"],
         "dock": ["always", "conditional"],
-        "notifications": ["conditional"],
+        "notifications": ["always", "conditional"],
         "connectivity": ["always", "conditional"],
         "launcher": ["always", "invoked"],
         "settings": ["always", "invoked"],
