@@ -38,8 +38,6 @@ Item {
     // own control lines up with the end of its last tissue.
     readonly property real slotsWidth: 3 * slotWidth + 2 * slotGap
     readonly property real chipHeight: 26 * factor
-    readonly property real rowHeight: 36 * factor
-    readonly property real pickerWidth: 220 * factor
     readonly property real threadLength: metrics.gap
 
     readonly property var places: ["start", "centre", "end"]
@@ -456,7 +454,7 @@ Item {
     //
     // What goes is the tissue whole — its cells in their order, their rules,
     // its padding and opacity — less whatever the monitor it lands on already
-    // has: one place per cell per monitor, the rule the picker keeps. Copying
+    // has: one place per cell per monitor, the rule the add row keeps. Copying
     // onto its own monitor therefore has nothing left to carry, and the page
     // says so on the slot instead of offering an empty tissue.
 
@@ -665,7 +663,9 @@ Item {
     // ordinary one.
     function chipLabel(entry) {
         const shown = entry.options && entry.options.show;
-        return Registry.nameOf(entry.type) + (shown ? " · " + shown : "");
+        // Upper case, as the organisms' chips are: the two pages add and show
+        // their contents the same way.
+        return (Registry.nameOf(entry.type) + (shown ? " · " + shown : "")).toUpperCase();
     }
 
     readonly property string longestName: {
@@ -784,7 +784,7 @@ Item {
 
     // **One place per cell per monitor.** A cell is in one tissue of one
     // membrane or in one floating slot, and that place is where a keybind
-    // opens it — two would make the keybind a guess. So the picker offers only
+    // opens it — two would make the keybind a guess. So the add row offers only
     // what is nowhere on this monitor yet: not in this tissue, not in another
     // tissue on a membrane, not floating.
     readonly property var placedHere: {
@@ -1330,11 +1330,11 @@ Item {
         width: scroller.width
         y: layout.y + layout.height + root.threadLength
         // What is left of the page, or — past what the panel was sized for —
-        // what the tissue's place and cells need. The picker is not counted:
-        // it scrolls inside its own well.
+        // what the tissue's place, its cells and the kinds being offered need.
         height: Math.max(root.height - y,
                          24 * root.factor + 30 * root.factor + 6 * root.factor + 22 * root.factor
-                         + 12 * root.factor + root.chipRows * root.chipPitchY)
+                         + 12 * root.factor + root.chipRows * root.chipPitchY
+                         + (root.picking ? 8 * root.factor + kinds.height : 0))
 
         Item {
             anchors.fill: parent
@@ -1542,7 +1542,7 @@ Item {
                 anchors.top: transferButtons.bottom
                 anchors.topMargin: 12 * root.factor
                 anchors.left: parent.left
-                width: parent.width - root.pickerWidth - root.threadLength - 12 * root.factor
+                width: parent.width
                 height: root.chipRows * root.chipPitchY
 
                 Component.onCompleted: root.chipRoom = Qt.binding(() => chips.width)
@@ -1703,94 +1703,63 @@ Item {
                 }
             }
 
-            // ---- The picker -----------------------------------------------
+            // ---- Adding one ------------------------------------------------
             //
-            // It hangs off the add chip on a thread and lists only the cells
-            // that are not in this tissue already. One that will not fit stays
-            // on the list, dimmed and saying so: seeing that the tissue is full
-            // is the answer to the question, and hiding it would look like the
-            // cell not existing. With every cell already placed on this monitor
-            // the list is empty, and the picker says so in its one row rather
-            // than hanging an empty capsule off the thread.
+            // The kinds that can still be placed, as a row of chips under the
+            // tissue's own — the way an organism is added (Akusen, 2026-10-07:
+            // one gesture for both pages). Only what is nowhere on this monitor
+            // yet. One that will not fit stays in the row, dimmed and saying
+            // so: seeing that the tissue is full is the answer to the question,
+            // and hiding it would look like the cell not existing.
 
-            Thread {
-                id: pickerLink
-
-                visible: root.picking
-                vertical: false
-                progress: root.picking ? 1 : 0
-                width: root.threadLength
-                height: implicitHeight
-                x: chips.x + chips.width
-                y: chips.y + root.chipHeight / 2 - height / 2
-            }
-
-            Well {
-                id: picker
+            Flow {
+                id: kinds
 
                 visible: root.picking
-                metrics: root.metrics
-                inset: 6 * root.factor
-                width: root.pickerWidth
-                x: chips.x + chips.width + root.threadLength
-                y: chips.y
-                height: Math.min(parent.height - y, Math.max(1, root.absent.length) * root.rowHeight
-                                 + 12 * root.factor)
+                anchors.top: chips.bottom
+                anchors.topMargin: 8 * root.factor
+                anchors.left: parent.left
+                anchors.right: parent.right
+                spacing: 6 * root.factor
 
                 Text {
-                    anchors.left: parent.left
-                    anchors.leftMargin: 14 * root.factor
-                    anchors.right: parent.right
-                    anchors.rightMargin: 14 * root.factor
-                    anchors.verticalCenter: parent.verticalCenter
                     visible: root.absent.length === 0
-                    text: "every cell is on this monitor"
-                    elide: Text.ElideRight
+                    text: "Every cell is on this monitor."
                     color: Theme.textFaint
                     font.family: Typography.expressive
                     font.pixelSize: 14 * root.factor
+                    font.italic: true
                 }
 
-                ListView {
-                    id: options
-
-                    anchors.fill: parent
-                    anchors.margins: 6 * root.factor
+                Repeater {
                     model: root.absent
-                    boundsBehavior: Flickable.StopAtBounds
-                    clip: true
 
                     delegate: Item {
-                        id: option
+                        id: kind
 
                         required property var modelData
 
-                        readonly property bool room: root.fits(root.chosenEdge, root.chosen,
-                                                               option.modelData)
+                        readonly property bool room: root.fits(root.chosenEdge, root.chosen, kind.modelData)
 
-                        width: ListView.view.width
-                        height: root.rowHeight
+                        width: kindName.implicitWidth + 22 * root.factor
+                        height: root.chipHeight
 
-                        Text {
-                            anchors.left: parent.left
-                            anchors.leftMargin: 8 * root.factor
-                            anchors.right: parent.right
-                            anchors.rightMargin: 8 * root.factor
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: Registry.nameOf(option.modelData)
-                            elide: Text.ElideRight
-                            color: option.room ? Theme.text : Theme.textFaint
-                            font.family: Typography.expressive
-                            font.pixelSize: 14 * root.factor
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: Metrics.radiusFor(height, root.metrics)
+                            antialiasing: true
+                            color: "transparent"
+                            border.width: Metrics.rim(Screen.devicePixelRatio)
+                            border.color: kind.room && kindHover.hovered ? Theme.primary
+                                        : kind.room ? Theme.line : Qt.alpha(Theme.line, 0.5)
                         }
 
                         Text {
-                            anchors.right: parent.right
-                            anchors.rightMargin: 8 * root.factor
-                            anchors.verticalCenter: parent.verticalCenter
-                            visible: !option.room
-                            text: "no room"
-                            color: Theme.textFaint
+                            id: kindName
+                            anchors.centerIn: parent
+                            text: Registry.nameOf(kind.modelData).toUpperCase() + (kind.room ? "" : " · NO ROOM")
+                            color: !kind.room ? Theme.textFaint
+                                 : kindHover.hovered ? Theme.primary : Theme.text
                             font: Qt.font({
                                 "family": Typography.technical,
                                 "pixelSize": root.metrics.fontMeta,
@@ -1799,17 +1768,13 @@ Item {
                             })
                         }
 
+                        HoverHandler { id: kindHover }
+
                         TapHandler {
-                            enabled: option.room
-                            onTapped: root.addCell(option.modelData)
+                            enabled: kind.room
+                            onTapped: root.addCell(kind.modelData)
                         }
                     }
-                }
-
-                Scroller {
-                    flick: options
-                    factor: root.factor
-                    x: picker.width - width - 4 * root.factor
                 }
             }
         }

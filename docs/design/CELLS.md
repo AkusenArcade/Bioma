@@ -669,8 +669,10 @@ wants 720.
 membrane, three on the bottom. An unlit slot is dashed with a plus: click it to light it, empty
 it to switch it off. Each membrane is **fixed or auto-hide**, and that applies to the whole
 edge. The chosen tissue opens at the bottom with its max width and its cells: each cell is a
-chip with a cross to remove it, and a dashed chip adds one. **"+ Cell" opens a capsule to the
-side**, hung on a thread, listing only the cells not already in that tissue. **MOVE** and
+chip with a cross to remove it, and a dashed chip adds one. **The dashed chip opens a row of
+kind chips under the tissue's own**, the way an organism is added (Akusen, 2026-10-07: one gesture
+for both pages), offering only the cells not yet on that monitor; one that would not fit stays,
+dimmed, saying `NO ROOM`. Chip names are upper case, as the organisms' are. **MOVE** and
 **COPY**, under the removal, take the chosen tissue in hand: every free place on the page — the
 dashed slots on either edge and the free floating anchors — lights in the primary and says what
 the tissue would be there, and the monitor tabs lead to the same on another screen. A press on
@@ -726,7 +728,7 @@ advertising itself on someone else's desktop.
 | list row | 38 px | cells, monitors, shortcuts |
 | tissue slot | 196 × 26 px | three per edge, radius 11, dashed when empty |
 | cell chip | 26 px | 9 px cross to remove, dashed to add |
-| picker capsule | 220 px | opens to the side on a 24 px thread, 36 px rows |
+| kind chips | 26 px | outline only, Orbitron 11, 6 px apart, primary on hover; in a row under the tissue's chips |
 | small segmented | 22 px | inside list rows, radius 14 |
 | monitor area | 640 × 320 px | holds a column layout, not only side by side |
 | thread | 24 px | horizontal, from the centre of the chosen capsule |
