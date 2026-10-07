@@ -197,6 +197,11 @@
               },
               "min_width": { "value": 81 },
               "width": { "elastic": true, "max_percent": 22 }
+            },
+            {
+              "type": "privacy",
+              "enabled": true,
+              "visibility": { "type": "conditional" }
             }
           ]
         },

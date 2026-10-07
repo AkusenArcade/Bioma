@@ -298,8 +298,33 @@ Singleton {
         case "ScreenshotCaptured":
             root.screenshotCaptured(data.path ?? "");
             break;
+        case "CastsChanged": {
+            const map = {};
+            for (const cast of data.casts ?? [])
+                map[cast.stream_id] = cast;
+            root.casts = map;
+            break;
+        }
+        case "CastStartedOrChanged": {
+            const map = Object.assign({}, root.casts);
+            map[data.cast.stream_id] = data.cast;
+            root.casts = map;
+            break;
+        }
+        case "CastStopped": {
+            const map = Object.assign({}, root.casts);
+            delete map[data.stream_id];
+            root.casts = map;
+            break;
+        }
         }
     }
+
+    // The screen being captured: niri's screencasts, by stream id, as it
+    // reports them — `target` (an output or a window), `is_active`, the
+    // consumer's `pid` for a wlr-screencopy cast and `pw_node_id` for a
+    // PipeWire one. The privacy cell reads it.
+    property var casts: ({})
 
     property var layoutNames: []
 

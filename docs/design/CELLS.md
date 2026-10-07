@@ -795,3 +795,48 @@ not searched — that is where the noise lives. "Nothing answers" waits until th
 **Decided** — with an empty field, the most used. The PRD puts the launcher last because it
 carries identity, and a launcher's identity is entirely in what it shows *before* you type. An
 alphabetical list is an archive; the most used are an answer.
+
+---
+
+## 14 · Privacy
+
+*Conditional on capture · three sources · says who.*
+
+*Built 2026-10-07, from "Nuove idee".* The microphone, a camera, the screen: the cell is there
+only while one of them is being taken, and it says by whom. At rest it is a glyph for each thing
+being taken — `microphone`, `camera`, `screen`, in that order — and the names of the applications
+taking them, in Spectral, joined by ` · `: an application's name is what the cell exists to say,
+as the window title's is, so it is allowed at rest. Pressed, it wears PRIVACY and hangs the list.
+
+**Colour** — the glyphs are in the **active** colour: something is happening. Never alert: a call
+that lasts an afternoon is not an afternoon of alarm.
+
+**Expanded** — one row per use: the glyph, the application in Spectral 14, and under it what and
+from where in Orbitron 11 muted — `MICROPHONE · REVELATOR IO 24 PRO`, `CAMERA · HD PRO WEBCAM
+C920`, `SCREEN · HDMI-A-1` (or the captured window's title). Nothing to press: the shell cannot
+take a microphone back from an application, and pretending to would be worse than saying so.
+
+**Sources** (`services/Privacy.qml`)
+- **Microphone** — PipeWire: a link from an audio source (a device, not a sink's monitor) into a
+  capture stream; the stream's `application.name`. A sink's monitor feeding a stream is somebody
+  listening to what the machine plays — the media cell's own band among them — and is left out.
+- **Camera** — most applications open `/dev/video*` directly, so `scripts/cameras` watches the
+  device nodes with inotify (no polling, no new dependency) and names the holders from `/proc`,
+  PipeWire's daemons left out; one that goes through PipeWire is a link from a video source. An
+  open held less than `privacy.camera_confirm` (1500 ms) is an application asking a device what
+  it can do, and is not believed.
+- **Screen** — niri's screencasts (`CastsChanged`, `CastStartedOrChanged`, `CastStopped`), the
+  consumer named by the pid niri gives for a wlr-screencopy cast, or through the PipeWire node a
+  portal cast streams to. Paused casts (`is_active` false) are not shown.
+
+| Measure | Value | Note |
+|---|---|---|
+| glyphs | 18 px, 6 apart | active colour |
+| names | Spectral `fontTitle` | elided at the right |
+| panel | 360 px | a well, rows of 40 |
+| dwell | 2 s | a call that drops and rejoins is one call |
+
+**Limit cases** — the last use gone: the cell keeps what it said while it fades. Bioma's own
+dictation and recording appear too, as `pw-record` and the recorder: they are taking the
+microphone and the screen, and the cell says so.
+

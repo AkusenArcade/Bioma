@@ -40,6 +40,7 @@ something is, never **how hard** it is working.
 | `screen.svg` `window.svg` `region.svg` | capture targets |
 | `appearance.svg` `structure.svg` `cells.svg` `monitors.svg` `organisms.svg` | settings categories, beside `keyboard.svg` and `lock.svg`. `organisms` is a desktop with its membrane and one panel standing on it |
 | `microphone.svg` | dictation: the Text tab's middle source, and the utility cell while it listens |
+| `camera.svg` | privacy cell: a camera in use. A video camera — the body and the lens's cone — beside `microphone` and `screen`, the other two things the cell says are being taken |
 | `lock.svg` | session command; also the secured-network marker at 12 px |
 | `suspend.svg` `restart.svg` `power.svg` `logout.svg` | session commands |
 | `bell.svg` | notification cell and history rows |

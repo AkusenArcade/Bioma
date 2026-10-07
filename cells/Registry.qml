@@ -29,7 +29,8 @@ Singleton {
         "settings": "settings/SettingsCell.qml",
         "tray": "tray/TrayCell.qml",
         "clipboard": "clipboard/ClipboardCell.qml",
-        "keyboard": "keyboard/KeyboardCell.qml"
+        "keyboard": "keyboard/KeyboardCell.qml",
+        "privacy": "privacy/PrivacyCell.qml"
     })
 
     // What a cell is called when it is spoken about rather than drawn — the
@@ -51,7 +52,8 @@ Singleton {
         "settings": "Settings",
         "tray": "Tray",
         "clipboard": "Clipboard",
-        "keyboard": "Keyboard"
+        "keyboard": "Keyboard",
+        "privacy": "Privacy"
     })
 
     // When each cell is there by itself, said the way the settings cell's
@@ -75,7 +77,8 @@ Singleton {
         "settings": "Never by itself: it comes when its keybind asks for it.",
         "tray": "From the moment an application's icon changes state until the pointer has been over it, then five seconds.",
         "clipboard": "For five seconds after something is copied.",
-        "keyboard": "For five seconds after the keyboard layout changes."
+        "keyboard": "For five seconds after the keyboard layout changes.",
+        "privacy": "While the microphone, a camera or the screen is being taken, and two seconds after."
     })
 
     function conditionOf(type) {
@@ -155,7 +158,8 @@ Singleton {
         "settings": ["always", "invoked"],
         "tray": ["conditional", "always"],
         "clipboard": ["always", "conditional"],
-        "keyboard": ["always", "conditional"]
+        "keyboard": ["always", "conditional"],
+        "privacy": ["conditional"]
     })
 
     // A cell whose form changes when it floats, and whose visibility changes
@@ -202,7 +206,8 @@ Singleton {
         "settings": 40,
         "tray": 40,
         "clipboard": 40,
-        "keyboard": 76
+        "keyboard": 76,
+        "privacy": 64
     })
 
     function minimumOf(type) {
@@ -263,7 +268,10 @@ Singleton {
         // For a moment after a copy, as the sign that it was kept.
         "clipboard": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 5000 },
         // For five seconds after the layout changes, saying which it is now.
-        "keyboard": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 5000 }
+        "keyboard": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 5000 },
+        // While something is taken, and a moment after: a call that drops
+        // and rejoins is one call.
+        "privacy": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 2000 }
     })
 
     // Boolean, appearing promptly and leaving slowly, for a domain with

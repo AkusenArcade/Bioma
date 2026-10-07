@@ -1,0 +1,99 @@
+#!/usr/bin/env python3
+# Say which programs hold a camera open, whenever that changes.
+#
+#     cameras
+#
+# Prints one JSON line per change: a list of {"pid", "name", "device",
+# "label"} for every process with a /dev/video* node open — `label` is the
+# device's own name, as the kernel gives it — PipeWire's own daemons left out
+# (an application that takes the camera through PipeWire is seen there, by
+# name, as a link). The first line is the state at start.
+#
+# Most applications open the camera directly, not through PipeWire, so there
+# is nothing to subscribe to but the device nodes themselves: inotify reports
+# every open and close of them, and only then are the holders looked up in
+# /proc. Nothing polls. Opens that only ask a device what it can do come and
+# go within a moment; the shell waits before believing one (Privacy.qml).
+
+import ctypes
+import glob
+import json
+import os
+import select
+import struct
+import sys
+
+IN_OPEN = 0x00000020
+IN_CLOSE_WRITE = 0x00000008
+IN_CLOSE_NOWRITE = 0x00000010
+IGNORED = {"pipewire", "wireplumber", "pipewire-pulse"}
+
+libc = ctypes.CDLL("libc.so.6", use_errno=True)
+
+
+def label(device):
+    try:
+        with open(f"/sys/class/video4linux/{os.path.basename(device)}/name") as name:
+            return name.read().strip().strip("'")
+    except OSError:
+        return os.path.basename(device)
+
+
+def holders():
+    found = []
+    me = os.getpid()
+    for entry in os.listdir("/proc"):
+        if not entry.isdigit() or int(entry) == me:
+            continue
+        try:
+            fds = os.listdir(f"/proc/{entry}/fd")
+        except OSError:
+            continue
+        devices = set()
+        for fd in fds:
+            try:
+                target = os.readlink(f"/proc/{entry}/fd/{fd}")
+            except OSError:
+                continue
+            if target.startswith("/dev/video"):
+                devices.add(target)
+        if not devices:
+            continue
+        try:
+            with open(f"/proc/{entry}/comm") as comm:
+                name = comm.read().strip()
+        except OSError:
+            continue
+        if name in IGNORED:
+            continue
+        for device in sorted(devices):
+            found.append({"pid": int(entry), "name": name, "device": device, "label": label(device)})
+    return sorted(found, key=lambda h: (h["device"], h["pid"]))
+
+
+def main():
+    fd = libc.inotify_init1(os.O_CLOEXEC)
+    if fd < 0:
+        sys.exit("cameras: inotify unavailable")
+    devices = glob.glob("/dev/video*")
+    for device in devices:
+        libc.inotify_add_watch(fd, device.encode(), IN_OPEN | IN_CLOSE_WRITE | IN_CLOSE_NOWRITE)
+
+    last = None
+    while True:
+        now = holders()
+        if now != last:
+            print(json.dumps(now), flush=True)
+            last = now
+        # Wait for the next open or close, then let a burst of them settle:
+        # one application opening a camera opens and closes it several times.
+        select.select([fd], [], [])
+        while select.select([fd], [], [], 0.3)[0]:
+            os.read(fd, 4096)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (KeyboardInterrupt, BrokenPipeError):
+        pass

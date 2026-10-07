@@ -318,6 +318,7 @@ What `conditional` means is the cell's own, from `cells/Registry.qml`:
 | `session` | while a restart is due: the running kernel's modules are gone from disk |
 | `dock` | while the desktop is showing — the active workspace on its monitor has no windows |
 | `window_title`, `media`, `notifications` | a window has the focus, sound is playing, something was said |
+| `privacy` | while the microphone, a camera or the screen is being taken, then two seconds |
 
 The five seconds are the dwell, so a block may set its own (`visibility.dwell`),
 and the pointer on the cell holds it. Nothing that happens in the first
