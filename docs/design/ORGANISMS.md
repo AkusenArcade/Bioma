@@ -1,6 +1,6 @@
 # Bioma — organisms
 
-*Approved 2026-10-04, media redrawn at Akusen's request. Built: the structure, arranging, the five organisms, the Settings category; since then the note, the lava lamp, the cytoplasm, the growth rings, osmosis, the photoperiod, the vacuole and the sediment.*
+*Approved 2026-10-04, media redrawn at Akusen's request. Built: the structure, arranging, the five organisms, the Settings category; since then the note, the lava lamp, the cytoplasm, the growth rings, osmosis, the photoperiod, the vacuole, the sediment and the nucleus.*
 
 The visual specification of the organisms: read-only surfaces that live on the desktop, under
 the windows, in the part of the screen the top and bottom membranes leave free. Read it with
@@ -56,7 +56,7 @@ That changes three rules and keeps the rest.
   | Template | Panel | Organisms |
   |---|---|---|
   | 1 × 2 | 200 × 424 | lava lamp, osmosis |
-  | 2 × 1 | 424 × 200 | clock, weather, photoperiod, cytoplasm, vitals in a row, note `short` |
+  | 2 × 1 | 424 × 200 | clock, weather, photoperiod, nucleus, cytoplasm, vitals in a row, note `short` |
   | 3 × 1 | 648 × 200 | vitals in a row of four (with a battery): a figure cut short is not a figure |
   | 2 × 2 | 424 × 424 | media, calendar, growth rings, vacuole, sediment, vitals `square`, note `medium` |
   | 2 × 3 | 424 × 648 | note `tall` |
@@ -721,6 +721,45 @@ exists, asked of the disk once per change of the list. Applications that do not 
 
 ---
 
+## 14 · Nucleus
+
+*Built 2026-10-07, from "Nuove idee". Present on a machine with a battery · the charge, as the
+mass at the heart of the cell.*
+
+The nucleus is as large as the charge: its **area** is the charge's share of the envelope round
+it, and the envelope is the battery full. Charging, **drops** come in from outside and melt into it,
+as often as watts go in. Discharging, it **beats**, as fast as watts go out. Full on the mains, or
+on the mains and not charging, nothing goes in or out and it is still.
+
+**Colour** is the charge's state, `stateFor(1 − level)`: calm while there is plenty, active as it
+runs down, alert when little is left. The figure takes the same light.
+
+| Measure | Value | Note |
+|---|---|---|
+| panel | 424 × 200 | template 2 × 1; padding 20 |
+| well | the left square, 160 | the nucleus at its centre |
+| envelope | radius well / 2 − 10, text at 22 %, 1.5 px, over text at 3 % | the battery full |
+| nucleus | radius 0.92 × envelope × √level, at least 3 | the cytoplasm's tissue in the state colour |
+| drops | radius 0.13 × envelope; 0.3 to 2.5 a second, 1 per 20 W in | exponential waits, three in flight at most; born just outside the envelope, falling at 260 px/s², taken in where they touch (0.25 s) |
+| beat | 0.2 to 2 a second, 1 per 12 W out | swells by 4 % of the radius and 2.5 px, the first half of each turn; a beat that stops finishes its swell |
+| figure | Orbitron 40 / 500, lit in the state colour | `62%` |
+| flow | Orbitron 11 label | `DISCHARGING · 14.2 W` · `CHARGING · 45.0 W` · `FULL` · `ON MAINS` |
+| time | Orbitron 11 muted | `3 H 20 M LEFT` · `FULL IN 1 H 05 M`; absent while UPower is still estimating |
+
+**The data** — UPower's display device through `SystemMonitor`: `batteryLevel` (a fraction, the
+vitals' guard against either scale kept once), `batteryWatts` (`changeRate`, UPower's `EnergyRate`,
+a magnitude — the direction is the state), `charging`, `discharging`, `batterySecondsLeft`.
+
+**Limit cases** — no battery: absent; while arranging, *No battery* in an empty envelope. Watts not
+reported (0): no drops and no beat, the figures still say the state.
+
+**Verified** with a harness only (six cases, drops and the beat measured in frames): this machine
+has no battery. The laptop is where it is tried for real.
+
+**Options** — `size`.
+
+---
+
 ## Configuration
 
 ```json
@@ -738,7 +777,8 @@ exists, asked of the disk once per change of the list. Applications that do not 
   { "type": "osmosis",  "monitor": "DP-1", "col": 6, "row": 2, "quiet": 8 },
   { "type": "photoperiod", "monitor": "DP-1", "col": 4, "row": 3 },
   { "type": "vacuole",  "monitor": "HDMI-A-1", "col": 2, "row": 0 },
-  { "type": "sediment", "monitor": "HDMI-A-1", "col": 4, "row": 0, "depth": 32 }
+  { "type": "sediment", "monitor": "HDMI-A-1", "col": 4, "row": 0, "depth": 32 },
+  { "type": "nucleus",  "monitor": "eDP-1", "col": 0, "row": 2 }
 ],
 "weather": { "city": "Milan" }   // place, latitude, longitude, located_for are written back;
                                  // the photoperiod reads the same place
