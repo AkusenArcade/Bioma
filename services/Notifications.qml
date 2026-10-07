@@ -195,9 +195,17 @@ Singleton {
             return;
 
         notification.tracked = true;
-        notification.closed.connect(() => root.advance(notification));
+        notification.closed.connect(reason => {
+            root.advance(notification);
+            // Expiring is not reading: what went past while nobody looked
+            // is still unread. Closed by the user or by its sender — the
+            // chat read in the application itself — it is.
+            if (reason !== NotificationCloseReason.Expired)
+                root.read(notification.id);
+        });
 
         root.remember(notification);
+        root.unread_(notification);
 
         // What went while nobody was looking, gone before this one queues.
         root.advance(null);
@@ -336,6 +344,38 @@ Singleton {
 
     function forget() {
         root.history = [];
+        root.unread = [];
+    }
+
+    // ── Unread ───────────────────────────────────────────────────────────
+    //
+    // What the vacuole organism holds. Every notification arrives unread,
+    // whether it was seen going past or not (Akusen, 2026-10-07), and stays
+    // so until it is read: closed by the user or by its sender, or taken in
+    // all together by opening the history. Expiring does not read it.
+
+    property var unread: []
+
+    function unread_(notification) {
+        if (root.unread.some(entry => entry.id === notification.id))
+            return;
+        const entry = {
+            "id": notification.id,
+            "appName": notification.appName || "",
+            "critical": root.isCritical(notification),
+            "at": Date.now()
+        };
+        root.unread = root.unread.concat([entry]).slice(-root.keep);
+    }
+
+    function read(id) {
+        if (root.unread.some(entry => entry.id === id))
+            root.unread = root.unread.filter(entry => entry.id !== id);
+    }
+
+    function readAll() {
+        if (root.unread.length > 0)
+            root.unread = [];
     }
 
     // Grouped for the history panel: one block per application, each in the

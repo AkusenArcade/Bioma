@@ -243,7 +243,7 @@ specification. The base layer ships none.
 
 | Key | Meaning |
 |---|---|
-| `type` | Which organism: `clock`, `media`, `vitals`, `calendar`, `weather`, `note`, `lava`, `cytoplasm`, `rings`, `osmosis`, `photoperiod` |
+| `type` | Which organism: `clock`, `media`, `vitals`, `calendar`, `weather`, `note`, `lava`, `cytoplasm`, `rings`, `osmosis`, `photoperiod`, `vacuole` |
 | `monitor` | As for a membrane: an output name, `primary` (the default) or `all` |
 | `col`, `row` | The grid point of the organism's **top-left corner**, in modules (one template unit and one gap, 224 at the normal step) from the corner of the grid laid over the free area: the screen minus what the membranes hold, measured to the line the windows begin on. Fractions of a module are fine (`1.5`). An organism is always held wholly inside the grid |
 | `x`, `y` | Read only when `col` and `row` are missing: the organism's **centre**, as fractions (0–1) of the free area. It stands on the nearest grid point, and the shell writes `col` and `row` the next time it is dropped |

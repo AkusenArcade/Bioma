@@ -189,8 +189,11 @@ Cell {
     // longer in the input region: an empty pill and a history that answered
     // nothing. Closing clears it, as it does for every invoked cell.
     onHistoryChanged: {
-        if (root.history)
+        if (root.history) {
             root.visibility.invoked = true;
+            // Looking at the history is reading what is in it.
+            Notifications.readAll();
+        }
         root.settle();
     }
     onShoutChanged: root.settle()

@@ -1,6 +1,6 @@
 # Bioma — organisms
 
-*Approved 2026-10-04, media redrawn at Akusen's request. Built: the structure, arranging, the five organisms, the Settings category; since then the note, the lava lamp, the cytoplasm, the growth rings, osmosis and the photoperiod.*
+*Approved 2026-10-04, media redrawn at Akusen's request. Built: the structure, arranging, the five organisms, the Settings category; since then the note, the lava lamp, the cytoplasm, the growth rings, osmosis, the photoperiod and the vacuole.*
 
 The visual specification of the organisms: read-only surfaces that live on the desktop, under
 the windows, in the part of the screen the top and bottom membranes leave free. Read it with
@@ -58,7 +58,7 @@ That changes three rules and keeps the rest.
   | 1 × 2 | 200 × 424 | lava lamp, osmosis |
   | 2 × 1 | 424 × 200 | clock, weather, photoperiod, cytoplasm, vitals in a row, note `short` |
   | 3 × 1 | 648 × 200 | vitals in a row of four (with a battery): a figure cut short is not a figure |
-  | 2 × 2 | 424 × 424 | media, calendar, growth rings, vitals `square`, note `medium` |
+  | 2 × 2 | 424 × 424 | media, calendar, growth rings, vacuole, vitals `square`, note `medium` |
   | 2 × 3 | 424 × 648 | note `tall` |
 
 - **The grid.** Organisms stand on a grid of squares laid over the free area. Its **module** is
@@ -632,6 +632,50 @@ same CITY field under the photoperiod's chip.
 
 ---
 
+## 12 · Vacuole
+
+*Built 2026-10-07, from "Nuove idee". Present while a notification is unread · what was said and
+not yet read, stored in a sac.*
+
+Each application is one body in the sac and each of its unread notifications a drop of it. Drops
+of one application melt together and two applications never do — the cytoplasm's tissue (§08),
+its shader too, for the same reason: what melts together is what belongs together. A chat that
+wrote five times is one swollen body; five applications that wrote once are five small ones.
+
+**Unread** (Akusen, 2026-10-07): every notification arrives unread, seen going past or not, and
+stays so until it is read —
+- closed by the user (the cross, an action) or by its sender (the chat read in the application
+  itself): its drop is taken back in;
+- or all of them at once, by opening the notification history: looking at the history is reading
+  it. Clearing the history reads them too.
+
+Expiring is not reading: a popup that went by on its own leaves its drop. A notification that has
+expired no longer exists for its sender, so from then on only the history reads it.
+
+**Motion** is arrival and reading, nothing else: a drop grows in where its body is (a new body
+where the sac has most room), and a read drop shrinks into it while the others close over the
+space. Between the two the sac is still and draws no frames. With nothing unread there is no
+vacuole; while arranging its blank form is the empty sac and *Nothing unread*.
+
+| Measure | Value | Note |
+|---|---|---|
+| panel | 424 × 424 | template 2 × 2; padding 20 |
+| sac | 354 | as large as the square leaves above the caption, centred |
+| membrane | 1.5, text at 22 % over text at 3 % | |
+| drop | radius 0.2 of the sac's inside | four lobes per body, the drops dealt round them |
+| fill | 45 % of the sac at most | past it every body shrinks together, proportions kept |
+| bodies | six applications, the most unread first | |
+| colour | primary; alert while it holds a critical notification | |
+| names | Orbitron 11 label over the count | the cytoplasm's ground; a name wider than its body is left out, the count stays |
+| caption | 14 below | `UNREAD 7` lit · `SINCE 14:32` muted (the oldest; a date before it when not today) |
+
+**Unread** lives in `services/Notifications.qml` (`unread`, `read(id)`, `readAll()`), in memory
+like the history.
+
+**Options** — `size`, `labels` (NAMES in Settings), `figures`.
+
+---
+
 ## Configuration
 
 ```json
@@ -647,7 +691,8 @@ same CITY field under the photoperiod's chip.
   { "type": "cytoplasm", "monitor": "HDMI-A-1", "col": 0, "row": 0, "labels": false },
   { "type": "rings",    "monitor": "DP-1", "col": 6, "row": 0, "days": 90 },
   { "type": "osmosis",  "monitor": "DP-1", "col": 6, "row": 2, "quiet": 8 },
-  { "type": "photoperiod", "monitor": "DP-1", "col": 4, "row": 3 }
+  { "type": "photoperiod", "monitor": "DP-1", "col": 4, "row": 3 },
+  { "type": "vacuole",  "monitor": "HDMI-A-1", "col": 2, "row": 0 }
 ],
 "weather": { "city": "Milan" }   // place, latitude, longitude, located_for are written back;
                                  // the photoperiod reads the same place

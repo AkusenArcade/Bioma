@@ -413,7 +413,7 @@ Item {
                     }
 
                     OptionRow {
-                        visible: screenSection.open >= 0 && root.organisms[screenSection.open].type === "cytoplasm"
+                        visible: screenSection.open >= 0 && ["cytoplasm", "vacuole"].indexOf(root.organisms[screenSection.open].type) >= 0
                         label: "NAMES"
 
                         Switch {

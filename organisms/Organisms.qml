@@ -24,7 +24,8 @@ Singleton {
         "cytoplasm": "cytoplasm/CytoplasmOrganism.qml",
         "rings": "rings/RingsOrganism.qml",
         "osmosis": "osmosis/OsmosisOrganism.qml",
-        "photoperiod": "photoperiod/PhotoperiodOrganism.qml"
+        "photoperiod": "photoperiod/PhotoperiodOrganism.qml",
+        "vacuole": "vacuole/VacuoleOrganism.qml"
     })
 
     // What an organism is called when it is spoken about rather than drawn.
@@ -39,7 +40,8 @@ Singleton {
         "cytoplasm": "Cytoplasm",
         "rings": "Growth rings",
         "osmosis": "Osmosis",
-        "photoperiod": "Photoperiod"
+        "photoperiod": "Photoperiod",
+        "vacuole": "Vacuole"
     })
 
     // How many units of the grid each one covers, across and down
@@ -57,7 +59,8 @@ Singleton {
         "cytoplasm": [2, 1],
         "rings": [2, 2],
         "osmosis": [1, 2],
-        "photoperiod": [2, 1]
+        "photoperiod": [2, 1],
+        "vacuole": [2, 2]
     })
 
     // The template of one block. Where an organism already has an option for
