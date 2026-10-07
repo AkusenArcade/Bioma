@@ -1,6 +1,6 @@
 # Bioma — organisms
 
-*Approved 2026-10-04, media redrawn at Akusen's request. Built: the structure, arranging, the five organisms, the Settings category; since then the note, the lava lamp, the cytoplasm, the growth rings, osmosis, the photoperiod and the vacuole.*
+*Approved 2026-10-04, media redrawn at Akusen's request. Built: the structure, arranging, the five organisms, the Settings category; since then the note, the lava lamp, the cytoplasm, the growth rings, osmosis, the photoperiod, the vacuole and the sediment.*
 
 The visual specification of the organisms: read-only surfaces that live on the desktop, under
 the windows, in the part of the screen the top and bottom membranes leave free. Read it with
@@ -58,7 +58,7 @@ That changes three rules and keeps the rest.
   | 1 × 2 | 200 × 424 | lava lamp, osmosis |
   | 2 × 1 | 424 × 200 | clock, weather, photoperiod, cytoplasm, vitals in a row, note `short` |
   | 3 × 1 | 648 × 200 | vitals in a row of four (with a battery): a figure cut short is not a figure |
-  | 2 × 2 | 424 × 424 | media, calendar, growth rings, vacuole, vitals `square`, note `medium` |
+  | 2 × 2 | 424 × 424 | media, calendar, growth rings, vacuole, sediment, vitals `square`, note `medium` |
   | 2 × 3 | 424 × 648 | note `tall` |
 
 - **The grid.** Organisms stand on a grid of squares laid over the free area. Its **module** is
@@ -677,6 +677,50 @@ like the history.
 
 ---
 
+## 13 · Sediment
+
+*Built 2026-10-07, from "Nuove idee". Present while the desktop has recorded a recent file · the
+files used lately, laid down in strata.*
+
+Each file is a layer, the newest on top. A layer is as thick as it is young: a file opened a
+moment ago is a wide band with its name in it, and as the days pass it is pressed down under what
+came after, thinner and thinner, until the oldest are a fine grain at the bottom. The column is
+always full — the layers share its height in proportion, as the growth rings share their disc —
+and every layer keeps at least 2 px, so the oldest stay countable.
+
+**Weight** — before the column is shared out, a layer weighs `(1 + hours / 6) ^ −0.7`: one for a
+file used now, a third for a day ago, a tenth for ten days. A gentler curve laid every file of the
+last days down alike, ruled like paper; a steeper one let a file opened a moment ago take half the
+column and every other name with it (2026-10-07, tuned on Akusen's own list).
+
+**Motion** — a deposit: something new on top, a file never seen or one used again, settles there
+from nothing while the layers under it are pressed together (`open` × 3, flat curve). A file used
+again does not rise through the strata from where it lay: it is laid down anew. Age presses the
+strata too, slowly — they are measured again every ten minutes and drawn once, never animated for
+it.
+
+| Measure | Value | Note |
+|---|---|---|
+| panel | 424 × 424 | template 2 × 2; padding 20 |
+| column | the square less the caption | |
+| layers | primary at 13 % / 19 %, the newest 30 % | alternating |
+| bedding plane | primary at 45 %, 1 px | each bed gently uneven, by its own seed; flatter the thinner it is (≤ 3 px, ≤ 12 % of the layer) |
+| surface | primary, 1.5 px | the top of the newest |
+| name | Spectral 13, text, middle elided | in layers ≥ 22 px; age `2 H` · `3 D` Orbitron 11 muted at the right |
+| caption | 14 below | `TODAY 3` lit (files used since midnight) · `16 FILES · SINCE 28 SEP` muted |
+
+**The list** — `services/Recent.qml` reads `recently-used.xbel` (freedesktop's list, written by
+GTK applications, the file chooser portal and the file manager), watched rather than polled and
+only while an organism holds it. Folders are left out — places, not work — and so is what no longer
+exists, asked of the disk once per change of the list. Applications that do not record there
+(most Qt and Electron ones) are not in it.
+
+**Limit cases** — nothing recorded: absent; while arranging, *No recent files*.
+
+**Options** — `size`, `depth` (8 · 16 · 32, DEPTH in Settings), `names` (NAMES), `figures`.
+
+---
+
 ## Configuration
 
 ```json
@@ -693,7 +737,8 @@ like the history.
   { "type": "rings",    "monitor": "DP-1", "col": 6, "row": 0, "days": 90 },
   { "type": "osmosis",  "monitor": "DP-1", "col": 6, "row": 2, "quiet": 8 },
   { "type": "photoperiod", "monitor": "DP-1", "col": 4, "row": 3 },
-  { "type": "vacuole",  "monitor": "HDMI-A-1", "col": 2, "row": 0 }
+  { "type": "vacuole",  "monitor": "HDMI-A-1", "col": 2, "row": 0 },
+  { "type": "sediment", "monitor": "HDMI-A-1", "col": 4, "row": 0, "depth": 32 }
 ],
 "weather": { "city": "Milan" }   // place, latitude, longitude, located_for are written back;
                                  // the photoperiod reads the same place

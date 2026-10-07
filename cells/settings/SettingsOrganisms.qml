@@ -420,7 +420,7 @@ Item {
                     }
 
                     OptionRow {
-                        visible: screenSection.open >= 0 && ["cytoplasm", "vacuole"].indexOf(root.organisms[screenSection.open].type) >= 0
+                        visible: screenSection.open >= 0 && ["cytoplasm", "vacuole", "sediment"].indexOf(root.organisms[screenSection.open].type) >= 0
                         label: "NAMES"
 
                         Switch {
@@ -445,6 +445,24 @@ Item {
                             ]
                             current: screenSection.open >= 0 ? String(root.organisms[screenSection.open].days || 90) : "90"
                             onChose: key => root.setOption(screenSection.open, "days", key === "90" ? null : parseInt(key, 10))
+                        }
+                    }
+
+                    OptionRow {
+                        visible: screenSection.open >= 0 && root.organisms[screenSection.open].type === "sediment"
+                        label: "DEPTH"
+
+                        Segmented {
+                            metrics: root.metrics
+                            fontSize: root.metrics.fontMeta
+                            buttonPadding: 10 * root.factor
+                            options: [
+                                { "key": "8", "label": "8" },
+                                { "key": "16", "label": "16" },
+                                { "key": "32", "label": "32" }
+                            ]
+                            current: screenSection.open >= 0 ? String(root.organisms[screenSection.open].depth || 16) : "16"
+                            onChose: key => root.setOption(screenSection.open, "depth", key === "16" ? null : parseInt(key, 10))
                         }
                     }
 
