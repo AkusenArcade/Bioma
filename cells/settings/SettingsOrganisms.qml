@@ -618,12 +618,13 @@ Item {
                     }
 
                     // A weather organism's city: one place for every weather
-                    // organism, so it is the same field under each of them.
+                    // organism, so it is the same field under each of them —
+                    // and under the photoperiod's, whose sky is over it.
                     Column {
                         id: weatherCity
 
                         readonly property bool shown: screenSection.open >= 0
-                                                      && root.organisms[screenSection.open].type === "weather"
+                                                      && ["weather", "photoperiod"].indexOf(root.organisms[screenSection.open].type) >= 0
                         readonly property bool wrong: Weather.problem.length > 0 && Weather.city.length > 0
 
                         visible: weatherCity.shown
@@ -726,10 +727,12 @@ Item {
                                 return "Press an organism for its options, or its cross to take it away.";
                             if (weatherCity.shown) {
                                 if (Weather.city.length === 0)
-                                    return "Every weather organism reads this city. Enter keeps it.";
-                                return Weather.located
-                                    ? `Read for ${Weather.place}, every ${Config.get("weather.minutes", 30)} minutes, from Open-Meteo — the same place for every weather organism.`
-                                    : "Looking for it…";
+                                    return "Every weather and photoperiod organism reads this city. Enter keeps it.";
+                                if (!Weather.located)
+                                    return "Looking for it…";
+                                if (root.organisms[screenSection.open].type === "photoperiod")
+                                    return `The sky over ${Weather.place}, worked out here from where it is — the same place the weather reads.`;
+                                return `Read for ${Weather.place}, every ${Config.get("weather.minutes", 30)} minutes, from Open-Meteo — the same place for every weather organism.`;
                             }
                             return "Its size follows the membranes unless it is given its own.";
                         }

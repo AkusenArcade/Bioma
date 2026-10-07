@@ -243,7 +243,7 @@ specification. The base layer ships none.
 
 | Key | Meaning |
 |---|---|
-| `type` | Which organism: `clock`, `media`, `vitals`, `calendar`, `weather`, `note`, `lava`, `cytoplasm`, `rings`, `osmosis` |
+| `type` | Which organism: `clock`, `media`, `vitals`, `calendar`, `weather`, `note`, `lava`, `cytoplasm`, `rings`, `osmosis`, `photoperiod` |
 | `monitor` | As for a membrane: an output name, `primary` (the default) or `all` |
 | `col`, `row` | The grid point of the organism's **top-left corner**, in modules (one template unit and one gap, 224 at the normal step) from the corner of the grid laid over the free area: the screen minus what the membranes hold, measured to the line the windows begin on. Fractions of a module are fine (`1.5`). An organism is always held wholly inside the grid |
 | `x`, `y` | Read only when `col` and `row` are missing: the organism's **centre**, as fractions (0–1) of the free area. It stands on the nearest grid point, and the shell writes `col` and `row` the next time it is dropped |
@@ -268,7 +268,8 @@ is 2 × 1, 2 × 2 or 2 × 3, the vitals' square 2 × 2 rather than a row.
 
 ### weather
 
-Where the weather organism reads the weather for. The settings write the
+Where the weather organism reads the weather for, and the place whose sky the
+photoperiod organism draws. The settings write the
 city; the shell finds it with Open-Meteo's geocoder the first time and writes
 the rest beside it, so later starts go straight to the forecast.
 
@@ -280,7 +281,9 @@ the rest beside it, so later starts go straight to the forecast.
 | `minutes` | How often the forecast is asked for while an organism shows it. Default 30 |
 
 The forecast comes from Open-Meteo (no key, metric units), through the proxy
-when one is on. A reading older than two hours is not shown.
+when one is on. A reading older than two hours is not shown. The photoperiod
+needs only the coordinates: it works the sun and the moon out itself and asks
+nothing more of the network.
 
 ### cells
 

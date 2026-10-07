@@ -1,6 +1,6 @@
 # Bioma — organisms
 
-*Approved 2026-10-04, media redrawn at Akusen's request. Built: the structure, arranging, the five organisms, the Settings category; since then the note, the lava lamp, the cytoplasm, the growth rings and osmosis.*
+*Approved 2026-10-04, media redrawn at Akusen's request. Built: the structure, arranging, the five organisms, the Settings category; since then the note, the lava lamp, the cytoplasm, the growth rings, osmosis and the photoperiod.*
 
 The visual specification of the organisms: read-only surfaces that live on the desktop, under
 the windows, in the part of the screen the top and bottom membranes leave free. Read it with
@@ -56,7 +56,7 @@ That changes three rules and keeps the rest.
   | Template | Panel | Organisms |
   |---|---|---|
   | 1 × 2 | 200 × 424 | lava lamp, osmosis |
-  | 2 × 1 | 424 × 200 | clock, weather, cytoplasm, vitals in a row, note `short` |
+  | 2 × 1 | 424 × 200 | clock, weather, photoperiod, cytoplasm, vitals in a row, note `short` |
   | 3 × 1 | 648 × 200 | vitals in a row of four (with a battery): a figure cut short is not a figure |
   | 2 × 2 | 424 × 424 | media, calendar, growth rings, vitals `square`, note `medium` |
   | 2 × 3 | 424 × 648 | note `tall` |
@@ -572,6 +572,66 @@ network link*.
 
 ---
 
+## 11 · Photoperiod
+
+*Built 2026-10-07, from "Nuove idee". Always present · the sky over the weather's place: the
+sun's arc and the moon's, the light the day has left, and how much of the moon is lit.*
+
+The sky as one stands in it, facing the sun at noon — south in the northern hemisphere, north in
+the southern: the compass runs across (east on the left up here), the altitude up, at one scale
+for every season, so a December sun is a low arc and a June sun a tall one. The horizon is a
+line; under it a shallow strip holds what has set, pressed — under the horizon is under it, how
+far matters less.
+
+**The sun's arc** is the whole of today's path. The part it has travelled is dim, the part ahead
+is lit, and the sky under the part ahead is filled faintly: **the light left**, as an area, while
+the figure above says it in hours. Under the horizon its path is a faint line, and the sun there
+is a ring instead of a disc. **The moon** has its own arc, fainter, in the text's colour, and its
+disc is lit as the moon is — the bright limb on the sun's side, the terminator an ellipse,
+mirrored south of the equator. When it is near the sun it stands near the sun: that is a new moon.
+
+It moves as the sky does: everything is worked out again once a minute and drawn once, never
+animated. Today is the place's **solar day**, from the sun's lowest to its lowest — the clock's
+midnight where the clock is right for the place, and still the night where it is not, so the arc
+is never cut in daylight. The moon's arc is drawn over a lunar day, fifty minutes longer, so it
+closes on itself.
+
+| Measure | Value | Note |
+|---|---|---|
+| panel | 424 × 200 | template 2 × 1; padding 20 |
+| place | Spectral 15 / 700 | the weather's place, as geocoded |
+| figure | `LIGHT LEFT` Orbitron 11 label · `4 H 12 M` lit, Orbitron 15 / 500 | |
+| sky | the height between the rows, 10 below the figure and 8 above the phase | horizon at 0.74 of it, `line`, a hairline |
+| margin | 9 across, 9 above the zenith | so the discs at the edges are whole |
+| sun's arc | primary, 1.5; travelled at 38 %; under the horizon 1 at 18 % | light left: primary at 10 % |
+| sun | disc 6, primary; under the horizon a ring at 50 % | |
+| moon's arc | text at 22 %, 1 | above the horizon only |
+| moon | disc 7: the dark part text at 10 % with a hairline at 35 %, the lit part text at 90 % | under the horizon at 45 % of that |
+| rising, setting | Orbitron 11 muted, under the strip where the arc crosses | `07:29`, `18:54` |
+| phase | Spectral 14 muted · Orbitron 11 muted | `Waning crescent  8 %` |
+| day | Orbitron 11 muted, right | `DAY 11 H 25 M` |
+
+**The figure** — by day `LIGHT LEFT` and the hours to sunset; by night `SUNRISE IN` and the hours
+to sunrise; with no crossing in the next two days, `MIDNIGHT SUN` or `POLAR NIGHT` alone. Sunrise
+and sunset are the almanac's: the sun's upper limb on the horizon, refraction included (−0.833°).
+**The phase** names the four principal ones for about a day either side of their instant, as a
+calendar does, and the other four between them.
+
+**The sky** — `organisms/photoperiod/sky.js`, the low-precision formulas of Meeus' *Astronomical
+Algorithms*: the sun to within a minute of its rising, the moon to a fraction of a degree, its
+parallax included. Finer than a pixel of the organism. Nothing is asked over the network but the
+place: the coordinates are the weather's (§05), and the weather service is held only until it has
+them. Times are the machine's clock — the place is where the machine is.
+
+**Limit cases** — no city: blank, the horizon alone, and in the sky, Spectral italic, *Type a city
+under Settings → Organisms → Weather → City.* A city nobody could find: the weather's reason.
+While it is being looked for: *Looking for the place…*
+
+**Options** — `size`. The city is the weather's, stored once under `weather`; Settings shows the
+same CITY field under the photoperiod's chip.
+
+---
+
 ## Configuration
 
 ```json
@@ -586,9 +646,11 @@ network link*.
   { "type": "lava",     "monitor": "HDMI-A-1", "col": 0, "row": 1, "colour": "theme" },
   { "type": "cytoplasm", "monitor": "HDMI-A-1", "col": 0, "row": 0, "labels": false },
   { "type": "rings",    "monitor": "DP-1", "col": 6, "row": 0, "days": 90 },
-  { "type": "osmosis",  "monitor": "DP-1", "col": 6, "row": 2, "quiet": 8 }
+  { "type": "osmosis",  "monitor": "DP-1", "col": 6, "row": 2, "quiet": 8 },
+  { "type": "photoperiod", "monitor": "DP-1", "col": 4, "row": 3 }
 ],
-"weather": { "city": "Milan" }   // place, latitude, longitude, located_for are written back
+"weather": { "city": "Milan" }   // place, latitude, longitude, located_for are written back;
+                                 // the photoperiod reads the same place
 "arrange": { "grid": 2 }         // squares per module: 1, 2, 4 or 8 — written on leaving Arrange
 ```
 

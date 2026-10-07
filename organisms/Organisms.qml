@@ -23,7 +23,8 @@ Singleton {
         "lava": "lava/LavaOrganism.qml",
         "cytoplasm": "cytoplasm/CytoplasmOrganism.qml",
         "rings": "rings/RingsOrganism.qml",
-        "osmosis": "osmosis/OsmosisOrganism.qml"
+        "osmosis": "osmosis/OsmosisOrganism.qml",
+        "photoperiod": "photoperiod/PhotoperiodOrganism.qml"
     })
 
     // What an organism is called when it is spoken about rather than drawn.
@@ -37,7 +38,8 @@ Singleton {
         "lava": "Lava lamp",
         "cytoplasm": "Cytoplasm",
         "rings": "Growth rings",
-        "osmosis": "Osmosis"
+        "osmosis": "Osmosis",
+        "photoperiod": "Photoperiod"
     })
 
     // How many units of the grid each one covers, across and down
@@ -54,7 +56,8 @@ Singleton {
         "lava": [1, 2],
         "cytoplasm": [2, 1],
         "rings": [2, 2],
-        "osmosis": [1, 2]
+        "osmosis": [1, 2],
+        "photoperiod": [2, 1]
     })
 
     // The template of one block. Where an organism already has an option for
