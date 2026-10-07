@@ -22,7 +22,7 @@ import qs.services
 Cell {
     id: root
 
-    domain: "sinestesia"
+    domain: "media"
 
     paddingLeading: 16
     paddingTrailing: 16
@@ -68,7 +68,7 @@ Cell {
 
     // ---- Open ---------------------------------------------------------------
 
-    headerTitle: "SINESTESIA"
+    headerTitle: "MEDIA"
     headerMark: Component {
         Icon {
             anchors.fill: parent
@@ -86,7 +86,7 @@ Cell {
     expansion: Component {
         Loader {
             id: expansionLoader
-            source: Qt.resolvedUrl("SinestesiaExpansion.qml")
+            source: Qt.resolvedUrl("MediaExpansion.qml")
             onLoaded: {
                 item.cell = root;
                 item.metrics = Qt.binding(() => root.metrics);

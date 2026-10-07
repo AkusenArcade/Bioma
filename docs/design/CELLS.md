@@ -155,9 +155,12 @@ already says.
 
 ---
 
-## 04 · Sinestesia
+## 04 · Media
 
 *Conditional on audio signal · two independent inputs · identity.*
+
+*Called Sinestesia until 2026-10-07 (type `sinestesia` still reads as `media`). Sinestesia is the
+standalone audio visualiser the band comes from, and keeps the name.*
 
 The sound leaving the machine, made visible, and when there is a track, the track too. The one
 cell no other shell has, and the only one where motion does not measure a load: it measures the
@@ -376,7 +379,7 @@ watch it**, in 250 ms, cell by cell.
 - Visibility: invoked, optionally always present.
 
 **Why** — the contracted cell **is** the data: change the wallpaper and the cell changes, and
-that is visible without opening anything. The chips are vertical pills, like the Sinestesia bars
+that is visible without opening anything. The chips are vertical pills, like the media cell's bars
 and like the mark. Wallpapers are looked at **inside pills**, which also solves the carousel
 practically: the neighbours are half-seen without fake edge fades. Source and result in two
 separate capsules joined by a thread: they are two different questions — *where it comes from*

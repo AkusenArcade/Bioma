@@ -148,7 +148,7 @@ its sources predate the current Quickshell release — expect API drift.
 ## Build order
 
 Phase 0 foundations → 1 services → 2 window title / workspaces / vitals →
-3 sinestesia, theme, utility → 4 volume, connectivity, session, dock,
+3 media (was sinestesia), theme, utility → 4 volume, connectivity, session, dock,
 notifications last → 5 settings → 6 launcher. See PRD §10.
 
 Notifications are the point of no return: `org.freedesktop.Notifications` has

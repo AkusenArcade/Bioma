@@ -5,7 +5,7 @@ import qs.core
 import qs.components
 import qs.services
 
-// Sinestesia, opened: the band with room, and the track hung underneath it.
+// The media cell, opened: the band with room, and the track hung underneath it.
 //
 // The panel hangs **from** the visualiser and not the other way round. Sound is
 // always there and a track only sometimes, so the thread says which of the two

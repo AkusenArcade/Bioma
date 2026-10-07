@@ -186,7 +186,7 @@
           "orientation": "horizontal",
           "cells": [
             {
-              "type": "sinestesia",
+              "type": "media",
               "enabled": true,
               "visibility": {
                 "type": "conditional",

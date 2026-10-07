@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import qs.core
+import qs.cells
 import qs.services
 import qs.structure
 
@@ -180,12 +181,16 @@ ShellRoot {
     IpcHandler {
         target: "cell"
 
+        // An old name still reaches the cell it became: a keybind written
+        // for `sinestesia` opens `media`.
         function toggle(domain: string): string {
+            domain = Registry.canonical(domain);
             return Focus.invoke(domain, Niri.focusedOutput)
                 ? `toggled ${domain}` : `no invocable cell "${domain}"`;
         }
 
         function close(domain: string): string {
+            domain = Registry.canonical(domain);
             return Focus.retire(domain, Niri.focusedOutput)
                 ? `closed ${domain}` : `no invocable cell "${domain}"`;
         }

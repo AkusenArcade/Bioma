@@ -19,7 +19,7 @@ Singleton {
         "vitals": "vitals/Vitals.qml",
         "theme": "theme/ThemeCell.qml",
         "utility": "utility/Utility.qml",
-        "sinestesia": "sinestesia/Sinestesia.qml",
+        "media": "media/MediaCell.qml",
         "audio": "audio/AudioCell.qml",
         "connectivity": "connectivity/Connectivity.qml",
         "system": "system/SystemCell.qml",
@@ -39,7 +39,7 @@ Singleton {
         "window_title": "Window title",
         "workspaces": "Workspaces",
         "vitals": "Vitals",
-        "sinestesia": "Sinestesia",
+        "media": "Media",
         "audio": "Audio",
         "utility": "Utility",
         "theme": "Theme",
@@ -63,7 +63,7 @@ Singleton {
         "window_title": "While a window has the focus. With none, there is no title to show.",
         "workspaces": "For five seconds after the workspace changes.",
         "vitals": "While the processor, the memory, the graphics card or the battery is past its alert level, and three seconds after it comes back.",
-        "sinestesia": "While sound is playing, and four seconds after it stops.",
+        "media": "While sound is playing, and four seconds after it stops.",
         "audio": "For five seconds after the volume changes or the sound is muted.",
         "utility": "For five seconds after a screenshot, and for as long as a recording runs and waits to be kept.",
         "theme": "For five seconds after the palette changes.",
@@ -87,7 +87,9 @@ Singleton {
     // one works; the settings cell writes the new one whenever it writes a
     // list. `session` became `system` on 2026-09-23, when the account and the
     // ways to leave were joined by the machine's own description.
-    readonly property var aliases: ({ "session": "system" })
+    // `sinestesia` became `media` on 2026-10-07, so the cell says what it is
+    // about: Sinestesia is the standalone visualiser its band comes from.
+    readonly property var aliases: ({ "session": "system", "sinestesia": "media" })
 
     function canonical(type) {
         return root.aliases[type] || type;
@@ -141,7 +143,7 @@ Singleton {
         "window_title": ["conditional"],
         "workspaces": ["always", "conditional"],
         "vitals": ["always", "conditional"],
-        "sinestesia": ["conditional"],
+        "media": ["conditional"],
         "audio": ["always", "conditional", "invoked"],
         "utility": ["always", "conditional"],
         "theme": ["always", "conditional"],
@@ -188,7 +190,7 @@ Singleton {
         "window_title": 0,
         "workspaces": 96,
         "vitals": 90,
-        "sinestesia": 81,
+        "media": 81,
         "audio": 40,
         "utility": 40,
         "theme": 120,
@@ -253,7 +255,7 @@ Singleton {
         "utility": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 5000 },
         "system": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 0 },
         "window_title": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 200 },
-        "sinestesia": { "enter": 0.02, "exit": 0.005, "confirm": 200, "dwell": 4000 },
+        "media": { "enter": 0.02, "exit": 0.005, "confirm": 200, "dwell": 4000 },
         "connectivity": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 5000 },
         "dock": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 400 },
         "notifications": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 400 },

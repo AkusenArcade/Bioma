@@ -298,7 +298,7 @@ nothing more of the network.
 | `visibility.shortcut` | For `invoked`. |
 | `min_width` | Below it the cell prefers not to appear rather than appear illegible. A generous minimum also stops small content changes producing motion. Omitted, the cell's own floor from `cells/Registry.qml` applies; this raises it, and the tissue's percentage has to cover the sum. |
 | `width` | An **object**, not a bare number — `{ "elastic": true, "max_percent": 25 }` — so a per-cell weight stays possible later. |
-| `type` names | Renamed types keep working under their old name: `session` is `system` since 2026-09-23. The settings cell writes the new one. |
+| `type` names | Renamed types keep working under their old name: `session` is `system` since 2026-09-23, `sinestesia` is `media` since 2026-10-07. The settings cell writes the new one. |
 | `options` | Per-cell domain settings. The clock takes `format` (`24h` \| `12h`), vitals `gpu`, and notifications `show`: `all` (the default — urgent first), `urgent` or `ordinary`. Two notification cells in a column, `urgent` above `ordinary`, are how the ordinary ones keep going past a critical one that does not leave by itself. |
 
 Confirm and dwell are asymmetric on purpose: appear promptly, leave slowly.
@@ -317,7 +317,7 @@ What `conditional` means is the cell's own, from `cells/Registry.qml`:
 | `utility` | five seconds after a screenshot, Bioma's own or niri's, and for as long as a recording runs or waits for its answer |
 | `session` | while a restart is due: the running kernel's modules are gone from disk |
 | `dock` | while the desktop is showing — the active workspace on its monitor has no windows |
-| `window_title`, `sinestesia`, `notifications` | a window has the focus, sound is playing, something was said |
+| `window_title`, `media`, `notifications` | a window has the focus, sound is playing, something was said |
 
 The five seconds are the dwell, so a block may set its own (`visibility.dwell`),
 and the pointer on the cell holds it. Nothing that happens in the first
@@ -333,9 +333,9 @@ what a cell displays. A cell's own settings live in its `options`.
 
 | Key | Meaning |
 |---|---|
-| `audio.monitor_signal` | Whether the peak monitor on the default sink runs. It is Sinestesia's visibility condition, and it is the only continuous audio work in the shell. On a sink whose channels are AUX (a pro-audio interface), Quickshell's monitor reads nothing, so `sinestesia-bands --peak` runs in its place: one capture either way. |
+| `audio.monitor_signal` | Whether the peak monitor on the default sink runs. It is the media cell's visibility condition, and it is the only continuous audio work in the shell. On a sink whose channels are AUX (a pro-audio interface), Quickshell's monitor reads nothing, so `sinestesia-bands --peak` runs in its place: one capture either way. |
 | `audio.step` | How far one notch of the wheel moves the volume cell, as a fraction of the travel. The wheel is that cell's main interaction, and a mouse with a coarse wheel and a touchpad want different answers. |
-| `sinestesia.bands` | How many bands `tools/sinestesia-bands` emits per frame. The cell folds them down to the fourteen it draws contracted and the thirty-four it draws open, so this is the resolution the folding starts from, not the number of bars. |
+| `sinestesia.bands` | How many bands `tools/sinestesia-bands` emits per frame (the section keeps the name of the visualiser the band comes from; the cell is `media`). The cell folds them down to the fourteen it draws contracted and the thirty-four it draws open, so this is the resolution the folding starts from, not the number of bars. |
 | `sinestesia.fps` | Frames per second out of the tool. Sixty is what Sinestesia itself runs at. |
 | `sinestesia.gain` | Multiplier applied after the dB mapping, 0.1 to 10. The mapping puts −70 dB at nothing and 0 dB at full; quiet material needs more than 1. |
 | `sinestesia.source` | `output` — the default sink's monitor, everything the machine plays — or `input`, the default source. |
