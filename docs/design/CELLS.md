@@ -871,3 +871,39 @@ act without opening anything, and the Keybinds page offers *Timer: start or paus
 | presets | 24 px pills | the clock's |
 | dwell | 0 | when it ends the notification and the sound say so |
 
+---
+
+## 16 · Downloads
+
+*Conditional on a growing download · a thread the bytes run along.*
+
+*Built 2026-10-07, from "Nuove idee".* There while a browser is writing into the downloads folder.
+Contracted it is the `download` glyph and a thread: a hairline in the line colour with dashes of
+light running along it as fast as the bytes come, logarithmically — still below 1 KB/s, 14 px/s at
+64 KB/s, about 100 at 10 MB/s, 140 at 100 MB/s. A stalled download is a still thread. No figure at
+rest.
+
+**No progress** — there is none to know: neither Firefox (`.part`) nor Chromium (`.crdownload`)
+writes the total anywhere outside itself. How much has come and how fast are what the files say,
+so that is what the cell says; a fraction would be a guess.
+
+**Expanded** — DOWNLOADS, and one row per download: the name (Spectral 14, the browser's suffix
+taken off, elided in the middle), its own thread at its own speed, and `13 MB · 2.4 MB/S` — or
+`STALLED` — in Orbitron 11 muted. A press shows the file where it is being written
+(`Files.reveal`).
+
+**Growing, not lying there** — a partial file left by an abandoned download never grows again and
+is not a download: one counts while it has grown in the last minute (by its mtime at start, by its
+size after). A stalled download stays, still, for that minute and goes.
+
+**Source** — `scripts/downloads`: inotify on the XDG downloads folder, sizes read again once a
+second only while a download is growing, the rate smoothed over two readings. `services/Downloads.qml`
+runs it while a download cell holds it. `components/RateThread.qml` is the thread.
+
+| Measure | Value | Note |
+|---|---|---|
+| glyph | 18 px | light gradient |
+| thread | 44 × 6 px | hairline in line, dashes 4 px every 12, 2 px, primary |
+| panel | 340 px | a well, rows of 52 |
+| dwell | 3 s | after the last one finishes |
+

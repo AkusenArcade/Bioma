@@ -1,0 +1,133 @@
+#!/usr/bin/env python3
+# Say which downloads are growing in the downloads folder, and how fast.
+#
+#     downloads
+#
+# Prints one JSON line whenever something changes: a list of
+# {"path", "name", "size", "rate"} — bytes so far and bytes a second — for
+# every partial file a browser is writing: Firefox's `.part`, Chromium's
+# `.crdownload`. The first line is the state at start; an empty list means
+# nothing is downloading.
+#
+# Writing, not lying there: a partial file left behind by a download that
+# was abandoned never grows again, and is not a download. One counts while
+# it has grown in the last minute — by its mtime at start, by its size after
+# — so a stalled download stays, still, for that minute and then goes.
+#
+# Neither browser writes the total anywhere outside itself, so there is no
+# fraction to give: what can be measured is how much has come and how fast it
+# is coming. The folder is watched with inotify; only while a download is
+# growing is it looked at again every second, to see a stalled one slow to
+# nothing rather than freeze at its last speed.
+
+import ctypes
+import json
+import os
+import select
+import subprocess
+import sys
+import time
+
+IN_MODIFY = 0x00000002
+IN_MOVED_FROM = 0x00000040
+IN_MOVED_TO = 0x00000080
+IN_CREATE = 0x00000100
+IN_DELETE = 0x00000200
+SUFFIXES = (".part", ".crdownload")
+STALE = 60  # seconds without growing before a partial file is not a download
+
+libc = ctypes.CDLL("libc.so.6", use_errno=True)
+
+
+def folder():
+    try:
+        out = subprocess.run(["xdg-user-dir", "DOWNLOAD"], capture_output=True, text=True,
+                             timeout=2).stdout.strip()
+        if out and os.path.isdir(out) and out != os.path.expanduser("~"):
+            return out
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return os.path.expanduser("~/Downloads")
+
+
+def partials(where):
+    found = {}  # path → (size, mtime)
+    try:
+        entries = os.scandir(where)
+    except OSError:
+        return found
+    with entries:
+        for entry in entries:
+            if not entry.name.endswith(SUFFIXES):
+                continue
+            try:
+                stat = entry.stat()
+            except OSError:
+                continue
+            found[entry.path] = (stat.st_size, stat.st_mtime)
+    return found
+
+
+def main():
+    where = folder()
+    fd = libc.inotify_init1(os.O_CLOEXEC)
+    if fd < 0:
+        sys.exit("downloads: inotify unavailable")
+    libc.inotify_add_watch(fd, where.encode(),
+                           IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVED_FROM | IN_MOVED_TO)
+
+    seen = {}       # path → (size, when, rate, grown) — `grown` wall-clock
+    last = None
+    while True:
+        now = time.monotonic()
+        wall = time.time()
+        files = partials(where)
+        current = {}
+        for path, (size, mtime) in files.items():
+            before = seen.get(path)
+            if before is None:
+                rate = 0.0
+                grown = mtime
+            else:
+                elapsed = now - before[1]
+                instant = max(0, size - before[0]) / elapsed if elapsed > 0 else before[2]
+                # Smoothed, so a burst and a pause read as the speed between them.
+                rate = before[2] * 0.5 + instant * 0.5
+                grown = wall if size > before[0] else before[3]
+            current[path] = (size, now, rate, grown)
+        seen = current
+        growing = {path: v for path, v in current.items() if wall - v[3] < STALE}
+
+        state = []
+        for path in sorted(growing):
+            size, _, rate, _ = growing[path]
+            name = os.path.basename(path)
+            for suffix in SUFFIXES:
+                if name.endswith(suffix):
+                    name = name[: -len(suffix)]
+            state.append({"path": path, "name": name, "size": size, "rate": round(rate)})
+        if state != last:
+            print(json.dumps(state), flush=True)
+            last = state
+
+        # Asleep until the folder changes while nothing is downloading; once a
+        # second while something is, events or not.
+        wait = 1.0 if growing else None
+        ready = select.select([fd], [], [], wait)[0]
+        if ready:
+            os.read(fd, 65536)
+            # A download writes many times a second: take the rest of the
+            # second's events together.
+            deadline = time.monotonic() + (1.0 if growing else 0.2)
+            while True:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0 or not select.select([fd], [], [], remaining)[0]:
+                    break
+                os.read(fd, 65536)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (KeyboardInterrupt, BrokenPipeError):
+        pass

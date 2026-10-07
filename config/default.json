@@ -207,6 +207,11 @@
               "type": "timer",
               "enabled": true,
               "visibility": { "type": "conditional" }
+            },
+            {
+              "type": "download",
+              "enabled": true,
+              "visibility": { "type": "conditional" }
             }
           ]
         },

@@ -31,7 +31,8 @@ Singleton {
         "clipboard": "clipboard/ClipboardCell.qml",
         "keyboard": "keyboard/KeyboardCell.qml",
         "privacy": "privacy/PrivacyCell.qml",
-        "timer": "timer/TimerCell.qml"
+        "timer": "timer/TimerCell.qml",
+        "download": "download/DownloadCell.qml"
     })
 
     // What a cell is called when it is spoken about rather than drawn — the
@@ -55,7 +56,8 @@ Singleton {
         "clipboard": "Clipboard",
         "keyboard": "Keyboard",
         "privacy": "Privacy",
-        "timer": "Timer"
+        "timer": "Timer",
+        "download": "Downloads"
     })
 
     // When each cell is there by itself, said the way the settings cell's
@@ -81,7 +83,8 @@ Singleton {
         "clipboard": "For five seconds after something is copied.",
         "keyboard": "For five seconds after the keyboard layout changes.",
         "privacy": "While the microphone, a camera or the screen is being taken, and two seconds after.",
-        "timer": "While a timer runs, or waits, paused, to be resumed."
+        "timer": "While a timer runs, or waits, paused, to be resumed.",
+        "download": "While a browser is downloading into the downloads folder, and until a minute after it stalls."
     })
 
     function conditionOf(type) {
@@ -163,7 +166,8 @@ Singleton {
         "clipboard": ["always", "conditional"],
         "keyboard": ["always", "conditional"],
         "privacy": ["conditional"],
-        "timer": ["conditional"]
+        "timer": ["conditional"],
+        "download": ["conditional"]
     })
 
     // A cell whose form changes when it floats, and whose visibility changes
@@ -212,7 +216,8 @@ Singleton {
         "clipboard": 40,
         "keyboard": 76,
         "privacy": 64,
-        "timer": 40
+        "timer": 40,
+        "download": 90
     })
 
     function minimumOf(type) {
@@ -278,7 +283,9 @@ Singleton {
         // and rejoins is one call.
         "privacy": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 2000 },
         // Gone when it ends: the notification and the sound say so.
-        "timer": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 0 }
+        "timer": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 0 },
+        // A moment after the last one finishes: it was there to be seen.
+        "download": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 3000 }
     })
 
     // Boolean, appearing promptly and leaving slowly, for a domain with

@@ -17,6 +17,8 @@ Expected early residents:
 - **DashedSlot** — a dashed rounded rectangle: the rectangular sibling of
   `DashedRing`, and it says the same thing — the place exists and is free. The
   settings cell draws a membrane as three of them per edge.
+- **RateThread** — a thread with light running along it as fast as something
+  comes: the download cell's measure, in the pill and in each row.
 - **DashedRule** — the same dashes as a horizontal line: in the settings pages,
   between the chips already placed and the kinds the dashed chip offers.
 - **Scroller** — the bar beside a list that is longer than its room. It exists
