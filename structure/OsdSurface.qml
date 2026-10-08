@@ -6,13 +6,16 @@ import qs.core
 import qs.components
 import qs.services
 
-// The on-screen display, one per monitor: the volume or the brightness, said
-// for a moment after it changes where no cell says it already (`Osd`).
+// The on-screen display, one per monitor: the volume, the brightness or the
+// keyboard's layout, said for a moment after it changes where no cell says it
+// already (`Osd`).
 //
 // It is the audio cell's summoned form — dial, figure, slider in one capsule —
 // because it says the same thing, and the brightness wears the same capsule
 // with the sun in the middle of its dial: the arc is the travel, the glyph is
-// the domain. It grows from its own centre, low in the middle of the screen,
+// the domain. The layout has no travel, so it has no dial: it wears the
+// keyboard cell's face instead — glyph and code — with the layout's full name
+// beside it, and the capsule is as wide as that. It grows from its own centre, low in the middle of the screen,
 // and takes no input: it answers a key, it is not a control.
 PanelWindow {
     id: root
@@ -61,12 +64,19 @@ PanelWindow {
 
     visible: root.growth > 0
 
-    readonly property real capsuleWidth: 372 * factor
     readonly property real capsuleHeight: 88 * factor
     readonly property real dialSize: 56 * factor
     readonly property real figureWidth: 62 * factor
     readonly property real sliderWidth: 168 * factor
     readonly property real gap: 20 * factor
+    readonly property real side: 23 * factor
+    readonly property real glyphSize: 28 * factor
+
+    readonly property bool layout: root.kind === "layout"
+    readonly property real capsuleWidth: root.layout
+        ? root.side * 2 + root.glyphSize + root.gap + layoutCode.implicitWidth
+          + root.gap + layoutName.implicitWidth
+        : root.side * 2 + root.dialSize + root.figureWidth + root.sliderWidth + root.gap * 2
 
     readonly property real fraction: root.kind === "brightness" ? Brightness.brightness
                                                                 : Math.min(1, Audio.volume)
@@ -93,8 +103,7 @@ PanelWindow {
 
         metrics: root.metrics
         radius: Metrics.radiusFor(root.capsuleHeight, root.metrics)
-        padding: Math.max(0, (root.capsuleWidth - root.dialSize - root.figureWidth
-                              - root.sliderWidth - root.gap * 2) / 2)
+        padding: root.side
         fixedWidth: root.capsuleWidth
         fixedHeight: root.capsuleHeight
         growth: root.growth
@@ -107,6 +116,7 @@ PanelWindow {
 
         Item {
             anchors.fill: parent
+            visible: !root.layout
 
             Gauge {
                 id: dial
@@ -155,6 +165,50 @@ PanelWindow {
                 value: root.fraction
                 dimmed: root.silenced
                 enabled: false
+            }
+        }
+
+        Item {
+            anchors.fill: parent
+            visible: root.layout
+
+            Icon {
+                id: layoutGlyph
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                width: root.glyphSize
+                height: width
+                name: "keyboard"
+                gradient: true
+            }
+
+            Text {
+                id: layoutCode
+                anchors.left: layoutGlyph.right
+                anchors.leftMargin: root.gap
+                anchors.verticalCenter: parent.verticalCenter
+                text: Keyboard.currentCode
+                color: Theme.text
+                font: Qt.font({
+                    "family": Typography.technical,
+                    "pixelSize": root.metrics.fontValue,
+                    "weight": Typography.weightValue,
+                    "letterSpacing": Typography.tracking(root.metrics.fontValue, Typography.labelTracking)
+                })
+            }
+
+            Text {
+                id: layoutName
+                anchors.left: layoutCode.right
+                anchors.leftMargin: root.gap
+                anchors.verticalCenter: parent.verticalCenter
+                text: Keyboard.current
+                color: Theme.textMuted
+                font: Qt.font({
+                    "family": Typography.expressive,
+                    "pixelSize": root.metrics.fontLabel,
+                    "weight": Typography.weightSecondary
+                })
             }
         }
     }
