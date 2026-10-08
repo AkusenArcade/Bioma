@@ -488,40 +488,54 @@ ticks between two samples, never `ps`'s lifetime average.
 
 ## 09 · Growth rings
 
-*Built 2026-10-06, from "Nuove idee". Present once the record is read · the days spent at this
-machine, laid down like a tree's.*
+*Built 2026-10-06, from "Nuove idee"; redrawn 2026-10-08 as the machine's age, at Akusen's request.
+Present once the record is read and the birth is known · the machine's age, laid down like a
+tree's.*
 
-One ring per day, the oldest at the heart and today outermost. A ring is as thick as the hours
-that day was active, so a long day is a wide band and a weekend away a thin one; a day not here
-leaves no ring, as a tree that does not grow lays down nothing. The disc is always full: the
-rings share its radius in proportion, so a fortnight is a few broad bands and a year is grain.
+One ring per day **since the system was installed**, the oldest at the heart and today outermost.
+Every day is a ring and every ring is as wide as the next: the disc is the machine's life, and a
+day is a day whether anybody was here or not. The disc is always full, so a month is a few broad
+bands and years are grain.
 
-**Today is the cambium** — lit at its edge, and growing a little each minute somebody is here.
-It is the only thing that moves, and only while it grows: the canvas is redrawn once per
-change, never animated, so the disc costs nothing between minutes.
+**The birth** is `Machine.born`: the oldest of the creation times of `/` and `/home` and the
+first line of pacman's log. On btrfs these are separate subvolumes, and a snapper rollback makes
+`/` a snapshot born the day it was taken, so no one of them is trusted alone. A recorded day older
+than all three — a reinstall that kept the home — moves the birth back to it.
+
+**Colour is what is known.** A day Activity recorded is wood, primary lit in proportion to the
+hours it held; a day before the record began, or a day away, is bare grain in the text colour.
+**Nothing is estimated** — the boot log knows when the machine was on, not when somebody was at
+it — so the rings before the record say only that the days passed.
+
+**Today is the cambium** — lit at its edge, its wood deepening each minute somebody is here. It
+is the only thing that changes, and only while it grows: the canvas is redrawn once per change,
+never animated, so the disc costs nothing between minutes.
 
 **Wood, not a target.** Every ring follows one fixed distortion of the trunk, with a small
-wobble of its own seeded by its date. Days alternate a shade apart so thin rings stay apart,
-and a darker line marks where each day ended — the late wood.
+wobble of its own seeded by its date. Bare days alternate a shade apart, and a line marks where
+each day ended — the late wood — while the rings are wide enough to carry one (3 px); below
+that, bare days in a row are drawn as one band of grain.
 
 | Measure | Value | Note |
 |---|---|---|
 | disc | 354 | template 2 × 2: as large as the square leaves above the caption, centred; pith 3, the outermost ring inside the wobble |
-| early wood | primary at 16 % / 22 % | alternating; today 34 % |
-| late wood | primary at 55 %, 1 px | |
+| wood | primary at 14 % → 64 % | by the day's hours, full at 10 h |
+| grain | text at 5 % / 8 % | alternating |
+| late wood | primary at 55 % · text at 16 %, 1 px | only at 3 px a ring and wider |
 | cambium | primary, 1.8 px | today's edge |
-| caption | 14 below | `TODAY 3 H 20 M` lit · `90 DAYS · 474 H` muted |
+| caption | 14 below, two lines 6 apart | hostname in the expressive face · age muted at the right (`21 D`, `1 MO 5 D`, `2 Y 3 D`); `SESSION 1 H 05 M` lit, or `AWAY` |
 
 **Active** is `services/Activity.qml`: neither idle — ext-idle-notify after
 `activity.idle_minutes` (5), inhibitors respected, so a film is somebody watching — nor locked.
-The minutes before idle was declared are taken back. There was no history to start from (the
-journal kept three days), so the record begins when the organism is first placed, and it is only
-kept while one exists: `activity.json` beside `wallpaper.json`, minutes by local date, the last
-400 days.
+The minutes before idle was declared are taken back. The record begins when the organism is first
+placed and is only kept while one exists: `activity.json` beside `wallpaper.json`, minutes by
+local date, every day recorded.
 
-**Options** — `size`, `days` (30 · 90 · 365), `figures`.
+**The session** is the time since somebody last came back: the end of idle, an unlock, the
+shell starting, or a wake from a suspend that did not lock. Minutes, not seconds — the cambium's
+own step.
 
-**Settings** — the rings' chip opens DAYS.
+**Options** — `size`, `figures`.
 
 ---
 
@@ -773,7 +787,7 @@ has no battery. The laptop is where it is tried for real.
     "file": "~/Documents/Vault/Next.md", "height": "medium" },
   { "type": "lava",     "monitor": "HDMI-A-1", "col": 0, "row": 1, "colour": "theme" },
   { "type": "cytoplasm", "monitor": "HDMI-A-1", "col": 0, "row": 0, "labels": false },
-  { "type": "rings",    "monitor": "DP-1", "col": 6, "row": 0, "days": 90 },
+  { "type": "rings",    "monitor": "DP-1", "col": 6, "row": 0 },
   { "type": "osmosis",  "monitor": "DP-1", "col": 6, "row": 2, "quiet": 8 },
   { "type": "photoperiod", "monitor": "DP-1", "col": 4, "row": 3 },
   { "type": "vacuole",  "monitor": "HDMI-A-1", "col": 2, "row": 0 },

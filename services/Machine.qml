@@ -14,6 +14,9 @@ import qs.core
 // not (`lspci` for the graphics, `df` for the disk, niri for itself). The only
 // thing that changes is the uptime, read again each minute while somebody is
 // looking — see `watching`.
+//
+// And when it was born: the day this system was installed, which is what the
+// growth rings count their age from — see `born`.
 Singleton {
     id: root
 
@@ -112,6 +115,33 @@ Singleton {
     }
 
     // ---- What needs a program ----------------------------------------------------
+
+    // When this system was installed, as ms since the epoch; 0 until known.
+    //
+    // The oldest of three dates that each outlive something the others do not:
+    // the creation of `/` and of `/home`, and the first line of pacman's log.
+    // On btrfs those are separate subvolumes — a snapper rollback makes `/` a
+    // snapshot born the day it was taken, while `/home` and `/var/log` stay
+    // where they were — so no single one is trusted alone. A filesystem that
+    // does not keep a creation time answers 0 and is left out.
+    property real born: 0
+
+    Process {
+        running: root.asked
+        command: ["bash", "-c",
+            "for p in / /home; do stat -c %W \"$p\" 2>/dev/null; done; "
+            + "d=$(head -n1 /var/log/pacman.log 2>/dev/null | sed -n 's/^\\[\\([^]]*\\)\\].*/\\1/p'); "
+            + "[ -n \"$d\" ] && date -d \"$d\" +%s 2>/dev/null"]
+
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const seconds = this.text.split("\n").map(line => parseInt(line, 10))
+                                         .filter(value => value > 0);
+                if (seconds.length > 0)
+                    root.born = Math.min(...seconds) * 1000;
+            }
+        }
+    }
 
     property var gpus: []
     property string disk: ""

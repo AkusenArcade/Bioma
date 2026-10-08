@@ -4,19 +4,25 @@ import qs.core
 import qs.components
 import qs.services
 
-// Growth rings: the days spent at this machine, laid down like a tree's.
+// Growth rings: the machine's age, laid down like a tree's.
 //
-// One ring per day, the oldest at the heart and today outermost. A ring is as
-// thick as the hours that day was active — neither idle nor locked, as
-// Activity counts it — so a long day is a wide band, a Sunday away a thin one,
-// and a day not here leaves no ring at all, as a tree that does not grow lays
-// down nothing. The disc is always full: the rings share its radius in
-// proportion, so a fortnight is a few broad bands and a year is grain.
+// One ring per day since this system was installed (`Machine.born`), the
+// oldest at the heart and today outermost. Every day is a ring and every ring
+// is as wide as the next: the disc is the machine's life, and a day is a day
+// whether anybody was here or not. The disc is always full, so a month is a
+// few broad bands and years are grain.
 //
-// Today's ring is the living one, the cambium: lit, and growing a little each
-// minute somebody is here. It is the only thing that moves, and only while it
-// grows; away from the machine the disc is still. It is drawn once per change
-// — a canvas, not an animation — so it costs nothing between minutes.
+// What is known of each day is its colour. A day Activity recorded — neither
+// idle nor locked, as it counts — is wood, lit in proportion to the hours it
+// held; a day before the record began, or a day away, is bare grain. Nothing
+// is estimated: the record starts when the organism is first placed, and the
+// rings before it say only that the days passed (Akusen, 2026-10-08).
+//
+// Today's ring is the living one, the cambium: lit at its edge, and its wood
+// deepening each minute somebody is here. It is the only thing that changes,
+// and only while it grows; away from the machine the disc is still. It is
+// drawn once per change — a canvas, not an animation — so it costs nothing
+// between minutes.
 //
 // The rings are not perfect circles. Every ring follows one distortion of the
 // trunk, slightly its own, so the disc reads as wood and not as a target. The
@@ -30,13 +36,13 @@ Item {
 
     readonly property real factor: root.metrics.factor
 
-    Component.onCompleted: Activity.hold(root, true)
+    Component.onCompleted: {
+        Activity.hold(root, true);
+        Machine.ask();
+    }
     Component.onDestruction: Activity.hold(root, false)
 
-    readonly property bool present: Activity.loaded
-
-    // How many days back the disc reaches: 30, 90 or 365.
-    readonly property int span: [30, 90, 365].indexOf(root.entry.days) >= 0 ? root.entry.days : 90
+    readonly property bool present: Activity.loaded && root.birth.length > 0
 
     readonly property bool figures: root.entry.figures !== false
 
@@ -49,23 +55,64 @@ Item {
 
     // ---- The record -----------------------------------------------------------------
 
-    // The days in the span with any growth, oldest first: { key, minutes }.
-    readonly property var grown: {
+    // The day the machine was born. A record older than what the filesystem
+    // remembers — a reinstall that kept the home — moves it back: a day that
+    // was recorded happened.
+    readonly property string birth: {
+        if (Machine.born <= 0)
+            return "";
+        const born = Activity.dateKey(new Date(Machine.born));
+        const recorded = Object.keys(Activity.days).sort()[0];
+        return recorded && recorded < born ? recorded : born;
+    }
+
+    function dateOf(key) {
+        const [y, m, d] = key.split("-").map(Number);
+        return new Date(y, m - 1, d);
+    }
+
+    // Every day from the birth to today, oldest first: { key, minutes }.
+    readonly property var lived: {
+        if (root.birth.length === 0)
+            return [];
         const days = Activity.days;
-        const today = Activity.today;
+        const today = root.dateOf(Activity.today);
         const out = [];
-        const [y, m, d] = today.split("-").map(Number);
-        for (let back = root.span - 1; back >= 0; back--) {
-            const date = new Date(y, m - 1, d - back);
+        for (let date = root.dateOf(root.birth); date <= today;
+                date = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1)) {
             const key = Activity.dateKey(date);
-            const minutes = days[key] ?? 0;
-            if (minutes > 0 || key === today)
-                out.push({ "key": key, "minutes": minutes });
+            out.push({ "key": key, "minutes": days[key] ?? 0, "known": key in days });
         }
         return out;
     }
 
-    readonly property int totalMinutes: root.grown.reduce((sum, day) => sum + day.minutes, 0)
+    // The age in calendar years, months and days, the parts that are zero
+    // left out: 21 D, 1 MO 5 D, 2 Y 3 D.
+    readonly property string age: {
+        if (root.birth.length === 0)
+            return "";
+        const born = root.dateOf(root.birth);
+        const today = root.dateOf(Activity.today);
+        let years = today.getFullYear() - born.getFullYear();
+        let months = today.getMonth() - born.getMonth();
+        let days = today.getDate() - born.getDate();
+        if (days < 0) {
+            months--;
+            days += new Date(today.getFullYear(), today.getMonth(), 0).getDate();
+        }
+        if (months < 0) {
+            years--;
+            months += 12;
+        }
+        const parts = [];
+        if (years > 0)
+            parts.push(`${years} Y`);
+        if (months > 0)
+            parts.push(`${months} MO`);
+        if (days > 0 || parts.length === 0)
+            parts.push(`${days} D`);
+        return parts.join(" ");
+    }
 
     function duration(minutes) {
         const h = Math.floor(minutes / 60);
@@ -73,7 +120,10 @@ Item {
         return h > 0 ? `${h} H ${String(m).padStart(2, "0")} M` : `${m} M`;
     }
 
-    onGrownChanged: wood.requestPaint()
+    // The hours at which a day's wood is as lit as it gets.
+    readonly property int fullDay: 10 * 60
+
+    onLivedChanged: wood.requestPaint()
 
     // ---- The wood -------------------------------------------------------------------
 
@@ -102,7 +152,9 @@ Item {
 
         // Repainted when the colours change too: the theme retints the wood.
         readonly property color grain: Theme.primary
+        readonly property color bare: Theme.text
         onGrainChanged: wood.requestPaint()
+        onBareChanged: wood.requestPaint()
 
         function ring(ctx, radius, key, steps) {
             const own = root.seed(key);
@@ -124,52 +176,74 @@ Item {
             ctx.reset();
 
             const f = root.factor;
-            const days = root.grown;
-            const total = root.totalMinutes;
+            const days = root.lived;
+            if (days.length === 0)
+                return;
             const pith = 3 * f;
             // Inside the wobble, so the outermost ring stays within the disc.
             const outer = wood.width / 2 / 1.07 - 2 * f;
-            const scale = total > 0 ? (outer - pith) / total : 0;
+            const width = (outer - pith) / days.length;
             const steps = 96;
+            // Below this a day boundary is no longer a line anybody can see.
+            const visible = width >= 3 * f;
 
-            // Each day's band: from where the day before ended to where it
-            // ends, filled as an annulus so the bands never stack their alpha.
-            let inner = pith;
+            // Each day's band, filled as an annulus so the bands never stack
+            // their alpha. Bare days in a row are one band of grain once the
+            // rings are too thin to tell apart.
             const bands = [];
-            for (const day of days) {
-                const out = inner + day.minutes * scale;
-                bands.push({ "key": day.key, "from": inner, "to": out, "today": day.key === Activity.today });
-                inner = out;
+            for (let i = 0; i < days.length; i++) {
+                const day = days[i];
+                const from = pith + i * width;
+                const to = from + width;
+                const today = day.key === Activity.today;
+                const bare = !day.known && !today;
+                const last = bands.length > 0 ? bands[bands.length - 1] : null;
+                if (bare && !visible && last && last.bare) {
+                    last.to = to;
+                    last.key = day.key;
+                    continue;
+                }
+                bands.push({ "key": day.key, "from": from, "to": to, "bare": bare,
+                             "today": today, "minutes": day.minutes, "index": i });
             }
 
             ctx.fillRule = Qt.OddEvenFill;
-            for (let i = 0; i < bands.length; i++) {
-                const band = bands[i];
-                if (band.to - band.from < 0.05)
-                    continue;
+            let previous = "";
+            for (const band of bands) {
                 ctx.beginPath();
                 wood.ring(ctx, band.to, band.key, steps);
                 if (band.from > 0.5)
-                    wood.ring(ctx, band.from, i > 0 ? bands[i - 1].key : band.key, steps);
-                // Alternate days a shade apart, so thin rings stay apart.
-                ctx.fillStyle = Qt.alpha(wood.grain, band.today ? 0.34 : (i % 2 === 0 ? 0.16 : 0.22));
+                    wood.ring(ctx, band.from, previous || band.key, steps);
+                previous = band.key;
+                if (band.bare) {
+                    // Grain: the day passed, and that is all that is known.
+                    ctx.fillStyle = Qt.alpha(wood.bare, band.index % 2 === 0 ? 0.05 : 0.08);
+                } else {
+                    // Wood: lit by the hours the day held.
+                    const held = Math.min(1, band.minutes / root.fullDay);
+                    ctx.fillStyle = Qt.alpha(wood.grain, 0.14 + 0.5 * held);
+                }
                 ctx.fill();
             }
 
-            // The late wood: a line where each day ended.
-            for (const band of bands) {
-                if (band.to - band.from < 0.05 || band.today)
-                    continue;
-                ctx.beginPath();
-                wood.ring(ctx, band.to, band.key, steps);
-                ctx.lineWidth = 1 * f;
-                ctx.strokeStyle = Qt.alpha(wood.grain, 0.55);
-                ctx.stroke();
+            // The late wood: a line where each day ended, while the rings are
+            // wide enough to carry one.
+            if (visible) {
+                for (const band of bands) {
+                    if (band.today)
+                        continue;
+                    ctx.beginPath();
+                    wood.ring(ctx, band.to, band.key, steps);
+                    ctx.lineWidth = 1 * f;
+                    ctx.strokeStyle = band.bare ? Qt.alpha(wood.bare, 0.16)
+                                                : Qt.alpha(wood.grain, 0.55);
+                    ctx.stroke();
+                }
             }
 
             // The cambium: today's edge, lit.
-            const living = bands.length > 0 ? bands[bands.length - 1] : null;
-            if (living && living.today && living.to > pith) {
+            const living = bands[bands.length - 1];
+            if (living.today) {
                 ctx.beginPath();
                 wood.ring(ctx, living.to, living.key, steps);
                 ctx.lineWidth = 1.8 * f;
@@ -189,6 +263,7 @@ Item {
 
     // ---- The figures ------------------------------------------------------------------
 
+    // Who the tree is and how old, then how long somebody has been here.
     Item {
         id: caption
 
@@ -196,15 +271,45 @@ Item {
         x: root.discX
         y: root.disc + root.gap
         width: root.disc
-        implicitHeight: today.implicitHeight
+        implicitHeight: identity.implicitHeight + 6 * root.factor + session.implicitHeight
+
+        Text {
+            id: identity
+            anchors.left: parent.left
+            anchors.right: ageText.left
+            anchors.rightMargin: 12 * root.factor
+            text: Machine.host
+            elide: Text.ElideRight
+            color: Theme.text
+            font: Qt.font({
+                "family": Typography.expressive,
+                "pixelSize": root.metrics.fontLabel,
+                "weight": Typography.weightSecondary
+            })
+        }
+
+        Text {
+            id: ageText
+            anchors.right: parent.right
+            anchors.baseline: identity.baseline
+            text: root.age
+            color: Theme.textMuted
+            font: Typography.tabular(Qt.font({
+                "family": Typography.technical,
+                "pixelSize": root.metrics.fontMeta,
+                "weight": Typography.weightSecondary
+            }))
+        }
 
         Row {
-            id: today
+            id: session
+            anchors.top: identity.bottom
+            anchors.topMargin: 6 * root.factor
             spacing: 8 * root.factor
 
             Text {
                 anchors.baseline: value.baseline
-                text: "TODAY"
+                text: Activity.present ? "SESSION" : "AWAY"
                 color: Theme.text
                 font: Qt.font({
                     "family": Typography.technical,
@@ -216,25 +321,14 @@ Item {
 
             LitText {
                 id: value
-                text: root.duration(Activity.todayMinutes)
+                visible: Activity.present
+                text: root.duration(Activity.sessionMinutes)
                 font: Typography.tabular(Qt.font({
                     "family": Typography.technical,
                     "pixelSize": root.metrics.fontLabel,
                     "weight": Typography.weightValue
                 }))
             }
-        }
-
-        Text {
-            anchors.right: parent.right
-            anchors.verticalCenter: today.verticalCenter
-            text: `${root.span} DAYS · ${Math.round(root.totalMinutes / 60)} H`
-            color: Theme.textMuted
-            font: Typography.tabular(Qt.font({
-                "family": Typography.technical,
-                "pixelSize": root.metrics.fontMeta,
-                "weight": Typography.weightSecondary
-            }))
         }
     }
 }

@@ -22,7 +22,8 @@ import qs.core
 // about its user to disk.
 //
 // One small file, `activity.json` beside `wallpaper.json`: minutes by local
-// date, the last 400 days.
+// date, every day recorded — the growth rings span the machine's whole life,
+// and a day is a dozen bytes.
 Singleton {
     id: root
 
@@ -38,7 +39,6 @@ Singleton {
     }
 
     readonly property int idleMinutes: Math.max(1, Config.get("activity.idle_minutes", 5))
-    readonly property int keptDays: 400
 
     // "YYYY-MM-DD" → minutes active that day.
     property var days: ({})
@@ -51,6 +51,7 @@ Singleton {
         precision: SystemClock.Minutes
     }
 
+    readonly property date now: clock.date
     readonly property string today: root.dateKey(clock.date)
     readonly property int todayMinutes: root.days[root.today] ?? 0
 
@@ -81,13 +82,40 @@ Singleton {
     // Minutes counted since presence last began: what idle may take back.
     property int streak: 0
 
-    onPresentChanged: if (!root.present) root.streak = 0
+    // When somebody last came back to the machine — the end of idle, an
+    // unlock, the shell starting — as ms since the epoch; 0 while nobody is.
+    property real presentSince: 0
+
+    onPresentChanged: {
+        root.streak = 0;
+        root.presentSince = root.present ? Date.now() : 0;
+    }
+
+    // Minutes since then, turning with the clock.
+    readonly property int sessionMinutes: root.presentSince > 0
+        ? Math.max(0, Math.floor((root.now.getTime() - root.presentSince) / 60000)) : 0
 
     Timer {
+        id: minute
         interval: 60000
         repeat: true
         running: root.present && root.loaded
+
+        // A suspend that did not lock stops the timer without telling anyone:
+        // a tick that comes much later than a minute was a sleep, and somebody
+        // waking the machine is somebody coming back.
+        property real last: 0
+        onRunningChanged: minute.last = Date.now()
+
         onTriggered: {
+            const now = Date.now();
+            const slept = now - minute.last > 2.5 * 60000;
+            minute.last = now;
+            if (slept) {
+                root.streak = 0;
+                root.presentSince = now;
+                return;
+            }
             root.streak++;
             root.add(1);
         }
@@ -110,12 +138,7 @@ Singleton {
     function save() {
         if (!root.loaded)
             return;
-        // The oldest days go once there are more than are kept.
-        const keys = Object.keys(root.days).sort();
-        const kept = {};
-        for (const key of keys.slice(-root.keptDays))
-            kept[key] = root.days[key];
-        file.setText(JSON.stringify({ "days": kept }, null, 1));
+        file.setText(JSON.stringify({ "days": root.days }, null, 1));
     }
 
     function load(text) {
