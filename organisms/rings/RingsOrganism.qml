@@ -9,8 +9,9 @@ import qs.services
 // One ring per day since this system was installed (`Machine.born`), the
 // oldest at the heart and today outermost. Every day is a ring and every ring
 // is as wide as the next: the disc is the machine's life, and a day is a day
-// whether anybody was here or not. The disc is always full, so a month is a
-// few broad bands and years are grain.
+// whether anybody was here or not. The disc is always full, so once days are
+// too thin to see, the lines mark months, and later years — how a tree is
+// read from a distance.
 //
 // What is known of each day is its colour. A day Activity recorded — neither
 // idle nor locked, as it counts — is wood, lit in proportion to the hours it
@@ -184,27 +185,44 @@ Item {
             const outer = wood.width / 2 / 1.07 - 2 * f;
             const width = (outer - pith) / days.length;
             const steps = 96;
-            // Below this a day boundary is no longer a line anybody can see.
-            const visible = width >= 3 * f;
+            // Below this a boundary is no longer a line anybody can see.
+            const visible = 3 * f;
 
-            // Each day's band, filled as an annulus so the bands never stack
-            // their alpha. Bare days in a row are one band of grain once the
-            // rings are too thin to tell apart.
+            // The ring the eye can follow: the day while days are wide
+            // enough, then the month, then the year — a tree read from a
+            // distance shows its years, not its days. Keys are "YYYY-MM-DD",
+            // so a unit is a prefix.
+            const span = width >= visible ? 10
+                       : width * 30.44 >= visible ? 7 : 4;
+
+            // Each band filled as an annulus so the bands never stack their
+            // alpha. Bare days of one unit are one band of grain once the
+            // days are too thin to tell apart; recorded days keep their own.
             const bands = [];
+            let unit = "";
+            let units = -1;
             for (let i = 0; i < days.length; i++) {
                 const day = days[i];
                 const from = pith + i * width;
                 const to = from + width;
                 const today = day.key === Activity.today;
                 const bare = !day.known && !today;
+                const own = day.key.slice(0, span);
+                if (own !== unit) {
+                    unit = own;
+                    units++;
+                }
                 const last = bands.length > 0 ? bands[bands.length - 1] : null;
-                if (bare && !visible && last && last.bare) {
+                if (bare && span < 10 && last && last.bare && last.unit === unit) {
                     last.to = to;
                     last.key = day.key;
                     continue;
                 }
+                if (last)
+                    last.ends = last.unit !== unit;
                 bands.push({ "key": day.key, "from": from, "to": to, "bare": bare,
-                             "today": today, "minutes": day.minutes, "index": i });
+                             "today": today, "minutes": day.minutes, "unit": unit,
+                             "index": units, "ends": true });
             }
 
             ctx.fillRule = Qt.OddEvenFill;
@@ -226,19 +244,17 @@ Item {
                 ctx.fill();
             }
 
-            // The late wood: a line where each day ended, while the rings are
-            // wide enough to carry one.
-            if (visible) {
-                for (const band of bands) {
-                    if (band.today)
-                        continue;
-                    ctx.beginPath();
-                    wood.ring(ctx, band.to, band.key, steps);
-                    ctx.lineWidth = 1 * f;
-                    ctx.strokeStyle = band.bare ? Qt.alpha(wood.bare, 0.16)
-                                                : Qt.alpha(wood.grain, 0.55);
-                    ctx.stroke();
-                }
+            // The late wood: a line where each unit ended — a day, a month or
+            // a year, whichever the rings are wide enough to carry.
+            for (const band of bands) {
+                if (band.today || !band.ends)
+                    continue;
+                ctx.beginPath();
+                wood.ring(ctx, band.to, band.key, steps);
+                ctx.lineWidth = 1 * f;
+                ctx.strokeStyle = band.bare ? Qt.alpha(wood.bare, 0.16)
+                                            : Qt.alpha(wood.grain, 0.55);
+                ctx.stroke();
             }
 
             // The cambium: today's edge, lit.

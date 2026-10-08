@@ -512,16 +512,18 @@ is the only thing that changes, and only while it grows: the canvas is redrawn o
 never animated, so the disc costs nothing between minutes.
 
 **Wood, not a target.** Every ring follows one fixed distortion of the trunk, with a small
-wobble of its own seeded by its date. Bare days alternate a shade apart, and a line marks where
-each day ended — the late wood — while the rings are wide enough to carry one (3 px); below
-that, bare days in a row are drawn as one band of grain.
+wobble of its own seeded by its date. The late wood — a line where a ring ended — marks the
+finest unit wide enough to carry one (3 px): each day while days are that wide, else each
+calendar month, else each year. A tree read from a distance shows its years, not its days. Bare
+days of one unit are one band of grain, units alternating a shade apart; a recorded day keeps its
+own band whatever the unit.
 
 | Measure | Value | Note |
 |---|---|---|
 | disc | 354 | template 2 × 2: as large as the square leaves above the caption, centred; pith 3, the outermost ring inside the wobble |
 | wood | primary at 14 % → 64 % | by the day's hours, full at 10 h |
 | grain | text at 5 % / 8 % | alternating |
-| late wood | primary at 55 % · text at 16 %, 1 px | only at 3 px a ring and wider |
+| late wood | primary at 55 % · text at 16 %, 1 px | at the end of each day, month or year — the finest at 3 px or wider |
 | cambium | primary, 1.8 px | today's edge |
 | caption | 14 below, two lines 6 apart | hostname in the expressive face · age muted at the right (`21 D`, `1 MO 5 D`, `2 Y 3 D`); `SESSION 1 H 05 M` lit, or `AWAY` |
 
