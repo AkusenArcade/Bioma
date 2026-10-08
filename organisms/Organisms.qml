@@ -27,7 +27,8 @@ Singleton {
         "photoperiod": "photoperiod/PhotoperiodOrganism.qml",
         "vacuole": "vacuole/VacuoleOrganism.qml",
         "sediment": "sediment/SedimentOrganism.qml",
-        "nucleus": "nucleus/NucleusOrganism.qml"
+        "nucleus": "nucleus/NucleusOrganism.qml",
+        "adipose": "adipose/AdiposeOrganism.qml"
     })
 
     // What an organism is called when it is spoken about rather than drawn.
@@ -45,7 +46,8 @@ Singleton {
         "photoperiod": "Photoperiod",
         "vacuole": "Vacuole",
         "sediment": "Sediment",
-        "nucleus": "Nucleus"
+        "nucleus": "Nucleus",
+        "adipose": "Adipose"
     })
 
     // How many units of the grid each one covers, across and down
@@ -66,7 +68,8 @@ Singleton {
         "photoperiod": [2, 1],
         "vacuole": [2, 2],
         "sediment": [2, 2],
-        "nucleus": [2, 1]
+        "nucleus": [2, 1],
+        "adipose": [2, 1]
     })
 
     // The template of one block. Where an organism already has an option for

@@ -1,6 +1,6 @@
 # Bioma — organisms
 
-*Approved 2026-10-04, media redrawn at Akusen's request. Built: the structure, arranging, the five organisms, the Settings category; since then the note, the lava lamp, the cytoplasm, the growth rings, osmosis, the photoperiod, the vacuole, the sediment and the nucleus.*
+*Approved 2026-10-04, media redrawn at Akusen's request. Built: the structure, arranging, the five organisms, the Settings category; since then the note, the lava lamp, the cytoplasm, the growth rings, osmosis, the photoperiod, the vacuole, the sediment, the nucleus and the adipose.*
 
 The visual specification of the organisms: read-only surfaces that live on the desktop, under
 the windows, in the part of the screen the top and bottom membranes leave free. Read it with
@@ -771,6 +771,51 @@ reported (0): no drops and no beat, the figures still say the state.
 has no battery. The laptop is where it is tried for real.
 
 **Options** — `size`.
+
+---
+
+## 15 · Adipose
+
+*Built 2026-10-08, at Akusen's request. Present once `df` is read and a disk is shown · the
+filesystems, as the cells that store.*
+
+An adipocyte keeps: a droplet of fat grows inside it until it fills the cell and presses the
+nucleus flat against the membrane. **One cell per filesystem**: the membrane is the capacity, the
+**droplet's area** is the used share of the cell's, so a full disk looks full — no room left, the
+nucleus squeezed to the rim. The droplet sits off the centre, away from the nucleus, by 35 % of
+the room it leaves, and comes back to the centre as it grows.
+
+A larger disk is a **larger cell**, by the square root of its size and never under half the
+largest, so a boot partition stays legible beside a terabyte. Four cells at most, the largest.
+
+**Colour** is the fill's state, on thresholds of its own — calm under 85 %, active to 95 %, alert
+above. The load thresholds would call a disk a third full busy. With `colour: "theme"` the
+droplets and the figures take `Theme.primary`, as the lava lamp and the cytoplasm can.
+
+**Still.** A disk fills in days: the cells change when a reading does and not in between. A
+drive plugged in is a new cell at the next reading; one taken out leaves.
+
+| Measure | Value | Note |
+|---|---|---|
+| panel | 424 × 200 | template 2 × 1; padding 20 |
+| one disk | the cell in the left square, radius well / 2 − 10; figures beside it, 14 right | as the nucleus has them |
+| several | a column each; the cell above a 40 caption | radius (min(column, height − caption) / 2 − 6) × max(0.5, √(size / largest)) |
+| membrane | text at 22 %, 1.5 px, over text at 3 % | the nucleus's envelope |
+| droplet | state colour at 42 %, rim at 90 %, 1.2 px | radius inner × √fill, inner = radius − 2 |
+| nucleus | text at 55 %; round radius 0.13 × the cell's, at least 2.5 | pressed against the membrane; flattened to the room left (at least 1.2 deep), its area kept; its angle is fixed per device |
+| one disk's figures | name Spectral 15 · `30%` Orbitron 40 lit in the state colour · `50 GB OF 171 GB` Orbitron 11 muted | |
+| several disks' figures | name Spectral 13 centred · `30%` Orbitron 11 lit, and the size muted beside it when there are two | |
+
+**The data** — `services/Storage.qml`: `df -B1` once a minute while an organism holds it. **One row
+per device**, named after its shortest mount point — on btrfs `/`, `/home` and `/var/log` are one
+pool and one cell, called *System*. Fill is used over used plus available, as df's own percentage
+counts it. Sizes in decimal units, as disks are sold (`df -H`, not `df -h`). Memory, kernel and
+portal filesystems are not disks and are left out; `/boot`, `/efi` and `/boot/efi` are **system**
+partitions and are hidden unless `system` is set.
+
+**Options** — `size`, `colour` (`theme`, or absent for state), `system`.
+
+**Settings** — the adipose's chip opens COLOUR (State · Theme) and BOOT.
 
 ---
 
