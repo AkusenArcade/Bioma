@@ -75,6 +75,14 @@ Cell {
     // which is when there is a field to type into.
     wantsKeyboard: root.asPanel ? true : root.open
 
+    // And on a membrane it **takes** the keys rather than asking for them. An
+    // on-demand surface is focused only when the pointer crosses it or a press
+    // lands on it after it became focusable: opened by its shortcut the button
+    // had neither, and opened by a press the press came a frame too early — so
+    // the field showed and every key went to the window behind. The same cure
+    // as the system cell's; a float already holds the keys exclusively.
+    takesKeyboard: !root.asPanel && root.open
+
     // ---- What it knows -------------------------------------------------------
 
     property string query: ""
