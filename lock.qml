@@ -121,6 +121,9 @@ ShellRoot {
         // `scripts/lock`, the shell holding up a suspend — can go on.
         onSecureChanged: if (secure) root.hint(true)
 
+        // Only when the compositor ends the lock on its own: since Quickshell
+        // 0.3.2 the signal no longer fires for `locked = false` set from
+        // here, so `departure` finishes directly.
         onLockedChanged: {
             if (!locked)
                 root.finish();
@@ -136,10 +139,21 @@ ShellRoot {
     Timer {
         id: departure
         interval: Timing.close + Timing.open
-        onTriggered: lock.locked = false
+        onTriggered: {
+            lock.locked = false;
+            root.finish();
+        }
     }
 
+    // Once, whichever way the lock ended. A process left behind after an
+    // unlock is a lock that `scripts/lock` believes is still up, and every
+    // later lock would stop there.
+    property bool finished: false
+
     function finish() {
+        if (root.finished)
+            return;
+        root.finished = true;
         root.hint(false);
         Quickshell.execDetached(["rm", "-rf", root.captureDirectory]);
         // A beat for the compositor to take the surfaces down before the
