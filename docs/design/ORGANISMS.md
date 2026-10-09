@@ -525,7 +525,7 @@ own band whatever the unit.
 | grain | text at 5 % / 8 % | alternating |
 | late wood | primary at 55 % · text at 16 %, 1 px | at the end of each day, month or year — the finest at 3 px or wider |
 | cambium | primary, 1.8 px | today's edge |
-| caption | 14 below, two lines 6 apart | hostname in the expressive face · age muted at the right (`21 D`, `1 MO 5 D`, `2 Y 3 D`); `SESSION 1 H 05 M` lit, or `AWAY` |
+| caption | 14 below, two lines 6 apart | hostname in the expressive face · age muted at the right (`21 D`, `1 MO 5 D`, `2 Y 3 D`); `SESSION ACTIVE TIME 1 H 05 M` lit, or `AWAY` |
 
 **Active** is `services/Activity.qml`: neither idle — ext-idle-notify after
 `activity.idle_minutes` (5), inhibitors respected, so a film is somebody watching — nor locked.

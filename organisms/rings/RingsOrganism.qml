@@ -325,7 +325,7 @@ Item {
 
             Text {
                 anchors.baseline: value.baseline
-                text: Activity.present ? "SESSION" : "AWAY"
+                text: Activity.present ? "SESSION ACTIVE TIME" : "AWAY"
                 color: Theme.text
                 font: Qt.font({
                     "family": Typography.technical,
