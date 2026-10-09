@@ -289,20 +289,25 @@ Item {
         if (!make)
             return null;
 
-        // A membrane the configuration has never mentioned: the top one cedes
-        // a strip the way the default layer does, the bottom one does not —
-        // only horizontal edges may reserve, and a dock that reserved would
-        // keep a band of the screen for itself while it is away.
-        const block = {
+        const block = root.freshBlock(edge);
+        copy.push(block);
+        return block;
+    }
+
+    // A membrane the configuration has never mentioned arrives Fixed, and
+    // Fixed means what `setMode` makes it mean: a horizontal edge cedes its
+    // strip. A bottom block born without the reservation showed Fixed in the
+    // selector while windows ran under it, until the mode was switched away
+    // and back.
+    function freshBlock(edge) {
+        return {
             "monitor": root.monitor,
             "edge": edge,
-            "reserve_space": edge === "top",
+            "reserve_space": edge === "top" || edge === "bottom",
             "auto_hide": false,
             "scale": "normal",
             "tissues": []
         };
-        copy.push(block);
-        return block;
     }
 
     function tissueIn(block, place) {
@@ -737,14 +742,7 @@ Item {
         } else {
             let block = membranes.find(b => root.claims(b) && b.edge === edge);
             if (!block) {
-                block = {
-                    "monitor": root.monitor,
-                    "edge": edge,
-                    "reserve_space": edge === "top",
-                    "auto_hide": false,
-                    "scale": "normal",
-                    "tissues": []
-                };
+                block = root.freshBlock(edge);
                 membranes.push(block);
             }
             tissue.anchor = where;
