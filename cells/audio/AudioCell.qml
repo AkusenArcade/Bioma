@@ -41,7 +41,12 @@ Cell {
     // capsule: dial, figure and slider, with no thread above it and the wells
     // hanging below when pressed. CELLS §05, "Invoked": what changes is where
     // it is born, not what it does.
-    readonly property bool asCapsule: root.floating
+    //
+    // Floating is not enough: a floating tissue placed in a corner and always
+    // there is the cell at rest, and at rest it is the dial. Given the capsule
+    // instead, it stood in the corner as a volume display with a figure on it
+    // (Akusen, 2026-10-09).
+    readonly property bool asCapsule: root.floating && root.visibility.type === "invoked"
 
     readonly property real capsuleWidth: 372 * metrics.factor
     readonly property real capsuleHeight: 88 * metrics.factor
