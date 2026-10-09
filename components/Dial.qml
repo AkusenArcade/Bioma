@@ -141,7 +141,7 @@ Item {
     Rectangle {
         id: light
         anchors.fill: parent
-        visible: false
+        opacity: 0
         layer.enabled: true
 
         gradient: Gradient {
@@ -153,7 +153,7 @@ Item {
     Item {
         id: marks
         anchors.fill: parent
-        visible: false
+        opacity: 0
         layer.enabled: true
 
         Shape {

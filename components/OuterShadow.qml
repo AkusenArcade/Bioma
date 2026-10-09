@@ -45,7 +45,7 @@ Item {
         y: -root.reach
         width: root.width + root.reach * 2
         height: root.height + root.reach * 2
-        visible: false
+        opacity: 0
         layer.enabled: true
 
         RectangularShadow {
@@ -69,7 +69,7 @@ Item {
         y: -root.reach
         width: canvas.width
         height: canvas.height
-        visible: false
+        opacity: 0
         layer.enabled: true
 
         Rectangle {

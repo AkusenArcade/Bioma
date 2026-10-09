@@ -201,7 +201,7 @@ Item {
                     asynchronous: true
                     smooth: true
                     sourceSize.width: Math.round(track.cover * Screen.devicePixelRatio)
-                    visible: false
+                    opacity: 0
                     layer.enabled: true
                 }
 
@@ -210,7 +210,7 @@ Item {
                     anchors.fill: parent
                     radius: artShape.radius
                     antialiasing: true
-                    visible: false
+                    opacity: 0
                     layer.enabled: true
                 }
 

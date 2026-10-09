@@ -68,7 +68,7 @@ Item {
     Rectangle {
         id: light
         anchors.fill: parent
-        visible: false
+        opacity: 0
         layer.enabled: true
 
         gradient: Gradient {
@@ -81,7 +81,7 @@ Item {
     Item {
         id: bars
         anchors.fill: parent
-        visible: false
+        opacity: 0
         layer.enabled: true
 
         Repeater {

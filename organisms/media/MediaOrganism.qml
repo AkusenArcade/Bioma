@@ -88,7 +88,7 @@ Item {
     Item {
         id: art
         anchors.fill: parent
-        visible: false
+        opacity: 0
         layer.enabled: true
 
         Image {
@@ -134,7 +134,7 @@ Item {
         anchors.fill: parent
         radius: root.radius
         antialiasing: true
-        visible: false
+        opacity: 0
         layer.enabled: true
     }
 

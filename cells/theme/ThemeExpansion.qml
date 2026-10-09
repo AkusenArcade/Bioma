@@ -337,7 +337,7 @@ Item {
             sourceSize.width: Math.round(tile.decode * Screen.devicePixelRatio)
             // Qt 6 draws nothing for a mask to sample unless the source renders
             // itself: both halves carry their own layer.
-            visible: false
+            opacity: 0
             layer.enabled: true
         }
 
@@ -346,7 +346,7 @@ Item {
             anchors.fill: parent
             radius: tile.corner
             antialiasing: true
-            visible: false
+            opacity: 0
             layer.enabled: true
         }
 
@@ -1220,7 +1220,7 @@ Item {
         y: cutout.y
         width: cutout.width
         height: cutout.height
-        visible: false
+        opacity: 0
         layer.enabled: root.listGrowth > 0
 
         Rectangle {

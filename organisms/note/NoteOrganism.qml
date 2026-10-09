@@ -465,7 +465,7 @@ Item {
         Rectangle {
             id: fade
             anchors.fill: parent
-            visible: false
+            opacity: 0
             layer.enabled: true
             gradient: Gradient {
                 GradientStop { position: 0; color: "white" }

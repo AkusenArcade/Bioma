@@ -176,9 +176,9 @@ Item {
         id: liquid
         anchors.fill: parent
         // Hidden from the scene but rendered to a texture of its own: in Qt 6 an
-        // item that is merely invisible is not drawn at all, and a mask has
-        // nothing to sample.
-        visible: false
+        // item that is merely hidden is not drawn at all, and a mask has
+        // nothing to sample. Hidden by opacity, not `visible` (CLAUDE.md).
+        opacity: 0
         layer.enabled: true
 
         // The surface sits where the memory is, measured against the vessel —
@@ -234,7 +234,7 @@ Item {
     Item {
         id: liquidShape
         anchors.fill: parent
-        visible: false
+        opacity: 0
         layer.enabled: true
 
         Disc {
@@ -316,7 +316,7 @@ Item {
     Item {
         id: charge
         anchors.fill: parent
-        visible: false
+        opacity: 0
         layer.enabled: true
 
         Rectangle {

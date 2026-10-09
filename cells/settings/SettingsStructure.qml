@@ -2359,7 +2359,7 @@ Item {
         id: presetHole
 
         anchors.fill: parent
-        visible: false
+        opacity: 0
         layer.enabled: root.presetGrowth > 0
 
         Rectangle {

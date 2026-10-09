@@ -76,6 +76,12 @@ open beside it.
 - **Blur applies to cells only, never to the tissue background**, and via
   `ext-background-effect`, never compositor layer rules.
 - **One service singleton per domain.** Never a poller per cell.
+- **A layer drawn only to be sampled is hidden with `opacity: 0`, never
+  `visible: false`.** Qt asks for no frame when something changes inside an
+  invisible item, so a mask over a moving source shows it only when something
+  else redraws the window. A membrane redraws continuously and hides the
+  mistake; the organisms' surface does not, and the media band ran at the
+  progress bar's one frame a second.
 
 ## Quickshell 0.3.1 — what this build actually gives us
 

@@ -41,7 +41,7 @@ Item {
     Image {
         id: picture
         anchors.fill: parent
-        visible: false
+        opacity: 0
         layer.enabled: true
         source: root.available ? root.source : ""
         fillMode: Image.PreserveAspectCrop
@@ -62,7 +62,7 @@ Item {
     Item {
         id: silhouette
         anchors.fill: parent
-        visible: false
+        opacity: 0
         layer.enabled: true
 
         Rectangle {
@@ -95,7 +95,7 @@ Item {
     Rectangle {
         id: mask
         anchors.fill: parent
-        visible: false
+        opacity: 0
         layer.enabled: true
         radius: width / 2
         color: "white"

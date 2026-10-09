@@ -116,7 +116,7 @@ Item {
         id: overShape
         width: root.width + root.overBleed * 2
         height: root.height + root.overBleed * 2
-        visible: false
+        opacity: 0
         layer.enabled: root.overShown
 
         Rectangle {
