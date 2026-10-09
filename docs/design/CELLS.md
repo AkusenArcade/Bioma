@@ -740,7 +740,7 @@ advertising itself on someone else's desktop.
 | Measure | Value | Note |
 |---|---|---|
 | category capsule | 240 × 64 px | full pill, 76 px pitch |
-| category glyph | 26 px box, 21 px in | `appearance` `structure` `cells` `monitors` `keyboard` `lock`; muted, primary gradient when chosen |
+| category glyph | 26 px box, 21 px in | `structure` `cells` `organisms` `appearance` `monitors` `keyboard` `lock`, in that order (Akusen, 2026-10-09: what is placed first, how it looks after); muted, primary gradient when chosen |
 | category name / line | 15 / 13 | Orbitron 500 (700 chosen, primary) over Spectral muted, 3 px apart, 16 px after the glyph |
 | panel | 440 – 720 px | as wide as the category asks; fixed height with scrolling |
 | setting row | 44 px | label 92 px in Orbitron 12, slider 150 px |

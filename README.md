@@ -103,8 +103,9 @@ theme cell.
 ### Settings, in the shell
 
 The layout is edited from the shell itself, with no config file to write by
-hand. The settings cell has five pages: Appearance, Structure (which cell goes
-where, on each monitor), Cells (always or conditional), Monitors and Keybinds.
+hand. The settings cell has seven pages: Structure (which cell goes where, on
+each monitor), Cells (always or conditional), Organisms, Appearance, Monitors,
+Keybinds and Session.
 Adding a cell costs one block of configuration, and the Structure page writes
 that block for you. It also keeps whole layouts as presets, to switch between
 or to start again from an empty desktop.

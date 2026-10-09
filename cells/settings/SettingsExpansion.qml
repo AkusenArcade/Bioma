@@ -41,14 +41,14 @@ Item {
     readonly property real padding: 14 * factor
 
     readonly property var categories: [
-        { "key": "appearance", "label": "APPEARANCE", "glyph": "appearance",
-          "hint": "opacity, blur, radius, scale", "width": 440 },
         { "key": "structure", "label": "STRUCTURE", "glyph": "structure",
           "hint": "membranes, tissues, order", "width": 644 },
         { "key": "cells", "label": "CELLS", "glyph": "cells",
           "hint": "options and visibility", "width": 560 },
         { "key": "organisms", "label": "ORGANISMS", "glyph": "organisms",
           "hint": "on the desktop, by hand", "width": 560 },
+        { "key": "appearance", "label": "APPEARANCE", "glyph": "appearance",
+          "hint": "opacity, blur, radius, scale", "width": 440 },
         { "key": "monitors", "label": "MONITORS", "glyph": "monitors",
           "hint": "position, scale, snapping", "width": 720 },
         { "key": "keybinds", "label": "KEYBINDS", "glyph": "keyboard",
