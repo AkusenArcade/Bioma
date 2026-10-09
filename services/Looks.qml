@@ -6,7 +6,8 @@ import Quickshell
 import Quickshell.Io
 import qs.core
 
-// The desktop's look outside the palette: its icon theme and its cursor.
+// The desktop's look outside the palette: its icon theme, its cursor, and how
+// strong niri's blur is.
 //
 // Neither is the shell's to keep. The icon theme is the desktop's setting
 // (`org.gnome.desktop.interface`), which GTK reads live, plus qt5ct and qt6ct's
@@ -231,6 +232,61 @@ Singleton {
             if (cursorWriter.again) {
                 cursorWriter.again = false;
                 cursorWriter.running = true;
+            }
+        }
+    }
+
+    // ---- Blur ------------------------------------------------------------------------
+
+    // How strong the glass is. The shell says where to blur and niri decides
+    // how much, from its own `blur` section — which is global, so the step
+    // moves every blurred surface niri draws, windows a rule blurs included.
+    // Written as `bioma-blur.kdl`, last, so it overrides the user's `passes`
+    // and `offset` and leaves the rest of their section alone. Only when the
+    // step is moved: until then niri's section is the user's.
+    function setBlur(strength) {
+        const steps = Metrics.blurSteps;
+        const index = Math.max(1, Math.min(steps.length, Math.round(strength)));
+        if (index === Metrics.blurStrength)
+            return;
+        Config.set("cell.blurStrength", index);
+
+        const step = steps[index - 1];
+        blurWriter.body = "// Written by Bioma's settings cell (APPEARANCE). Moving the blur slider rewrites it.\n"
+                        + `blur {\n    passes ${step.passes}\n    offset ${step.offset.toFixed(1)}\n}`;
+        if (blurWriter.running)
+            blurWriter.again = true;
+        else
+            blurWriter.running = true;
+    }
+
+    Process {
+        id: blurWriter
+
+        property string body: ""
+        property bool again: false
+
+        command: [Quickshell.shellPath("scripts/niri-include"), "blur"]
+        stdinEnabled: true
+
+        onStarted: {
+            blurWriter.write(blurWriter.body);
+            blurWriter.stdinEnabled = false;
+        }
+
+        stderr: StdioCollector {
+            onStreamFinished: {
+                const reason = this.text.trim();
+                if (reason.length > 0)
+                    root.error = "niri refused it: " + reason;
+            }
+        }
+
+        onExited: {
+            blurWriter.stdinEnabled = true;
+            if (blurWriter.again) {
+                blurWriter.again = false;
+                blurWriter.running = true;
             }
         }
     }

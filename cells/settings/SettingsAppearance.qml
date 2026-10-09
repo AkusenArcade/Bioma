@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import qs.core
 import qs.components
+import qs.services
 
 // How the shell looks: the handful of numbers the whole of it is drawn from.
 //
@@ -136,9 +137,12 @@ Item {
             }
         }
 
-        // Blur is not a number here. niri owns the radius of it — the shell
-        // declares *where* to blur and the compositor decides how much — so
-        // what Bioma can honestly offer is whether its cells are glass at all.
+        // Whether the cells are glass at all, and how strong the glass is. The
+        // shell declares *where* to blur; how much is niri's, in a section
+        // that is global, so the strength is a step written into niri's
+        // configuration (services/Looks.qml) and it moves every blurred
+        // surface niri draws. One row, because the strength of glass that is
+        // off means nothing: the slider dims with the switch.
         Item {
             width: parent.width
             height: root.rowHeight
@@ -158,12 +162,43 @@ Item {
             }
 
             Switch {
+                id: glass
+
                 anchors.left: parent.left
                 anchors.leftMargin: root.labelWidth + 12 * root.factor
                 anchors.verticalCenter: parent.verticalCenter
                 factor: root.factor
                 on: Config.get("cell.blur", true)
                 onToggled: value => Config.set("cell.blur", value)
+            }
+
+            // It ends where the sliders above end, so the column holds.
+            Slider {
+                id: strength
+
+                readonly property int steps: Metrics.blurSteps.length
+
+                anchors.left: glass.right
+                anchors.leftMargin: 12 * root.factor
+                anchors.verticalCenter: parent.verticalCenter
+                width: root.sliderWidth - glass.width - 12 * root.factor
+                factor: root.factor
+                dimmed: !glass.on
+
+                value: (Metrics.blurStrength - 1) / (strength.steps - 1)
+                onMoved: fraction => Looks.setBlur(1 + fraction * (strength.steps - 1))
+            }
+
+            Text {
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                text: String(Metrics.blurStrength)
+                color: Theme.textMuted
+                opacity: glass.on ? 1 : 0.45
+                font: Typography.tabular(Qt.font({
+                    "family": Typography.technical,
+                    "pixelSize": root.metrics.fontSecondary
+                }))
             }
         }
 

@@ -9,7 +9,8 @@
 
   "cell": {
     "opacity": 0.72,
-    "blur": true
+    "blur": true,
+    "blurStrength": 5
   },
 
   "tissue": {

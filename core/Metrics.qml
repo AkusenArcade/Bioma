@@ -57,7 +57,35 @@ Singleton {
         return radius * root.radiusPercent / 100;
     }
 
-    readonly property real blurRadius: 20      // glass; niri owns the real one
+    // How strong the glass is, in ten steps. niri draws the real blur — a
+    // dual Kawase, whose reach is roughly `offset × 2^passes` — and it takes
+    // those two numbers only globally, in its `blur` section: a layer rule can
+    // say whether, not how much. So a step is a pair niri is given
+    // (`services/Looks.qml` writes it), spaced so that each one looks about
+    // half again as strong as the last; step 5 is niri's own default.
+    readonly property var blurSteps: [
+        { "passes": 1, "offset": 1.5 },
+        { "passes": 2, "offset": 1.5 },
+        { "passes": 2, "offset": 3 },
+        { "passes": 3, "offset": 2 },
+        { "passes": 3, "offset": 3 },
+        { "passes": 3, "offset": 4.5 },
+        { "passes": 4, "offset": 3 },
+        { "passes": 4, "offset": 4.5 },
+        { "passes": 5, "offset": 3.5 },
+        { "passes": 5, "offset": 5 }
+    ]
+    readonly property int blurStrength: Math.max(1, Math.min(blurSteps.length,
+                                                             Math.round(Config.get("cell.blurStrength", 5))))
+
+    // The glass the shell draws itself, where one of its surfaces lies over
+    // another and the compositor's blur sees only what is behind both
+    // (components/Panel.qml). It follows the step, so that glass matches
+    // niri's: 20 px is what niri's default looks like.
+    readonly property real blurRadius: {
+        const step = blurSteps[blurStrength - 1];
+        return Math.min(64, 20 * step.offset * Math.pow(2, step.passes) / 24);
+    }
 
     // The side of one square of an organism's template. An organism is so
     // many units wide and tall, with the shape gap between them — a 2 × 1
