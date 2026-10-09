@@ -266,6 +266,25 @@ is 2 × 1, 2 × 2 or 2 × 3, the vitals' square 2 × 2 rather than a row.
 |---|---|
 | `grid` | How many squares the arrange grid divides one module into: `1`, `2` (the default), `4` or `8`. The wheel changes it while arranging, and it is written on leaving |
 
+### presets
+
+Saved layouts, written by the Structure page and never by hand. Each one is the
+whole composition — `membranes`, `floating` and `organisms`, on every monitor —
+under a name, and putting one back writes those three lists in a single write.
+The base layer ships none: a preset is a layout somebody made, not one Bioma
+offers (PRD §3.7).
+
+| Key | Meaning |
+|---|---|
+| `saved` | `[{ "name", "membranes", "floating", "organisms" }]`, in the order they were made |
+| `active` | The name of the one last put back or saved; empty after *New*, or before the first one |
+
+A preset names monitors the way the layout does, so one made with a screen that
+is not connected keeps that screen's blocks, and they appear when it returns.
+The same three things answer a key: `ipc call presets apply <name>`,
+`presets save <name>`, `presets create` (an empty layout), `presets list` and
+`presets current`.
+
 ### weather
 
 Where the weather organism reads the weather for, and the place whose sky the

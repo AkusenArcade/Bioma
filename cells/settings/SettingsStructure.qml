@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Effects
 import Quickshell
 import qs.core
 import qs.components
@@ -645,6 +646,126 @@ Item {
         root.choose(edge, chosenIndex);
     }
 
+    // ---- Presets -----------------------------------------------------------
+    //
+    // See core/Presets.qml. A press that would throw away a layout kept under
+    // no name arms first and acts on the second press; leaving the chip
+    // disarms it.
+
+    readonly property string blankKey: "\u0000new"
+
+    property string presetArmed: ""
+    property string presetRemoving: ""
+    property bool naming: false
+
+    // What the dropdown says: the preset in use, or that the layout is kept
+    // under no name. Whether the page still matches it is said beside the
+    // name rather than after it, where an elided name would take it along.
+    readonly property string presetLabel: Presets.active.length > 0 ? Presets.active
+        : Presets.empty ? "EMPTY" : "UNSAVED"
+
+    // The list the dropdown opens, and where it is born: the dropdown's own
+    // bottom edge, read when it is pressed. The page under it scrolls, so a
+    // scroll puts the list away rather than leaving it standing over a slot
+    // it no longer belongs to.
+    property bool presetsOpen: false
+    property real presetOriginX: 0
+    property real presetOriginY: 0
+
+    function togglePresets() {
+        if (root.presetsOpen) {
+            root.presetsOpen = false;
+            return;
+        }
+        const at = presetDrop.mapToItem(root, 0, presetDrop.height);
+        root.presetOriginX = at.x;
+        root.presetOriginY = at.y;
+        root.endTransfer();
+        root.picking = false;
+        root.presetsOpen = true;
+    }
+
+    onPresetsOpenChanged: if (!root.presetsOpen) {
+        root.presetArmed = "";
+        root.presetRemoving = "";
+    }
+
+    property real presetGrowth: root.presetsOpen ? 1 : 0
+
+    Behavior on presetGrowth {
+        NumberAnimation {
+            duration: root.presetsOpen ? Timing.grow : Timing.close
+            easing.type: Easing.Bezier
+            easing.bezierCurve: root.presetsOpen ? Timing.easeOpen : Timing.easeClose
+        }
+    }
+
+    // Orbitron 12, the dropdown's figure in CELLS.md §07: a control and its
+    // list are one family wherever they are.
+    readonly property int fontControl: Math.round(12 * factor)
+
+    readonly property real presetRowHeight: metrics.rowHeight
+    readonly property real presetPadding: 6 * factor
+    readonly property int presetRows: 8
+
+    // Choosing one: put back at once when the layout on the page is kept
+    // somewhere, asked first when it is kept nowhere.
+    function choosePreset(name) {
+        root.presetRemoving = "";
+        if (Presets.active === name && !Presets.changed) {
+            root.presetsOpen = false;
+            return;
+        }
+        if (!Presets.kept && root.presetArmed !== name) {
+            root.presetArmed = name;
+            return;
+        }
+        root.presetArmed = "";
+        root.presetsOpen = false;
+        root.leave(() => Presets.apply(name));
+    }
+
+    function forgetPreset(name) {
+        root.presetArmed = "";
+        if (root.presetRemoving !== name) {
+            root.presetRemoving = name;
+            return;
+        }
+        root.presetRemoving = "";
+        Presets.remove(name);
+        if (Presets.saved.length <= 1)
+            root.presetsOpen = false;
+    }
+
+    function startNaming() {
+        root.presetsOpen = false;
+        root.endTransfer();
+        root.picking = false;
+        root.presetArmed = "";
+        root.presetRemoving = "";
+        nameField.text = Presets.active;
+        root.naming = true;
+        nameField.selectAll();
+        nameField.forceActiveFocus();
+    }
+
+    function finishNaming() {
+        if (Presets.saveAs(nameField.text))
+            root.naming = false;
+    }
+
+    onNamingChanged: if (!root.naming) nameField.focus = false
+
+    // Another layout replaces this one whole: whatever was chosen or in hand
+    // on the page belonged to the old one.
+    function leave(change) {
+        root.endTransfer();
+        root.picking = false;
+        if (root.cell)
+            root.cell.slot = -1;
+        change();
+    }
+
     // ---- The chips, and their order ----------------------------------------
     //
     // The order of the cells in a tissue **is** the order they sit in on the
@@ -819,19 +940,39 @@ Item {
     // `panelHeight`). This is the fallback for a tissue with more cells than
     // that was measured for — it never moves while the content fits.
     // Everything below is drawn into it and keeps its own coordinates.
-    Flickable {
-        id: scroller
+    //
+    // While the preset list is out, its shape is cut out of the page: the list
+    // draws a blurred copy of what it covers, the compositor's blur being of
+    // what is behind the shell's surface and not of the page on it, and under
+    // its translucent glass the sharp original showed through the copy. The
+    // theme cell's dropdown does the same (cells/theme/ThemeExpansion.qml).
+    Item {
+        id: cutout
 
-        // As wide as the page: the page is as wide as the tissues it draws, and
-        // the scrollbar only shows while the page is moving.
         anchors.fill: parent
-        contentWidth: width
-        contentHeight: Math.max(height, detail.visible ? detail.y + detail.height
-                                                       : layout.y + layout.height)
-        boundsBehavior: Flickable.StopAtBounds
-        clip: true
-        // A reorder is a drag, and the page must not scroll under it.
-        interactive: !root.carrying
+        layer.enabled: root.presetGrowth > 0
+        layer.effect: MultiEffect {
+            maskEnabled: true
+            maskInverted: true
+            maskSource: presetHole
+        }
+
+        Flickable {
+            id: scroller
+
+            // As wide as the page: the page is as wide as the tissues it
+            // draws, and the scrollbar only shows while the page is moving.
+            anchors.fill: parent
+            contentWidth: width
+            contentHeight: Math.max(height, detail.visible ? detail.y + detail.height
+                                                           : layout.y + layout.height)
+            boundsBehavior: Flickable.StopAtBounds
+            clip: true
+            // A reorder is a drag, and the page must not scroll under it.
+            interactive: !root.carrying
+
+            onContentYChanged: root.presetsOpen = false
+        }
     }
 
     Scroller {
@@ -847,6 +988,254 @@ Item {
 
         width: parent.width
         spacing: 10 * root.factor
+
+        // Saved layouts, above the monitor tabs because a preset is every
+        // monitor at once: the dropdown puts one back, the dashed chip starts
+        // from nothing, SAVE AS keeps what is on the page under a name. A
+        // dropdown rather than a chip per preset: a row of chips runs out of
+        // room at the fourth name (Akusen, 2026-10-09), and a name is what is
+        // remembered, as with the theme cell's palettes.
+        Item {
+            id: presetRow
+
+            width: layout.width
+            height: root.chipHeight
+
+            Text {
+                id: presetTitle
+                height: root.chipHeight
+                verticalAlignment: Text.AlignVCenter
+                text: "PRESET"
+                color: Presets.saved.length > 0 ? Theme.text : Theme.textFaint
+                font: Qt.font({
+                    "family": Typography.technical,
+                    "pixelSize": root.metrics.fontMeta,
+                    "weight": Typography.weightLabel,
+                    "letterSpacing": Typography.tracking(root.metrics.fontMeta,
+                                                         Typography.labelTracking)
+                })
+            }
+
+            Row {
+                visible: !root.naming
+                anchors.left: parent.left
+                anchors.leftMargin: 76 * root.factor
+                spacing: 6 * root.factor
+
+                // Always the same width and in the same place: only what it
+                // says changes. The name is elided here; the list shows it
+                // whole.
+                Item {
+                    id: presetDrop
+
+                    readonly property bool usable: Presets.saved.length > 0
+
+                    width: 240 * root.factor
+                    height: root.chipHeight
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: Metrics.radiusFor(height, root.metrics)
+                        antialiasing: true
+                        color: "transparent"
+                        border.width: Metrics.rim(Screen.devicePixelRatio)
+                        border.color: root.presetsOpen ? Theme.primary
+                                    : presetDrop.usable && presetDropHover.hovered ? Theme.text
+                                    : presetDrop.usable ? Theme.line : Qt.alpha(Theme.line, 0.5)
+                    }
+
+                    Text {
+                        anchors.left: parent.left
+                        anchors.leftMargin: 12 * root.factor
+                        anchors.right: presetState.visible ? presetState.left : presetChevron.left
+                        anchors.rightMargin: 7 * root.factor
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: root.presetLabel
+                        elide: Text.ElideRight
+                        color: Presets.active.length > 0 ? Theme.text : Theme.textMuted
+                        font: Qt.font({
+                            "family": Typography.technical,
+                            "pixelSize": root.fontControl,
+                            "weight": Typography.weightLabel,
+                            "letterSpacing": Typography.tracking(root.fontControl, 0.04)
+                        })
+                    }
+
+                    Text {
+                        id: presetState
+                        visible: Presets.active.length > 0 && Presets.changed
+                        anchors.right: presetChevron.left
+                        anchors.rightMargin: 8 * root.factor
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "CHANGED"
+                        color: Theme.textMuted
+                        font: Qt.font({
+                            "family": Typography.technical,
+                            "pixelSize": root.metrics.fontMeta,
+                            "letterSpacing": Typography.tracking(root.metrics.fontMeta,
+                                                                 Typography.labelTracking)
+                        })
+                    }
+
+                    Icon {
+                        id: presetChevron
+                        anchors.right: parent.right
+                        anchors.rightMargin: 12 * root.factor
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 9 * root.factor
+                        height: width
+                        name: "chevron-down"
+                        colour: Qt.alpha(Theme.text, presetDrop.usable ? 0.6 : 0.25)
+                    }
+
+                    HoverHandler { id: presetDropHover }
+
+                    TapHandler {
+                        onTapped: {
+                            if (presetDrop.usable)
+                                root.togglePresets();
+                        }
+                    }
+                }
+
+                // A place rather than a content, like every dashed shape on
+                // this page: what is there once it is pressed is nothing.
+                Item {
+                    id: blankChip
+
+                    readonly property bool armed: root.presetArmed === root.blankKey
+
+                    width: blankLabel.implicitWidth + blankPlus.width + 30 * root.factor
+                    height: root.chipHeight
+
+                    DashedSlot {
+                        anchors.fill: parent
+                        radius: Metrics.radiusFor(parent.height, root.metrics)
+                        colour: blankChip.armed ? Theme.alert
+                              : blankHover.hovered ? Theme.primary : Qt.alpha(Theme.line, 0.7)
+                    }
+
+                    Icon {
+                        id: blankPlus
+                        anchors.left: parent.left
+                        anchors.leftMargin: 11 * root.factor
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 9 * root.factor
+                        height: width
+                        name: "plus"
+                        colour: blankLabel.color
+                    }
+
+                    Text {
+                        id: blankLabel
+                        anchors.left: blankPlus.right
+                        anchors.leftMargin: 7 * root.factor
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: blankChip.armed ? "DISCARD CHANGES?" : "NEW"
+                        color: blankChip.armed ? Theme.alert
+                             : blankHover.hovered ? Theme.primary : Theme.textMuted
+                        font: Qt.font({
+                            "family": Typography.technical,
+                            "pixelSize": root.metrics.fontMeta,
+                            "letterSpacing": Typography.tracking(root.metrics.fontMeta,
+                                                                 Typography.labelTracking)
+                        })
+                    }
+
+                    HoverHandler {
+                        id: blankHover
+                        onHoveredChanged: if (!hovered && blankChip.armed) root.presetArmed = ""
+                    }
+
+                    TapHandler {
+                        onTapped: {
+                            root.presetsOpen = false;
+                            if (Presets.empty && Presets.active.length === 0)
+                                return;
+                            if (!Presets.kept && !blankChip.armed) {
+                                root.presetArmed = root.blankKey;
+                                return;
+                            }
+                            root.presetArmed = "";
+                            root.leave(() => Presets.blank());
+                        }
+                    }
+                }
+
+                // Lit while there is something kept nowhere: a layout changed
+                // since its preset, or one that never had a name.
+                Choice {
+                    metrics: root.metrics
+                    label: "SAVE AS"
+                    kind: Presets.changed ? "primary" : "plain"
+                    onActivated: root.startNaming()
+                }
+            }
+
+            // Naming it, in place of the chips: the name of the one in use is
+            // offered, so keeping a change to it is SAVE AS and Enter.
+            Row {
+                visible: root.naming
+                anchors.left: parent.left
+                anchors.leftMargin: 76 * root.factor
+                spacing: 8 * root.factor
+
+                Rectangle {
+                    width: 220 * root.factor
+                    height: root.chipHeight
+                    radius: Metrics.radiusFor(height, root.metrics)
+                    antialiasing: true
+                    color: "transparent"
+                    border.width: Metrics.rim(Screen.devicePixelRatio)
+                    border.color: nameField.activeFocus ? Theme.primary : Theme.line
+
+                    TextInput {
+                        id: nameField
+
+                        anchors.left: parent.left
+                        anchors.leftMargin: 14 * root.factor
+                        anchors.right: parent.right
+                        anchors.rightMargin: 14 * root.factor
+                        anchors.verticalCenter: parent.verticalCenter
+                        color: Theme.text
+                        font.family: Typography.expressive
+                        font.pixelSize: root.metrics.fontSecondary
+                        clip: true
+                        selectByMouse: true
+                        maximumLength: 32
+                        selectionColor: Qt.alpha(Theme.primary, 0.35)
+                        selectedTextColor: Theme.text
+
+                        onActiveFocusChanged: if (root.cell && activeFocus) root.cell.fieldEngaged = true
+                        onAccepted: root.finishNaming()
+                        Keys.onEscapePressed: root.naming = false
+
+                        Text {
+                            visible: nameField.text.length === 0
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "A name for this layout"
+                            color: Theme.textFaint
+                            font: nameField.font
+                        }
+                    }
+                }
+
+                Choice {
+                    metrics: root.metrics
+                    // Saying what it will do: a name already in the list is
+                    // that preset written over.
+                    label: Presets.find(nameField.text.trim()) ? "REPLACE" : "SAVE"
+                    kind: "primary"
+                    onActivated: root.finishNaming()
+                }
+
+                Choice {
+                    metrics: root.metrics
+                    label: "CANCEL"
+                    onActivated: root.naming = false
+                }
+            }
+        }
 
         // One monitor at a time: six slots are already the most a person can
         // hold in their eye, and two monitors' worth side by side would be
@@ -1788,6 +2177,215 @@ Item {
                     }
                 }
             }
+        }
+    }
+
+    // ---- The list the preset dropdown opens ---------------------------------
+    //
+    // Born from the dropdown's bottom edge, over the page: one row per saved
+    // layout, the one in use marked with a dot, a cross to forget one. A row
+    // that would lose a layout kept under no name, or forget a preset, asks
+    // first in its own place, and the second press answers.
+
+    // A press anywhere else on the page puts the list away. Passive: what was
+    // pressed still answers, as it would with no list out. On the page's
+    // content rather than on the page: the Flickable takes the press, and a
+    // handler on an item under it never hears of it.
+    TapHandler {
+        parent: scroller.contentItem
+        onTapped: point => {
+            if (!root.presetsOpen)
+                return;
+            const inside = (item) => {
+                const at = item.mapFromItem(scroller.contentItem, point.position.x, point.position.y);
+                return at.x >= 0 && at.y >= 0 && at.x <= item.width && at.y <= item.height;
+            };
+            if (!inside(presetList) && !inside(presetDrop))
+                root.presetsOpen = false;
+        }
+    }
+
+    TextMetrics {
+        id: presetLongest
+        text: Presets.saved.reduce((out, preset) => (preset.name || "").length > out.length
+                                                    ? preset.name : out, "")
+        font: Qt.font({
+            "family": Typography.technical,
+            "pixelSize": root.fontControl,
+            "weight": Typography.weightLabel,
+            "letterSpacing": Typography.tracking(root.fontControl, 0.04)
+        })
+    }
+
+    // The list's shape, for the cut.
+    Item {
+        id: presetHole
+
+        anchors.fill: parent
+        visible: false
+        layer.enabled: root.presetGrowth > 0
+
+        Rectangle {
+            x: presetList.x
+            y: presetList.y
+            width: presetList.width
+            height: presetList.height
+            radius: presetList.radius
+            antialiasing: true
+        }
+    }
+
+    Panel {
+        id: presetList
+
+        metrics: root.metrics
+        radius: root.metrics.radiusWell
+        padding: root.presetPadding
+        // As wide as the dropdown, or as its longest name: the dropdown
+        // elides, the list says it whole — as far as the page's edge. The
+        // margins are the row's, plus what Orbitron paints past its measure.
+        targetWidth: Math.min(Math.max(presetDrop.width,
+                                       presetLongest.width + 72 * root.factor + root.presetPadding * 2),
+                              root.width - root.presetOriginX)
+        targetHeight: Math.min(Presets.saved.length, root.presetRows) * root.presetRowHeight
+                      + root.presetPadding * 2
+        growth: root.presetGrowth
+        contentReady: root.presetGrowth > 0.999
+        visible: root.presetGrowth > 0
+        over: scroller
+
+        anchorX: root.presetOriginX
+        anchorY: root.presetOriginY + 6 * root.factor
+        nodeX: root.presetOriginX + presetDrop.width / 2
+        nodeY: root.presetOriginY
+
+        // Glass over the page, and the page under it deaf while it is there:
+        // in Qt 6 a press on an item does not stop the handlers of the items
+        // below, so the list takes the pointer for itself.
+        HoverHandler { blocking: true }
+        TapHandler { gesturePolicy: TapHandler.WithinBounds }
+
+        ListView {
+            id: presetView
+
+            width: presetList.targetWidth - root.presetPadding * 2
+            height: Math.min(Presets.saved.length, root.presetRows) * root.presetRowHeight
+            model: Presets.saved
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
+
+            delegate: Item {
+                id: option
+
+                required property var modelData
+
+                readonly property string name: option.modelData.name || ""
+                readonly property bool current: Presets.active === option.name
+                readonly property bool armed: root.presetArmed === option.name
+                readonly property bool removing: root.presetRemoving === option.name
+                readonly property bool alarmed: option.armed || option.removing
+
+                width: presetView.width
+                height: root.presetRowHeight
+
+                // Lit under the pointer, red while it asks.
+                Rectangle {
+                    anchors.fill: parent
+                    radius: Metrics.radiusFor(height, root.metrics)
+                    antialiasing: true
+                    color: option.alarmed ? Qt.alpha(Theme.alert, 0.12)
+                         : optionHover.hovered ? Qt.alpha(Theme.text, 0.06) : "transparent"
+                }
+
+                Text {
+                    anchors.left: parent.left
+                    anchors.leftMargin: 10 * root.factor
+                    anchors.right: optionDot.left
+                    anchors.rightMargin: 8 * root.factor
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: option.removing ? "FORGET " + option.name.toUpperCase() + "?"
+                        : option.armed ? "DISCARD CHANGES?"
+                        : option.name
+                    elide: Text.ElideRight
+                    color: option.alarmed ? Theme.alert
+                         : option.current ? Theme.text : Theme.textMuted
+                    font: Qt.font({
+                        "family": Typography.technical,
+                        "pixelSize": root.fontControl,
+                        "weight": Typography.weightLabel,
+                        "letterSpacing": Typography.tracking(root.fontControl, 0.04)
+                    })
+                }
+
+                // The choice is exclusive, so the mark may be a dot.
+                Rectangle {
+                    id: optionDot
+                    anchors.right: optionCross.left
+                    anchors.rightMargin: 6 * root.factor
+                    anchors.verticalCenter: parent.verticalCenter
+                    opacity: option.current ? 1 : 0
+                    width: 6 * root.factor
+                    height: width
+                    radius: width / 2
+                    color: Theme.primary
+                    antialiasing: true
+                }
+
+                HoverHandler {
+                    id: optionHover
+                    onHoveredChanged: if (!hovered && option.alarmed) {
+                        root.presetArmed = "";
+                        root.presetRemoving = "";
+                    }
+                }
+
+                // While it asks, the row **is** the question: a press
+                // anywhere on it answers, the cross included.
+                TapHandler {
+                    gesturePolicy: TapHandler.WithinBounds
+                    onTapped: {
+                        if (option.removing)
+                            root.forgetPreset(option.name);
+                        else
+                            root.choosePreset(option.name);
+                    }
+                }
+
+                Item {
+                    id: optionCross
+
+                    anchors.right: parent.right
+                    anchors.rightMargin: 4 * root.factor
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 22 * root.factor
+                    height: parent.height
+
+                    Icon {
+                        anchors.centerIn: parent
+                        width: 9 * root.factor
+                        height: width
+                        name: "close"
+                        colour: option.removing || optionCrossHover.hovered ? Theme.alert
+                                                                            : Theme.textFaint
+                    }
+
+                    HoverHandler { id: optionCrossHover }
+
+                    // Taking the press for itself: the row's own would put
+                    // back the preset the cross was asked to forget.
+                    TapHandler {
+                        gesturePolicy: TapHandler.WithinBounds
+                        onTapped: root.forgetPreset(option.name)
+                    }
+                }
+            }
+        }
+
+        Scroller {
+            flick: presetView
+            factor: root.factor
+            x: presetList.targetWidth - root.presetPadding * 2 - width
+            visible: Presets.saved.length > root.presetRows
         }
     }
 }

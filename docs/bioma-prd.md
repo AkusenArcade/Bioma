@@ -71,6 +71,9 @@ be resolvable by reference to one of these.
    to indicators and active controls only.
 7. **Vocabulary, not presets.** The system offers composable rules; the user
    composes. The shipped default demonstrates a sensible composition.
+   A layout the user composed and saved under a name (Settings → Structure)
+   is not a preset in this sense: Bioma ships none, and every one is the
+   user's own composition.
 
 ---
 

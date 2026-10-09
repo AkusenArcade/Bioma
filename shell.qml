@@ -228,6 +228,39 @@ ShellRoot {
         }
     }
 
+    // Saved layouts, from a key as well as from the Structure page: `apply
+    // <name>` puts one back, `save <name>` keeps the layout as it stands,
+    // `create` empties the desktop. core/Presets.qml.
+    readonly property string presetInUse: Presets.active
+
+    IpcHandler {
+        target: "presets"
+
+        function list(): string {
+            return Presets.saved.map(preset => (preset.name === Presets.active ? "* " : "  ")
+                                             + preset.name).join("\n");
+        }
+
+        function current(): string {
+            return Presets.active.length > 0
+                ? Presets.active + (Presets.changed ? " (changed)" : "")
+                : (Presets.empty ? "(empty)" : "(unsaved)");
+        }
+
+        function apply(name: string): string {
+            return Presets.apply(name) ? `applied ${name}` : `no preset "${name}"`;
+        }
+
+        function save(name: string): string {
+            return Presets.saveAs(name) ? `saved ${name.trim()}` : "a preset needs a name";
+        }
+
+        function create(): string {
+            Presets.blank();
+            return "empty";
+        }
+    }
+
     // ---- The keys that are not cells ----------------------------------------
     //
     // Bound before they are called. Quickshell's singletons initialise on

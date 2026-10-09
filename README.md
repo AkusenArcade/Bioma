@@ -106,7 +106,8 @@ The layout is edited from the shell itself, with no config file to write by
 hand. The settings cell has five pages: Appearance, Structure (which cell goes
 where, on each monitor), Cells (always or conditional), Monitors and Keybinds.
 Adding a cell costs one block of configuration, and the Structure page writes
-that block for you.
+that block for you. It also keeps whole layouts as presets, to switch between
+or to start again from an empty desktop.
 
 <p align="center">
   <img src="docs/media/settings-structure.webp" width="440" alt="Settings, Structure: the tissues on each membrane and the floating ones, per monitor">
@@ -237,6 +238,10 @@ The timer answers keys of its own: `ipc call timer start 25` starts twenty-five
 minutes (`start 0` the length last set), `timer toggle` pauses or resumes it,
 `timer stop` ends it. The Keybinds page offers *Timer: start or pause*; the
 timer cell is there while one runs.
+
+Layouts saved on the Structure page answer keys too: `ipc call presets apply
+Work` puts the one called *Work* back, membranes, floating tissues and
+organisms on every monitor at once.
 
 ### Dictation
 

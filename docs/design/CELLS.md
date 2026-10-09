@@ -665,7 +665,21 @@ wants 720.
 **Appearance** — opacity, blur, radius, scale, and three distinct margins: screen **edge**,
 **tissue** to cell, and the **gap** between the shapes of an open cell. Plus the timing set.
 
-**Structure** — pick the monitor, then switch on up to **six tissues**: three on the top
+**Structure** — above everything, the **presets**, because a preset is every monitor at once:
+a **dropdown** with the preset in use (or `UNSAVED`, or `EMPTY`) and `CHANGED` beside the name
+once the page differs from it, a dashed **NEW** chip that empties the desktop to compose from
+scratch, and **SAVE AS**, filled primary while there is something kept nowhere. A dropdown, not
+a chip per preset: a row of chips runs out of room at the fourth name (Akusen, 2026-10-09). Its
+list is the theme cell's: born from the dropdown's bottom edge, over the page, glass with the
+page blurred under it and cut out of it; one row per preset, a dot on the one in use, a cross to
+forget one, as wide as the longest name. SAVE AS turns the row into a name field offering the
+current name — the button reads `REPLACE` for a name already in the list — so keeping a change is
+SAVE AS and Enter (Akusen, 2026-10-09: a change is not saved by itself). A press that would lose
+a layout kept under no name asks first, in its own place: the row or the NEW chip turns alert and
+says `DISCARD CHANGES?`, a row's cross says `FORGET …?`, the second press anywhere on it answers,
+and leaving it withdraws the question. A press elsewhere on the page, or a scroll, puts the list
+away.
+Below them, pick the monitor, then switch on up to **six tissues**: three on the top
 membrane, three on the bottom. An unlit slot is dashed with a plus: click it to light it, empty
 it to switch it off. Each membrane is **fixed or auto-hide**, and that applies to the whole
 edge. The chosen tissue opens at the bottom with its max width and its cells: each cell is a
@@ -730,6 +744,7 @@ advertising itself on someone else's desktop.
 | tissue slot | 196 × 26 px | three per edge, radius 11, dashed when empty |
 | cell chip | 26 px | 9 px cross to remove, dashed to add |
 | kind chips | 26 px | outline only, Orbitron 11, 6 px apart, primary on hover; in a row under the tissue's chips |
+| preset dropdown | 240 × 26 px | name in Orbitron 12, chevron 9, `CHANGED` in Orbitron 11; list rows 30 px, eight before it scrolls; name field 220 px |
 | small segmented | 22 px | inside list rows, radius 14 |
 | monitor area | 640 × 320 px | holds a column layout, not only side by side |
 | thread | 24 px | horizontal, from the centre of the chosen capsule |
