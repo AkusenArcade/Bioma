@@ -325,12 +325,13 @@ Item {
                 return false;
             block.tissues = (block.tissues || []).concat([{
                 "anchor": place,
-                "percentage": 25,
+                "percentage": 0,
                 "growth": place === "centre" ? "symmetric" : "inward",
                 "orientation": "horizontal",
                 "cells": []
             }]);
             root.order(block);
+            root.equalize(edge, block.tissues);
             return true;
         });
     }
@@ -352,21 +353,38 @@ Item {
             block.tissues = kept;
             if (kept.length === 0)
                 copy.splice(copy.indexOf(block), 1);
+            else
+                root.absorb(edge, kept, place, 100 - root.sumOf(kept));
             return true;
         });
         if (root.chosenEdge === edge && root.chosenPlace === place && root.cell)
             root.cell.slot = -1;
     }
 
+    // Widening one narrows its neighbour by as much, and the other way round:
+    // the slider moves two tissues. It stops where the others reach their
+    // floors, and a tissue alone on its membrane has all of it.
     function setPercentage(edge, place, value) {
         root.edit(copy => {
             const block = root.blockIn(copy, edge, false);
             const tissue = block ? root.tissueIn(block, place) : null;
             if (!tissue)
                 return false;
-            tissue.percentage = Math.round(value);
+            const tissues = block.tissues;
+            const others = tissues.filter(other => other !== tissue);
+            const ceiling = 100 - others.reduce((sum, other) => sum + root.shareFloor(edge, other), 0);
+            const wanted = Math.max(root.shareFloor(edge, tissue), Math.min(ceiling, Math.round(value)));
+            if (others.length === 0 ? tissue.percentage === 100 : tissue.percentage === wanted
+                                                                 && root.sumOf(tissues) === 100)
+                return false;
+            tissue.percentage = others.length === 0 ? 100 : wanted;
+            root.absorb(edge, tissues, place, 100 - root.sumOf(tissues));
             return true;
         });
+    }
+
+    function sumOf(tissues) {
+        return tissues.reduce((sum, tissue) => sum + (tissue.percentage || 0), 0);
     }
 
     function setMode(edge, key) {
@@ -443,6 +461,112 @@ Item {
         if (usable <= 0)
             return 0;
         return Math.ceil(root.roomFor(edge, tissue, "") / usable * 100);
+    }
+
+    // ---- Shares that add up -------------------------------------------------
+    //
+    // **The tissues of a membrane share it whole**: their percentages always
+    // add up to 100 (Akusen, 2026-10-09). A tissue widened takes from its
+    // neighbour, one switched off leaves its share to its neighbours, one
+    // switched on divides the membrane in equal parts. None is pushed below
+    // what its cells need, and none below a sliver that can still be seen
+    // and pressed. A membrane written before the rule is put right by the
+    // first change made to it.
+
+    readonly property int minShare: 5
+
+    function shareFloor(edge, tissue) {
+        return Math.max(root.minShare, root.floorFor(edge, tissue));
+    }
+
+    function placesIn(tissues) {
+        const at = {};
+        for (let i = 0; i < tissues.length; i++)
+            at[root.placeOf(tissues[i], i, tissues.length)] = tissues[i];
+        return at;
+    }
+
+    // Who gives or takes when the tissue at `from` changes: a corner's
+    // neighbour is the centre, then the other corner; the centre's are the
+    // two corners, half each.
+    function neighboursOf(from, at) {
+        const order = { "start": ["centre", "end"], "end": ["centre", "start"],
+                        "centre": ["start", "end"] }[from] || [];
+        return order.filter(place => at[place] && place !== from);
+    }
+
+    // `amount` handed to the neighbours of `from`, or taken from them when it
+    // is negative — down to their floors, the first neighbour first.
+    function absorb(edge, tissues, from, amount) {
+        const at = root.placesIn(tissues);
+        const order = root.neighboursOf(from, at).map(place => at[place]);
+        if (order.length === 0 || amount === 0)
+            return;
+        const split = from === "centre" && order.length === 2;
+
+        if (amount > 0) {
+            const first = split ? Math.floor(amount / 2) : amount;
+            order[0].percentage = (order[0].percentage || 0) + first;
+            if (split)
+                order[1].percentage = (order[1].percentage || 0) + amount - first;
+            return;
+        }
+
+        let need = -amount;
+        const room = tissue => Math.max(0, (tissue.percentage || 0) - root.shareFloor(edge, tissue));
+        const wants = split ? [Math.ceil(need / 2), Math.floor(need / 2)] : [need, 0];
+        for (let i = 0; i < order.length; i++) {
+            const taken = Math.min(wants[i] || 0, room(order[i]));
+            order[i].percentage -= taken;
+            need -= taken;
+        }
+        for (const tissue of order) {
+            const taken = Math.min(need, room(tissue));
+            tissue.percentage -= taken;
+            need -= taken;
+        }
+    }
+
+    // Equal parts, each at least its floor; what does not divide goes to the
+    // centre first — 33, 34, 33. False when the floors alone pass 100.
+    function equalize(edge, tissues) {
+        const count = tissues.length;
+        if (count === 0)
+            return true;
+        const floors = tissues.map(tissue => root.shareFloor(edge, tissue));
+        const fixed = tissues.map(() => false);
+        let left = 100;
+        let free = count;
+        let moved = true;
+        while (moved && free > 0) {
+            moved = false;
+            for (let i = 0; i < count; i++) {
+                if (!fixed[i] && floors[i] > left / free) {
+                    fixed[i] = true;
+                    left -= floors[i];
+                    free -= 1;
+                    moved = true;
+                }
+            }
+        }
+        if (left < 0)
+            return false;
+
+        const base = free > 0 ? Math.floor(left / free) : 0;
+        let rest = free > 0 ? left - base * free : left;
+        const rank = { "centre": 0, "start": 1, "end": 2 };
+        const order = tissues.map((tissue, i) => i).sort((a, b) =>
+            rank[root.placeOf(tissues[a], a, count)] - rank[root.placeOf(tissues[b], b, count)]);
+        for (let i = 0; i < count; i++)
+            tissues[i].percentage = fixed[i] ? floors[i] : base;
+        // To the equal parts when there are any, to the floors when every
+        // tissue is held at its own.
+        const takers = free > 0 ? order.filter(i => !fixed[i]) : order;
+        for (let k = 0; rest > 0; k++) {
+            tissues[takers[k % takers.length]].percentage += 1;
+            rest -= 1;
+        }
+        return true;
     }
 
     // ---- Moving a tissue, or copying it --------------------------------------
@@ -527,30 +651,30 @@ Item {
     readonly property bool transferEmpty: root.transferFrom !== null
         && root.transferCells.length === 0 && (root.transferFrom.tissue.cells || []).length > 0
 
-    // The share a tissue on this monitor would be given, or -1 where it will not
-    // fit. It keeps the share it had, raised to what its cells need on this
-    // monitor's width and held to what the other tissues on the edge leave.
+    // The share a tissue landing on this monitor would be given, or -1 where it
+    // will not fit. Landing is lighting a slot: the membrane is divided in
+    // equal parts again, each at least what its cells need — so a slot says
+    // NO ROOM only when the floors alone would pass 100.
     function shareAt(edge, place) {
         const from = root.transferFrom;
         if (!from || root.transferEmpty)
             return -1;
+        if (root.usableOn(edge) <= 0)
+            return -1;
         const block = root.membraneFor(edge);
-        let others = 0;
         const tissues = block ? (block.tissues || []) : [];
+        const after = [];
         for (let i = 0; i < tissues.length; i++) {
             const at = root.placeOf(tissues[i], i, tissues.length);
             if (root.moving && root.isSource(edge, at))
                 continue;
-            others += tissues[i].percentage || 0;
+            after.push({ "anchor": at, "cells": tissues[i].cells || [], "percentage": tissues[i].percentage || 0 });
         }
-        const usable = root.usableOn(edge);
-        if (usable <= 0)
+        const landing = { "anchor": place, "cells": root.transferCells, "percentage": 0 };
+        after.push(landing);
+        if (!root.equalize(edge, after))
             return -1;
-        const floor = Math.ceil(Registry.roomFor(root.transferCells, root.stepOf(edge)) / usable * 100);
-        const free = 100 - others;
-        const wanted = from.edge !== "floating" && from.tissue.percentage ? from.tissue.percentage : 25;
-        const share = Math.min(Math.max(wanted, floor), free);
-        return share >= floor && share > 0 ? share : -1;
+        return landing.percentage >= root.shareFloor(edge, landing) ? landing.percentage : -1;
     }
 
     // What a tissue is, apart from where it is.
@@ -590,6 +714,9 @@ Item {
                         root.placeOf(t, i, tissues.length) !== from.place);
                     if (block.tissues.length === 0)
                         membranes.splice(membranes.indexOf(block), 1);
+                    else
+                        root.absorb(from.edge, block.tissues, from.place,
+                                    100 - root.sumOf(block.tissues));
                     membranesChanged = true;
                 }
             }
@@ -626,6 +753,7 @@ Item {
             tissue.orientation = "horizontal";
             block.tissues = (block.tissues || []).concat([tissue]);
             root.order(block);
+            root.equalize(edge, block.tissues);
             chosenIndex = root.places.indexOf(where);
             membranesChanged = true;
         }
@@ -1741,6 +1869,15 @@ Item {
                 readonly property int floor: root.chosen && !root.floatingChosen
                     ? root.floorFor(root.chosenEdge, root.chosen) : 0
 
+                // Alone on its membrane, a tissue has all of it: the slider
+                // has nothing to take from.
+                readonly property bool alone: {
+                    if (!root.chosen || root.floatingChosen)
+                        return false;
+                    const block = root.membraneFor(root.chosenEdge);
+                    return block !== null && (block.tissues || []).length === 1;
+                }
+
                 // A floating tissue has no share of anything to set, and its
                 // place is the slot it was chosen from; what is left to say is
                 // where that is and on which monitors.
@@ -1817,8 +1954,8 @@ Item {
                     anchors.right: douser.left
                     anchors.rightMargin: 14 * root.factor
                     anchors.verticalCenter: parent.verticalCenter
-                    visible: width_.floor > 0
-                    text: `${width_.floor}% needed`
+                    visible: width_.alone || width_.floor > 0
+                    text: width_.alone ? "the whole edge" : `${width_.floor}% needed`
                     color: Theme.textFaint
                     font: Qt.font({
                         "family": Typography.technical,

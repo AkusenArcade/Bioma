@@ -205,6 +205,14 @@ block says: a panel always open would hold the keyboard for good.
 Collision between tissues on one membrane is impossible by construction.
 Floating tissues may overlap; that is not prevented.
 
+**The tissues of a membrane share it whole**: the Structure page keeps their
+percentages adding up to 100. Widening one narrows its neighbour — a corner's is
+the centre, then the other corner; the centre's are both corners, half each —
+switching one off leaves its share to its neighbours, and switching one on
+divides the membrane in equal parts (33, 34, 33). None goes below what its cells
+need, or below 5%. A membrane written by hand to some other total is read as it
+is, and put right by the first change the page makes to it.
+
 A percentage is a **ceiling, not a reservation**, and the tissue holds to it: it
 hands out room in anchor order — the cells against the screen edge first, since
 that is the end a tissue grows inward from — and a cell it cannot fit is not

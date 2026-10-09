@@ -682,7 +682,11 @@ away.
 Below them, pick the monitor, then switch on up to **six tissues**: three on the top
 membrane, three on the bottom. An unlit slot is dashed with a plus: click it to light it, empty
 it to switch it off. Each membrane is **fixed or auto-hide**, and that applies to the whole
-edge. The chosen tissue opens at the bottom with its max width and its cells: each cell is a
+edge. **The tissues of an edge share it whole**: their widths always add up to 100%. Widening
+one narrows its neighbour (a corner's is the centre, the centre's are both corners, half each),
+switching one off leaves its share to its neighbours, switching one on divides the edge in equal
+parts, and none goes below what its cells need; a tissue alone on its edge has all of it, and its
+slider says `the whole edge` (Akusen, 2026-10-09). The chosen tissue opens at the bottom with its max width and its cells: each cell is a
 chip with a cross to remove it, and a dashed chip adds one. **The dashed chip opens a row of
 kind chips under the tissue's own**, below a dashed rule (`DashedRule`) between what is placed and
 what could be, the way an organism is added (Akusen, 2026-10-07: one gesture
