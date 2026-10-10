@@ -379,6 +379,17 @@ Item {
             width: searchRow.implicitWidth + 20 * family.factor
             height: 22 * family.factor
 
+            readonly property bool navigable: true
+
+            function activate() {
+                family.searchToggled();
+            }
+
+            KeyMark {
+                factor: family.factor
+                outset: 3 * family.factor
+            }
+
             Rectangle {
                 anchors.fill: parent
                 radius: Metrics.radiusFor(height, family.metrics)
@@ -549,9 +560,14 @@ Item {
             ListView {
                 id: wifiList
 
-                x: root.wellInset
+                // The well's inset is the list's own side margin rather than
+                // space around it, so a row's keyboard mark can reach into it
+                // without being clipped.
                 y: root.wellPadding + root.headerHeight
-                width: wifiWell.width - root.wellInset * 2
+                width: wifiWell.width
+                leftMargin: root.wellInset
+                rightMargin: root.wellInset
+                flickableDirection: Flickable.VerticalFlick
                 height: wifiWell.height - y - root.wellPadding
                 visible: Network.wifiEnabled
                 model: root.networks
@@ -565,13 +581,32 @@ Item {
 
                     readonly property bool asked: root.asked === networkRow.modelData
 
-                    width: ListView.view.width
+                    width: ListView.view.width - root.wellInset * 2
                     height: root.rowHeight + (networkRow.asked ? root.askedExtra : 0)
 
                     Item {
                         id: line
                         width: parent.width
                         height: root.rowHeight
+
+                        // A secured network opens its field, and from the
+                        // keyboard the field takes the keys at once.
+                        readonly property bool navigable: true
+
+                        function activate() {
+                            root.act(networkRow.modelData);
+                            if (networkRow.asked) {
+                                if (root.cell)
+                                    root.cell.fieldKeyed = true;
+                                Focus.type(secret);
+                            }
+                        }
+
+                        KeyMark {
+                            factor: root.factor
+                            outsetX: 6 * root.factor
+                            outsetY: 0
+                        }
 
                         // The dot only where the choice is exclusive, and here
                         // it is: one network at a time.
@@ -651,7 +686,7 @@ Item {
                         }
 
                         TapHandler {
-                            onTapped: root.act(networkRow.modelData)
+                            onTapped: line.activate()
                         }
                     }
 
@@ -667,6 +702,19 @@ Item {
                         y: root.rowHeight + 4 * root.factor
                         width: parent.width
                         height: root.fieldHeight
+
+                        readonly property bool navigable: !secret.activeFocus
+
+                        function activate() {
+                            if (root.cell)
+                                root.cell.fieldKeyed = true;
+                            Focus.type(secret);
+                        }
+
+                        KeyMark {
+                            factor: root.factor
+                            outsetY: 0
+                        }
 
                         onVisibleChanged: {
                             if (!visible)
@@ -696,6 +744,18 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "Connect"
                             color: Theme.text
+
+                            readonly property bool navigable: true
+
+                            function activate() {
+                                Network.joinWithPassword(root.asked, secret.text);
+                            }
+
+                            KeyMark {
+                                factor: root.factor
+                                outsetX: connect.pad
+                                outsetY: 2 * root.factor
+                            }
                             font: Qt.font({
                                 "family": Typography.technical,
                                 "pixelSize": root.metrics.fontSecondary,
@@ -806,9 +866,14 @@ Item {
             ListView {
                 id: deviceList
 
-                x: root.wellInset
+                // The well's inset is the list's own side margin rather than
+                // space around it, so a row's keyboard mark can reach into it
+                // without being clipped.
                 y: root.wellPadding + root.headerHeight
-                width: deviceWell.width - root.wellInset * 2
+                width: deviceWell.width
+                leftMargin: root.wellInset
+                rightMargin: root.wellInset
+                flickableDirection: Flickable.VerticalFlick
                 height: deviceWell.height - y - root.wellPadding
                 visible: Bluetooth.enabled
                 model: root.devices
@@ -827,6 +892,30 @@ Item {
                     readonly property bool failed: deviceRow.found
                                                    && Bluetooth.failedAddress === deviceRow.device.address
 
+                    // No selection among devices, so Enter does what a press
+                    // does, and Delete is the cross that forgets.
+                    readonly property bool navigable: true
+
+                    function activate() {
+                        if (deviceRow.found)
+                            Bluetooth.pairAndConnect(deviceRow.device);
+                        else if (deviceRow.connected)
+                            Bluetooth.disconnectDevice(deviceRow.device);
+                        else
+                            Bluetooth.connectDevice(deviceRow.device);
+                    }
+
+                    function discard() {
+                        if (!deviceRow.found)
+                            Bluetooth.forget(deviceRow.device);
+                    }
+
+                    KeyMark {
+                        factor: root.factor
+                        outsetX: 6 * root.factor
+                        outsetY: 0
+                    }
+
                     // Form says the domain: a headset is drawn as a headset,
                     // whatever it is called. The shell's own wireless mark
                     // stands for everything it has no drawing for.
@@ -840,7 +929,7 @@ Item {
                         return "wireless-link";
                     }
 
-                    width: ListView.view.width
+                    width: ListView.view.width - root.wellInset * 2
                     height: root.rowHeight
 
                     Icon {
@@ -888,14 +977,7 @@ Item {
                     // No selection among devices: each row stands alone,
                     // because more than one can be connected at a time.
                     TapHandler {
-                        onTapped: {
-                            if (deviceRow.found)
-                                Bluetooth.pairAndConnect(deviceRow.device);
-                            else if (deviceRow.connected)
-                                Bluetooth.disconnectDevice(deviceRow.device);
-                            else
-                                Bluetooth.connectDevice(deviceRow.device);
-                        }
+                        onTapped: deviceRow.activate()
                     }
 
                     // Forgetting a paired device: a cross that appears under
@@ -979,6 +1061,30 @@ Item {
                         width: parent.width
                         height: root.rowHeight
 
+                        // One stop: Enter is its switch, Delete its cross —
+                        // and the question that asks, with the mark on the
+                        // way back out.
+                        readonly property bool navigable: !profileRow.asked
+
+                        function activate() {
+                            Vpn.toggle(profileRow.modelData, !profileRow.up);
+                        }
+
+                        function discard() {
+                            root.confirming = profileRow.modelData.uuid;
+                            Focus.marked = keepProfile;
+                        }
+
+                        onAskedChanged: if (!profileRow.asked && (Focus.marked === keepProfile
+                                                                  || Focus.marked === removeProfile))
+                            Focus.marked = profileRow
+
+                        KeyMark {
+                            factor: root.factor
+                            outsetX: 6 * root.factor
+                            outsetY: 0
+                        }
+
                         Icon {
                             id: shield
                             anchors.left: parent.left
@@ -1011,6 +1117,7 @@ Item {
 
                             // Asking: the answer and the way back.
                             PanelPill {
+                                id: removeProfile
                                 visible: profileRow.asked
                                 label: "REMOVE"
                                 alert: true
@@ -1021,6 +1128,7 @@ Item {
                             }
 
                             PanelPill {
+                                id: keepProfile
                                 visible: profileRow.asked
                                 label: "KEEP"
                                 onPressed: root.confirming = ""
@@ -1057,6 +1165,7 @@ Item {
                                 visible: !profileRow.asked
                                 anchors.verticalCenter: parent.verticalCenter
                                 factor: root.factor
+                                navigable: false
                                 on: profileRow.up
                                 settling: profileRow.moving
                                 onToggled: value => Vpn.toggle(profileRow.modelData, value)
@@ -1245,6 +1354,21 @@ Item {
 
                         width: parent.width
                         height: root.proxyRow
+
+                        // Enter edits it, as a press does; its switch is a
+                        // stop of its own beside it.
+                        readonly property bool navigable: true
+
+                        function activate() {
+                            root.edit(proxyRowItem.modelData);
+                        }
+
+                        KeyMark {
+                            factor: root.factor
+                            outsetX: 6 * root.factor
+                            outsetY: 0
+                            anchors.rightMargin: proxySwitch.width + 6 * root.factor
+                        }
 
                         Column {
                             anchors.left: parent.left
@@ -1497,9 +1621,14 @@ Item {
             ListView {
                 id: printerList
 
-                x: root.wellInset
+                // The well's inset is the list's own side margin rather than
+                // space around it, so a row's keyboard mark can reach into it
+                // without being clipped.
                 y: root.wellPadding + root.headerHeight
-                width: printerWell.width - root.wellInset * 2
+                width: printerWell.width
+                leftMargin: root.wellInset
+                rightMargin: root.wellInset
+                flickableDirection: Flickable.VerticalFlick
                 height: Math.max(1, Math.min(root.printerRows.length, root.shownRows)) * root.rowHeight
                 model: root.printerRows
                 boundsBehavior: Flickable.StopAtBounds
@@ -1518,7 +1647,33 @@ Item {
                         && Printers.working === (printerRow.found ? printerRow.printer.uri
                                                                   : printerRow.printer.queue)
 
-                    width: ListView.view.width
+                    readonly property bool navigable: !printerRow.asked
+
+                    function activate() {
+                        if (printerRow.found)
+                            Printers.add(printerRow.printer);
+                        else
+                            Printers.makeDefault(printerRow.printer);
+                    }
+
+                    function discard() {
+                        if (printerRow.found)
+                            return;
+                        root.removingPrinter = printerRow.printer.queue;
+                        Focus.marked = keepPrinter;
+                    }
+
+                    onAskedChanged: if (!printerRow.asked && (Focus.marked === keepPrinter
+                                                              || Focus.marked === removePrinter))
+                        Focus.marked = printerRow
+
+                    KeyMark {
+                        factor: root.factor
+                        outsetX: 6 * root.factor
+                        outsetY: 0
+                    }
+
+                    width: ListView.view.width - root.wellInset * 2
                     height: root.rowHeight
 
                     // The default, as the Wi-Fi network is marked: a ring, and
@@ -1582,12 +1737,7 @@ Item {
 
                     TapHandler {
                         enabled: !printerRow.asked
-                        onTapped: {
-                            if (printerRow.found)
-                                Printers.add(printerRow.printer);
-                            else
-                                Printers.makeDefault(printerRow.printer);
-                        }
+                        onTapped: printerRow.activate()
                     }
 
                     Row {
@@ -1597,6 +1747,7 @@ Item {
                         spacing: 10 * root.factor
 
                         PanelPill {
+                            id: removePrinter
                             visible: printerRow.asked
                             label: "REMOVE"
                             alert: true
@@ -1607,6 +1758,7 @@ Item {
                         }
 
                         PanelPill {
+                            id: keepPrinter
                             visible: printerRow.asked
                             label: "KEEP"
                             onPressed: root.removingPrinter = ""
@@ -1683,6 +1835,17 @@ Item {
         width: pillText.implicitWidth + 24 * root.factor
         height: 24 * root.factor
 
+        readonly property bool navigable: true
+
+        function activate() {
+            pill.pressed();
+        }
+
+        KeyMark {
+            factor: root.factor
+            outset: 3 * root.factor
+        }
+
         DashedSlot {
             anchors.fill: parent
             visible: pill.dashed
@@ -1729,6 +1892,20 @@ Item {
 
         width: parent ? parent.width : 0
         height: root.fieldHeight
+
+        // Enter on it is the press: the field takes the keys.
+        readonly property bool navigable: !input.activeFocus
+
+        function activate() {
+            if (root.cell)
+                root.cell.fieldKeyed = true;
+            Focus.type(input);
+        }
+
+        KeyMark {
+            factor: root.factor
+            outset: 2 * root.factor
+        }
 
         Rectangle {
             anchors.fill: parent

@@ -253,6 +253,25 @@ Item {
                                 width: chipName.implicitWidth + 40 * root.factor
                                 height: root.chipHeight
 
+                                // Enter opens its options, Delete takes it away:
+                                // the name and the cross.
+                                readonly property bool navigable: true
+
+                                function activate() {
+                                    root.chosen = chip.lit ? -1 : chip.modelData;
+                                }
+
+                                function discard() {
+                                    if (root.chosen === chip.modelData)
+                                        root.chosen = -1;
+                                    Arranging.remove(chip.modelData);
+                                }
+
+                                KeyMark {
+                                    factor: root.factor
+                                    outset: 3 * root.factor
+                                }
+
                                 Rectangle {
                                     anchors.fill: parent
                                     radius: Metrics.radiusFor(height, root.metrics)
@@ -318,6 +337,17 @@ Item {
                             width: 44 * root.factor
                             height: root.chipHeight
 
+                            readonly property bool navigable: true
+
+                            function activate() {
+                                root.picking = screenSection.choosing ? "" : screenSection.modelData.name;
+                            }
+
+                            KeyMark {
+                                factor: root.factor
+                                outset: 3 * root.factor
+                            }
+
                             DashedSlot {
                                 anchors.fill: parent
                                 radius: Metrics.radiusFor(parent.height, root.metrics)
@@ -361,6 +391,17 @@ Item {
 
                                 width: kindName.implicitWidth + 22 * root.factor
                                 height: root.chipHeight
+
+                                readonly property bool navigable: true
+
+                                function activate() {
+                                    root.add(kind.modelData, screenSection.modelData);
+                                }
+
+                                KeyMark {
+                                    factor: root.factor
+                                    outset: 3 * root.factor
+                                }
 
                                 Rectangle {
                                     anchors.fill: parent
@@ -567,6 +608,20 @@ Item {
                                 border.color: noteFile.wrong ? Theme.alert
                                             : fileField.activeFocus ? Theme.primary : Theme.line
 
+                                // Enter on it is the press: the field takes the keys.
+                                readonly property bool navigable: !fileField.activeFocus
+
+                                function activate() {
+                                    if (root.cell)
+                                        root.cell.fieldKeyed = true;
+                                    Focus.type(fileField);
+                                }
+
+                                KeyMark {
+                                    factor: root.factor
+                                    outset: 2 * root.factor
+                                }
+
                                 TextInput {
                                     id: fileField
 
@@ -673,6 +728,19 @@ Item {
                                 border.width: Metrics.rim(Screen.devicePixelRatio)
                                 border.color: weatherCity.wrong ? Theme.alert
                                             : cityField.activeFocus ? Theme.primary : Theme.line
+
+                                readonly property bool navigable: !cityField.activeFocus
+
+                                function activate() {
+                                    if (root.cell)
+                                        root.cell.fieldKeyed = true;
+                                    Focus.type(cityField);
+                                }
+
+                                KeyMark {
+                                    factor: root.factor
+                                    outset: 2 * root.factor
+                                }
 
                                 TextInput {
                                     id: cityField

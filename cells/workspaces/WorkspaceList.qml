@@ -83,6 +83,17 @@ Item {
                 width: view.width
                 height: root.rowHeight
 
+                readonly property bool navigable: true
+
+                function activate() {
+                    Niri.focusWorkspace(row.modelData.idx);
+                    root.jumped();
+                }
+
+                KeyMark {
+                    factor: root.metrics.factor
+                }
+
                 TapHandler {
                     // Jump and close: the action is done, and staying open
                     // would be noise.

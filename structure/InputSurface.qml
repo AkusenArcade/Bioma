@@ -74,6 +74,12 @@ PanelWindow {
             event.accepted = true;
         }
 
+        // And the arrows, Enter and Tab, which travel inside the open cell.
+        Keys.onPressed: event => {
+            if (Focus.key(event))
+                event.accepted = true;
+        }
+
         MouseArea {
             id: catcher
             anchors.fill: parent

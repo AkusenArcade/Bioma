@@ -39,6 +39,12 @@ Cell {
 
     wantsKeyboard: root.open && (root.panelHovered || root.fieldEngaged)
 
+    // Reached from the keyboard, the field takes the keys outright: the
+    // pointer is wherever it was left, and a membrane that only asked for
+    // them would hear nothing.
+    property bool fieldKeyed: false
+    takesKeyboard: root.open && root.fieldKeyed
+
     paddingLeading: 14
     paddingTrailing: 14
 
@@ -148,6 +154,7 @@ Cell {
         if (!root.open) {
             root.panelHovered = false;
             root.fieldEngaged = false;
+            root.fieldKeyed = false;
         }
     }
 

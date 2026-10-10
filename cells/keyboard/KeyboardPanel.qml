@@ -81,6 +81,22 @@ Item {
             }
         }
 
+        // A stop like any other, and Enter on it is the press: the field
+        // takes the keys, and the arrows are the list's again (see `Focus`).
+        readonly property bool navigable: !search.activeFocus
+
+        function activate() {
+            if (root.cell) {
+                root.cell.fieldEngaged = true;
+                root.cell.fieldKeyed = true;
+            }
+            Focus.type(search);
+        }
+
+        KeyMark {
+            factor: root.factor
+        }
+
         Icon {
             id: lens
             anchors.left: parent.left
@@ -112,8 +128,18 @@ Item {
                 if (root.cell)
                     root.cell.open = false;
             }
-            Keys.onDownPressed: list.incrementCurrentIndex()
-            Keys.onUpPressed: list.decrementCurrentIndex()
+            // A mark already in the list moves with the selection, so there
+            // are never two rows chosen at once.
+            Keys.onDownPressed: {
+                list.incrementCurrentIndex();
+                if (Focus.marked)
+                    Focus.marked = list.currentItem;
+            }
+            Keys.onUpPressed: {
+                list.decrementCurrentIndex();
+                if (Focus.marked)
+                    Focus.marked = list.currentItem;
+            }
             onAccepted: if (root.found.length > 0) root.add(root.found[Math.max(0, list.currentIndex)])
 
             Text {
@@ -168,6 +194,27 @@ Item {
 
                 width: ListView.view.width
                 height: root.rowHeight
+
+                readonly property bool navigable: true
+                readonly property bool keyed: Focus.marked === row
+                onKeyedChanged: if (row.keyed) row.ListView.view.currentIndex = row.index
+
+                function activate() {
+                    if (root.finding)
+                        root.add(row.modelData);
+                    else
+                        Keyboard.switchTo(row.index);
+                }
+
+                function discard() {
+                    if (row.removable)
+                        Keyboard.remove(row.index);
+                }
+
+                KeyMark {
+                    factor: root.factor
+                    radius: Metrics.shaped(8 * root.factor)
+                }
 
                 Rectangle {
                     anchors.fill: parent

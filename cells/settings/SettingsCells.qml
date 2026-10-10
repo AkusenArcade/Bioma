@@ -273,6 +273,17 @@ Item {
                 height: width
                 visible: row.condition.length > 0
 
+                readonly property bool navigable: true
+
+                function activate() {
+                    root.explained = row.open ? "" : row.modelData.type;
+                }
+
+                KeyMark {
+                    factor: root.factor
+                    outset: 3 * root.factor
+                }
+
                 Rectangle {
                     anchors.fill: parent
                     radius: width / 2

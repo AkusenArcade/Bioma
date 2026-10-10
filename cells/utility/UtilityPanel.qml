@@ -71,6 +71,20 @@ Item {
         height: root.buttonHeight
         opacity: source.available ? 1 : 0.38
 
+        // What cannot be done is not a stop, as it is not a press.
+        readonly property bool navigable: source.available
+
+        function activate() {
+            if (root.cell)
+                root.cell.capture(root.what, source.key);
+        }
+
+        KeyMark {
+            factor: root.factor
+            outset: 4 * root.factor
+            radius: root.metrics.radiusPanel + 4 * root.factor
+        }
+
         Behavior on opacity { NumberAnimation { duration: Timing.transition } }
 
         Rectangle {

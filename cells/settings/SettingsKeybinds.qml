@@ -330,6 +330,21 @@ Item {
             }
         }
 
+        // A stop, and Enter on it is the press (see `Focus`).
+        readonly property bool navigable: !search.activeFocus
+
+        function activate() {
+            if (root.cell) {
+                root.cell.fieldEngaged = true;
+                root.cell.fieldKeyed = true;
+            }
+            Focus.type(search);
+        }
+
+        KeyMark {
+            factor: root.factor
+        }
+
         Icon {
             id: lens
             anchors.left: parent.left
@@ -361,8 +376,10 @@ Item {
                     return;
                 }
                 search.focus = false;
-                if (root.cell)
+                if (root.cell) {
                     root.cell.fieldEngaged = false;
+                    root.cell.fieldKeyed = false;
+                }
             }
 
             Text {
@@ -434,6 +451,25 @@ Item {
 
                 width: ListView.view.width
                 height: root.listRow
+
+                // Enter listens for a new combination, as the pencil does;
+                // Delete is the cross.
+                readonly property bool navigable: !root.picking && !Keybinds.busy
+
+                function activate() {
+                    if (row.isNew)
+                        return;
+                    root.edit(row.modelData);
+                }
+
+                function discard() {
+                    if (!row.isNew)
+                        root.drop(row.modelData.id);
+                }
+
+                KeyMark {
+                    factor: root.factor
+                }
 
                 HoverHandler {
                     id: rowHover
@@ -649,6 +685,19 @@ Item {
             enabled: !Keybinds.busy
             onTapped: root.pick(!root.picking)
         }
+
+        readonly property bool navigable: !Keybinds.busy
+
+        function activate() {
+            root.pick(!root.picking);
+            if (root.picking)
+                Focus.type(filter);
+        }
+
+        KeyMark {
+            factor: root.factor
+            outset: 3 * root.factor
+        }
     }
 
     Item {
@@ -785,6 +834,15 @@ Item {
         metrics: root.metrics
         inset: 6 * root.factor
         width: root.pickerWidth
+
+        // While it is out the arrows stay in it, and Escape puts it away
+        // (see `Focus`).
+        readonly property bool keyScope: root.picking
+
+        function close() {
+            root.picking = false;
+            Focus.marked = adder;
+        }
         x: adder.x + adder.width + root.threadLength
         // It grows up from the chip it hangs from, as far as the page goes.
         height: Math.min(adder.y + adder.height,
@@ -879,6 +937,16 @@ Item {
 
                 width: ListView.view.width
                 height: root.pickerRow
+
+                readonly property bool navigable: true
+
+                function activate() {
+                    root.choose(option.modelData);
+                }
+
+                KeyMark {
+                    factor: root.factor
+                }
 
                 Text {
                     anchors.left: parent.left

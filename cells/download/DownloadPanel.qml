@@ -49,6 +49,17 @@ Item {
                     width: parent.width
                     height: root.rowHeight
 
+                    readonly property bool navigable: true
+
+                    function activate() {
+                        Files.reveal(row.modelData.path);
+                    }
+
+                    KeyMark {
+                        factor: root.factor
+                        radius: 10 * root.factor
+                    }
+
                     Rectangle {
                         anchors.fill: parent
                         radius: 10 * root.factor

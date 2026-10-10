@@ -32,6 +32,24 @@ Item {
 
     readonly property real factor: metrics.factor
 
+    // One stop for the keyboard, not one per option (see `Focus`): Left and
+    // Right move the choice, which is immediate here as under the pointer,
+    // and a dimmed option is passed over the way a press passes over it.
+    property bool navigable: true
+
+    function adjust(direction) {
+        let index = -1;
+        for (let i = 0; i < root.options.length; i++)
+            if (root.options[i].key === root.current)
+                index = i;
+        for (let i = index + direction; i >= 0 && i < root.options.length; i += direction) {
+            if (root.options[i].dimmed !== true) {
+                root.chose(root.options[i].key);
+                return;
+            }
+        }
+    }
+
     property int fontSize: Math.round(12 * factor)
     property real buttonHeight: 26 * factor
     property real buttonPadding: 14 * factor
@@ -52,6 +70,11 @@ Item {
         "weight": Typography.weightTitle,
         "letterSpacing": Typography.tracking(root.fontSize, 0.04)
     })
+
+    KeyMark {
+        factor: root.factor
+        outset: 4 * root.factor
+    }
 
     Rectangle {
         id: track

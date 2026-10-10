@@ -54,9 +54,16 @@ Cell {
     property bool fieldEngaged: false
     wantsKeyboard: root.open && (root.panelHovered || root.fieldEngaged || root.floating)
 
+    // Reached from the keyboard, the field takes the keys outright: the hand
+    // is on the keys and the pointer is wherever it was left, so a membrane
+    // that only asked for them would hear nothing.
+    property bool fieldKeyed: false
+    takesKeyboard: root.open && root.fieldKeyed
+
     onOpenChanged: if (!root.open) {
         root.panelHovered = false;
         root.fieldEngaged = false;
+        root.fieldKeyed = false;
     }
 
     panel: Component {

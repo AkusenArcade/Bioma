@@ -167,6 +167,23 @@ Item {
                 width: parent.width
                 height: 30 * root.factor
 
+                // One stop for the keyboard: Left and Right turn the month,
+                // as the chevrons do, and Enter brings today back, as the
+                // name does.
+                readonly property bool navigable: true
+
+                function adjust(direction) {
+                    root.turn(direction);
+                }
+
+                function activate() {
+                    root.today();
+                }
+
+                KeyMark {
+                    factor: root.factor
+                }
+
                 Chevron {
                     anchors.left: parent.left
                     anchors.verticalCenter: parent.verticalCenter
@@ -346,6 +363,19 @@ Item {
                         width: parent.width
                         height: 52 * root.factor
 
+                        // Reached only to be let go of: Delete is the cross
+                        // that shows under the pointer.
+                        readonly property bool navigable: true
+
+                        function discard() {
+                            Time.removeZone(place.modelData);
+                        }
+
+                        KeyMark {
+                            factor: root.factor
+                            outset: 4 * root.factor
+                        }
+
                         Text {
                             id: city
                             anchors.left: parent.left
@@ -489,6 +519,17 @@ Item {
                         width: parent.width
                         height: 30 * root.factor
 
+                        readonly property bool navigable: true
+
+                        function activate() {
+                            Time.addZone(match.modelData);
+                            root.adding = false;
+                        }
+
+                        KeyMark {
+                            factor: root.factor
+                        }
+
                         Text {
                             anchors.left: parent.left
                             anchors.leftMargin: 8 * root.factor
@@ -527,6 +568,24 @@ Item {
                 width: addLabel.implicitWidth + 28 * root.factor
                 height: 26 * root.factor
                 visible: root.adding || Time.zones.length < 5
+
+                // From the keyboard the field it opens takes the keys, and
+                // the mark lets go so the caret is the one thing that says
+                // where typing goes.
+                readonly property bool navigable: true
+
+                function activate() {
+                    if (!root.adding && root.cell)
+                        root.cell.typingKeyed = true;
+                    root.adding = !root.adding;
+                    if (root.adding)
+                        Focus.type(placeField);
+                }
+
+                KeyMark {
+                    factor: root.factor
+                    outset: 3 * root.factor
+                }
 
                 DashedSlot {
                     anchors.fill: parent
@@ -590,6 +649,17 @@ Item {
                 text: root.clockFigure(Time.left)
                 color: Time.running ? Theme.text : Theme.textMuted
                 font: root.technical(root.metrics.fontValue, Typography.weightValue)
+
+                readonly property bool navigable: !Time.running
+
+                function adjust(direction) {
+                    Time.setLength(Time.length + direction * 60);
+                }
+
+                KeyMark {
+                    factor: root.factor
+                    outset: 4 * root.factor
+                }
 
                 WheelHandler {
                     enabled: !Time.running
@@ -670,6 +740,18 @@ Item {
                     color: Time.alarm.on ? Theme.text : Theme.textMuted
                     font: root.technical(root.metrics.fontValue, Typography.weightValue)
 
+                    // The keys turn what the wheel turns, by the same steps.
+                    readonly property bool navigable: true
+
+                    function adjust(direction) {
+                        Time.setAlarm(Time.alarm.hour + direction, Time.alarm.minute, Time.alarm.on);
+                    }
+
+                    KeyMark {
+                        factor: root.factor
+                        outset: 3 * root.factor
+                    }
+
                     WheelHandler {
                         acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
                         onWheel: event => Time.setAlarm(Time.alarm.hour + (event.angleDelta.y > 0 ? 1 : -1),
@@ -687,6 +769,17 @@ Item {
                     text: String(Time.alarm.minute).padStart(2, "0")
                     color: Time.alarm.on ? Theme.text : Theme.textMuted
                     font: root.technical(root.metrics.fontValue, Typography.weightValue)
+
+                    readonly property bool navigable: true
+
+                    function adjust(direction) {
+                        Time.setAlarm(Time.alarm.hour, Time.alarm.minute + direction * 5, Time.alarm.on);
+                    }
+
+                    KeyMark {
+                        factor: root.factor
+                        outset: 3 * root.factor
+                    }
 
                     WheelHandler {
                         acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
@@ -732,6 +825,17 @@ Item {
 
         width: pillText.implicitWidth + 22 * root.factor
         height: 24 * root.factor
+
+        readonly property bool navigable: true
+
+        function activate() {
+            pill.pressed();
+        }
+
+        KeyMark {
+            factor: root.factor
+            outset: 3 * root.factor
+        }
 
         Rectangle {
             anchors.fill: parent

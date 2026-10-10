@@ -158,7 +158,12 @@ Item {
                 return;
             }
 
+            // A question answered from the arrows is answered by what they
+            // reached, not by Enter's own meaning: with the mark on Cancel,
+            // Enter is Cancel.
             if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                if (Focus.marked)
+                    return;
                 if (Session.pending.length > 0) {
                     Session.confirm();
                     event.accepted = true;
@@ -219,6 +224,17 @@ Item {
                     height: width
                     x: face.width - width
                     y: face.height - height
+
+                    readonly property bool navigable: true
+
+                    function activate() {
+                        picker.open();
+                    }
+
+                    KeyMark {
+                        factor: root.factor
+                        outset: 4 * root.factor
+                    }
 
                     Rectangle {
                         anchors.fill: parent
@@ -346,6 +362,23 @@ Item {
 
                     width: commands.width - root.panelPadding * 2
                     height: root.rowHeight
+
+                    // Asked from the keyboard, the mark goes to the way back
+                    // out: the safe answer is the one Enter gives by default.
+                    readonly property bool navigable: row.available && !row.asking
+
+                    function activate() {
+                        Session.ask(row.modelData.key);
+                        if (row.asking)
+                            Focus.marked = cancel;
+                    }
+
+                    onAskingChanged: if (!row.asking && (Focus.marked === cancel || Focus.marked === confirm))
+                        Focus.marked = row
+
+                    KeyMark {
+                        factor: root.factor
+                    }
 
                     // The command, standing down while its own question is up.
                     Item {
@@ -480,6 +513,7 @@ Item {
                             spacing: 8 * root.factor
 
                             Choice {
+                                id: cancel
                                 metrics: root.metrics
                                 label: "Cancel"
                                 onActivated: Session.cancel()
@@ -490,6 +524,7 @@ Item {
                             // that acts, and it is alert because of what it
                             // does — and it is the only place either is true.
                             Choice {
+                                id: confirm
                                 metrics: root.metrics
                                 label: `${row.modelData.label.charAt(0)}${row.modelData.label.slice(1).toLowerCase()}`
                                 kind: "alert"

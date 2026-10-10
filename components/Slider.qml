@@ -28,6 +28,26 @@ Item {
 
     signal moved(real value)
 
+    // From the keyboard (see `Focus`): Left and Right move it a step, and Enter
+    // is whatever its owner says — the volume sliders mute. A row that is
+    // reached as a whole turns its slider's own stop off.
+    // A slider that only shows a value — the clock's timer — is not one.
+    property bool navigable: root.enabled
+    property real step: 0.05
+    signal activated()
+
+    function adjust(direction) {
+        // Moved only if it moves: a volume above a hundred sits at the end of
+        // this travel, and Right must not bring it back down to the end.
+        const next = Math.max(0, Math.min(1, root.travel + direction * root.step));
+        if (next !== root.travel)
+            root.moved(next);
+    }
+
+    function activate() {
+        root.activated();
+    }
+
     implicitWidth: 120 * factor
     implicitHeight: handleSize
 
@@ -38,6 +58,11 @@ Item {
 
     function report(x) {
         root.moved(Math.max(0, Math.min(1, x / Math.max(1, root.width))));
+    }
+
+    KeyMark {
+        factor: root.factor
+        outset: 8 * root.factor
     }
 
     Rectangle {

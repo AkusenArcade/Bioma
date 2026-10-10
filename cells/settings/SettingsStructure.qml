@@ -1159,6 +1159,17 @@ Item {
                     width: 240 * root.factor
                     height: root.chipHeight
 
+                    readonly property bool navigable: presetDrop.usable
+
+                    function activate() {
+                        root.togglePresets();
+                    }
+
+                    KeyMark {
+                        factor: root.factor
+                        outset: 3 * root.factor
+                    }
+
                     Rectangle {
                         anchors.fill: parent
                         radius: Metrics.radiusFor(height, root.metrics)
@@ -1234,6 +1245,32 @@ Item {
                     width: blankLabel.implicitWidth + blankPlus.width + 30 * root.factor
                     height: root.chipHeight
 
+                    // The second Enter answers, as the second press does; the
+                    // question goes when the mark moves on, as when the
+                    // pointer leaves.
+                    readonly property bool navigable: true
+                    readonly property bool keyed: Focus.marked === blankChip
+
+                    onKeyedChanged: if (!blankChip.keyed && !blankHover.hovered && blankChip.armed)
+                        root.presetArmed = ""
+
+                    function activate() {
+                        root.presetsOpen = false;
+                        if (Presets.empty && Presets.active.length === 0)
+                            return;
+                        if (!Presets.kept && !blankChip.armed) {
+                            root.presetArmed = root.blankKey;
+                            return;
+                        }
+                        root.presetArmed = "";
+                        root.leave(() => Presets.blank());
+                    }
+
+                    KeyMark {
+                        factor: root.factor
+                        outset: 3 * root.factor
+                    }
+
                     DashedSlot {
                         anchors.fill: parent
                         radius: Metrics.radiusFor(parent.height, root.metrics)
@@ -1274,17 +1311,7 @@ Item {
                     }
 
                     TapHandler {
-                        onTapped: {
-                            root.presetsOpen = false;
-                            if (Presets.empty && Presets.active.length === 0)
-                                return;
-                            if (!Presets.kept && !blankChip.armed) {
-                                root.presetArmed = root.blankKey;
-                                return;
-                            }
-                            root.presetArmed = "";
-                            root.leave(() => Presets.blank());
-                        }
+                        onTapped: blankChip.activate()
                     }
                 }
 
@@ -1474,6 +1501,29 @@ Item {
                                        && root.isFloatSource(spot.entry.index)
         readonly property bool target: root.transfer !== "" && !spot.lit && !root.transferEmpty
 
+        readonly property bool navigable: true
+
+        function activate() {
+            if (root.transfer !== "") {
+                if (spot.target) {
+                    root.place("floating", spot.anchor);
+                } else if (spot.lit) {
+                    root.endTransfer();
+                    root.choose("floating", spot.entry.index);
+                }
+                return;
+            }
+            if (spot.lit)
+                root.choose("floating", spot.entry.index);
+            else
+                root.addFloatAt(spot.anchor);
+        }
+
+        KeyMark {
+            factor: root.factor
+            outset: 3 * root.factor
+        }
+
         readonly property string content: {
             if (!spot.lit && root.transfer !== "") {
                 if (root.transferEmpty)
@@ -1536,21 +1586,7 @@ Item {
         }
 
         TapHandler {
-            onTapped: {
-                if (root.transfer !== "") {
-                    if (spot.target) {
-                        root.place("floating", spot.anchor);
-                    } else if (spot.lit) {
-                        root.endTransfer();
-                        root.choose("floating", spot.entry.index);
-                    }
-                    return;
-                }
-                if (spot.lit)
-                    root.choose("floating", spot.entry.index);
-                else
-                    root.addFloatAt(spot.anchor);
-            }
+            onTapped: spot.activate()
         }
     }
 
@@ -1565,6 +1601,17 @@ Item {
 
         width: buttonLabel.implicitWidth + 16 * root.factor + 6 * root.factor
         height: 22 * root.factor
+
+        readonly property bool navigable: true
+
+        function activate() {
+            root.startTransfer(button.kind);
+        }
+
+        KeyMark {
+            factor: root.factor
+            outset: 3 * root.factor
+        }
 
         Rectangle {
             anchors.fill: parent
@@ -1697,6 +1744,29 @@ Item {
                         width: root.slotWidth
                         height: root.slotHeight
 
+                        readonly property bool navigable: true
+
+                        function activate() {
+                            if (root.transfer !== "") {
+                                if (slot.target) {
+                                    root.place(edgeGroup.modelData, slot.modelData);
+                                } else if (slot.lit) {
+                                    root.endTransfer();
+                                    root.choose(edgeGroup.modelData, slot.index);
+                                }
+                                return;
+                            }
+                            if (!slot.lit)
+                                root.light(edgeGroup.modelData, slot.modelData);
+                            root.choose(edgeGroup.modelData, slot.index);
+                        }
+
+                        KeyMark {
+                            factor: root.factor
+                            outset: 3 * root.factor
+                            radius: Metrics.shaped(14 * root.factor)
+                        }
+
                         DashedSlot {
                             anchors.fill: parent
                             visible: !slot.lit
@@ -1754,20 +1824,7 @@ Item {
                         }
 
                         TapHandler {
-                            onTapped: {
-                                if (root.transfer !== "") {
-                                    if (slot.target) {
-                                        root.place(edgeGroup.modelData, slot.modelData);
-                                    } else if (slot.lit) {
-                                        root.endTransfer();
-                                        root.choose(edgeGroup.modelData, slot.index);
-                                    }
-                                    return;
-                                }
-                                if (!slot.lit)
-                                    root.light(edgeGroup.modelData, slot.modelData);
-                                root.choose(edgeGroup.modelData, slot.index);
-                            }
+                            onTapped: slot.activate()
                         }
                     }
                 }
@@ -1989,6 +2046,20 @@ Item {
                          + douserLabel.implicitWidth + douser.tail
                     height: 22 * root.factor
 
+                    readonly property bool navigable: true
+
+                    function activate() {
+                        if (root.floatingChosen)
+                            root.removeFloat(root.chosenSlot);
+                        else
+                            root.clear(root.chosenEdge, root.chosenPlace);
+                    }
+
+                    KeyMark {
+                        factor: root.factor
+                        outset: 3 * root.factor
+                    }
+
                     Rectangle {
                         anchors.fill: parent
                         radius: Metrics.radiusFor(height, root.metrics)
@@ -2029,12 +2100,7 @@ Item {
                     HoverHandler { id: douserHover }
 
                     TapHandler {
-                        onTapped: {
-                            if (root.floatingChosen)
-                                root.removeFloat(root.chosenSlot);
-                            else
-                                root.clear(root.chosenEdge, root.chosenPlace);
-                        }
+                        onTapped: douser.activate()
                     }
                 }
             }
@@ -2093,6 +2159,20 @@ Item {
                                         : root.slotX(root.restingIndex(chip.index))
                         y: chip.carried ? root.gripY - root.grabY
                                         : root.slotY(root.restingIndex(chip.index))
+
+                        // Reached for Delete, the cross. Its place in the
+                        // tissue is still the hand's: a drag across slots has
+                        // no keyboard form yet.
+                        readonly property bool navigable: true
+
+                        function discard() {
+                            root.removeCell(chip.index);
+                        }
+
+                        KeyMark {
+                            factor: root.factor
+                            outset: 3 * root.factor
+                        }
 
                         Behavior on x {
                             enabled: !chip.carried
@@ -2199,6 +2279,17 @@ Item {
                     x: root.slotX(root.cellsHere.length)
                     y: root.slotY(root.cellsHere.length)
 
+                    readonly property bool navigable: true
+
+                    function activate() {
+                        root.picking = !root.picking;
+                    }
+
+                    KeyMark {
+                        factor: root.factor
+                        outset: 3 * root.factor
+                    }
+
                     Behavior on x {
                         NumberAnimation {
                             duration: Timing.transition
@@ -2278,6 +2369,17 @@ Item {
 
                         width: kindName.implicitWidth + 22 * root.factor
                         height: root.chipHeight
+
+                        readonly property bool navigable: kind.room
+
+                        function activate() {
+                            root.addCell(kind.modelData);
+                        }
+
+                        KeyMark {
+                            factor: root.factor
+                            outset: 3 * root.factor
+                        }
 
                         Rectangle {
                             anchors.fill: parent
@@ -2389,6 +2491,15 @@ Item {
         visible: root.presetGrowth > 0
         over: scroller
 
+        // While it is out the arrows stay in it, and Escape puts it away
+        // (see `Focus`).
+        readonly property bool keyScope: root.presetsOpen
+
+        function close() {
+            root.presetsOpen = false;
+            Focus.marked = presetDrop;
+        }
+
         anchorX: root.presetOriginX
         anchorY: root.presetOriginY + 6 * root.factor
         nodeX: root.presetOriginX + presetDrop.width / 2
@@ -2422,6 +2533,31 @@ Item {
 
                 width: presetView.width
                 height: root.presetRowHeight
+
+                // Enter is the press on the row, Delete the cross; a row that
+                // asks is answered by either, as under the pointer.
+                readonly property bool navigable: true
+                readonly property bool keyed: Focus.marked === option
+
+                onKeyedChanged: if (!option.keyed && !optionHover.hovered && option.alarmed) {
+                    root.presetArmed = "";
+                    root.presetRemoving = "";
+                }
+
+                function activate() {
+                    if (option.removing)
+                        root.forgetPreset(option.name);
+                    else
+                        root.choosePreset(option.name);
+                }
+
+                function discard() {
+                    root.forgetPreset(option.name);
+                }
+
+                KeyMark {
+                    factor: root.factor
+                }
 
                 // Lit under the pointer, red while it asks.
                 Rectangle {
@@ -2478,12 +2614,7 @@ Item {
                 // anywhere on it answers, the cross included.
                 TapHandler {
                     gesturePolicy: TapHandler.WithinBounds
-                    onTapped: {
-                        if (option.removing)
-                            root.forgetPreset(option.name);
-                        else
-                            root.choosePreset(option.name);
-                    }
+                    onTapped: option.activate()
                 }
 
                 Item {

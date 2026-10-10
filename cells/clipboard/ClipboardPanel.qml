@@ -74,6 +74,22 @@ Item {
             }
         }
 
+        // A stop like any other, and Enter on it is the press: the field
+        // takes the keys, and the arrows are the list's again (see `Focus`).
+        readonly property bool navigable: !filter.activeFocus
+
+        function activate() {
+            if (root.cell) {
+                root.cell.fieldEngaged = true;
+                root.cell.fieldKeyed = true;
+            }
+            Focus.type(filter);
+        }
+
+        KeyMark {
+            factor: root.factor
+        }
+
         Icon {
             id: lens
             anchors.left: parent.left
@@ -105,8 +121,18 @@ Item {
                 if (root.cell)
                     root.cell.open = false;
             }
-            Keys.onDownPressed: list.incrementCurrentIndex()
-            Keys.onUpPressed: list.decrementCurrentIndex()
+            // A mark already in the list moves with the selection, so there
+            // are never two rows chosen at once.
+            Keys.onDownPressed: {
+                list.incrementCurrentIndex();
+                if (Focus.marked)
+                    Focus.marked = list.currentItem;
+            }
+            Keys.onUpPressed: {
+                list.decrementCurrentIndex();
+                if (Focus.marked)
+                    Focus.marked = list.currentItem;
+            }
             onAccepted: if (root.shown.length > 0) root.choose(root.shown[Math.max(0, list.currentIndex)])
 
             Text {
@@ -129,6 +155,27 @@ Item {
             width: clearText.implicitWidth + 22 * root.factor
             height: 24 * root.factor
             visible: Clipboard.entries.length > 0
+
+            readonly property bool navigable: true
+            readonly property bool keyed: Focus.marked === clear
+
+            // Armed by the keyboard, it disarms when the mark moves on, as it
+            // does when the pointer leaves.
+            onKeyedChanged: if (!clear.keyed && !clearHover.hovered) clear.armed = false
+
+            function activate() {
+                if (!clear.armed) {
+                    clear.armed = true;
+                    return;
+                }
+                clear.armed = false;
+                Clipboard.clear();
+            }
+
+            KeyMark {
+                factor: root.factor
+                outset: 3 * root.factor
+            }
 
             Rectangle {
                 anchors.fill: parent
@@ -211,6 +258,25 @@ Item {
 
                 width: ListView.view.width
                 height: entry.image ? root.imageRow : root.rowHeight
+
+                // The list's own selection follows the keyboard's mark, so
+                // there is one row chosen and Enter in the field means it too.
+                readonly property bool navigable: true
+                readonly property bool keyed: Focus.marked === entry
+                onKeyedChanged: if (entry.keyed) entry.ListView.view.currentIndex = entry.index
+
+                function activate() {
+                    root.choose(entry.modelData);
+                }
+
+                function discard() {
+                    Clipboard.remove(entry.modelData);
+                }
+
+                KeyMark {
+                    factor: root.factor
+                    radius: Metrics.shaped(8 * root.factor)
+                }
 
                 Rectangle {
                     anchors.fill: parent

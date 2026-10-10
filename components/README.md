@@ -24,6 +24,9 @@ Expected early residents:
 - **Scroller** — the bar beside a list that is longer than its room. It exists
   only while the list is moving; a list that fits shows nothing. Four cells had
   written it out by hand before it was one file.
+- **KeyMark** — where the keyboard is inside the open cell: the launcher's
+  selection fill, drawn by each stop behind itself once `Focus.marked` names
+  it. Never an outline. See `core/Focus.qml` for what makes something a stop.
 - **Choice** — the button: a label in Orbitron in a 26 px capsule, outlined,
   primary or alert. The confirmations of vitals, system and utility and a
   notification's actions all use it; two of them had drifted into Spectral

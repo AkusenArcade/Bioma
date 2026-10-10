@@ -69,12 +69,19 @@ Cell {
     // pointer has left the panel — asking, not taking, as in vitals.
     property bool fieldEngaged: false
 
-    wantsKeyboard: root.open && (root.panelHovered || root.holdsKeys || root.fieldEngaged)
-    takesKeyboard: root.open && root.holdsKeys
+    // A field reached from the keyboard takes the keys outright: the pointer
+    // is wherever it was left, and a membrane that only asked would hear
+    // nothing.
+    property bool fieldKeyed: false
+
+    wantsKeyboard: root.open && (root.panelHovered || root.holdsKeys || root.fieldEngaged
+                                 || root.fieldKeyed)
+    takesKeyboard: root.open && (root.holdsKeys || root.fieldKeyed)
 
     onOpenChanged: if (!root.open) {
         root.panelHovered = false;
         root.fieldEngaged = false;
+        root.fieldKeyed = false;
     }
 
     expansion: Component {

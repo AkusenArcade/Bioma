@@ -25,6 +25,14 @@ Item {
     signal activated()
 
     readonly property real factor: metrics ? metrics.factor : 1
+
+    // A stop for the keyboard (see `Focus`). A caller that reaches the
+    // button through something larger turns it off.
+    property bool navigable: true
+
+    function activate() {
+        root.activated();
+    }
     readonly property bool filled: kind !== "plain"
     readonly property int fontSize: Math.round(12 * factor)
 
@@ -32,6 +40,11 @@ Item {
     implicitHeight: 26 * factor
     width: implicitWidth
     height: implicitHeight
+
+    KeyMark {
+        factor: root.factor
+        outset: 4 * root.factor
+    }
 
     // Two shapes rather than one with a conditional fill: a Gradient is a
     // declared object, not a value to switch between.

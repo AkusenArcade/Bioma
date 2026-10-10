@@ -149,12 +149,19 @@ Cell {
     property bool panelHovered: false
     property bool asking: false
 
-    wantsKeyboard: root.open && (root.panelHovered || root.asking)
+    // Reached from the keyboard, a field takes the keys outright: the
+    // pointer is wherever it was left, and a membrane that only asked for
+    // them would hear nothing.
+    property bool fieldKeyed: false
+
+    wantsKeyboard: root.open && (root.panelHovered || root.asking || root.fieldKeyed)
+    takesKeyboard: root.open && root.fieldKeyed
 
     onOpenChanged: {
         if (!root.open) {
             root.panelHovered = false;
             root.asking = false;
+            root.fieldKeyed = false;
         }
     }
 

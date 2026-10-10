@@ -61,6 +61,19 @@ Item {
                 opacity: Time.running ? 1 : 0.6
                 font: root.technical(Math.round(34 * root.factor), Typography.weightValue)
 
+                // The keyboard's wheel: Left and Right a minute each way, while
+                // there is a length to set.
+                readonly property bool navigable: !Time.running && !Time.paused
+
+                function adjust(direction) {
+                    Time.setLength(Time.length + direction * 60);
+                }
+
+                KeyMark {
+                    factor: root.factor
+                    outset: 6 * root.factor
+                }
+
                 WheelHandler {
                     enabled: !Time.running && !Time.paused
                     acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
@@ -84,6 +97,17 @@ Item {
 
                         width: presetText.implicitWidth + 22 * root.factor
                         height: 24 * root.factor
+
+                        readonly property bool navigable: true
+
+                        function activate() {
+                            Time.setLength(preset.modelData * 60);
+                        }
+
+                        KeyMark {
+                            factor: root.factor
+                            outset: 3 * root.factor
+                        }
 
                         Rectangle {
                             anchors.fill: parent

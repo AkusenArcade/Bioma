@@ -273,6 +273,19 @@ Item {
 
                 visible: Media.hasLength
 
+                // Left and Right seek five seconds, the step every player
+                // takes for its arrows.
+                readonly property bool navigable: Media.canSeek
+
+                function adjust(direction) {
+                    Media.seekTo(Math.max(0, Math.min(Media.length, Media.position + direction * 5)));
+                }
+
+                KeyMark {
+                    factor: root.factor
+                    outset: 6 * root.factor
+                }
+
                 Rectangle {
                     anchors.verticalCenter: parent.verticalCenter
                     width: parent.width
@@ -356,6 +369,17 @@ Item {
                 height: width
                 opacity: step.enabled ? 1 : 0.38
 
+                readonly property bool navigable: step.enabled
+
+                function activate() {
+                    step.pressed();
+                }
+
+                KeyMark {
+                    factor: root.factor
+                    outset: 4 * root.factor
+                }
+
                 Rectangle {
                     anchors.fill: parent
                     radius: width / 2
@@ -397,6 +421,17 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     width: 44 * root.factor
                     height: width
+
+                    readonly property bool navigable: Media.canToggle || Media.canPlay
+
+                    function activate() {
+                        Media.playPause();
+                    }
+
+                    KeyMark {
+                        factor: root.factor
+                        outset: 4 * root.factor
+                    }
 
                     Rectangle {
                         anchors.fill: parent
@@ -453,6 +488,23 @@ Item {
                 width: Math.min(chooser.natural, chooser.room)
                 height: 30 * root.factor
 
+                readonly property bool navigable: true
+
+                function activate() {
+                    const players = Media.players;
+                    if (players.length < 2)
+                        return;
+                    const here = players.indexOf(Media.player);
+                    const next = players[(here + 1) % players.length];
+                    if (next)
+                        Media.select(next.dbusName);
+                }
+
+                KeyMark {
+                    factor: root.factor
+                    outset: 3 * root.factor
+                }
+
                 Rectangle {
                     anchors.fill: parent
                     radius: Metrics.radiusFor(height, root.metrics)
@@ -493,15 +545,7 @@ Item {
                 // nobody needs, and with three the round is quicker than
                 // opening something.
                 TapHandler {
-                    onTapped: {
-                        const players = Media.players;
-                        if (players.length < 2)
-                            return;
-                        const here = players.indexOf(Media.player);
-                        const next = players[(here + 1) % players.length];
-                        if (next)
-                            Media.select(next.dbusName);
-                    }
+                    onTapped: chooser.activate()
                 }
             }
         }

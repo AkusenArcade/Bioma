@@ -170,3 +170,38 @@ cost an error in prototype. **Read this before writing the first QML component, 
   overall loudness.
 - Every animated indicator must still be readable when still: the value is in the form and the
   colour, not only in the movement.
+- **Every open cell can be driven from the keyboard** (Akusen, 2026-10-10). Arrows move, Enter
+  and Space act, Tab and Shift+Tab walk in reading order, Escape closes. Only inside the open
+  cell: cells are reached by their own shortcuts, and there is no second way of travelling
+  between them.
+- **Nothing is marked until a key asks for it.** At rest the interface does not speak, and a hand
+  on the pointer has no use for a mark. The first key marks what is nearest to where the cell was
+  born, and does nothing else.
+- **The mark is the launcher's selection**: a fill in the primary at 12%, never an outline, drawn
+  behind the stop (`components/KeyMark.qml`). A stop smaller than a hand's target — a slider —
+  gets a fill that reaches past it.
+- **Arrows travel by geometry**, not by a declared order. Up and Down inside one surface go to
+  the next line and, on it, to the nearest stop across: a panel is read in lines. Anywhere else —
+  sideways, or out of one surface into the next — the nearest stop ahead, no more out of line than
+  it is ahead. Tab walks the same stops in reading order, one surface at a time. A layout that
+  changes needs no order rewritten.
+- **A stop with a value takes Left and Right for itself.** A slider moves 5% per press, a
+  segmented control changes its choice, a month turns, a carousel steps; leaving it sideways would
+  leave no way to move it. A row that holds a slider and a mute is **one** stop: Left and Right
+  are the slider, Enter is the mute. A menu row with a submenu goes in with Right and out with Left.
+- **Delete is the cross that shows only under the pointer**: it removes the marked row. A row
+  whose removal asks first still asks, and the mark goes to the way back out (Cancel, Keep) —
+  Enter then answers what is marked, never the question's own default.
+- **A field reached from the keyboard takes the keys outright.** Enter on it focuses it and the
+  cell takes the keyboard exclusively — the pointer is wherever it was left, and a membrane that
+  only asked for the keys would hear nothing. The mark lets go while typing: the caret says where
+  typing goes. When the mark moves on, or the field lets go by itself, the nearest stop takes the
+  keys, so the arrows and Escape keep arriving.
+- **What opens over the rest of the cell holds the keys while it is out**: a dropdown's list, a
+  picker. The arrows stay inside it, and Escape puts it away before it closes the cell.
+- Stops declare themselves (`navigable`, `activate()`, optionally `adjust(step)`, `discard()`;
+  `keyScope` and `close()` for what opens over the rest) and are found by walking the open cell,
+  so a row that arrives in a list is reachable the moment it is drawn. A stop in a list longer
+  than its room scrolls into view.
+- Still the pointer's alone: placing a monitor, reordering a tissue's cells, a wallpaper's star.
+  Each is a drag or a mark in hover with no keyboard form yet.

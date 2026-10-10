@@ -17,6 +17,13 @@ Item {
 
     signal toggled(bool on)
 
+    // A stop for the keyboard (see `Focus`): Enter does what a press does.
+    property bool navigable: true
+
+    function activate() {
+        root.toggled(!root.on);
+    }
+
     implicitWidth: 42 * factor
     implicitHeight: 24 * factor
 
@@ -29,6 +36,11 @@ Item {
 
     opacity: settling ? 0.6 : 1
     Behavior on opacity { NumberAnimation { duration: Timing.transition } }
+
+    KeyMark {
+        factor: root.factor
+        outset: 5 * root.factor
+    }
 
     // Off: a dark well with the structural outline. The two states are two
     // surfaces rather than one that changes fill, because one of them carries

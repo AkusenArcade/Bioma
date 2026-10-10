@@ -26,6 +26,13 @@ Item {
         event.accepted = true;
     }
 
+    // The same for the keys that travel inside the open cell: what a field
+    // leaves alone — Up and Down past a one-line field, Tab — moves the mark.
+    Keys.onPressed: event => {
+        if (Focus.anyOpen && Focus.key(event))
+            event.accepted = true;
+    }
+
     // ---- Configuration -----------------------------------------------------
 
     property var metrics: Metrics.step("normal")

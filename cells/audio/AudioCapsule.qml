@@ -71,5 +71,6 @@ Item {
         value: Math.min(1, Audio.volume)
         dimmed: Audio.muted
         onMoved: value => Audio.setVolume(value)
+        onActivated: Audio.toggleMute()
     }
 }

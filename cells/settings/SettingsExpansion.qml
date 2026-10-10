@@ -181,6 +181,22 @@ Item {
 
                 readonly property bool chosen: root.chosen === capsule.modelData.key
 
+                // A category is a stop, and Enter chooses it as a press does.
+                readonly property bool navigable: true
+
+                function activate() {
+                    if (root.cell)
+                        root.cell.category = capsule.modelData.key;
+                }
+
+                // The capsule has no padding, so the mark sits inside its rim.
+                KeyMark {
+                    stop: capsule
+                    factor: root.factor
+                    outset: -4 * root.factor
+                    radius: Math.max(0, capsule.radius - 4 * root.factor)
+                }
+
                 // The glyph, then the name and what is inside, in the session
                 // menu's arrangement. The chosen one says so by being where
                 // the thread starts; here it only carries more light — the

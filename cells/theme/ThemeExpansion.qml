@@ -390,6 +390,17 @@ Item {
                         dropText.implicitWidth + 12 * root.factor * 2 + 7 * root.factor + dropChevron.width)
         height: root.dropdownHeight
 
+        readonly property bool navigable: true
+
+        function activate() {
+            drop.pressed();
+        }
+
+        KeyMark {
+            factor: root.factor
+            outset: 3 * root.factor
+        }
+
         Rectangle {
             anchors.fill: parent
             radius: Metrics.radiusFor(height, root.metrics)
@@ -495,6 +506,22 @@ Item {
                 anchorY: root.carouselY
                 nodeX: root.width - (root.cell ? root.cell.width / 2 : 0)
                 nodeY: root.carouselNear
+
+                // The carousel is one stop, and Left and Right step it as the
+                // wheel does: the choice is immediate (CELLS §07). The grid's
+                // pictures are stops of their own.
+                readonly property bool navigable: !root.grid && Wallpaper.entries.length > 0
+
+                function adjust(direction) {
+                    root.slide(direction);
+                }
+
+                KeyMark {
+                    stop: carousel
+                    factor: root.factor
+                    outset: carousel.padding - 4 * root.factor
+                    radius: Math.max(0, carousel.radius - 4 * root.factor)
+                }
 
                 // The grid scrolls under the wheel by itself; the carousel steps.
                 WheelHandler {
@@ -642,6 +669,18 @@ Item {
                                 width: root.gridTileWidth
                                 height: root.gridTileHeight
                                 image: thumb.modelData
+
+                                readonly property bool navigable: true
+
+                                function activate() {
+                                    Wallpaper.path = thumb.modelData;
+                                }
+
+                                KeyMark {
+                                    factor: root.factor
+                                    outset: 3 * root.factor
+                                    radius: root.tileRadius + 3 * root.factor
+                                }
                                 decode: root.gridTileWidth
                                 lit: thumb.current ? 1 : 0
                                 // The one on screen at full light, like the middle of
@@ -899,6 +938,17 @@ Item {
                             width: chosenText.width + 12 * root.factor * 2 + 7 * root.factor + chevron.width
                             height: root.dropdownHeight
 
+                            readonly property bool navigable: true
+
+                            function activate() {
+                                root.toggleList("palette", dropdown);
+                            }
+
+                            KeyMark {
+                                factor: root.factor
+                                outset: 3 * root.factor
+                            }
+
                             Rectangle {
                                 anchors.fill: parent
                                 radius: Metrics.radiusFor(height, root.metrics)
@@ -1126,6 +1176,19 @@ Item {
                             width: parent.width
                             height: root.dropdownHeight
 
+                            readonly property bool navigable: true
+
+                            function activate() {
+                                if (root.cell)
+                                    root.cell.open = false;
+                                Wallpaper.pickFolder();
+                            }
+
+                            KeyMark {
+                                factor: root.factor
+                                outset: 3 * root.factor
+                            }
+
                             Rectangle {
                                 anchors.fill: parent
                                 radius: Metrics.radiusFor(height, root.metrics)
@@ -1166,11 +1229,7 @@ Item {
 
                             HoverHandler { id: folderHover }
                             TapHandler {
-                                onTapped: {
-                                    if (root.cell)
-                                        root.cell.open = false;
-                                    Wallpaper.pickFolder();
-                                }
+                                onTapped: folderBox.activate()
                             }
                         }
                     }
@@ -1305,6 +1364,10 @@ Item {
         else if (root.listShown === "cursor")
             Looks.setCursor(key, 0);
         root.listing = "";
+        // Chosen from the keyboard, the mark goes back to the control the
+        // list came out of, where the next key expects to be.
+        if (Focus.marked)
+            Focus.marked = root.listControl;
     }
 
     // Past this many rows the list scrolls: there are two dozen cursors on a
@@ -1346,8 +1409,16 @@ Item {
         contentReady: root.listGrowth > 0.999
         visible: root.listGrowth > 0
         // It lies over the capsules: they are glass under glass, blurred, and
-        // deaf to the pointer while it is there.
+        // deaf to the pointer while it is there — and out of the keyboard's
+        // reach, which stays in the list until it is put away (see `Focus`).
         over: composition
+
+        readonly property bool keyScope: root.listing.length > 0
+
+        function close() {
+            root.listing = "";
+            Focus.marked = root.listControl;
+        }
 
         // A list belongs to its dropdown: it is born from the control's edge
         // and settles just past it, over whatever capsule lies beyond, rather
@@ -1390,6 +1461,16 @@ Item {
                     height: root.listRow
 
                     readonly property bool current: option.modelData.key === root.listChosen
+
+                    readonly property bool navigable: true
+
+                    function activate() {
+                        root.listChoose(option.modelData.key);
+                    }
+
+                    KeyMark {
+                        factor: root.factor
+                    }
 
                     Text {
                         anchors.left: parent.left
@@ -1457,6 +1538,17 @@ Item {
         width: chipText.implicitWidth + 24 * root.factor
         height: 24 * root.factor
         opacity: chip.here || chip.on ? 1 : 0.35
+
+        readonly property bool navigable: chip.here || chip.on
+
+        function activate() {
+            Templates.setOn(chip.entry.id, !chip.on);
+        }
+
+        KeyMark {
+            factor: root.factor
+            outset: 3 * root.factor
+        }
 
         Rectangle {
             anchors.fill: parent

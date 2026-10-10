@@ -235,6 +235,21 @@ Item {
                 onTapped: root.sort = pod.key
             }
 
+            readonly property bool navigable: true
+
+            function activate() {
+                root.sort = pod.key;
+            }
+
+            // Inside the content slot, so it reaches back out to just short
+            // of the rim.
+            KeyMark {
+                stop: pod
+                factor: root.factor
+                outset: pod.padding - 4 * root.factor
+                radius: Math.max(0, pod.radius - 4 * root.factor)
+            }
+
             // Matrix: the indicator above its figures, read top to bottom,
             // and the name at the foot.
             Column {
@@ -449,6 +464,21 @@ Item {
                 width: root.panelWidth - 20 * root.factor
                 height: root.metrics.fieldHeight
 
+                // A stop, and Enter on it is the press (see `Focus`).
+                readonly property bool navigable: !filter.activeFocus
+
+                function activate() {
+                    if (root.cell) {
+                        root.cell.fieldEngaged = true;
+                        root.cell.fieldKeyed = true;
+                    }
+                    Focus.type(filter);
+                }
+
+                KeyMark {
+                    factor: root.factor
+                }
+
                 // Pressing the field keeps the keyboard after the pointer has
                 // wandered off the panel; Escape, or closing the cell, gives
                 // it back.
@@ -484,8 +514,10 @@ Item {
 
                         Keys.onEscapePressed: {
                             filter.focus = false;
-                            if (root.cell)
+                            if (root.cell) {
                                 root.cell.fieldEngaged = false;
+                                root.cell.fieldKeyed = false;
+                            }
                         }
 
                         Text {
@@ -536,6 +568,24 @@ Item {
 
                         width: ListView.view.width
                         height: root.metrics.rowHeight
+
+                        // Enter and Delete both ask, as the cross does: a
+                        // process is never closed by one key. The mark goes
+                        // to the way back out.
+                        readonly property bool navigable: true
+
+                        function activate() {
+                            root.pendingKill = processRow.modelData.pid;
+                            Focus.marked = keepIt;
+                        }
+
+                        function discard() {
+                            processRow.activate();
+                        }
+
+                        KeyMark {
+                            factor: root.factor
+                        }
 
                         Row {
                             anchors.left: parent.left
@@ -667,6 +717,7 @@ Item {
                     spacing: 8 * root.factor
 
                     Choice {
+                        id: keepIt
                         metrics: root.metrics
                         label: "Cancel"
                         onActivated: root.pendingKill = -1

@@ -170,13 +170,29 @@ Item {
         property real factor: 1
         property var metrics: Metrics.step("normal")
 
+        // The well's inset, kept inside the row rather than around the list,
+        // so the keyboard's mark has room to sit behind the row's contents.
+        property real inset: 0
+
         signal picked
 
         height: 38 * device.factor
 
+        readonly property bool navigable: true
+
+        function activate() {
+            device.picked();
+        }
+
+        KeyMark {
+            factor: device.factor
+            outset: -4 * device.factor
+        }
+
         Item {
             id: mark
             anchors.left: parent.left
+            anchors.leftMargin: device.inset
             anchors.verticalCenter: parent.verticalCenter
             width: 16 * device.factor
             height: width
@@ -217,6 +233,7 @@ Item {
         Text {
             id: meta
             anchors.right: parent.right
+            anchors.rightMargin: device.inset
             anchors.verticalCenter: parent.verticalCenter
             text: Audio.connection(device.node)
             color: Theme.textMuted
@@ -259,11 +276,32 @@ Item {
         readonly property bool muted: stream.node?.audio?.muted ?? false
         readonly property string iconSource: Apps.iconFor(stream.label)
 
+        property real inset: 0
+
         height: 38 * stream.factor
+
+        // Reached as one row: Left and Right are its slider, Enter its mute.
+        // Two stops on one line would leave the slider with no way of being
+        // moved — the keys that move it would travel to the mute instead.
+        readonly property bool navigable: true
+
+        function adjust(direction) {
+            level.adjust(direction);
+        }
+
+        function activate() {
+            Audio.toggleStreamMute(stream.node);
+        }
+
+        KeyMark {
+            factor: stream.factor
+            outset: -4 * stream.factor
+        }
 
         Item {
             id: badge
             anchors.left: parent.left
+            anchors.leftMargin: stream.inset
             anchors.verticalCenter: parent.verticalCenter
             width: 20 * stream.factor
             height: width
@@ -306,6 +344,7 @@ Item {
         Item {
             id: mute
             anchors.right: parent.right
+            anchors.rightMargin: stream.inset
             anchors.verticalCenter: parent.verticalCenter
             width: 22 * stream.factor
             height: width
@@ -348,6 +387,7 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             width: 80 * stream.factor
             factor: stream.factor
+            navigable: false
             value: stream.level
             dimmed: stream.muted
             onMoved: value => Audio.setStreamVolume(stream.node, value)
@@ -459,9 +499,8 @@ Item {
 
                 ListView {
                     id: outputList
-                    x: root.wellInset
                     y: root.wellPadding + root.labelHeight
-                    width: outputWell.width - root.wellInset * 2
+                    width: outputWell.width
                     height: outputWell.height - y - root.wellPadding
                     model: root.outputs
                     boundsBehavior: Flickable.StopAtBounds
@@ -471,6 +510,7 @@ Item {
                         required property var modelData
 
                         width: ListView.view.width
+                        inset: root.wellInset
                         factor: root.factor
                         metrics: root.metrics
                         node: modelData
@@ -503,9 +543,8 @@ Item {
 
                 ListView {
                     id: inputList
-                    x: root.wellInset
                     y: root.wellPadding + root.labelHeight
-                    width: inputWell.width - root.wellInset * 2
+                    width: inputWell.width
                     height: inputWell.height - y - root.wellPadding
                     model: root.inputs
                     boundsBehavior: Flickable.StopAtBounds
@@ -515,6 +554,7 @@ Item {
                         required property var modelData
 
                         width: ListView.view.width
+                        inset: root.wellInset
                         factor: root.factor
                         metrics: root.metrics
                         node: modelData
@@ -558,9 +598,8 @@ Item {
 
                 ListView {
                     id: streamList
-                    x: root.wellInset
                     y: root.wellPadding + root.labelHeight
-                    width: streamWell.width - root.wellInset * 2
+                    width: streamWell.width
                     height: streamWell.height - y - root.wellPadding
                     model: root.streams
                     boundsBehavior: Flickable.StopAtBounds
@@ -570,6 +609,7 @@ Item {
                         required property var modelData
 
                         width: ListView.view.width
+                        inset: root.wellInset
                         factor: root.factor
                         metrics: root.metrics
                         node: modelData

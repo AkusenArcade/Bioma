@@ -47,6 +47,13 @@ Cell {
     // keyboard.
     property bool typing: false
     wantsKeyboard: root.open && root.typing
+
+    // Opened from the keyboard, the field takes the keys outright: the
+    // pointer is wherever it was left, and a membrane that only asked for
+    // them would hear nothing.
+    property bool typingKeyed: false
+    takesKeyboard: root.open && root.typing && root.typingKeyed
+    onTypingChanged: if (!root.typing) root.typingKeyed = false
     onOpenChanged: if (!root.open) root.typing = false
 
     expansion: Component {

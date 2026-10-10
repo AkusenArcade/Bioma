@@ -287,6 +287,19 @@ Item {
                 height: monitor.modelData.height * root.fit.scale
                 z: monitor.carried ? 2 : 1
 
+                // Enter chooses it, as a press does. Placing it is still the
+                // hand's: a drag with magnetic edges has no keyboard form yet.
+                readonly property bool navigable: true
+
+                function activate() {
+                    root.choose(monitor.modelData.name);
+                }
+
+                KeyMark {
+                    factor: root.factor
+                    outset: 4 * root.factor
+                }
+
                 // Settling where niri put it, not jumping there.
                 Behavior on x {
                     enabled: !monitor.carried

@@ -146,6 +146,16 @@ Item {
                 width: parent.width
                 height: root.headerHeight
 
+                readonly property bool navigable: root.trail.length > 0
+
+                function activate() {
+                    root.back();
+                }
+
+                KeyMark {
+                    factor: root.factor
+                }
+
                 Icon {
                     id: back
 
@@ -208,6 +218,27 @@ Item {
 
                         width: ListView.view.width
                         height: row.modelData.isSeparator ? 9 * root.factor : root.rowHeight
+
+                        // Right goes into a submenu and Left back out of
+                        // one, the way every menu answers the arrows.
+                        readonly property bool navigable: row.usable
+
+                        function activate() {
+                            root.choose(row.modelData);
+                        }
+
+                        function adjust(direction) {
+                            if (direction > 0 && row.modelData.hasChildren)
+                                root.choose(row.modelData);
+                            else if (direction < 0 && root.trail.length > 0)
+                                root.back();
+                        }
+
+                        KeyMark {
+                            factor: root.factor
+                            anchors.rightMargin: 2 * root.factor
+                            radius: Metrics.radiusFor(height, root.metrics)
+                        }
 
                         // A separator is a rule, not a row: the thinnest the
                         // screen can draw, at the weight of every other line

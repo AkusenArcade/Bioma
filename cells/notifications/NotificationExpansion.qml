@@ -268,6 +268,17 @@ Item {
                 width: clear.inset * 2 + clearLabel.implicitWidth + clear.tail
                 height: 22 * root.factor
 
+                readonly property bool navigable: true
+
+                function activate() {
+                    Notifications.forget();
+                }
+
+                KeyMark {
+                    factor: root.factor
+                    outset: 3 * root.factor
+                }
+
                 Rectangle {
                     anchors.fill: parent
                     radius: Metrics.radiusFor(height, root.metrics)
