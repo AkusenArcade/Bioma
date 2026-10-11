@@ -341,7 +341,7 @@ Then start it with `scripts/shell bioma`, or log in again. After an update,
 | Key | Opens |
 |---|---|
 | `Mod+Space` | the launcher |
-| `Mod+Alt+Period` | emoji, pasted into the window that has the focus |
+| `Mod+Period` | emoji, pasted into the window that has the focus |
 | `Mod+Alt+S` | settings |
 | `Mod+Alt+T` | theme: wallpaper, palette, icons, cursor, application templates |
 | `Mod+Alt+V` | vitals and tasks |
