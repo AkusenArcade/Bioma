@@ -11,7 +11,8 @@ quiet when nothing is happening.
 - **Compositor**: Niri
 - **Toolkit**: Quickshell (Qt/QML)
 - **Status**: **1.0 beta**. Every cell of the first version is built and in
-  daily use, with the settings cell and the launcher. See `PROGRESS.md` for
+  daily use, with the settings cell, the launcher, the organisms on the
+  desktop, a lock screen and a greeter of its own. See `PROGRESS.md` for
   what is left and what has not been verified on real hardware
 
 ![The desktop at rest](docs/media/at-rest.webp)
@@ -32,6 +33,12 @@ that are ever written out.
 A cell exists when it has something to say. A cell can be set to be always
 there, or to appear only when something happens: the workspaces when you
 change one, audio when the volume moves, vitals when a reading turns critical.
+
+A membrane either reserves its strip of the screen or hides until the pointer
+reaches its edge. One that hides comes back over the windows, so each of its
+tissues carries a halo: its own shape, grown a little and blurred outward in
+the palette's background. The cells are read against it, and the window is
+left clean where there is no cell.
 
 <p align="center">
   <img src="docs/media/notification.webp" width="300" alt="A notification at the left edge">
@@ -75,6 +82,44 @@ Every cell also answers a key. A cell placed on a membrane opens there, and a
 cell placed nowhere opens floating: in the middle of the screen, at a corner,
 or at the pointer.
 
+Once open, a cell is driven from the keyboard as well as the pointer. The
+arrows move, Tab walks in reading order, Enter and Space act, and Escape
+closes. Nothing is marked until a key asks for it; the first key marks what is
+nearest to where the cell was born, with the launcher's fill rather than an
+outline. A touchscreen works too: a long press does what the right button
+does.
+
+### The cells
+
+| Cell | At rest | Open |
+|---|---|---|
+| Clock | the time, and a dial that fills with the hour while a disc runs round its rim once a minute | other places, the month, a timer and an alarm |
+| Window title | the focused window's title | — |
+| Workspaces | the active workspace's name, or its number | the workspaces on that screen |
+| Vitals | CPU, memory and GPU as rings that beat and fill | the readings beside the tasks using them; on a laptop, the time the battery has left, or the time until it is full |
+| Media | while there is sound: a band that moves with it, and the track | the cover, the progress, the controls, the player |
+| Audio | a dial, the volume, moved by the wheel | outputs, inputs, the applications playing and their volumes |
+| Connectivity | the network, with the Wi-Fi signal drawn in the glyph | Wi-Fi, wired, Bluetooth devices, VPN profiles, proxies, and printers: the queues, the default, network printers found and added driverless |
+| System | the avatar | the account, the machine, the power profile (saver, balanced, performance), and the ways to leave |
+| Notifications | a notification as it arrives; set to *always*, the bell alone in between | the history |
+| Dock | the pinned and running applications, with an optional launcher at its head | — |
+| Tray | the applications' own tray icons | their menus, drawn by Bioma |
+| Utility | the recording, while one runs: its beat, its time, its stop | screenshots and recordings of a screen, a window or a region; text recognition; [dictation](#dictation) |
+| Theme | — | wallpaper, palette, icons, cursor, application templates |
+| Clipboard | — | what was copied, newest first, text and images; never what a password manager marks sensitive |
+| Keyboard | the layout's code | the layouts niri has loaded, and a search of every layout there is |
+| Privacy | while something is captured: the microphone, a camera or the screen, and who is taking it | one row per use, with its device |
+| Timer | while a timer runs: the dial, emptying at the speed of time | the time left, the presets, start, pause, stop |
+| Downloads | while a browser is downloading: a thread whose light runs as fast as the bytes arrive | each download, its bytes and rate; a press shows the file |
+| Emoji | — | a search by name, the skin tones, recent picks first; the one chosen is pasted into the window that had the focus |
+| Launcher | — | applications, and from the third letter files in the home found by name |
+| Settings | — | see [below](#settings-in-the-shell) |
+
+A — at rest means the cell's glyph alone, or nothing at all when the cell is
+placed nowhere and comes up on its key. When
+the volume, the brightness or the keyboard layout changes and no cell on that
+monitor is there to say it, a small on-screen display says it instead.
+
 ### One palette, the whole desktop
 
 A palette has four roles (background, text, primary, secondary), and every
@@ -100,6 +145,67 @@ theme cell.
 
 ![niri, Alacritty and btop in the Bioma palette](docs/media/applications.webp)
 
+The focused window is lifted by the same soft shadow as an invoked cell, so
+its ring stands off the wallpaper on every side; the windows behind it lie
+flat.
+
+Bioma also draws its own **icon themes** and **cursors** from the palette, and
+redraws them whenever the palette changes. *Bioma* and *Bioma Primary* draw
+folders, places and file types as cells, with the shell's glyphs on them;
+applications keep the icons of the theme beneath. *Bioma* and *Bioma Cell* are
+two cursor themes, soft-edged and drawn in the palette's roles. A fresh install
+comes up wearing them, once; anything chosen afterwards in the theme cell is
+never taken back.
+
+The wallpaper is chosen in a carousel or in a grid of every image at once, from
+a folder picked in a file chooser. A star marks a favourite, and favourites come
+first. Bioma ships three wallpapers of its own, a misty forest and a leaf tissue
+in the dark palette and in Paper, so a first session never opens on a black
+screen.
+
+### Organisms
+
+A cell speaks when something happens. An **organism** keeps the opposite
+contract: it is there because it was put there to be looked at. Organisms are
+read-only panels standing on the desktop itself, under the windows, in the
+space the membranes leave free. They are seen on an empty workspace and
+between the windows, and are gone under them the moment there is work on
+screen.
+
+Because the eye goes to them on purpose, organisms may speak at rest, with
+figures: `34%`, `18°`, `3:42`. The other rules hold. Colour is state, and what
+moves is a live value. The pointer passes straight through them to the desktop,
+and an organism with nothing to show is absent: media with nothing playing, the
+nucleus on a machine without a battery.
+
+| Organism | What it shows |
+|---|---|
+| Clock | the time, large, with the clock cell's face beside it and the date in words |
+| Media | while a track is loaded: the cover as the surface, and the sound rising out of it |
+| Vitals | the vitals cell's readings, never closed: CPU, memory, GPU and, on a laptop, the battery; in a row or a square |
+| Calendar | this month, read-only, today the only lit day |
+| Weather | now and the next hours, for the city set in the settings, from Open-Meteo |
+| Note | a Markdown file, read and never written: edit it anywhere, in an Obsidian vault or a repository, and the desktop follows |
+| Lava lamp | the processor's heat, drawn as wax |
+| Cytoplasm | every running application as a cell pressed against the others, as large as the memory it holds, its lobes circling as fast as it works |
+| Growth rings | the machine's age, one ring for every day since the system was installed |
+| Osmosis | network traffic as water crossing a membrane: what arrives falls into the pool, what leaves rises out of it, as often as the bytes cross |
+| Photoperiod | the sky over the weather's place: the sun's arc and the moon's, the daylight left, how much of the moon is lit |
+| Vacuole | the notifications not yet read, a drop each, one body per application |
+| Sediment | the files used lately, laid down in strata, the newest on top and the widest |
+| Nucleus | the battery's charge as the mass at the heart of a cell; charging, drops come in and melt into it |
+| Adipose | the filesystems, one cell each, the droplet of fat as large as the share in use |
+
+Organisms are added from the settings cell's Organisms page, one monitor at a
+time. A new one grows at the centre of the screen, and the shell enters
+**arrange**: every organism is lifted above the windows over a grid of squares,
+to be dragged to its place, or onto another monitor. The wheel makes the
+squares larger or smaller. Done, or Escape, puts them back under the windows
+and writes where they stand. Each kind has a size of its own in grid units (2 × 1,
+2 × 2, 1 × 2 and a few more), so organisms of different kinds fall into tidy clusters.
+`qs -p /path/to/Bioma/shell.qml ipc call organisms arrange` enters the mode
+from a key.
+
 ### Settings, in the shell
 
 The layout is edited from the shell itself, with no config file to write by
@@ -107,8 +213,16 @@ hand. The settings cell has seven pages: Structure (which cell goes where, on
 each monitor), Cells (always or conditional), Organisms, Appearance, Monitors,
 Keybinds and Session.
 Adding a cell costs one block of configuration, and the Structure page writes
-that block for you. It also keeps whole layouts as presets, to switch between
-or to start again from an empty desktop.
+that block for you: the cells not yet on the monitor appear as a row of chips,
+and one that would not fit says NO ROOM before it is added. A tissue can be
+moved, or copied to another monitor: every free place lights up and says what
+the tissue would be there. The page also keeps whole layouts as presets
+(membranes, floating tissues and organisms, on every monitor), to switch
+between or to start again from an empty desktop.
+
+Appearance sets the blur's strength as well as whether there is one, for every
+surface niri blurs. Session sets the idle lock and, on a laptop, the power
+profile to follow the plug: one on battery, another on mains.
 
 <p align="center">
   <img src="docs/media/settings-structure.webp" width="440" alt="Settings, Structure: the tissues on each membrane and the floating ones, per monitor">
@@ -466,12 +580,18 @@ through this before a cell is built on it.
 shell.qml          entry point
 probe.qml          headless service verification
 core/              Config, Theme, Timing, Metrics — global singletons
+lock.qml           the lock screen, a process of its own (with lock/)
+greeter.qml        the greeter, run by greetd (with greeter/)
 structure/         Membrane, Tissue, Cell — the layout engine
 components/        shared primitives
 services/          one singleton per system domain
 cells/<name>/      one directory per cell
-config/            default.json + palettes/
-assets/icons/      the 33 glyphs, at runtime
+organisms/<name>/  one directory per organism
+config/            default.json, palettes/, niri/ (the keys and layer rules)
+scripts/           the installer, the shell switch, the lock, and helpers
+assets/            the 66 glyphs, wallpapers, cursor and icon-theme drawings,
+                   the emoji set
+packaging/aur/     the AUR package
 docs/              bioma-prd.md — the specification
 docs/design/       the visual specification: style guide, cells, tokens, mockups
 docs/media/        the logo, and the screenshots in this file (tools/showcase
@@ -500,8 +620,10 @@ qs -p "$PWD/shell.qml"
 ## Documentation
 
 - `docs/bioma-prd.md` — the product requirements, and the source of truth
+- `docs/configuration.md` — every key of the configuration
 - `docs/design/` — the visual specification: `STYLE_GUIDE.md`, `CELLS.md`,
-  `IMPLEMENTATION.md`, `tokens.css`, the icon set and 68 mockups
+  `ORGANISMS.md`, `CURSORS.md`, `ICON_THEME.md`, `IMPLEMENTATION.md`,
+  `tokens.css`, the icon set and 68 mockups
 - `PROGRESS.md` — where the work stands, and what is not done
 - `services/INVENTORY.md` — the Prisma inventory and every decision taken since
 - `CLAUDE.md` — architecture rules for anyone (or anything) writing code here
