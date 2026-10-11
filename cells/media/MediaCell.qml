@@ -114,6 +114,7 @@ Cell {
             pitch: 6 * root.metrics.factor
             leftChannel: root.bandLeft
             rightChannel: root.bandRight
+            effect: Sinestesia.effect
         }
 
         // The track's name is human language, so it takes the expressive face —

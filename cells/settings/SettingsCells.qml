@@ -231,8 +231,10 @@ Item {
                 })
             }
 
-            // What a cell may carry beyond when it appears. The dock, only: the
-            // launcher at its head (`dock.launcher`).
+            // What a cell may carry beyond when it appears. The dock: the
+            // launcher at its head (`dock.launcher`). Media: how the band draws
+            // the sound (`sinestesia.effect`), which the media organism follows
+            // too — so it is offered even when the cell is placed nowhere.
             Row {
                 id: extra
 
@@ -240,11 +242,14 @@ Item {
                 anchors.rightMargin: 12 * root.factor
                 anchors.verticalCenter: line.verticalCenter
                 spacing: 8 * root.factor
-                visible: row.modelData.type === "dock" && row.modelData.placed
+                visible: (row.modelData.type === "dock" && row.modelData.placed)
+                         || row.modelData.type === "media"
+
+                readonly property bool dock: row.modelData.type === "dock"
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
-                    text: "LAUNCHER"
+                    text: extra.dock ? "LAUNCHER" : "EFFECT"
                     color: Theme.textMuted
                     font: Qt.font({
                         "family": Typography.technical,
@@ -256,9 +261,29 @@ Item {
 
                 Switch {
                     anchors.verticalCenter: parent.verticalCenter
+                    visible: extra.dock
                     factor: root.factor
                     on: Config.get("dock.launcher", false)
                     onToggled: value => Config.set("dock.launcher", value)
+                }
+
+                Segmented {
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: !extra.dock
+
+                    metrics: root.metrics
+                    fontSize: root.metrics.fontMeta
+                    buttonHeight: 22 * root.factor
+                    buttonPadding: 10 * root.factor
+
+                    current: Config.get("sinestesia.effect", "bars")
+                    options: [
+                        { "key": "bars", "label": "Bars" },
+                        { "key": "plasma", "label": "Plasma" },
+                        { "key": "vesicles", "label": "Vesicles" }
+                    ]
+
+                    onChose: key => Config.set("sinestesia.effect", key)
                 }
             }
 

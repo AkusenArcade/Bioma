@@ -42,6 +42,12 @@ Item {
     property real pitch: 6
     property color base: Theme.primary
 
+    // How the band is drawn: `bars`, the mark's capsules, or one of the two
+    // fluids, `plasma` and `vesicles` (components/Fluid.qml).
+    // `sinestesia.effect`, chosen on the Cells page, for the cell and the
+    // organism alike.
+    property string effect: "bars"
+
     // A bar with nothing in it is a dot, not a gap: the row is the instrument,
     // and an instrument with missing teeth reads as broken rather than as
     // quiet.
@@ -64,60 +70,85 @@ Item {
         return Math.max(root.minimum, root.valueAt(index) * root.height);
     }
 
-    // The light: one gradient over the whole band, which the bars reveal.
-    Rectangle {
-        id: light
+    Loader {
         anchors.fill: parent
-        opacity: 0
-        layer.enabled: true
+        sourceComponent: root.effect === "plasma" || root.effect === "vesicles" ? fluidForm : barsForm
+    }
 
-        gradient: Gradient {
-            GradientStop { position: 0; color: Theme.gradientTop(root.base) }
-            GradientStop { position: 1; color: Theme.gradientBottom(root.base) }
+    Component {
+        id: fluidForm
+
+        Fluid {
+            form: root.effect
+            leftChannel: root.leftChannel
+            rightChannel: root.rightChannel
+            count: root.count
+            barWidth: root.barWidth
+            pitch: root.pitch
+            base: root.base
         }
     }
 
-    // The shape: the bars themselves, drawn only to be sampled.
-    Item {
-        id: bars
-        anchors.fill: parent
-        opacity: 0
-        layer.enabled: true
+    Component {
+        id: barsForm
 
-        Repeater {
-            model: root.count
+        Item {
+            // The light: one gradient over the whole band, which the bars reveal.
+            Rectangle {
+                id: light
+                anchors.fill: parent
+                opacity: 0
+                layer.enabled: true
 
-            delegate: Rectangle {
-                id: bar
+                gradient: Gradient {
+                    GradientStop { position: 0; color: Theme.gradientTop(root.base) }
+                    GradientStop { position: 1; color: Theme.gradientBottom(root.base) }
+                }
+            }
 
-                required property int index
+            // The shape: the bars themselves, drawn only to be sampled.
+            Item {
+                id: bars
+                anchors.fill: parent
+                opacity: 0
+                layer.enabled: true
 
-                width: root.barWidth
-                height: root.heightAt(bar.index)
-                radius: width / 2
-                antialiasing: true
-                color: "white"
+                Repeater {
+                    model: root.count
 
-                x: bar.index * root.pitch
-                y: (root.height - height) / 2
+                    delegate: Rectangle {
+                        id: bar
 
-                // The value is the data; this is the only thing here that is
-                // not. A band that snapped between frames would flicker rather
-                // than move, and the tool's own smoothing is about the sound,
-                // not about the screen.
-                Behavior on height {
-                    NumberAnimation {
-                        duration: Timing.contentFade
-                        easing.type: Easing.OutQuad
+                        required property int index
+
+                        width: root.barWidth
+                        height: root.heightAt(bar.index)
+                        radius: width / 2
+                        antialiasing: true
+                        color: "white"
+
+                        x: bar.index * root.pitch
+                        y: (root.height - height) / 2
+
+                        // The value is the data; this is the only thing here that is
+                        // not. A band that snapped between frames would flicker rather
+                        // than move, and the tool's own smoothing is about the sound,
+                        // not about the screen.
+                        Behavior on height {
+                            NumberAnimation {
+                                duration: Timing.contentFade
+                                easing.type: Easing.OutQuad
+                            }
+                        }
                     }
                 }
             }
-        }
-    }
 
-    OpacityMask {
-        anchors.fill: parent
-        source: light
-        maskSource: bars
+            OpacityMask {
+                anchors.fill: parent
+                source: light
+                maskSource: bars
+            }
+        }
     }
 }

@@ -211,7 +211,31 @@ the two holds the other.
 | threads | 24 px | membrane → capsule → panel, in a column |
 | exit dwell | 4 s | after the last signal above threshold, with hysteresis on the threshold |
 
-**Open** — the band's effects are **not decided here**: they are defined against the Sinestesia
+**Effects** (`sinestesia.effect`, chosen on the Cells page's Media row; the media organism
+follows it). Three ways to draw the same values, all keeping the band's two symmetries — left
+channel on the left, right on the right, the low frequencies meeting at the middle — and all
+built on the bars' measures, so a drop sits where a bar would and silence is the bar's dot.
+Added 2026-10-11 at Akusen's request: the bars read as a stock visualiser beside the organisms.
+
+- **Bars** — the default, as above.
+- **Plasma** — a drop for every band on the middle line, its radius as loud as the band, up to
+  0.44 of the band's height; the row is one body whose outline is the spectrum. Neighbours blend
+  by the smaller one's radius, so a quiet drop beside a loud one barely touches it and the dots of
+  silence stay apart.
+- **Vesicles** — a drop for every band that divides as the band gets louder: one dot at silence,
+  stretched, pinched, then two drops mirrored across the middle line, as far from it as the band
+  is loud — the extent is the data, as the bars' height is. A drop at full scale is 0.6 of a
+  pitch and never more than 0.15 of the band's height; drops of neighbours at one height melt.
+  Where the band is at least six pitches tall (the organism) one vesicle stands for two bands,
+  the louder, at twice the pitch: forty-eight were beads on a string, too small to divide.
+
+The fluids are one shader (`components/fluid.frag`): a smooth minimum of circles, not a sum of
+fields, so a crowd of loud drops never swells out of the band. Translucent by depth and lit at the
+top edge, as the lava lamp's wax is. They follow the sound with the bars' own easing and draw at
+the monitor's rate only while a drop is moving. Tried and set aside: drops budding from a membrane
+line through the middle (Akusen preferred the vesicles without it).
+
+**Open** — the band's behaviour is **not decided here**: it is defined against the Sinestesia
 code, which has already done that work against real audio. This spec fixes the form, not the
 behaviour. Still to settle: band count and frequency split, and what to do on a narrow screen —
 drop bars from the sides or pack them closer.

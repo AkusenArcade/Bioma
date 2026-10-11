@@ -123,6 +123,7 @@ Item {
             pitch: 8 * root.factor
             leftChannel: root.bandLeft
             rightChannel: root.bandRight
+            effect: Sinestesia.effect
         }
     }
 

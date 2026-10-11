@@ -46,6 +46,12 @@ Singleton {
     // "output" — what the machine is playing — or "input", a microphone.
     readonly property string source: Config.get("sinestesia.source", "output")
 
+    // How every band draws the sound: `bars`, `plasma` or `vesicles`
+    // (components/Band.qml).
+    // A property of the domain, like the source: the cell and the organism
+    // show the same sound, so they show it the same way.
+    readonly property string effect: Config.get("sinestesia.effect", "bars")
+
     readonly property string binary:
         `${Quickshell.shellDir}/tools/sinestesia-bands/target/release/sinestesia-bands`
 
