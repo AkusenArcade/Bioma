@@ -137,6 +137,8 @@ post_upgrade() {
     _uinput
     cat <<'MSG'
 ==> Restart Bioma to run the new version:  /usr/share/bioma/scripts/shell restart
+    Keys the new version brings are added to your bioma-binds.kdl then;
+    the ones you removed stay removed.
 MSG
 }
 

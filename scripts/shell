@@ -94,6 +94,9 @@ stop_noctalia() {
 
 start_bioma() {
     bioma_running && return 0
+    # A new version may bring keys: they reach bioma-binds.kdl here, so an
+    # update gets them on the restart it asks for, and niri reloads by itself.
+    "$here/scripts/binds" >/dev/null 2>&1 || true
     setsid "$here/scripts/bioma" >/dev/null 2>&1 < /dev/null &
     disown || true
 }

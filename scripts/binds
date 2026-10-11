@@ -1,0 +1,331 @@
+#!/usr/bin/env python3
+# The keys a new version brings, added to a bioma-binds.kdl that already exists.
+#
+#     binds              add to bioma-binds.kdl the template's binds it lacks
+#     binds --record     only remember the template's binds as offered — for
+#                        a copy that has just been written whole
+#
+# bioma-binds.kdl is the user's from the moment it is written: the settings
+# cell's Keybinds page edits it in place, and the installer never writes it
+# again unless asked to. Until this, that meant a key added to the template in
+# a later version reached only a machine that installed from scratch — the
+# emoji cell's Mod+Alt+Period never came to one that updated (Akusen,
+# 2026-10-11).
+#
+# A bind is known by what it does, not by its key: the Keybinds page moves a
+# bind to another key, and that bind is still there. One is added when
+#   - no file of niri's configuration does the same thing, commented out with
+#     `/-` included — that is a bind somebody turned off;
+#   - it has not been offered to this user before. Every bind of the template
+#     is written down, once offered, in $XDG_STATE_HOME/bioma/binds-offered,
+#     so one the user has removed stays removed;
+#   - its key does nothing yet. A key that is taken stays with what has it, and
+#     the bind is offered no more: it is named once, and the Keybinds page can
+#     put it on another key.
+#
+# What is added goes at the end of the file's binds block, with the comment
+# that stands over it in the template. The result is handed to `niri validate`
+# before it is written, and nothing is written if niri refuses it.
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+
+HERE = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+TEMPLATE = os.path.join(HERE, "config", "niri", "bioma-binds.kdl.in")
+CONFIG_HOME = os.environ.get("XDG_CONFIG_HOME") or os.path.join(os.environ["HOME"], ".config")
+STATE_HOME = os.environ.get("XDG_STATE_HOME") or os.path.join(os.environ["HOME"], ".local", "state")
+OFFERED = os.path.join(STATE_HOME, "bioma", "binds-offered")
+
+# ---- Reading KDL ----------------------------------------------------------------
+#
+# Enough of KDL to find niri's binds: nodes, their children, strings and raw
+# strings, the three kinds of comment. Values are not interpreted.
+
+
+def tokens(text):
+    i, n = 0, len(text)
+    while i < n:
+        c = text[i]
+        if c == "\n":
+            yield ("newline", i, i + 1)
+            i += 1
+        elif c.isspace():
+            i += 1
+        elif text.startswith("//", i):
+            end = text.find("\n", i)
+            i = n if end < 0 else end
+        elif text.startswith("/*", i):
+            depth, i = 1, i + 2
+            while i < n and depth:
+                if text.startswith("/*", i):
+                    depth, i = depth + 1, i + 2
+                elif text.startswith("*/", i):
+                    depth, i = depth - 1, i + 2
+                else:
+                    i += 1
+        elif text.startswith("/-", i):
+            yield ("slashdash", i, i + 2)
+            i += 2
+        elif c in "{};":
+            yield ({"{": "open", "}": "close", ";": "semi"}[c], i, i + 1)
+            i += 1
+        elif c == '"':
+            j = i + 1
+            while j < n and text[j] != '"':
+                j += 2 if text[j] == "\\" else 1
+            yield ("string", i, j + 1)
+            i = j + 1
+        elif re.match(r'r#*"', text[i:i + 64]):
+            hashes = re.match(r"r(#*)", text[i:]).group(1)
+            close = '"' + hashes
+            end = text.find(close, i + len(hashes) + 2)
+            end = n if end < 0 else end + len(close)
+            yield ("string", i, end)
+            i = end
+        else:
+            j = i
+            while j < n and not text[j].isspace() and text[j] not in '{};"' \
+                    and not text.startswith("//", j) and not text.startswith("/*", j):
+                j += 1
+            yield ("word", i, j)
+            i = j
+
+
+def nodes(text):
+    """The top-level nodes, each {name, args, children, start, end, off}."""
+    toks = list(tokens(text))
+    pos = 0
+
+    def level():
+        nonlocal pos
+        found = []
+        off = False
+        while pos < len(toks):
+            kind, start, end = toks[pos]
+            if kind in ("newline", "semi"):
+                pos += 1
+                continue
+            if kind == "close":
+                return found
+            if kind == "slashdash":
+                off = True
+                pos += 1
+                continue
+            node = {"name": text[start:end], "args": [], "children": None,
+                    "start": start, "end": end, "off": off}
+            off = False
+            pos += 1
+            while pos < len(toks) and toks[pos][0] not in ("newline", "semi", "open", "close"):
+                node["args"].append(text[toks[pos][1]:toks[pos][2]])
+                node["end"] = toks[pos][2]
+                pos += 1
+            if pos < len(toks) and toks[pos][0] == "open":
+                node["body"] = toks[pos][2]
+                pos += 1
+                node["children"] = level()
+                if pos < len(toks):
+                    node["body_end"] = toks[pos][1]
+                    node["end"] = toks[pos][2]
+                    pos += 1
+            found.append(node)
+        return found
+
+    found = level()
+    while pos < len(toks):          # a stray `}` at the top: read past it
+        pos += 1
+        found += level()
+    return found
+
+
+def unquote(s):
+    if s.startswith('"'):
+        return re.sub(r"\\(.)", r"\1", s[1:-1])
+    m = re.match(r'r(#*)"(.*)"\1$', s, re.S)
+    return m.group(2) if m else s
+
+
+# ---- What a bind is -------------------------------------------------------------
+
+ALIASES = {"mod": "super", "win": "super", "control": "ctrl",
+           "mod1": "alt", "mod4": "super"}
+
+
+def key_of(name):
+    """A combination as niri reads it: modifiers in any order and case."""
+    parts = name.split("+")
+    mods = sorted({ALIASES.get(m.lower(), m.lower()) for m in parts[:-1]})
+    return "+".join(mods + [parts[-1].lower()])
+
+
+def action_of(text, node):
+    """What a bind does, wherever Bioma lives and however it is spaced."""
+    body = text[node["body"]:node["body_end"]]
+    body = re.sub(r"//[^\n]*", "", body)
+    body = re.sub(r'"[^"]*/(shell\.qml|scripts/[A-Za-z0-9_-]+)"', r'"@BIOMA@/\1"', body)
+    return re.sub(r"\s+", " ", body).strip().rstrip(";").strip()
+
+
+def title_of(node):
+    for i, arg in enumerate(node["args"]):
+        if arg == "hotkey-overlay-title=" and i + 1 < len(node["args"]):
+            return unquote(node["args"][i + 1])
+        if arg.startswith("hotkey-overlay-title="):
+            return unquote(arg.split("=", 1)[1])
+    return ""
+
+
+def binds_in(text):
+    """Every bind of a file's binds blocks, and the blocks."""
+    found, blocks = [], []
+    for node in nodes(text):
+        if node["name"] == "binds" and node["children"] is not None:
+            blocks.append(node)
+            for child in node["children"]:
+                if child.get("body") is not None:
+                    found.append({"key": key_of(child["name"]), "name": child["name"],
+                                  "action": action_of(text, child), "title": title_of(child),
+                                  "off": child["off"] or node["off"],
+                                  "start": child["start"], "end": child["end"]})
+    return found, blocks
+
+
+def config_files(path, seen=None):
+    """niri's configuration: the file and everything it includes, in order."""
+    seen = set() if seen is None else seen
+    real = os.path.realpath(path)
+    if real in seen or not os.path.isfile(real):
+        return []
+    seen.add(real)
+    text = open(real, encoding="utf-8").read()
+    files = [(real, text)]
+    for node in nodes(text):
+        if node["name"] == "include" and not node["off"] and node["args"]:
+            target = os.path.expanduser(unquote(node["args"][0]))
+            if not os.path.isabs(target):
+                target = os.path.join(os.path.dirname(real), target)
+            files += config_files(target, seen)
+    return files
+
+
+# ---- Merging --------------------------------------------------------------------
+
+
+def template():
+    text = open(TEMPLATE, encoding="utf-8").read().replace("@BIOMA@", HERE)
+    found, _ = binds_in(text)
+    for bind in found:
+        # The bind's own lines, and the comment directly over it: the lines
+        # that are comments up to the first that is not, a blank one included.
+        start = text.rfind("\n", 0, bind["start"]) + 1
+        while start > 0:
+            above = text.rfind("\n", 0, start - 1) + 1
+            if not text[above:start].strip().startswith("//"):
+                break
+            start = above
+        bind["text"] = text[start:bind["end"]]
+    return found
+
+
+def offered():
+    try:
+        return set(line.rstrip("\n") for line in open(OFFERED, encoding="utf-8"))
+    except FileNotFoundError:
+        return set()
+
+
+def remember(actions):
+    os.makedirs(os.path.dirname(OFFERED), exist_ok=True)
+    with open(OFFERED + ".new", "w", encoding="utf-8") as out:
+        out.write("".join(a + "\n" for a in sorted(actions)))
+    os.replace(OFFERED + ".new", OFFERED)
+
+
+def accepted(text):
+    """Whether niri reads this binds file. The file alone, so nothing of
+    niri's own configuration is touched to ask."""
+    with tempfile.TemporaryDirectory() as tmp:
+        with open(os.path.join(tmp, "bioma-binds.kdl"), "w", encoding="utf-8") as out:
+            out.write(text)
+        with open(os.path.join(tmp, "config.kdl"), "w", encoding="utf-8") as out:
+            out.write('include "bioma-binds.kdl"\n')
+        try:
+            done = subprocess.run(["niri", "validate", "-c", os.path.join(tmp, "config.kdl")],
+                                  capture_output=True, text=True)
+        except FileNotFoundError:
+            return False, "niri is not installed"
+    return done.returncode == 0, re.sub(r"\x1b\[[0-9;]*m", "", done.stderr + done.stdout)
+
+
+def main(args):
+    config = os.environ.get("NIRI_CONFIG") or os.path.join(CONFIG_HOME, "niri", "config.kdl")
+    if not os.path.isfile(config):
+        return 0
+    path = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(config)),
+                                         "bioma-binds.kdl"))
+    wanted = template()
+
+    if "--record" in args:
+        remember({b["action"] for b in wanted} | offered())
+        return 0
+    if not os.path.isfile(path):
+        return 0     # nothing to add to: the installer writes the whole file
+
+    files = config_files(config)
+    if path not in (f for f, _ in files):
+        files.append((path, open(path, encoding="utf-8").read()))
+    present, taken = set(), {}
+    for file, text in files:
+        for bind in binds_in(text)[0]:
+            present.add(bind["action"])
+            if not bind["off"]:
+                taken[bind["key"]] = (bind, file)
+
+    before = offered()
+    adding, said = [], []
+    for bind in wanted:
+        if bind["action"] in before or bind["action"] in present:
+            continue
+        if bind["key"] in taken:
+            other, file = taken[bind["key"]]
+            said.append(f"skipped   {bind['name']} ({bind['title'] or bind['action']}): "
+                        f"the key is taken in {os.path.basename(file)}")
+            continue
+        adding.append(bind)
+        taken[bind["key"]] = (bind, path)
+
+    if adding:
+        text = open(path, encoding="utf-8").read()
+        _, blocks = binds_in(text)
+        entries = "\n\n".join(b["text"] for b in adding)
+        block = next((b for b in blocks if not b["off"]), None)
+        if block is not None and block.get("body_end") is not None:
+            # Before the block's closing brace, after its last line.
+            at = text.rfind("\n", 0, block["body_end"]) + 1
+            head = text[:at].rstrip("\n")
+            result = head + "\n\n" + entries + "\n" + text[at:]
+        else:
+            result = text.rstrip("\n") + "\n\nbinds {\n" + entries + "\n}\n"
+        ok, refusal = accepted(result)
+        if not ok:
+            print(f"niri refused the new keys, so {path} is as it was:", file=sys.stderr)
+            print("\n".join(refusal.strip().splitlines()[-5:]), file=sys.stderr)
+            return 1
+        fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path), prefix=".bioma-binds.")
+        with os.fdopen(fd, "w", encoding="utf-8") as out:
+            out.write(result)
+        shutil.copymode(path, tmp)
+        os.replace(tmp, path)
+        for bind in adding:
+            said.append(f"added     {bind['name']} ({bind['title'] or bind['action']})")
+
+    remember(before | {b["action"] for b in wanted})
+    for line in said:
+        print(line)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

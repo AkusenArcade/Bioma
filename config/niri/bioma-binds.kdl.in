@@ -18,7 +18,9 @@
 // `bioma-binds.kdl` beside niri's `config.kdl`, with `@BIOMA@` replaced by
 // where the repository actually is, and includes it. The written copy is
 // yours: the settings cell's Keybinds page edits it in place, and the
-// installer does not overwrite it again unless asked to (`--force`).
+// installer does not overwrite it again unless asked to (`--force`). A bind
+// added here in a later version reaches the copy by itself (`scripts/binds`),
+// once, and only on a key that is free.
 //
 // niri merges an included `binds` block with its own, so nothing here has to
 // be repeated there.

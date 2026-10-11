@@ -10,7 +10,8 @@
 # What it writes, all of it next to niri's config.kdl:
 #   - bioma-binds.kdl, from config/niri/bioma-binds.kdl.in with the repository's
 #     path filled in. Only if there is none yet: the copy is the user's, and the
-#     settings cell's Keybinds page edits it in place.
+#     settings cell's Keybinds page edits it in place. A copy already there gets
+#     the template's keys it has never been offered (scripts/binds).
 #   - `include` lines at the end of config.kdl for the repository's
 #     config/niri/bioma.kdl and for bioma-binds.kdl — once each. An include of
 #     the repository's own binds file, from before the template, is replaced.
@@ -195,6 +196,7 @@ cp -p "$real" "$backup"
 
 if [ ! -f "$binds" ] || $force; then
     sed "s#@BIOMA@#$here#g" "$here/config/niri/bioma-binds.kdl.in" >"$binds"
+    "$here/scripts/binds" --record
     echo "wrote     $binds"
 else
     echo "kept      $binds (yours; --force writes it again)"
@@ -214,6 +216,8 @@ print(" ".join(sorted(roots)))
 PY
 )"
     [ -n "$moved" ] && echo "pointed   $binds from $moved to $here"
+    # Keys a later version brought, which a copy from before it lacks.
+    "$here/scripts/binds" || true
 fi
 
 # An include of the repository's own binds file predates the template: it is

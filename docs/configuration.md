@@ -40,7 +40,11 @@ include "bioma-binds.kdl"
 
 `bioma-binds.kdl` is `config/niri/bioma-binds.kdl.in` with `@BIOMA@` replaced
 by the repository's path. Once written it is the user's: the settings cell's
-Keybinds page edits it where it is.
+Keybinds page edits it where it is. A bind a later version adds to the template
+is added to the copy when the shell starts (`scripts/binds`): once, if nothing
+in niri's configuration does the same thing and its key is free. The binds
+already offered are listed in `$XDG_STATE_HOME/bioma/binds-offered`, so one
+the user removed is not brought back.
 
 Blur itself needs no rule. niri turns it on by itself for any surface that
 declares a blur region through `ext-background-effect`, which is exactly how

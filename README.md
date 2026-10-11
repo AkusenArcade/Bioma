@@ -322,7 +322,9 @@ would lose it. Then it writes the keys and tells niri where Bioma is:
   `config/niri/bioma-binds.kdl.in` with the repository's path filled in. The
   keys are under `Mod+Alt`, so they stay clear of niri's own defaults. The copy
   is yours: the settings cell's Keybinds page edits it, and the installer
-  leaves it alone from then on (`--force` writes it again).
+  never writes it again (`--force` does). A key a later version brings is
+  added to it when Bioma restarts, unless its key is taken; one you removed
+  stays removed (`scripts/binds`).
 - `include` lines at the end of `config.kdl` for that file and for
   `config/niri/bioma.kdl`, the layer rules. With `--autostart`, it also adds a
   `spawn-at-startup` for `scripts/shell start`.
