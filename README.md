@@ -178,6 +178,8 @@ moves is a live value. The pointer passes straight through them to the desktop,
 and an organism with nothing to show is absent: media with nothing playing, the
 nucleus on a machine without a battery.
 
+![Twelve organisms on an empty workspace: clock, calendar, weather, photoperiod, lava lamp, osmosis, vitals, cytoplasm, growth rings, adipose, a note and media](docs/media/organisms.webp)
+
 | Organism | What it shows |
 |---|---|
 | Clock | the time, large, with the clock cell's face beside it and the date in words |
