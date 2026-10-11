@@ -369,7 +369,7 @@ what a cell displays. A cell's own settings live in its `options`.
 | `sinestesia.fps` | Frames per second out of the tool. Sixty is what Sinestesia itself runs at. |
 | `sinestesia.gain` | Multiplier applied after the dB mapping, 0.1 to 10. The mapping puts −70 dB at nothing and 0 dB at full; quiet material needs more than 1. |
 | `sinestesia.source` | `output` — the default sink's monitor, everything the machine plays — or `input`, the default source. |
-| `sinestesia.effect` | How the band draws the sound, in the media cell, its open capsule and the media organism alike: `bars` (the default), `plasma` or `vesicles` — CELLS §04. Chosen on the Media row of the Cells page. |
+| `sinestesia.effect` | How the band draws the sound, in the media cell, its open capsule and the media organism alike: `bars` (the default), `plasma`, `vesicles` or `eardrum` — CELLS §04. Chosen from the dropdown on the Media row of the Cells page. |
 | `brightness.backend` | `auto` \| `backlight` \| `ddc` \| `none`. `auto` prefers a real backlight and falls back to DDC. |
 | `brightness.display` | Which DDC display to drive, by connector (`DP-1`) or I²C bus. Empty means the first found. |
 | `capture.what` / `capture.from` | The last pair the utility cell used — `image` \| `video` \| `text`, and `screen` \| `window` \| `region`. Written by the cell itself, so the common case stays one press. |

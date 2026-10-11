@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Effects
 import Quickshell
 import qs.core
 import qs.components
@@ -40,6 +41,65 @@ Item {
     readonly property real helpSize: 18 * factor
     readonly property real notePadding: 10 * factor
     readonly property real noteGap: 6 * factor
+
+    // ---- The effect dropdown ---------------------------------------------------
+    //
+    // How the media band draws the sound. A dropdown rather than a segmented
+    // control: the effects grow, and a row of buttons ran out of room beside
+    // the visibility at the third (Akusen, 2026-10-11). Its list is born from
+    // the dropdown's bottom edge, over the page, as the Structure page's
+    // presets are.
+    readonly property var effects: [
+        { "key": "bars", "label": "BARS" },
+        { "key": "plasma", "label": "PLASMA" },
+        { "key": "vesicles", "label": "VESICLES" },
+        { "key": "eardrum", "label": "EARDRUM" }
+    ]
+    readonly property string effect: Config.get("sinestesia.effect", "bars")
+    readonly property string effectLabel: {
+        for (const option of root.effects)
+            if (option.key === root.effect)
+                return option.label;
+        return "BARS";
+    }
+
+    // Orbitron 12, the dropdown's figure in CELLS.md §07.
+    readonly property int fontControl: Math.round(12 * factor)
+    readonly property real effectWidth: 132 * factor
+    readonly property real effectPadding: 6 * factor
+
+    property bool effectsOpen: false
+    property Item effectDrop: null
+    property real effectOriginX: 0
+    property real effectOriginY: 0
+
+    function toggleEffects(drop) {
+        if (root.effectsOpen) {
+            root.effectsOpen = false;
+            return;
+        }
+        root.effectDrop = drop;
+        const at = drop.mapToItem(root, 0, drop.height);
+        root.effectOriginX = at.x;
+        root.effectOriginY = at.y;
+        root.effectsOpen = true;
+    }
+
+    function chooseEffect(key) {
+        root.effectsOpen = false;
+        if (key !== root.effect)
+            Config.set("sinestesia.effect", key);
+    }
+
+    property real effectGrowth: root.effectsOpen ? 1 : 0
+
+    Behavior on effectGrowth {
+        NumberAnimation {
+            duration: root.effectsOpen ? Timing.grow : Timing.close
+            easing.type: Easing.Bezier
+            easing.bezierCurve: root.effectsOpen ? Timing.easeOpen : Timing.easeClose
+        }
+    }
 
     readonly property var membranes: Config.get("membranes", [])
     readonly property var floats: Config.get("floating", [])
@@ -137,120 +197,108 @@ Item {
         return rule;
     }
 
-    Scroller {
-        flick: list
-        factor: root.factor
-        x: root.width - width
-    }
-
-    ListView {
-        id: list
+    // While the effect list is out, its shape is cut out of the page: the list
+    // draws a blurred copy of what it covers, and under its translucent glass
+    // the sharp original showed through (cells/settings/SettingsStructure.qml).
+    Item {
+        id: cutout
 
         anchors.fill: parent
-        anchors.rightMargin: 8 * root.factor
-        model: root.rows
-        boundsBehavior: Flickable.StopAtBounds
-        clip: true
+        layer.enabled: root.effectGrowth > 0
+        layer.effect: MultiEffect {
+            maskEnabled: true
+            maskInverted: true
+            maskSource: effectHole
+        }
 
-        delegate: Item {
-            id: row
+        Scroller {
+            flick: list
+            factor: root.factor
+            x: root.width - width
+        }
 
-            required property var modelData
-            required property int index
+        ListView {
+            id: list
 
-            readonly property bool open: root.explained === row.modelData.type
-            readonly property string condition: Registry.conditionOf(row.modelData.type)
+            anchors.fill: parent
+            anchors.rightMargin: 8 * root.factor
+            model: root.rows
+            boundsBehavior: Flickable.StopAtBounds
+            clip: true
 
-            // 0 closed, 1 open: the note under the row grows by height from
-            // the row itself, and its words arrive once it is there.
-            property real growth: row.open ? 1 : 0
-            Behavior on growth {
-                NumberAnimation {
-                    duration: row.open ? Timing.grow : Timing.close
-                    easing.type: Easing.Bezier
-                    easing.bezierCurve: row.open ? Timing.easeOpen : Timing.easeClose
+            onContentYChanged: root.effectsOpen = false
+
+            delegate: Item {
+                id: row
+
+                required property var modelData
+                required property int index
+
+                readonly property bool open: root.explained === row.modelData.type
+                readonly property string condition: Registry.conditionOf(row.modelData.type)
+
+                // 0 closed, 1 open: the note under the row grows by height from
+                // the row itself, and its words arrive once it is there.
+                property real growth: row.open ? 1 : 0
+                Behavior on growth {
+                    NumberAnimation {
+                        duration: row.open ? Timing.grow : Timing.close
+                        easing.type: Easing.Bezier
+                        easing.bezierCurve: row.open ? Timing.easeOpen : Timing.easeClose
+                    }
                 }
-            }
 
-            readonly property real noteHeight: noteText.implicitHeight + root.notePadding * 2
+                readonly property real noteHeight: noteText.implicitHeight + root.notePadding * 2
 
-            // The row's own line, which everything in it is centred on while
-            // the note grows under it.
-            Item {
-                id: line
-                width: parent.width
-                height: root.listRow
-            }
+                // The row's own line, which everything in it is centred on while
+                // the note grows under it.
+                Item {
+                    id: line
+                    width: parent.width
+                    height: root.listRow
+                }
 
-            width: ListView.view.width
-            height: root.listRow + (root.noteGap + row.noteHeight) * row.growth
+                width: ListView.view.width
+                height: root.listRow + (root.noteGap + row.noteHeight) * row.growth
 
-            // The number is the machine counting, so it is tabular and faint:
-            // it is there to make the list countable, not to be read.
-            Text {
-                id: ordinal
+                // The number is the machine counting, so it is tabular and faint:
+                // it is there to make the list countable, not to be read.
+                Text {
+                    id: ordinal
 
-                anchors.left: parent.left
-                anchors.verticalCenter: line.verticalCenter
-                width: root.indexWidth
-                text: String(row.index + 1).padStart(2, "0")
-                color: Theme.textFaint
-                font: Typography.tabular(Qt.font({
-                    "family": Typography.technical,
-                    "pixelSize": root.metrics.fontMeta
-                }))
-            }
-
-            Text {
-                anchors.left: ordinal.right
-                anchors.right: extra.visible ? extra.left : help.left
-                anchors.rightMargin: 12 * root.factor
-                anchors.verticalCenter: line.verticalCenter
-                text: row.modelData.name
-                elide: Text.ElideRight
-                color: row.modelData.placed ? Theme.text : Theme.textMuted
-                font.family: Typography.expressive
-                font.pixelSize: 14 * root.factor
-            }
-
-            // Placed nowhere, it has no rest state to choose — it is there
-            // when it is asked for, and that is what the row says.
-            Text {
-                id: keybindOnly
-                anchors.right: parent.right
-                anchors.rightMargin: 6 * root.factor
-                anchors.verticalCenter: line.verticalCenter
-                visible: !row.modelData.placed
-                text: "KEYBIND ONLY"
-                color: Theme.textFaint
-                font: Qt.font({
-                    "family": Typography.technical,
-                    "pixelSize": root.metrics.fontMeta,
-                    "letterSpacing": Typography.tracking(root.metrics.fontMeta,
-                                                         Typography.labelTracking)
-                })
-            }
-
-            // What a cell may carry beyond when it appears. The dock: the
-            // launcher at its head (`dock.launcher`). Media: how the band draws
-            // the sound (`sinestesia.effect`), which the media organism follows
-            // too — so it is offered even when the cell is placed nowhere.
-            Row {
-                id: extra
-
-                anchors.right: help.left
-                anchors.rightMargin: 12 * root.factor
-                anchors.verticalCenter: line.verticalCenter
-                spacing: 8 * root.factor
-                visible: (row.modelData.type === "dock" && row.modelData.placed)
-                         || row.modelData.type === "media"
-
-                readonly property bool dock: row.modelData.type === "dock"
+                    anchors.left: parent.left
+                    anchors.verticalCenter: line.verticalCenter
+                    width: root.indexWidth
+                    text: String(row.index + 1).padStart(2, "0")
+                    color: Theme.textFaint
+                    font: Typography.tabular(Qt.font({
+                        "family": Typography.technical,
+                        "pixelSize": root.metrics.fontMeta
+                    }))
+                }
 
                 Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: extra.dock ? "LAUNCHER" : "EFFECT"
-                    color: Theme.textMuted
+                    anchors.left: ordinal.right
+                    anchors.right: extra.visible ? extra.left : help.left
+                    anchors.rightMargin: 12 * root.factor
+                    anchors.verticalCenter: line.verticalCenter
+                    text: row.modelData.name
+                    elide: Text.ElideRight
+                    color: row.modelData.placed ? Theme.text : Theme.textMuted
+                    font.family: Typography.expressive
+                    font.pixelSize: 14 * root.factor
+                }
+
+                // Placed nowhere, it has no rest state to choose — it is there
+                // when it is asked for, and that is what the row says.
+                Text {
+                    id: keybindOnly
+                    anchors.right: parent.right
+                    anchors.rightMargin: 6 * root.factor
+                    anchors.verticalCenter: line.verticalCenter
+                    visible: !row.modelData.placed
+                    text: "KEYBIND ONLY"
+                    color: Theme.textFaint
                     font: Qt.font({
                         "family": Typography.technical,
                         "pixelSize": root.metrics.fontMeta,
@@ -259,130 +307,349 @@ Item {
                     })
                 }
 
-                Switch {
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: extra.dock
-                    factor: root.factor
-                    on: Config.get("dock.launcher", false)
-                    onToggled: value => Config.set("dock.launcher", value)
+                // What a cell may carry beyond when it appears. The dock: the
+                // launcher at its head (`dock.launcher`). Media: how the band draws
+                // the sound (`sinestesia.effect`), which the media organism follows
+                // too — so it is offered even when the cell is placed nowhere.
+                Row {
+                    id: extra
+
+                    anchors.right: help.left
+                    anchors.rightMargin: 12 * root.factor
+                    anchors.verticalCenter: line.verticalCenter
+                    spacing: 8 * root.factor
+                    visible: (row.modelData.type === "dock" && row.modelData.placed)
+                             || row.modelData.type === "media"
+
+                    readonly property bool dock: row.modelData.type === "dock"
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: extra.dock ? "LAUNCHER" : "EFFECT"
+                        color: Theme.textMuted
+                        font: Qt.font({
+                            "family": Typography.technical,
+                            "pixelSize": root.metrics.fontMeta,
+                            "letterSpacing": Typography.tracking(root.metrics.fontMeta,
+                                                                 Typography.labelTracking)
+                        })
+                    }
+
+                    Switch {
+                        anchors.verticalCenter: parent.verticalCenter
+                        visible: extra.dock
+                        factor: root.factor
+                        on: Config.get("dock.launcher", false)
+                        onToggled: value => Config.set("dock.launcher", value)
+                    }
+
+                    // Always the same width: only what it says changes.
+                    Item {
+                        id: effectDrop
+
+                        anchors.verticalCenter: parent.verticalCenter
+                        visible: !extra.dock
+                        width: root.effectWidth
+                        height: 22 * root.factor
+
+                        readonly property bool navigable: visible
+
+                        function activate() {
+                            root.toggleEffects(effectDrop);
+                        }
+
+                        KeyMark {
+                            factor: root.factor
+                            outset: 3 * root.factor
+                        }
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: Metrics.radiusFor(height, root.metrics)
+                            antialiasing: true
+                            color: "transparent"
+                            border.width: Metrics.rim(Screen.devicePixelRatio)
+                            border.color: root.effectsOpen ? Theme.primary
+                                        : effectDropHover.hovered ? Theme.text : Theme.line
+                        }
+
+                        Text {
+                            anchors.left: parent.left
+                            anchors.leftMargin: 10 * root.factor
+                            anchors.right: effectChevron.left
+                            anchors.rightMargin: 6 * root.factor
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: root.effectLabel
+                            elide: Text.ElideRight
+                            color: Theme.text
+                            font: Qt.font({
+                                "family": Typography.technical,
+                                "pixelSize": root.metrics.fontMeta,
+                                "weight": Typography.weightLabel,
+                                "letterSpacing": Typography.tracking(root.metrics.fontMeta, 0.04)
+                            })
+                        }
+
+                        Icon {
+                            id: effectChevron
+                            anchors.right: parent.right
+                            anchors.rightMargin: 10 * root.factor
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 9 * root.factor
+                            height: width
+                            name: "chevron-down"
+                            colour: Qt.alpha(Theme.text, 0.6)
+                        }
+
+                        HoverHandler { id: effectDropHover }
+
+                        TapHandler {
+                            onTapped: root.toggleEffects(effectDrop)
+                        }
+                    }
+                }
+
+                // The question: what "conditional" means for this one.
+                Item {
+                    id: help
+
+                    anchors.right: row.modelData.placed ? choice.left : keybindOnly.left
+                    anchors.rightMargin: 10 * root.factor
+                    anchors.verticalCenter: line.verticalCenter
+                    width: root.helpSize
+                    height: width
+                    visible: row.condition.length > 0
+
+                    readonly property bool navigable: true
+
+                    function activate() {
+                        root.explained = row.open ? "" : row.modelData.type;
+                    }
+
+                    KeyMark {
+                        factor: root.factor
+                        outset: 3 * root.factor
+                    }
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: width / 2
+                        antialiasing: true
+                        color: row.open ? Qt.alpha(Theme.primary, 0.16) : "transparent"
+                        border.width: Metrics.rim(Screen.devicePixelRatio)
+                        border.color: row.open ? Theme.primary : helpHover.hovered ? Theme.text : Theme.line
+                    }
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "?"
+                        color: row.open || helpHover.hovered ? Theme.text : Theme.textMuted
+                        font: Qt.font({
+                            "family": Typography.technical,
+                            "pixelSize": root.metrics.fontMeta,
+                            "weight": Typography.weightLabel
+                        })
+                    }
+
+                    HoverHandler { id: helpHover }
+                    TapHandler {
+                        onTapped: root.explained = row.open ? "" : row.modelData.type
+                    }
                 }
 
                 Segmented {
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: !extra.dock
+                    id: choice
+
+                    anchors.right: parent.right
+                    anchors.verticalCenter: line.verticalCenter
 
                     metrics: root.metrics
                     fontSize: root.metrics.fontMeta
                     buttonHeight: 22 * root.factor
                     buttonPadding: 10 * root.factor
 
-                    current: Config.get("sinestesia.effect", "bars")
+                    current: row.modelData.state
+
+                    visible: row.modelData.placed
+
                     options: [
-                        { "key": "bars", "label": "Bars" },
-                        { "key": "plasma", "label": "Plasma" },
-                        { "key": "vesicles", "label": "Vesicles" }
+                        { "key": "always", "label": "Always",
+                          "dimmed": !Registry.allowsIn(row.modelData.type, "always", row.modelData.floating) },
+                        { "key": "conditional", "label": "Conditional",
+                          "dimmed": !Registry.allowsIn(row.modelData.type, "conditional", row.modelData.floating) }
                     ]
 
-                    onChose: key => Config.set("sinestesia.effect", key)
+                    onChose: key => root.apply(row.modelData.type, key)
+                }
+
+                // The note: a well under the row, as tall as the growth allows,
+                // with the sentence arriving once it is whole.
+                Well {
+                    x: ordinal.width
+                    y: root.listRow + root.noteGap * row.growth
+                    width: parent.width - ordinal.width
+                    height: row.noteHeight * row.growth
+                    visible: row.growth > 0
+                    metrics: root.metrics
+                    inset: 10 * root.factor
+
+                    Text {
+                        id: noteText
+                        x: root.notePadding
+                        y: root.notePadding
+                        width: parent.width - root.notePadding * 2
+                        text: row.condition
+                        wrapMode: Text.WordWrap
+                        opacity: row.growth > 0.999 ? 1 : 0
+                        Behavior on opacity { NumberAnimation { duration: Timing.contentFade } }
+                        color: Theme.textMuted
+                        font.family: Typography.expressive
+                        font.pixelSize: root.metrics.fontSecondary
+                    }
                 }
             }
+        }
+    }
 
-            // The question: what "conditional" means for this one.
-            Item {
-                id: help
+    // ---- The list the effect dropdown opens ----------------------------------
 
-                anchors.right: row.modelData.placed ? choice.left : keybindOnly.left
-                anchors.rightMargin: 10 * root.factor
-                anchors.verticalCenter: line.verticalCenter
-                width: root.helpSize
-                height: width
-                visible: row.condition.length > 0
+    // A press anywhere else on the page puts the list away. Passive: what was
+    // pressed still answers, as it would with no list out.
+    TapHandler {
+        parent: list.contentItem
+        onTapped: point => {
+            if (!root.effectsOpen)
+                return;
+            const inside = (item) => {
+                if (!item)
+                    return false;
+                const at = item.mapFromItem(list.contentItem, point.position.x, point.position.y);
+                return at.x >= 0 && at.y >= 0 && at.x <= item.width && at.y <= item.height;
+            };
+            if (!inside(effectList) && !inside(root.effectDrop))
+                root.effectsOpen = false;
+        }
+    }
 
-                readonly property bool navigable: true
+    // The list's shape, for the cut.
+    Item {
+        id: effectHole
 
-                function activate() {
-                    root.explained = row.open ? "" : row.modelData.type;
-                }
+        anchors.fill: parent
+        opacity: 0
+        layer.enabled: root.effectGrowth > 0
 
-                KeyMark {
-                    factor: root.factor
-                    outset: 3 * root.factor
-                }
+        Rectangle {
+            x: effectList.x
+            y: effectList.y
+            width: effectList.width
+            height: effectList.height
+            radius: effectList.radius
+            antialiasing: true
+        }
+    }
 
-                Rectangle {
-                    anchors.fill: parent
-                    radius: width / 2
-                    antialiasing: true
-                    color: row.open ? Qt.alpha(Theme.primary, 0.16) : "transparent"
-                    border.width: Metrics.rim(Screen.devicePixelRatio)
-                    border.color: row.open ? Theme.primary : helpHover.hovered ? Theme.text : Theme.line
-                }
+    Panel {
+        id: effectList
 
-                Text {
-                    anchors.centerIn: parent
-                    text: "?"
-                    color: row.open || helpHover.hovered ? Theme.text : Theme.textMuted
-                    font: Qt.font({
-                        "family": Typography.technical,
-                        "pixelSize": root.metrics.fontMeta,
-                        "weight": Typography.weightLabel
-                    })
-                }
+        metrics: root.metrics
+        radius: root.metrics.radiusWell
+        padding: root.effectPadding
+        targetWidth: root.effectWidth
+        targetHeight: root.effects.length * root.metrics.rowHeight + root.effectPadding * 2
+        growth: root.effectGrowth
+        contentReady: root.effectGrowth > 0.999
+        visible: root.effectGrowth > 0
+        over: list
 
-                HoverHandler { id: helpHover }
-                TapHandler {
-                    onTapped: root.explained = row.open ? "" : row.modelData.type
-                }
-            }
+        // While it is out the arrows stay in it, and Escape puts it away
+        // (see `Focus`).
+        readonly property bool keyScope: root.effectsOpen
 
-            Segmented {
-                id: choice
+        function close() {
+            root.effectsOpen = false;
+            Focus.marked = root.effectDrop;
+        }
 
-                anchors.right: parent.right
-                anchors.verticalCenter: line.verticalCenter
+        anchorX: root.effectOriginX
+        anchorY: root.effectOriginY + 6 * root.factor
+        nodeX: root.effectOriginX + root.effectWidth / 2
+        nodeY: root.effectOriginY
 
-                metrics: root.metrics
-                fontSize: root.metrics.fontMeta
-                buttonHeight: 22 * root.factor
-                buttonPadding: 10 * root.factor
+        // Glass over the page, and the page under it deaf while it is there.
+        HoverHandler { blocking: true }
+        TapHandler { gesturePolicy: TapHandler.WithinBounds }
 
-                current: row.modelData.state
+        Column {
+            width: effectList.targetWidth - root.effectPadding * 2
 
-                visible: row.modelData.placed
+            Repeater {
+                model: root.effects
 
-                options: [
-                    { "key": "always", "label": "Always",
-                      "dimmed": !Registry.allowsIn(row.modelData.type, "always", row.modelData.floating) },
-                    { "key": "conditional", "label": "Conditional",
-                      "dimmed": !Registry.allowsIn(row.modelData.type, "conditional", row.modelData.floating) }
-                ]
+                delegate: Item {
+                    id: option
 
-                onChose: key => root.apply(row.modelData.type, key)
-            }
+                    required property var modelData
 
-            // The note: a well under the row, as tall as the growth allows,
-            // with the sentence arriving once it is whole.
-            Well {
-                x: ordinal.width
-                y: root.listRow + root.noteGap * row.growth
-                width: parent.width - ordinal.width
-                height: row.noteHeight * row.growth
-                visible: row.growth > 0
-                metrics: root.metrics
-                inset: 10 * root.factor
+                    readonly property bool current: root.effect === option.modelData.key
 
-                Text {
-                    id: noteText
-                    x: root.notePadding
-                    y: root.notePadding
-                    width: parent.width - root.notePadding * 2
-                    text: row.condition
-                    wrapMode: Text.WordWrap
-                    opacity: row.growth > 0.999 ? 1 : 0
-                    Behavior on opacity { NumberAnimation { duration: Timing.contentFade } }
-                    color: Theme.textMuted
-                    font.family: Typography.expressive
-                    font.pixelSize: root.metrics.fontSecondary
+                    width: parent.width
+                    height: root.metrics.rowHeight
+
+                    readonly property bool navigable: true
+
+                    function activate() {
+                        root.chooseEffect(option.modelData.key);
+                    }
+
+                    KeyMark {
+                        factor: root.factor
+                    }
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: Metrics.radiusFor(height, root.metrics)
+                        antialiasing: true
+                        color: optionHover.hovered ? Qt.alpha(Theme.text, 0.06) : "transparent"
+                    }
+
+                    Text {
+                        anchors.left: parent.left
+                        anchors.leftMargin: 10 * root.factor
+                        anchors.right: optionDot.left
+                        anchors.rightMargin: 8 * root.factor
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: option.modelData.label
+                        elide: Text.ElideRight
+                        color: option.current ? Theme.text : Theme.textMuted
+                        font: Qt.font({
+                            "family": Typography.technical,
+                            "pixelSize": root.fontControl,
+                            "weight": Typography.weightLabel,
+                            "letterSpacing": Typography.tracking(root.fontControl, 0.04)
+                        })
+                    }
+
+                    // The choice is exclusive, so the mark may be a dot.
+                    Rectangle {
+                        id: optionDot
+                        anchors.right: parent.right
+                        anchors.rightMargin: 10 * root.factor
+                        anchors.verticalCenter: parent.verticalCenter
+                        opacity: option.current ? 1 : 0
+                        width: 6 * root.factor
+                        height: width
+                        radius: width / 2
+                        color: Theme.primary
+                        antialiasing: true
+                    }
+
+                    HoverHandler { id: optionHover }
+
+                    TapHandler {
+                        gesturePolicy: TapHandler.WithinBounds
+                        onTapped: option.activate()
+                    }
                 }
             }
         }

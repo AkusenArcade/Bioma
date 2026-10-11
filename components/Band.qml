@@ -42,8 +42,8 @@ Item {
     property real pitch: 6
     property color base: Theme.primary
 
-    // How the band is drawn: `bars`, the mark's capsules, or one of the two
-    // fluids, `plasma` and `vesicles` (components/Fluid.qml).
+    // How the band is drawn: `bars`, the mark's capsules, or one of the
+    // fluids — `plasma`, `vesicles`, `eardrum` (components/Fluid.qml).
     // `sinestesia.effect`, chosen on the Cells page, for the cell and the
     // organism alike.
     property string effect: "bars"
@@ -72,7 +72,7 @@ Item {
 
     Loader {
         anchors.fill: parent
-        sourceComponent: root.effect === "plasma" || root.effect === "vesicles" ? fluidForm : barsForm
+        sourceComponent: ["plasma", "vesicles", "eardrum"].includes(root.effect) ? fluidForm : barsForm
     }
 
     Component {

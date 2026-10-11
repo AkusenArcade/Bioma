@@ -211,8 +211,9 @@ the two holds the other.
 | threads | 24 px | membrane → capsule → panel, in a column |
 | exit dwell | 4 s | after the last signal above threshold, with hysteresis on the threshold |
 
-**Effects** (`sinestesia.effect`, chosen on the Cells page's Media row; the media organism
-follows it). Three ways to draw the same values, all keeping the band's two symmetries — left
+**Effects** (`sinestesia.effect`, chosen from the dropdown on the Cells page's Media row — a
+dropdown because the effects grow, and a segmented control ran out of room at the third; the
+media organism follows it). Four ways to draw the same values, all keeping the band's two symmetries — left
 channel on the left, right on the right, the low frequencies meeting at the middle — and all
 built on the bars' measures, so a drop sits where a bar would and silence is the bar's dot.
 Added 2026-10-11 at Akusen's request: the bars read as a stock visualiser beside the organisms.
@@ -230,6 +231,16 @@ Added 2026-10-11 at Akusen's request: the bars read as a stock visualiser beside
   pitch and never more than 0.15 of the band's height; drops of neighbours at one height melt.
   Where the band is at least six pitches tall (the organism) one vesicle stands for two bands,
   the louder, at twice the pitch: forty-eight were beads on a string, too small to divide.
+
+- **Eardrum** — a membrane stretched along the middle line, held at both ends as the eardrum is
+  by its ring, the umbo (where the hammer holds it) a node at the centre. Each band shakes the
+  stretch where its bar would stand, as far as it is loud, its window a Gaussian one pitch wide.
+  The low bands at the centre move the membrane as a whole in long slow waves (half the band's
+  width, 0.9 Hz), as a real eardrum moves at low frequencies; towards the ends the highs break
+  it into short quick ripples (three pitches, 6 Hz). The waves run outwards from the umbo,
+  mirrored. A faint envelope (primary, 16 %) shows how far it swings. The rate of a stretch is
+  its band's place in the spectrum, its extent the band's level: silent, the membrane is a taut
+  still line and draws nothing. Added 2026-10-11 at Akusen's request.
 
 The fluids are one shader (`components/fluid.frag`): a smooth minimum of circles, not a sum of
 fields, so a crowd of loud drops never swells out of the band. Translucent by depth and lit at the

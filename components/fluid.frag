@@ -10,6 +10,14 @@
 //   one dot at silence, stretched, pinched, then two drops mirrored across
 //   the middle line, as far from it as the band is loud. The extent is the
 //   data, as the bars' height is.
+// - eardrum: a membrane stretched along the middle line, held at both ends
+//   as the eardrum is by its ring, with the umbo — where the hammer holds
+//   it — at the centre. Each band shakes the stretch of it where its bar
+//   would stand, as far as it is loud. The low bands at the centre move the
+//   membrane as a whole, slowly and in long waves, as a real eardrum does at
+//   low frequencies; towards the ends the highs break it into short, quick
+//   ripples. The waves run outwards from the umbo, mirrored, and a faint
+//   envelope shows how far it swings. Silent, it is a taut, still line.
 //
 // The union is a smooth minimum of distances, not a sum of fields: a sum
 // swells wherever drops crowd together and a loud passage would rise out of
@@ -29,7 +37,8 @@ layout(std140, binding = 0) uniform buf {
     float count;     // drops in the row, both wings together
     float pitch;     // from one drop's centre to the next
     float first;     // the first drop's centre, from the left
-    float form;      // 0 plasma, 1 vesicles
+    float form;      // 0 plasma, 1 vesicles, 2 eardrum
+    float time;      // seconds the eardrum has been shaking
     float thread;    // the silent dot's radius
     float drop;      // a drop's radius at full scale
     float blend;     // how far apart two vesicles still melt together
@@ -47,12 +56,74 @@ float smin(float a, float b, float k) {
     return min(a, b) - h * h * k * 0.25;
 }
 
+// The eardrum's colour at p: the membrane, its envelope and the umbo.
+vec4 eardrum(vec2 p, float mid, int n, vec4 bands[12]) {
+    float width_ = extent.x;
+    float centre = width_ * 0.5;
+    float reach = mid - thread - 1.0;
+    float sigma = pitch;
+    float half_ = max(float(n / 2) - 1.0, 1.0);
+
+    float shake = 0.0;
+    float swing = 0.0;
+    float weight = 0.0;
+    float atUmbo = 0.0;
+    float umboWeight = 0.0;
+    for (int i = 0; i < 48; i++) {
+        if (i >= n)
+            break;
+        float v = clamp(bands[i / 4][i % 4], 0.0, 1.0);
+        float x = first + float(i) * pitch;
+        // 0 at the centre, the lowest band of its channel; 1 at the end.
+        float rank = (i < n / 2 ? float(n / 2 - 1 - i) : float(i - n / 2)) / half_;
+        float wave = 6.2831853 / mix(width_ * 0.5, pitch * 3.0, rank);
+        float rate = 6.2831853 * mix(0.9, 6.0, rank);
+        float g = exp(-pow((p.x - x) / sigma, 2.0));
+        shake += v * g * sin(wave * abs(p.x - centre) - rate * time);
+        swing += v * g;
+        weight += g;
+        float u = exp(-pow((centre - x) / sigma, 2.0));
+        atUmbo += v * u * sin(-rate * time);
+        umboWeight += u;
+    }
+
+    // Held at both ends by the ring.
+    float hold = smoothstep(0.0, pitch * 2.0, p.x) * smoothstep(0.0, pitch * 2.0, width_ - p.x);
+    float y = mid + reach * hold * shake / max(weight, 1e-3);
+    float spread = reach * hold * swing / max(weight, 1e-3);
+    float umboY = mid + reach * atUmbo / max(umboWeight, 1e-3);
+
+    vec3 light = mix(upper.rgb, lower.rgb, clamp(p.y / extent.y, 0.0, 1.0));
+
+    // The membrane: a line of even thickness whatever its slope.
+    float slope = dFdx(y);
+    float off = abs(p.y - y) / sqrt(1.0 + slope * slope);
+    float line = 1.0 - smoothstep(thread - 0.5, thread + 0.5, off);
+
+    // How far it swings, faint, as a vibrating string blurs.
+    float env = (1.0 - smoothstep(spread - 0.5, spread + 0.5, abs(p.y - mid))) * 0.16;
+
+    // The umbo.
+    float node = 1.0 - smoothstep(thread * 1.9 - 0.5, thread * 1.9 + 0.5,
+                                  length(p - vec2(centre, umboY)));
+
+    float a = max(max(line * 0.95, env), node);
+    vec3 colour = mix(light, core.rgb, 0.35 * max(line, node));
+    return vec4(colour * a, a) * qt_Opacity;
+}
+
 void main() {
     vec2 p = qt_TexCoord0 * extent;
     float mid = extent.y * 0.5;
 
     vec4 bands[12] = vec4[](v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11);
     int n = int(count + 0.5);
+
+    if (form > 1.5) {
+        fragColor = eardrum(p, mid, n, bands);
+        return;
+    }
+
     float d = 1e5;
 
     if (form < 0.5) {

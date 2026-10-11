@@ -235,7 +235,7 @@ over the bright part keeps its gradient — it is light on light only where ther
 
 **Options** — `size`, `band` (on / off; off, the words move up into the band's place and the
 cover shows more).
-The band is drawn as the media cell's is — bars, plasma or vesicles (`sinestesia.effect`,
+The band is drawn as the media cell's is — bars, plasma, vesicles or eardrum (`sinestesia.effect`,
 CELLS §04): one choice for the sound wherever it is shown.
 
 ## 03 · Vitals

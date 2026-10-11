@@ -1,7 +1,8 @@
 import QtQuick
 import qs.core
 
-// The audio band as a fluid, mirrored from the centre: `plasma` or `vesicles`.
+// The audio band as a fluid, mirrored from the centre: `plasma`, `vesicles` or
+// `eardrum`.
 //
 // The same instrument as the bars, drawn as the organisms are drawn. Both
 // forms keep the bars' two symmetries — the left channel on the left and the
@@ -14,6 +15,10 @@ import qs.core
 // - vesicles: a drop for every band that divides as the band gets louder —
 //   one dot at silence, then two drops mirrored across the middle line, as
 //   far from it as the band is loud, as the bars' height is.
+// - eardrum: a membrane held at both ends with the umbo at its centre, each
+//   band shaking its own stretch as far as it is loud — the lows at the
+//   centre in long slow waves, the highs at the ends in short quick ripples,
+//   running outwards from the umbo. Silent, a taut still line.
 //
 // It takes the bars' measures — `count`, `barWidth`, `pitch` — so a drop sits
 // where a bar would, and silence is the bar's dot. The shader is fluid.frag.
@@ -31,12 +36,17 @@ Item {
     property color base: Theme.primary
     property string form: "vesicles"
     readonly property bool plasma: form === "plasma"
+    readonly property bool eardrum: form === "eardrum"
+
+    // The eardrum's clock: it runs only while the membrane has something to
+    // shake, so a silent membrane is still and draws nothing.
+    property real time: 0
 
     // Where the band is tall enough, a vesicle stands for two neighbouring
     // bands (the louder of them) at twice the pitch: forty-eight across the
     // organism were beads on a string, too small to divide. Plasma keeps one
     // drop per band everywhere — its drops are one body, not separate shapes.
-    readonly property int step: plasma ? 1 : Math.max(1, Math.round(height / (pitch * 6)))
+    readonly property int step: plasma || eardrum ? 1 : Math.max(1, Math.round(height / (pitch * 6)))
     readonly property int drops: Math.floor(count / step)
     readonly property real spacing: pitch * step
 
@@ -46,7 +56,7 @@ Item {
     // scale is a little more than half a spacing, so neighbours at one height
     // touch and melt, and never more than a sixth of the band's height, or its
     // halves would have nowhere to go.
-    readonly property real thread: barWidth / 2
+    readonly property real thread: eardrum ? Math.max(1, barWidth * 0.4) : barWidth / 2
     readonly property real drop: plasma
         ? height * 0.38
         : Math.max(thread, Math.min(spacing * 0.6, height * 0.15))
@@ -104,6 +114,7 @@ Item {
             const k = 1 - Math.exp(-Math.min(frameTime, 0.05) / tau);
             const next = root.values.slice();
             let moving = false;
+            let sounding = false;
             for (let i = 0; i < next.length; i++) {
                 const gap = root.wanted[i] - next[i];
                 if (Math.abs(gap) > 0.002) {
@@ -112,9 +123,13 @@ Item {
                 } else {
                     next[i] = root.wanted[i];
                 }
+                if (next[i] > 0.003)
+                    sounding = true;
             }
             root.values = next;
-            if (!moving)
+            if (root.eardrum && sounding)
+                root.time += Math.min(frameTime, 0.05);
+            else if (!moving)
                 running = false;
         }
     }
@@ -132,7 +147,8 @@ Item {
         readonly property real count: Math.min(root.drops, 48)
         readonly property real pitch: root.place
         readonly property real first: root.start
-        readonly property real form: root.plasma ? 0 : 1
+        readonly property real form: root.plasma ? 0 : root.eardrum ? 2 : 1
+        readonly property real time: root.time
         readonly property real thread: root.thread
         readonly property real drop: root.drop
         readonly property real blend: root.blend
