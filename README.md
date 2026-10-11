@@ -120,6 +120,16 @@ placed nowhere and comes up on its key. When
 the volume, the brightness or the keyboard layout changes and no cell on that
 monitor is there to say it, a small on-screen display says it instead.
 
+<p align="center">
+  <img src="docs/media/emoji.webp" width="360" alt="Emoji, opened: the search, the skin tones, recent picks and the set by group">
+  <img src="docs/media/timer.webp" width="250" alt="The timer, opened: the time left, pause and stop">
+</p>
+
+<p align="center">
+  <img src="docs/media/download.webp" width="480" alt="Downloads, opened beside the media and the clock: the file, its thread, the bytes so far and the rate">
+  <img src="docs/media/privacy.webp" width="300" alt="Privacy: the microphone in use, and who is taking it">
+</p>
+
 ### One palette, the whole desktop
 
 A palette has four roles (background, text, primary, secondary), and every
