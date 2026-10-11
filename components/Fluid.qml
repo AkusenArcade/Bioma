@@ -40,16 +40,27 @@ Item {
     readonly property int drops: Math.floor(count / step)
     readonly property real spacing: pitch * step
 
-    // Silence is the bar's dot. A plasma drop at full scale keeps a margin
-    // inside the row's height, for the little a blend adds. A vesicle at full
+    // Silence is the bar's dot. A plasma drop at full scale, with the quarter
+    // of a radius a blend can add between two neighbours, stays inside the
+    // row's height: loud highs were cut by the band's edge. A vesicle at full
     // scale is a little more than half a spacing, so neighbours at one height
     // touch and melt, and never more than a sixth of the band's height, or its
     // halves would have nowhere to go.
     readonly property real thread: barWidth / 2
     readonly property real drop: plasma
-        ? height * 0.44
+        ? height * 0.38
         : Math.max(thread, Math.min(spacing * 0.6, height * 0.15))
     readonly property real blend: drop * 0.45
+
+    // Where the drops stand. Vesicles where the bars do. Plasma drops are as
+    // wide as they are tall, so the row is drawn in from both ends by a full
+    // drop and the pitch shared out over what is left: the outermost bands,
+    // the highs, are as loud on screen as they are, never cut at the side.
+    readonly property real inset: plasma ? drop + 1 : 0
+    readonly property real place: plasma && drops > 1
+        ? (width - 2 * inset) / (drops - 1)
+        : spacing
+    readonly property real start: plasma ? inset : barWidth / 2 + (step - 1) * pitch / 2
 
     function valueAt(index) {
         const mirrored = index < root.half;
@@ -119,8 +130,8 @@ Item {
 
         readonly property size extent: Qt.size(width, height)
         readonly property real count: Math.min(root.drops, 48)
-        readonly property real pitch: root.spacing
-        readonly property real first: root.barWidth / 2 + (root.step - 1) * root.pitch / 2
+        readonly property real pitch: root.place
+        readonly property real first: root.start
         readonly property real form: root.plasma ? 0 : 1
         readonly property real thread: root.thread
         readonly property real drop: root.drop

@@ -219,9 +219,11 @@ Added 2026-10-11 at Akusen's request: the bars read as a stock visualiser beside
 
 - **Bars** — the default, as above.
 - **Plasma** — a drop for every band on the middle line, its radius as loud as the band, up to
-  0.44 of the band's height; the row is one body whose outline is the spectrum. Neighbours blend
+  0.38 of the band's height; the row is one body whose outline is the spectrum. Neighbours blend
   by the smaller one's radius, so a quiet drop beside a loud one barely touches it and the dots of
-  silence stay apart.
+  silence stay apart. The whole body stays inside the band: the drops are drawn in from both ends
+  by a full radius, the pitch shared over what is left, and the radius leaves room for the
+  quarter of it a blend adds (Akusen, 2026-10-11: loud highs were cut at the sides).
 - **Vesicles** — a drop for every band that divides as the band gets louder: one dot at silence,
   stretched, pinched, then two drops mirrored across the middle line, as far from it as the band
   is loud — the extent is the data, as the bars' height is. A drop at full scale is 0.6 of a
