@@ -136,6 +136,7 @@ the whole shell. Only the second table is left to you.
 | Python 3 | `python` | the helper scripts in `scripts/` |
 | gsettings | `glib2` | the desktop's settings: palette, icons, cursor, proxy |
 | wl-clipboard | `wl-clipboard` | the clipboard cell |
+| Noto Color Emoji | `noto-fonts-emoji` | the emoji cell's emoji |
 | ImageMagick | `imagemagick` | wallpaper thumbnails, and the cursors' pixels |
 | librsvg | `librsvg` | Bioma's cursors, drawn in the palette (`scripts/cursors`); with the icons, built and put on the desktop at the first start |
 | Spectral, Orbitron | AUR `ttf-spectral`, AUR `ttf-orbitron` | the two voices, expressive and technical. Both are SIL OFL |
@@ -157,7 +158,7 @@ the whole shell. Only the second table is left to you.
 
 | Optional | Package | For |
 |---|---|---|
-| whisper.cpp, its model, python-evdev | `whisper-cpp`, `ggml-vulkan`, AUR `whisper.cpp-model-large-v3-turbo-q5_0`, `python-evdev` | dictation — see [Dictation](#dictation). The model alone is 547 MB |
+| whisper.cpp, its model, python-evdev | `whisper-cpp`, `ggml-vulkan`, AUR `whisper.cpp-model-large-v3-turbo-q5_0`, `python-evdev` | dictation — see [Dictation](#dictation). The model alone is 547 MB. `python-evdev` alone is what lets the emoji cell paste; without it the emoji is left on the clipboard |
 | Business Network Wizard | AUR `business-network-wizard` | a company network — NTLM proxy, VPN, 802.1X Wi-Fi, shares, printers. When it is installed the connectivity cell's proxy well offers COMPANY NETWORK, which opens it |
 
 ## Install
@@ -214,6 +215,7 @@ Then start it with `scripts/shell bioma`, or log in again. After an update,
 | Key | Opens |
 |---|---|
 | `Mod+Space` | the launcher |
+| `Mod+Alt+Period` | emoji, pasted into the window that has the focus |
 | `Mod+Alt+S` | settings |
 | `Mod+Alt+T` | theme: wallpaper, palette, icons, cursor, application templates |
 | `Mod+Alt+V` | vitals and tasks |

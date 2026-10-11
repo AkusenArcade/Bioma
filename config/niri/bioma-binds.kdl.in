@@ -149,6 +149,12 @@ binds {
         spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "cell" "toggle" "launcher"
     }
 
+    // Emoji, pasted into the window that had the focus. Mod+Period would be
+    // the key, and niri's own default gives it to expel-window-from-column.
+    Mod+Alt+Period hotkey-overlay-title="Bioma: emoji" {
+        spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "cell" "toggle" "emoji"
+    }
+
     // Not a cell either: the lock screen, which is a process of its own.
     // The script is called directly rather than through the shell, so the
     // key locks even when the shell is down; it also stands guard, and puts

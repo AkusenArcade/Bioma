@@ -1,0 +1,149 @@
+#!/usr/bin/env python3
+# Build the emoji cell's dataset, assets/emoji/emoji.json.
+#
+#     tools/emoji-data [VERSION]       fetch the sources and write the file
+#     tools/emoji-data --from DIR      the same, from sources already there:
+#                                      DIR/emoji-test.txt, DIR/annotations.json,
+#                                      DIR/derived.json
+#
+# Two sources, both Unicode's:
+#
+# - `emoji-test.txt` — every fully-qualified emoji, in the order a picker
+#   shows them (CLDR order), with its group and its name. The five skin tones
+#   of an emoji are the entries named "<name>: <tone> skin tone"; mixed tones
+#   (two people, two tones) are left out — one tone is chosen in the cell and
+#   it applies to everything that has one.
+# - CLDR's English annotations, the words people search with ("lol" for 😂),
+#   and the derived ones for the sequences the plain file does not name.
+#
+# The file is generated once and committed: the shell reads it, it never
+# fetches anything. Run again when a new Unicode emoji version lands and the
+# font knows it (Noto Color Emoji 2.051 covers 17.0).
+#
+# The shape, kept small because the shell parses it on first use:
+#
+#     { "version": "17.0",
+#       "groups": ["SMILEYS & EMOTION", …],
+#       "emoji": [[character, name, keywords, group, tones?], …] }
+#
+# `keywords` is one space-separated string of words not already in the name;
+# `tones`, when there are any, is the five variants, light to dark.
+import json
+import os
+import re
+import subprocess
+import sys
+import tempfile
+
+HERE = os.path.dirname(os.path.realpath(__file__))
+OUT = os.path.join(os.path.dirname(HERE), "assets", "emoji", "emoji.json")
+
+TONES = ["light", "medium-light", "medium", "medium-dark", "dark"]
+
+# The skin tones and the hair styles are parts of other emoji, not emoji to
+# send on their own.
+SKIPPED_GROUPS = {"Component"}
+
+LINE = re.compile(r"^([0-9A-F ]+?)\s*;\s*fully-qualified\s*#\s*(\S+)\s+E(\d+\.\d+)\s+(.+)$")
+CLDR = "https://raw.githubusercontent.com/unicode-org/cldr-json/main/cldr-json"
+
+
+def fetch(version, into):
+    sources = {
+        "emoji-test.txt": f"https://www.unicode.org/Public/{version}.0/emoji/emoji-test.txt",
+        "annotations.json": f"{CLDR}/cldr-annotations-full/annotations/en/annotations.json",
+        "derived.json": f"{CLDR}/cldr-annotations-derived-full/annotationsDerived/en/annotations.json",
+    }
+    for name, url in sources.items():
+        subprocess.run(["curl", "-sfL", "-o", os.path.join(into, name), url], check=True)
+
+
+def bare(text):
+    """The key CLDR files an emoji under: without its presentation selectors."""
+    return text.replace("️", "")
+
+
+def build(folder, version):
+    plain = json.load(open(os.path.join(folder, "annotations.json")))
+    derived = json.load(open(os.path.join(folder, "derived.json")))
+    words = dict(derived["annotationsDerived"]["annotations"])
+    words.update(plain["annotations"]["annotations"])
+
+    groups = []
+    entries = []
+    by_name = {}
+    group = None
+
+    for line in open(os.path.join(folder, "emoji-test.txt"), encoding="utf-8"):
+        if line.startswith("# group:"):
+            group = line.split(":", 1)[1].strip()
+            continue
+        found = LINE.match(line.strip())
+        if not found or group in SKIPPED_GROUPS:
+            continue
+        character, name = found.group(2), found.group(4).strip()
+
+        # A toned variant joins the emoji it is a tone of.
+        if ":" in name:
+            base, _, tone = name.rpartition(": ")
+            if tone.endswith(" skin tone") and tone[:-len(" skin tone")] in TONES:
+                if base in by_name:
+                    by_name[base]["tones"][TONES.index(tone[:-len(" skin tone")])] = character
+                continue
+            # Two tones, or a tone and something else: not offered.
+            if "skin tone" in tone:
+                continue
+
+        if group not in groups:
+            groups.append(group)
+
+        own = set(re.findall(r"[\w'+#*-]+", name.lower()))
+        annotated = words.get(bare(character), words.get(character, {}))
+        extra = []
+        for word in annotated.get("default", []):
+            for part in word.lower().split():
+                if part not in own and part not in extra:
+                    extra.append(part)
+
+        entry = {"character": character, "name": name, "keywords": " ".join(extra),
+                 "group": groups.index(group), "tones": [None] * 5}
+        entries.append(entry)
+        by_name[name] = entry
+
+    out = []
+    for entry in entries:
+        row = [entry["character"], entry["name"], entry["keywords"], entry["group"]]
+        if all(entry["tones"]):
+            row.append(entry["tones"])
+        out.append(row)
+
+    return {
+        "version": version,
+        "groups": [g.replace(" and ", " & ").upper() for g in groups],
+        "emoji": out,
+    }
+
+
+def main():
+    args = sys.argv[1:]
+    if args[:1] == ["--from"]:
+        folder = args[1]
+        head = open(os.path.join(folder, "emoji-test.txt"), encoding="utf-8").read(4096)
+        version = re.search(r"# Version: (\d+\.\d+)", head).group(1)
+        data = build(folder, version)
+    else:
+        version = args[0] if args else "17.0"
+        with tempfile.TemporaryDirectory() as folder:
+            fetch(version, folder)
+            data = build(folder, version)
+
+    os.makedirs(os.path.dirname(OUT), exist_ok=True)
+    with open(OUT, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
+        f.write("\n")
+    toned = sum(1 for row in data["emoji"] if len(row) > 4)
+    print(f"{OUT}: {len(data['emoji'])} emoji, {toned} with skin tones, "
+          f"{len(data['groups'])} groups, Unicode {data['version']}")
+
+
+main()

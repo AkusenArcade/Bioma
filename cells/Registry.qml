@@ -32,7 +32,8 @@ Singleton {
         "keyboard": "keyboard/KeyboardCell.qml",
         "privacy": "privacy/PrivacyCell.qml",
         "timer": "timer/TimerCell.qml",
-        "download": "download/DownloadCell.qml"
+        "download": "download/DownloadCell.qml",
+        "emoji": "emoji/EmojiCell.qml"
     })
 
     // What a cell is called when it is spoken about rather than drawn — the
@@ -57,7 +58,8 @@ Singleton {
         "keyboard": "Keyboard",
         "privacy": "Privacy",
         "timer": "Timer",
-        "download": "Downloads"
+        "download": "Downloads",
+        "emoji": "Emoji"
     })
 
     // When each cell is there by itself, said the way the settings cell's
@@ -84,7 +86,8 @@ Singleton {
         "keyboard": "For five seconds after the keyboard layout changes.",
         "privacy": "While the microphone, a camera or the screen is being taken, and two seconds after.",
         "timer": "While a timer runs, or waits, paused, to be resumed.",
-        "download": "While a browser is downloading into the downloads folder, and until a minute after it stalls."
+        "download": "While a browser is downloading into the downloads folder, and until a minute after it stalls.",
+        "emoji": "Never by itself: it comes when its keybind asks for it."
     })
 
     function conditionOf(type) {
@@ -167,7 +170,8 @@ Singleton {
         "keyboard": ["always", "conditional"],
         "privacy": ["conditional"],
         "timer": ["conditional"],
-        "download": ["conditional"]
+        "download": ["conditional"],
+        "emoji": ["always", "invoked"]
     })
 
     // A cell whose form changes when it floats, and whose visibility changes
@@ -217,7 +221,8 @@ Singleton {
         "keyboard": 76,
         "privacy": 64,
         "timer": 40,
-        "download": 90
+        "download": 90,
+        "emoji": 40
     })
 
     function minimumOf(type) {

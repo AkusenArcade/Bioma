@@ -66,7 +66,8 @@ Singleton {
     Binding {
         target: Clipboard
         property: "quiet"
-        value: root.transcribing || hushTail.running
+        value: true
+        when: root.transcribing || hushTail.running
     }
 
     Timer {

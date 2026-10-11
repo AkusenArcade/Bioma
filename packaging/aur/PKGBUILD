@@ -19,6 +19,8 @@ depends=(
     'python'
     'glib2'
     'wl-clipboard'
+    # The emoji cell draws its emoji in Noto Color Emoji.
+    'noto-fonts-emoji'
     'imagemagick'
     'libpipewire'
     'gcc-libs'
@@ -80,7 +82,7 @@ optdepends=(
     'whisper-cpp: dictation, the engine'
     'ggml-vulkan: dictation on the GPU; without it, the CPU'
     'whisper.cpp-model-large-v3-turbo-q5_0: dictation, the model (AUR)'
-    'python-evdev: dictation, pasting into the window'
+    'python-evdev: dictation and the emoji cell, pasting into the window'
     'business-network-wizard: company network setup (NTLM proxy, VPN, 802.1X, shares), opened from the connectivity cell'
 )
 # libspa builds a small C shim that makepkg's LTO turns into bitcode, which
