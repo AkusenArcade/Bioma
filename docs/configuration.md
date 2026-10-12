@@ -255,7 +255,7 @@ specification. The base layer ships none.
 
 | Key | Meaning |
 |---|---|
-| `type` | Which organism: `clock`, `media`, `vitals`, `calendar`, `weather`, `note`, `lava`, `cytoplasm`, `rings`, `osmosis`, `photoperiod`, `vacuole`, `sediment`, `nucleus`, `adipose` |
+| `type` | Which organism: `clock`, `media`, `vitals`, `calendar`, `weather`, `note`, `lava`, `cytoplasm`, `rings`, `osmosis`, `photoperiod`, `vacuole`, `sediment`, `nucleus`, `adipose`, `agenda` |
 | `monitor` | As for a membrane: an output name, `primary` (the default) or `all` |
 | `col`, `row` | The grid point of the organism's **top-left corner**, in modules (one template unit and one gap, 224 at the normal step) from the corner of the grid laid over the free area: the screen minus what the membranes hold, measured to the line the windows begin on. Fractions of a module are fine (`1.5`). An organism is always held wholly inside the grid |
 | `x`, `y` | Read only when `col` and `row` are missing: the organism's **centre**, as fractions (0–1) of the free area. It stands on the nearest grid point, and the shell writes `col` and `row` the next time it is dropped |
@@ -315,6 +315,23 @@ The forecast comes from Open-Meteo (no key, metric units), through the proxy
 when one is on. A reading older than two hours is not shown. The photoperiod
 needs only the coordinates: it works the sun and the moon out itself and asks
 nothing more of the network.
+
+### calendar
+
+The calendars the clock cell's agenda and the agenda organism read. The clock
+writes them: open it, **+ Calendar**, then switch on a calendar of an account
+in GNOME Online Accounts, or paste an iCal address.
+
+| Key | Meaning |
+|---|---|
+| `sources` | The calendars. `{ "goa", "href", "name" }` is a calendar of an Online Accounts account: GOA keeps the sign-in, Bioma asks it at each reading and keeps nothing. `{ "id", "name" }` is a pasted address, kept in the keyring under that id. `{ "url", "name" }` is an address written by hand, or pasted on a machine with no keyring: `https://`, `webcal://` or a file |
+| `days` | How far ahead events are read. Default 62: this month and the next |
+| `minutes` | How often they are read. Default 15 |
+
+Online Accounts covers Google, Nextcloud and any WebDAV/CalDAV
+server (mailbox.org, Posteo, Fastmail). Outside GNOME its accounts are added
+with `gnome-online-accounts-gtk`. A calendar that cannot be read shows its last
+copy, and says why under the clock's agenda.
 
 ### cells
 

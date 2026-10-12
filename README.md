@@ -93,7 +93,7 @@ does.
 
 | Cell | At rest | Open |
 |---|---|---|
-| Clock | the time, and a dial that fills with the hour while a disc runs round its rim once a minute | other places, the month, a timer and an alarm |
+| Clock | the time, and a dial that fills with the hour while a disc runs round its rim once a minute | other places, the month, a timer and an alarm; with a calendar, the day's appointments under the month |
 | Window title | the focused window's title | — |
 | Workspaces | the active workspace's name, or its number | the workspaces on that screen |
 | Vitals | CPU, memory and GPU as rings that beat and fill | the readings beside the tasks using them; on a laptop, the time the battery has left, or the time until it is full |
@@ -207,6 +207,7 @@ nucleus on a machine without a battery.
 | Sediment | the files used lately, laid down in strata, the newest on top and the widest |
 | Nucleus | the battery's charge as the mass at the heart of a cell; charging, drops come in and melt into it |
 | Adipose | the filesystems, one cell each, the droplet of fat as large as the share in use |
+| Agenda | what is coming from the clock's calendars: the appointment on now or next, then the days after it |
 
 Organisms are added from the settings cell's Organisms page, one monitor at a
 time. A new one grows at the centre of the screen, and the shell enters

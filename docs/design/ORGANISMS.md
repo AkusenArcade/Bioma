@@ -1,6 +1,6 @@
 # Bioma — organisms
 
-*Approved 2026-10-04, media redrawn at Akusen's request. Built: the structure, arranging, the five organisms, the Settings category; since then the note, the lava lamp, the cytoplasm, the growth rings, osmosis, the photoperiod, the vacuole, the sediment, the nucleus and the adipose.*
+*Approved 2026-10-04, media redrawn at Akusen's request. Built: the structure, arranging, the five organisms, the Settings category; since then the note, the lava lamp, the cytoplasm, the growth rings, osmosis, the photoperiod, the vacuole, the sediment, the nucleus, the adipose and the agenda.*
 
 The visual specification of the organisms: read-only surfaces that live on the desktop, under
 the windows, in the part of the screen the top and bottom membranes leave free. Read it with
@@ -58,7 +58,7 @@ That changes three rules and keeps the rest.
   | 1 × 2 | 200 × 424 | lava lamp, osmosis |
   | 2 × 1 | 424 × 200 | clock, weather, photoperiod, nucleus, cytoplasm, vitals in a row, note `short` |
   | 3 × 1 | 648 × 200 | vitals in a row of four (with a battery): a figure cut short is not a figure |
-  | 2 × 2 | 424 × 424 | media, calendar, growth rings, vacuole, sediment, vitals `square`, note `medium` |
+  | 2 × 2 | 424 × 424 | media, calendar, agenda, growth rings, vacuole, sediment, vitals `square`, note `medium` |
   | 2 × 3 | 424 × 648 | note `tall` |
 
 - **The grid.** Organisms stand on a grid of squares laid over the free area. Its **module** is
@@ -821,6 +821,45 @@ partitions and are hidden unless `system` is set.
 
 **Settings** — the adipose's chip opens COLOUR (State · Theme) and BOOT.
 
+## 16 · Agenda
+
+*Built 2026-10-12, at Akusen's request. Always present · what is coming, from the calendars the
+clock reads.*
+
+The calendars added in the clock cell (CELLS: the clock's agenda; `services/Calendar.qml`),
+from now on. **The well** at the top holds one appointment large: the timed one going on, or
+else the first thing to come — so the list under it never goes back in time. Today's all-day
+events never take the well: they are the day's context, and a holiday would otherwise hold it
+all day over the meeting at three; they head the list under *Today*. **The list** follows: the
+days after it, a heading each, a line per event, as many as the panel holds — a whole row or
+none, never a heading with nothing under it.
+
+**Colour** — an appointment is not a machine: no state colours. The primary is the only one
+it takes, and only while it is on: `NOW`, the start time in the list, and the thread.
+
+**Motion** — the appointment going on fills a thread as it runs, a minute at a time. Nothing
+else moves; at midnight the days move up.
+
+| Measure | Value | Note |
+|---|---|---|
+| panel | 424 × 424 | template 2 × 2; padding 20 |
+| well | 384 × 118, radius 10 | padding 16 |
+| when | Orbitron 11 | `NOW` primary · `IN 25 MIN`, `IN 2 H 10`, `WEDNESDAY 28 OCTOBER` muted |
+| title | Spectral 22 / 700 | one line, ellipsis |
+| time | Orbitron 17 / 500, lit | `19:45 – 20:45`, `ALL DAY`, `3 DAYS`; the clock cell's 24 h / 12 h |
+| where | Spectral 14 | text faint: the location's first line, or the calendar's name |
+| thread | 3 | primary over `line` at 60 %, the share of the appointment gone |
+| day heading | Spectral 13 / 700, 26 high | text muted: `Today`, `Tomorrow`, `Saturday 24 October` |
+| row | 28 high | Orbitron 13 time in 76 (`ALL DAY` Orbitron 11), muted, primary once started; Spectral 15 title, one line |
+| gap well → list | 14 | |
+
+**Blank** — no calendar: *No calendar* in the well, and in Spectral italic where one comes
+from — *Add one from the clock: open it, then + Calendar.* Calendars with nothing ahead:
+*Nothing coming up*, *Nothing in the next 62 days.* An unreadable calendar shows its last copy;
+why is the clock's to say, under its agenda.
+
+**Options** — `size`.
+
 ---
 
 ## Configuration
@@ -841,7 +880,8 @@ partitions and are hidden unless `system` is set.
   { "type": "photoperiod", "monitor": "DP-1", "col": 4, "row": 3 },
   { "type": "vacuole",  "monitor": "HDMI-A-1", "col": 2, "row": 0 },
   { "type": "sediment", "monitor": "HDMI-A-1", "col": 4, "row": 0, "depth": 32 },
-  { "type": "nucleus",  "monitor": "eDP-1", "col": 0, "row": 2 }
+  { "type": "nucleus",  "monitor": "eDP-1", "col": 0, "row": 2 },
+  { "type": "agenda",   "monitor": "DP-1", "col": 2, "row": 2 }
 ],
 "weather": { "city": "Milan" }   // place, latitude, longitude, located_for are written back;
                                  // the photoperiod reads the same place
