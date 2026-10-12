@@ -17,6 +17,8 @@ depends=(
     'quickshell'
     'qt6-5compat'
     'python'
+    # The calendar's recurrences (scripts/calendar).
+    'python-dateutil'
     'glib2'
     'wl-clipboard'
     # The emoji cell draws its emoji in Noto Color Emoji.

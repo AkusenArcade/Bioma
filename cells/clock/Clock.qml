@@ -40,11 +40,12 @@ Cell {
     // ---- Open -----------------------------------------------------------------
     //
     // Opened, the month hangs from it, with other places on one side and a
-    // timer and an alarm on the other. It keeps the time rather than becoming
-    // a header that says CLOCK: the time is its own title.
+    // timer and an alarm on the other, and the day's appointments below once
+    // there is a calendar. It keeps the time rather than becoming a header
+    // that says CLOCK: the time is its own title.
 
-    // Whether a place is being typed into, which is the one time it needs the
-    // keyboard.
+    // Whether a place or a calendar is being typed into, which is the one
+    // time it needs the keyboard.
     property bool typing: false
     wantsKeyboard: root.open && root.typing
 

@@ -93,6 +93,8 @@ ShellRoot {
     readonly property string powerProfile: Power.profile
     readonly property string kernelRelease: Session.release
     readonly property var niriActions: Keybinds.actions
+    readonly property var calendarEvents: Calendar.events
+    readonly property string calendarProblem: Calendar.problem
 
     function line(label, value) {
         console.log(("  " + label + "                      ").slice(0, 24) + value);
@@ -540,6 +542,20 @@ ShellRoot {
              + (Power.settled ? ` — wants ${Power.wanted}` : " — not settled"));
     }
 
+    // The window as read, in local time, and what the cells would ask of it.
+    function probeCalendar() {
+        console.log("── Calendar ──────────────────────────────────────");
+        line("sources", Calendar.sources.map(s => s.name || "Calendar").join(", ") || "none");
+        line("read", Calendar.readAt > 0 ? new Date(Calendar.readAt).toLocaleTimeString() : "never");
+        line("problem", root.calendarProblem || "none");
+        line("events", `${root.calendarEvents.length} in ${Calendar.days} days, ${Calendar.today.length} today`);
+        line("ongoing", Calendar.ongoing.map(e => e.title).join(", ") || "none");
+        line("next", Calendar.next ? `${Calendar.next.title} at ${new Date(Calendar.next.start).toLocaleString()}` : "none");
+        for (const e of root.calendarEvents.slice(0, 20))
+            console.log(`    ${new Date(e.start).toLocaleString()}  ${e.allDay ? "all day" : Math.round((e.end - e.start) / 60000) + " min"}`
+                        + `  [${e.calendar}]  ${e.title}${e.location ? "  @ " + e.location.split("\n")[0] : ""}`);
+    }
+
     function probeScreens() {
         console.log("── Screens ───────────────────────────────────────");
         for (const s of Quickshell.screens)
@@ -605,6 +621,7 @@ ShellRoot {
             probeKeyboard();
             probeLooks();
             probePower();
+            probeCalendar();
             console.log("──────────────────────────────────────────────────");
             Qt.exit(0);
         }

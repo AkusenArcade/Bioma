@@ -13,6 +13,7 @@ pkgbase = bioma-shell
 	depends = quickshell
 	depends = qt6-5compat
 	depends = python
+	depends = python-dateutil
 	depends = glib2
 	depends = wl-clipboard
 	depends = noto-fonts-emoji

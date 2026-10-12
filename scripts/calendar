@@ -1,0 +1,520 @@
+#!/usr/bin/env python3
+"""The events of the coming days, read from iCalendar feeds.
+
+    BIOMA_CALENDAR_SOURCES='[{"id": "…", "name": "Personal"}]' calendar read 62 10
+    printf %s "$address" | calendar add
+    calendar forget <id>
+
+`read` prints one JSON object on stdout for services/Calendar.qml:
+
+    { "events":   [{ "uid", "calendar", "title", "location",
+                     "start", "end", "allDay" }],
+      "problems": [{ "calendar", "message" }] }
+
+`start` and `end` are milliseconds since the epoch, `end` exclusive; the list
+is sorted by start and holds every event that overlaps the window: from the
+given number of days before today — the clock's month shows the start of its
+first week — to the given number after it. An event that began before the
+window and is still going is in it.
+
+A source is an iCalendar address — `https://`, `webcal://` — or a file on
+disk. Google's secret address, mailbox.org's, Posteo's, Fastmail's and a
+Nextcloud export are all one, so leaving one provider for another is a change
+of address, not of code.
+
+A secret calendar address is a password, and is kept as one. `add` reads it
+on stdin, makes sure it answers with a calendar, and puts it in the keyring
+(Secret Service, through `secret-tool`); it prints the source to keep in the
+configuration — `{"id", "name"}`, the name the calendar gives itself — and
+only where there is no keyring does the address go into the configuration
+with it. `read` finds it again by `id`. Nothing passes on a command line,
+which every user of the machine can read (`ps`): the sources come in the
+environment and the address on stdin.
+
+Each feed read is kept in the cache. When a feed cannot be reached, the last
+copy is used and the source is reported as a problem, so a laptop offline still
+knows the day's appointments.
+
+Recurrences are expanded by dateutil, in the event's own time zone, so a
+weekly meeting at nine stays at nine across a change of summer time.
+"""
+
+import hashlib
+import json
+import os
+import secrets
+import subprocess
+import sys
+import urllib.error
+import urllib.parse
+import urllib.request
+from datetime import date, datetime, time, timedelta, timezone
+from pathlib import Path
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+from dateutil.rrule import rrulestr, rruleset
+
+CACHE = Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache") / "bioma" / "calendar"
+
+
+def local_zone():
+    """The machine's zone, as a real zone: floating times and all-day events
+    recur in it, and a fixed offset would be an hour wrong half the year."""
+    name = os.environ.get("TZ", "").lstrip(":")
+    if name:
+        try:
+            return ZoneInfo(name)
+        except (ZoneInfoNotFoundError, ValueError):
+            pass
+    try:
+        with open("/etc/localtime", "rb") as f:
+            return ZoneInfo.from_file(f, key="localtime")
+    except OSError:
+        return datetime.now().astimezone().tzinfo
+
+
+LOCAL = local_zone()
+
+
+# ---- Reading ------------------------------------------------------------------
+
+
+def address(source):
+    """Where a source is: written beside it, or kept in the keyring."""
+    if str(source.get("url", "")).strip():
+        return source["url"].strip()
+    found = subprocess.run(["secret-tool", "lookup", "application", "bioma", "calendar", source["id"]],
+                           capture_output=True, text=True, timeout=10)
+    if found.returncode != 0 or not found.stdout.strip():
+        raise LookupError("its address is not in the keyring")
+    return found.stdout.strip()
+
+
+def download(url):
+    """The text behind an address, from the network or the disk."""
+    if url.startswith("webcal://"):
+        url = "https://" + url[len("webcal://"):]
+    if url.startswith("file://"):
+        url = url[len("file://"):]
+
+    if "://" not in url:
+        return Path(url).expanduser().read_text(encoding="utf-8", errors="replace")
+
+    # urllib honours http_proxy, https_proxy and no_proxy, which is how the
+    # shell hands over its proxy (services/Proxy.qml).
+    request = urllib.request.Request(url, headers={"User-Agent": "Bioma"})
+    with urllib.request.urlopen(request, timeout=20) as response:
+        text = response.read().decode("utf-8", errors="replace")
+    if "BEGIN:VCALENDAR" not in text:
+        raise ValueError("the address answers, but not with a calendar")
+    return text
+
+
+def fetch(source):
+    """The feed's text, cached on success."""
+    text = download(address(source))
+    CACHE.mkdir(parents=True, exist_ok=True)
+    path = cached(source)
+    partial = path.with_suffix(".part")
+    partial.write_text(text, encoding="utf-8")
+    partial.chmod(0o600)
+    partial.replace(path)
+    return text
+
+
+def cached(source):
+    key = str(source.get("id") or "").strip() or source["url"].strip()
+    return CACHE / (hashlib.sha256(key.encode()).hexdigest()[:24] + ".ics")
+
+
+def unfold(text):
+    """Logical lines: a line that starts with a space or a tab continues the
+    one before it (RFC 5545 §3.1)."""
+    lines = []
+    for raw in text.replace("\r\n", "\n").replace("\r", "\n").split("\n"):
+        if raw[:1] in (" ", "\t") and lines:
+            lines[-1] += raw[1:]
+        elif raw:
+            lines.append(raw)
+    return lines
+
+
+def split_outside_quotes(text, separator):
+    parts, current, quoted = [], [], False
+    for ch in text:
+        if ch == '"':
+            quoted = not quoted
+        if ch == separator and not quoted:
+            parts.append("".join(current))
+            current = []
+        else:
+            current.append(ch)
+    parts.append("".join(current))
+    return parts
+
+
+def parse_line(line):
+    """`NAME;PARAM=value;PARAM="quoted:value":value` → (name, params, value)."""
+    head = split_outside_quotes(line, ":")
+    if len(head) < 2:
+        return None
+    left, value = head[0], ":".join(head[1:])
+    pieces = split_outside_quotes(left, ";")
+    params = {}
+    for piece in pieces[1:]:
+        key, _, val = piece.partition("=")
+        params[key.upper()] = val.strip('"')
+    return pieces[0].upper(), params, value
+
+
+def components(text, kind):
+    """Every component of one kind, as {NAME: [(params, value), …]}. Only its
+    own properties: an alarm nested inside an event is not the event's."""
+    out, current, depth = [], None, 0
+    for line in unfold(text):
+        parsed = parse_line(line)
+        if not parsed:
+            continue
+        name, params, value = parsed
+        if name == "BEGIN":
+            if current is not None:
+                depth += 1
+            elif value.upper() == kind:
+                current, depth = {}, 0
+        elif name == "END":
+            if current is not None:
+                if depth == 0 and value.upper() == kind:
+                    out.append(current)
+                    current = None
+                else:
+                    depth -= 1
+        elif current is not None and depth == 0:
+            current.setdefault(name, []).append((params, value))
+    return out
+
+
+def unescape(value):
+    out, i = [], 0
+    while i < len(value):
+        ch = value[i]
+        if ch == "\\" and i + 1 < len(value):
+            nxt = value[i + 1]
+            out.append("\n" if nxt in "nN" else nxt)
+            i += 2
+        else:
+            out.append(ch)
+            i += 1
+    return "".join(out)
+
+
+def text_of(event, name):
+    values = event.get(name)
+    return unescape(values[0][1]).strip() if values else ""
+
+
+# ---- Time ---------------------------------------------------------------------
+
+
+def zone(tzid):
+    """An IANA zone from a TZID. Some writers prefix a path
+    (`/mozilla.org/20050126_1/Europe/Rome`); the zone is its tail. A zone
+    Python does not know — Outlook's Windows names — falls back to the
+    machine's."""
+    tzid = tzid.strip()
+    parts = [p for p in tzid.split("/") if p]
+    for i in range(len(parts)):
+        try:
+            return ZoneInfo("/".join(parts[i:]))
+        except (ZoneInfoNotFoundError, ValueError):
+            continue
+    return LOCAL
+
+
+def moment(params, value):
+    """A DATE as a date; a DATE-TIME as an aware datetime — UTC, zoned, or a
+    floating time placed in the machine's zone."""
+    value = value.strip()
+    if params.get("VALUE", "").upper() == "DATE" or len(value) == 8:
+        return date(int(value[:4]), int(value[4:6]), int(value[6:8]))
+    stamp = datetime.strptime(value[:15], "%Y%m%dT%H%M%S")
+    if value.endswith("Z"):
+        return stamp.replace(tzinfo=timezone.utc)
+    if params.get("TZID"):
+        return stamp.replace(tzinfo=zone(params["TZID"]))
+    return stamp.replace(tzinfo=LOCAL)
+
+
+def aware(value, tz):
+    """Dates become midnight in the zone; datetimes stay as they are."""
+    if isinstance(value, datetime):
+        return value
+    return datetime.combine(value, time(0, 0), tzinfo=tz)
+
+
+def moments(event, name, tz):
+    out = []
+    for params, value in event.get(name, []):
+        for piece in value.split(","):
+            if piece.strip():
+                out.append(aware(moment(params, piece), tz))
+    return out
+
+
+def duration(text):
+    """An iCalendar DURATION (`P1D`, `PT1H30M`, `-PT15M`, `P2W`)."""
+    text = text.strip().upper()
+    sign = -1 if text.startswith("-") else 1
+    text = text.lstrip("+-")[1:]  # the P
+    days = seconds = 0
+    number = ""
+    in_time = False
+    for ch in text:
+        if ch == "T":
+            in_time = True
+        elif ch.isdigit():
+            number += ch
+        else:
+            n = int(number or 0)
+            number = ""
+            if ch == "W":
+                days += 7 * n
+            elif ch == "D":
+                days += n
+            elif ch == "H" and in_time:
+                seconds += 3600 * n
+            elif ch == "M" and in_time:
+                seconds += 60 * n
+            elif ch == "S" and in_time:
+                seconds += n
+    return sign * timedelta(days=days, seconds=seconds)
+
+
+def until_in_utc(rule, start):
+    """dateutil wants UNTIL in UTC when the start is aware, and every start
+    here is. A date-only or floating UNTIL is read in the start's zone, a date
+    as the whole of that day."""
+    parts = []
+    for part in rule.split(";"):
+        key, _, value = part.partition("=")
+        if key.upper() == "UNTIL" and not value.endswith("Z"):
+            if len(value) == 8:
+                day = date(int(value[:4]), int(value[4:6]), int(value[6:8]))
+                end = datetime.combine(day, time(23, 59, 59), tzinfo=start.tzinfo)
+            else:
+                end = datetime.strptime(value[:15], "%Y%m%dT%H%M%S").replace(tzinfo=start.tzinfo)
+            value = end.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        parts.append(f"{key}={value}")
+    return ";".join(parts)
+
+
+def ms(moment_):
+    return int(moment_.timestamp() * 1000)
+
+
+# ---- Events -------------------------------------------------------------------
+
+
+def occurrences(event, window_start, window_end, overridden):
+    """(start, end, all_day) for each occurrence that overlaps the window."""
+    if "DTSTART" not in event:
+        return []
+    params, value = event["DTSTART"][0]
+    first = moment(params, value)
+    all_day = not isinstance(first, datetime)
+    start = aware(first, LOCAL)
+
+    if "DTEND" in event:
+        params, value = event["DTEND"][0]
+        length = aware(moment(params, value), LOCAL) - start
+    elif "DURATION" in event:
+        length = duration(event["DURATION"][0][1])
+    else:
+        length = timedelta(days=1) if all_day else timedelta(0)
+    length = max(length, timedelta(0))
+
+    if "RRULE" not in event and "RDATE" not in event:
+        starts = [start]
+    else:
+        rules = rruleset()
+        for _, rule in event.get("RRULE", []):
+            rules.rrule(rrulestr(until_in_utc(rule, start), dtstart=start, ignoretz=False))
+        if "RRULE" not in event:
+            rules.rdate(start)
+        for extra in moments(event, "RDATE", start.tzinfo):
+            rules.rdate(extra)
+        for gone in moments(event, "EXDATE", start.tzinfo):
+            rules.exdate(gone)
+        for moved in overridden:
+            rules.exdate(moved)
+        # From one length before the window, to catch what is still going.
+        starts = rules.between(window_start - length, window_end, inc=True)
+
+    out = []
+    for s in starts:
+        if all_day:
+            # An all-day event is the same days wherever it is read: its dates
+            # are placed in the machine's zone, not carried across from the
+            # zone its first occurrence happened to be computed in.
+            day = s.astimezone(start.tzinfo).date()
+            s = datetime.combine(day, time(0, 0), tzinfo=LOCAL)
+            e = datetime.combine(day + timedelta(days=max(1, length.days)), time(0, 0), tzinfo=LOCAL)
+        else:
+            e = s + length
+        if s < window_end and (e > window_start or (e == s and s >= window_start)):
+            out.append((s, e, all_day))
+    return out
+
+
+def events_of(text, calendar, window_start, window_end):
+    found = components(text, "VEVENT")
+
+    # A moved or cancelled occurrence of a recurring event is a component of
+    # its own, with the same UID and the start it replaces (RECURRENCE-ID).
+    overrides = {}
+    for event in found:
+        if "RECURRENCE-ID" in event:
+            params, value = event["RECURRENCE-ID"][0]
+            overrides.setdefault(text_of(event, "UID"), []).append(aware(moment(params, value), LOCAL))
+
+    out = []
+    for event in found:
+        if text_of(event, "STATUS").upper() == "CANCELLED":
+            continue
+        uid = text_of(event, "UID")
+        overridden = [] if "RECURRENCE-ID" in event else overrides.get(uid, [])
+        try:
+            spans = occurrences(event, window_start, window_end, overridden)
+        except (ValueError, TypeError, OverflowError):
+            # One event written wrong costs that event, not the calendar.
+            continue
+        for s, e, all_day in spans:
+            out.append({
+                "uid": uid,
+                "calendar": calendar,
+                "title": text_of(event, "SUMMARY") or "Busy",
+                "location": text_of(event, "LOCATION"),
+                "start": ms(s),
+                "end": ms(e),
+                "allDay": all_day,
+            })
+    return out
+
+
+def read(ahead, back):
+    try:
+        sources = json.loads(os.environ.get("BIOMA_CALENDAR_SOURCES", "[]"))
+    except json.JSONDecodeError:
+        sources = []
+
+    today = datetime.now(LOCAL).date()
+    window_start = datetime.combine(today - timedelta(days=max(0, back)), time(0, 0), tzinfo=LOCAL)
+    window_end = datetime.combine(today + timedelta(days=max(1, ahead)), time(0, 0), tzinfo=LOCAL)
+
+    events, problems = [], []
+    for index, source in enumerate(sources):
+        if not isinstance(source, dict):
+            continue
+        if not str(source.get("url", "")).strip() and not str(source.get("id", "")).strip():
+            continue
+        name = str(source.get("name") or "Calendar")
+        try:
+            text = fetch(source)
+        except Exception as error:  # noqa: BLE001 — any failure means "use the copy"
+            path = cached(source)
+            if path.exists():
+                text = path.read_text(encoding="utf-8", errors="replace")
+                problems.append({"index": index, "calendar": name,
+                                 "message": f"{name} could not be read ({reason(error)}); showing the last copy."})
+            else:
+                problems.append({"index": index, "calendar": name,
+                                 "message": f"{name} could not be read ({reason(error)})."})
+                continue
+        events.extend(events_of(text, name, window_start, window_end))
+
+    events.sort(key=lambda e: (e["start"], not e["allDay"], e["end"], e["title"]))
+    return {"events": events, "problems": problems}
+
+
+def own_name(text, url):
+    """The name the calendar gives itself, or failing that where it lives."""
+    for line in unfold(text):
+        parsed = parse_line(line)
+        if parsed and parsed[0] == "X-WR-CALNAME" and parsed[2].strip():
+            return unescape(parsed[2]).strip()
+        if line.upper().startswith("BEGIN:VEVENT"):
+            break
+    host = urllib.parse.urlsplit(url).hostname if "://" in url else None
+    return (host or Path(url).stem or "Calendar").removeprefix("www.")
+
+
+def add(url):
+    url = url.strip()
+    if not url:
+        return {"error": "Nothing was pasted."}
+    if "://" not in url and not url.startswith(("/", "~")):
+        return {"error": "That is not an address."}
+    try:
+        text = download(url)
+    except ValueError:
+        return {"error": "It answers, but not with a calendar."}
+    except Exception as error:  # noqa: BLE001
+        return {"error": f"It could not be read: {reason(error)}."}
+    if "BEGIN:VCALENDAR" not in text:
+        return {"error": "It answers, but not with a calendar."}
+    name = own_name(text, url)
+
+    ident = secrets.token_hex(8)
+    try:
+        kept = subprocess.run(["secret-tool", "store", "--label", f"Bioma calendar: {name}",
+                               "application", "bioma", "calendar", ident],
+                              input=url, text=True, capture_output=True, timeout=10)
+        in_keyring = kept.returncode == 0
+    except (OSError, subprocess.TimeoutExpired):
+        in_keyring = False
+
+    source = {"id": ident, "name": name}
+    if not in_keyring:
+        source["url"] = url
+    CACHE.mkdir(parents=True, exist_ok=True)
+    path = cached(source)
+    path.write_text(text, encoding="utf-8")
+    path.chmod(0o600)
+    return {"source": source, "keyring": in_keyring}
+
+
+def forget(ident):
+    if ident:
+        subprocess.run(["secret-tool", "clear", "application", "bioma", "calendar", ident],
+                       capture_output=True, timeout=10)
+        cached({"id": ident}).unlink(missing_ok=True)
+    return {}
+
+
+def main():
+    command = sys.argv[1] if len(sys.argv) > 1 else "read"
+    if command == "add":
+        answer = add(sys.stdin.read())
+    elif command == "forget":
+        answer = forget(sys.argv[2] if len(sys.argv) > 2 else "")
+    else:
+        ahead = int(sys.argv[2]) if len(sys.argv) > 2 else 62
+        back = int(sys.argv[3]) if len(sys.argv) > 3 else 0
+        answer = read(ahead, back)
+    json.dump(answer, sys.stdout)
+    sys.stdout.write("\n")
+
+
+def reason(error):
+    if isinstance(error, urllib.error.HTTPError):
+        return f"the server answered {error.code}"
+    if isinstance(error, urllib.error.URLError):
+        return "the address could not be reached"
+    if isinstance(error, FileNotFoundError):
+        return "no such file"
+    if isinstance(error, TimeoutError):
+        return "the address took too long to answer"
+    return str(error) or type(error).__name__
+
+
+if __name__ == "__main__":
+    main()

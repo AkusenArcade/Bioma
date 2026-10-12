@@ -8,7 +8,9 @@ import qs.services
 
 // The clock, opened: the month in the middle, hung from the time it belongs
 // to; other places on one side and a timer and an alarm on the other, each on
-// its own thread from the month.
+// its own thread from the month. Once there is a calendar, the day's
+// appointments hang from the month on the side away from the cell — the day
+// chosen in the month, today until another is.
 //
 // Human language where it is language — the month's name, a city's name over
 // its time, both in Spectral — and the machine's voice where it is counting:
@@ -31,7 +33,7 @@ Item {
     readonly property bool upward: root.cell ? !root.cell.opensDown : false
 
     implicitWidth: sideWidth * 2 + calendarWidth + gap * 2
-    implicitHeight: panelHeight
+    implicitHeight: panelHeight + (agendaPlaced ? gap + agendaHeight : 0)
     width: implicitWidth
     height: implicitHeight
 
@@ -107,6 +109,7 @@ Item {
         const date = new Date();
         root.viewYear = date.getFullYear();
         root.viewMonth = date.getMonth();
+        root.chosenDay = Calendar.dayStart(date.getTime());
     }
 
     function turn(step) {
@@ -134,10 +137,27 @@ Item {
             const day = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
             out.push({
                 "day": day.getDate(),
+                "start": day.getTime(),
                 "inMonth": day.getMonth() === root.viewMonth,
                 "today": day.getFullYear() === today.getFullYear() && day.getMonth() === today.getMonth()
-                         && day.getDate() === today.getDate()
+                         && day.getDate() === today.getDate(),
+                "busy": root.busyDays[day.getTime()] === true
             });
+        }
+        return out;
+    }
+
+    // The days something is on, by their midnight: every day an event
+    // touches, so a trip of three days marks all three.
+    readonly property var busyDays: {
+        const out = {};
+        for (const event of Calendar.events) {
+            const last = event.end > event.start ? event.end - 1 : event.start;
+            let day = Calendar.dayStart(event.start);
+            for (let n = 0; day <= last && n < 62; n++) {
+                out[day] = true;
+                day = Calendar.dayStart(day, 1);
+            }
         }
         return out;
     }
@@ -153,9 +173,9 @@ Item {
         contentReady: root.cell ? root.cell.panelReady : false
 
         anchorX: root.sideWidth + root.gap
-        anchorY: 0
+        anchorY: root.monthTop
         nodeX: root.width / 2
-        nodeY: root.upward ? root.panelHeight : 0
+        nodeY: root.upward ? root.monthTop + root.panelHeight : 0
 
         Column {
             anchors.fill: parent
@@ -242,6 +262,9 @@ Item {
                         width: month.cellWidth
                         height: month.cellHeight
 
+                        readonly property bool chosen: root.agendaShown && !root.addingCalendar
+                                                       && day.modelData.start === root.chosenDay
+
                         // Today is lit the way a chosen control is: the disc
                         // with the light gradient, the figure dark on it.
                         Disc {
@@ -249,6 +272,20 @@ Item {
                             visible: day.modelData.today
                             width: 26 * root.factor
                             height: width
+                        }
+
+                        // The day whose appointments hang below, when it is
+                        // not today: the rim alone, in the primary.
+                        Rectangle {
+                            anchors.centerIn: parent
+                            visible: day.chosen && !day.modelData.today
+                            width: 26 * root.factor
+                            height: width
+                            radius: width / 2
+                            color: "transparent"
+                            border.width: Metrics.rim(Screen.devicePixelRatio)
+                            border.color: Theme.primary
+                            antialiasing: true
                         }
 
                         Text {
@@ -260,7 +297,41 @@ Item {
                                                  day.modelData.today ? Typography.weightTitle
                                                                      : Typography.weightLabel)
                         }
+
+                        // Something is on: a point under the figure. Form,
+                        // not a count — how many is the agenda's to say.
+                        Rectangle {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            anchors.bottom: parent.bottom
+                            anchors.bottomMargin: 4 * root.factor
+                            visible: day.modelData.busy
+                            width: 4 * root.factor
+                            height: width
+                            radius: width / 2
+                            color: day.modelData.today ? Theme.background
+                                 : day.modelData.inMonth ? Theme.textMuted : Theme.textFaint
+                            antialiasing: true
+                        }
+
+                        TapHandler {
+                            enabled: root.agendaShown && !root.addingCalendar
+                            onTapped: root.chosenDay = day.modelData.start
+                        }
                     }
+                }
+            }
+
+            // With no calendar yet, the way to one: it opens the agenda below,
+            // asking for an address. Once there is one, this moves there.
+            AddChip {
+                anchors.horizontalCenter: parent.horizontalCenter
+                visible: !root.agendaShown
+                label: "+ Calendar"
+                onPressed: root.addingCalendar = true
+                onKeyed: {
+                    if (root.cell)
+                        root.cell.typingKeyed = true;
+                    root.addingCalendar = true;
                 }
             }
         }
@@ -274,7 +345,7 @@ Item {
         width: root.gap
         height: implicitHeight
         x: root.sideWidth
-        y: root.panelHeight / 2 - height / 2
+        y: root.monthTop + root.panelHeight / 2 - height / 2
     }
 
     Thread {
@@ -283,7 +354,7 @@ Item {
         width: root.gap
         height: implicitHeight
         x: root.sideWidth + root.gap + root.calendarWidth
-        y: root.panelHeight / 2 - height / 2
+        y: root.monthTop + root.panelHeight / 2 - height / 2
     }
 
     // ---- Other places -----------------------------------------------------------
@@ -293,8 +364,9 @@ Item {
     property bool adding: false
     onAddingChanged: {
         if (root.cell)
-            root.cell.typing = root.adding;
+            root.cell.typing = root.adding || root.addingCalendar;
         if (root.adding) {
+            root.addingCalendar = false;
             Time.askKnown();
             placeField.text = "";
             placeField.forceActiveFocus();
@@ -321,9 +393,9 @@ Item {
         contentReady: root.stage(1) > 0.999
 
         anchorX: 0
-        anchorY: 0
+        anchorY: root.monthTop
         nodeX: root.sideWidth
-        nodeY: root.panelHeight / 2
+        nodeY: root.monthTop + root.panelHeight / 2
 
         Item {
             anchors.fill: parent
@@ -606,6 +678,324 @@ Item {
         }
     }
 
+    // ---- The day's appointments ---------------------------------------------------
+    //
+    // Hung from the month, on the side away from the cell, on its own thread:
+    // the month feeds it the day. There only once a calendar is set — or while
+    // the first is being added, so the field has somewhere to be.
+
+    readonly property real agendaHeight: 236 * factor
+    readonly property real eventRow: 34 * factor
+
+    property double chosenDay: Calendar.dayStart(Date.now())
+
+    property bool addingCalendar: false
+    onAddingCalendarChanged: {
+        if (root.cell)
+            root.cell.typing = root.adding || root.addingCalendar;
+        if (root.addingCalendar) {
+            root.adding = false;
+            Calendar.addProblem = "";
+            calendarField.text = "";
+            Focus.type(calendarField);
+        }
+    }
+
+    Connections {
+        target: Calendar
+        function onAdded(name) {
+            root.addingCalendar = false;
+            root.today();
+        }
+    }
+
+    readonly property bool agendaShown: Calendar.active || root.addingCalendar
+
+    // Its own presence, for when a calendar arrives or goes while the clock is
+    // open: it grows out of its thread then as it does with the rest.
+    property real agendaPresence: root.agendaShown ? 1 : 0
+    Behavior on agendaPresence {
+        NumberAnimation {
+            duration: root.agendaShown ? Timing.open : Timing.close
+            easing.type: Easing.Bezier
+            easing.bezierCurve: root.agendaShown ? Timing.easeOpenFlat : Timing.easeClose
+        }
+    }
+
+    readonly property bool agendaPlaced: root.agendaShown || root.agendaPresence > 0
+
+    // Opening upwards the agenda is above the month, and everything else
+    // stands that much lower.
+    readonly property real monthTop: root.upward && root.agendaPlaced ? root.agendaHeight + root.gap : 0
+
+    readonly property var chosenEvents: Calendar.between(root.chosenDay, Calendar.dayStart(root.chosenDay, 1))
+
+    readonly property var weekdayNames: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+
+    function dayTitle(start) {
+        now.date;   // a new day renames them
+        const difference = Math.round((start - Calendar.dayStart(Date.now())) / 86400000);
+        if (difference === 0)
+            return "Today";
+        if (difference === 1)
+            return "Tomorrow";
+        if (difference === -1)
+            return "Yesterday";
+        const date = new Date(start);
+        return `${root.weekdayNames[date.getDay()]} ${date.getDate()} ${root.monthNames[date.getMonth()]}`;
+    }
+
+    Thread {
+        id: agendaLink
+
+        readonly property real headY: root.upward ? agenda.y + agenda.height : calendar.y + calendar.height
+        readonly property real footY: root.upward ? calendar.y : agenda.y
+
+        visible: root.agendaPlaced
+        vertical: true
+        progress: Math.min(root.stage(0), root.agendaPresence)
+        width: implicitWidth
+        height: Math.max(0, agendaLink.footY - agendaLink.headY)
+        x: root.width / 2 - width / 2
+        y: agendaLink.headY
+    }
+
+    Panel {
+        id: agenda
+
+        metrics: root.metrics
+        padding: root.padding
+        fixedWidth: root.calendarWidth
+        fixedHeight: root.agendaHeight
+        growth: Math.min(root.stage(1), root.agendaPresence)
+        contentReady: agenda.growth > 0.999
+
+        anchorX: root.sideWidth + root.gap
+        anchorY: root.upward ? 0 : root.panelHeight + root.gap
+        nodeX: root.width / 2
+        nodeY: root.upward ? root.agendaHeight : root.panelHeight + root.gap
+
+        Item {
+            anchors.fill: parent
+
+            Text {
+                id: agendaTitle
+                anchors.left: parent.left
+                anchors.right: addCalendar.left
+                anchors.rightMargin: 8 * root.factor
+                height: 26 * root.factor
+                verticalAlignment: Text.AlignVCenter
+                text: root.addingCalendar ? "A new calendar" : root.dayTitle(root.chosenDay)
+                color: Theme.text
+                elide: Text.ElideRight
+                font.family: Typography.expressive
+                font.pixelSize: root.metrics.fontSecondary
+                font.weight: Typography.weightTitle
+            }
+
+            // The way to one more, beside the day rather than after the
+            // calendars: their row runs out of room at the second name.
+            AddChip {
+                id: addCalendar
+                anchors.right: parent.right
+                anchors.top: parent.top
+                label: root.addingCalendar ? "Cancel" : "+ Calendar"
+                lit: root.addingCalendar
+                onPressed: root.addingCalendar = !root.addingCalendar
+                onKeyed: {
+                    if (!root.addingCalendar && root.cell)
+                        root.cell.typingKeyed = true;
+                    root.addingCalendar = !root.addingCalendar;
+                }
+            }
+
+            // The day: the time in the machine's voice, the title in the
+            // human one. What is over is faint; what is on now carries the
+            // primary, which is the only state an appointment has.
+            Flickable {
+                id: dayList
+
+                visible: !root.addingCalendar
+                anchors.top: agendaTitle.bottom
+                anchors.topMargin: 4 * root.factor
+                anchors.bottom: sources.top
+                anchors.bottomMargin: 8 * root.factor
+                width: parent.width
+                clip: true
+                contentHeight: dayColumn.height
+                boundsBehavior: Flickable.StopAtBounds
+
+                Column {
+                    id: dayColumn
+                    width: parent.width
+
+                    Repeater {
+                        model: root.chosenEvents
+
+                        delegate: Item {
+                            id: event
+
+                            required property var modelData
+
+                            readonly property bool over: event.modelData.end <= Calendar.now
+                            readonly property bool on: !event.modelData.allDay && event.modelData.start <= Calendar.now
+                                                       && Calendar.now < event.modelData.end
+
+                            width: parent.width
+                            height: root.eventRow
+
+                            Text {
+                                id: when
+                                anchors.left: parent.left
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: 70 * root.factor
+                                text: {
+                                    if (event.modelData.allDay)
+                                        return "ALL DAY";
+                                    const start = new Date(Math.max(event.modelData.start, root.chosenDay));
+                                    return event.modelData.start < root.chosenDay
+                                        ? "…" : root.hhmm(start.getHours(), start.getMinutes());
+                                }
+                                color: event.on ? Theme.primary : event.over ? Theme.textFaint : Theme.textMuted
+                                font: root.technical(root.metrics.fontMeta)
+                            }
+
+                            Text {
+                                anchors.left: when.right
+                                anchors.right: parent.right
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: event.modelData.title
+                                color: event.over ? Theme.textFaint : Theme.text
+                                elide: Text.ElideRight
+                                font.family: Typography.expressive
+                                font.pixelSize: root.metrics.fontSecondary
+                            }
+                        }
+                    }
+
+                    // A calendar that could not be read says so here, under
+                    // what was read from the others.
+                    Text {
+                        visible: Calendar.problem.length > 0
+                        width: parent.width
+                        topPadding: 6 * root.factor
+                        text: Calendar.problem
+                        color: Theme.alert
+                        wrapMode: Text.WordWrap
+                        font.family: Typography.expressive
+                        font.pixelSize: root.metrics.fontMeta
+                    }
+                }
+            }
+
+            Scroller {
+                flick: dayList
+                factor: root.factor
+                x: dayList.width - width
+                y: dayList.y
+            }
+
+            Text {
+                visible: !root.addingCalendar && root.chosenEvents.length === 0 && Calendar.problem.length === 0
+                anchors.fill: dayList
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+                text: Calendar.readAt > 0 ? "Nothing on the calendar" : "Reading the calendar…"
+                color: Theme.textFaint
+                font.family: Typography.expressive
+                font.pixelSize: root.metrics.fontSecondary
+            }
+
+            // A new one: paste its address, Enter. It is read before it is
+            // taken, and the name it gives itself is the one it keeps.
+            Column {
+                visible: root.addingCalendar
+                anchors.top: agendaTitle.bottom
+                anchors.topMargin: 6 * root.factor
+                width: parent.width
+                spacing: 8 * root.factor
+
+                Item {
+                    width: parent.width
+                    height: 34 * root.factor
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: Metrics.radiusFor(height, root.metrics)
+                        color: "transparent"
+                        border.width: Metrics.crisp(1.5, Screen.devicePixelRatio)
+                        border.color: Calendar.addProblem.length > 0 ? Theme.alert : Theme.primary
+                        antialiasing: true
+                    }
+
+                    TextInput {
+                        id: calendarField
+                        anchors.left: parent.left
+                        anchors.leftMargin: 14 * root.factor
+                        anchors.right: parent.right
+                        anchors.rightMargin: 14 * root.factor
+                        anchors.verticalCenter: parent.verticalCenter
+                        color: Theme.text
+                        readOnly: Calendar.checking
+                        font.family: Typography.expressive
+                        font.pixelSize: root.metrics.fontSecondary
+                        clip: true
+
+                        onTextChanged: Calendar.addProblem = ""
+                        Keys.onEscapePressed: root.addingCalendar = false
+                        onAccepted: Calendar.add(text)
+
+                        Text {
+                            visible: calendarField.text.length === 0
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "The calendar's address"
+                            color: Theme.textFaint
+                            font: calendarField.font
+                        }
+                    }
+                }
+
+                Text {
+                    visible: text.length > 0
+                    width: parent.width
+                    text: Calendar.checking ? "Reading it…" : Calendar.addProblem
+                    color: Calendar.checking ? Theme.textMuted : Theme.alert
+                    wrapMode: Text.WordWrap
+                    font.family: Typography.expressive
+                    font.pixelSize: root.metrics.fontMeta
+                }
+
+                Text {
+                    width: parent.width
+                    text: "In Google Calendar it is under Settings, the calendar's name, Integrate "
+                          + "calendar: the secret address in iCal format. Elsewhere, the calendar's "
+                          + "iCal or webcal link. It is kept in the keyring."
+                    color: Theme.textFaint
+                    wrapMode: Text.WordWrap
+                    lineHeight: 1.15
+                    font.family: Typography.expressive
+                    font.pixelSize: root.metrics.fontMeta
+                }
+            }
+
+            // The calendars read.
+            Row {
+                id: sources
+                anchors.bottom: parent.bottom
+                width: parent.width
+                height: 26 * root.factor
+                spacing: 6 * root.factor
+                clip: true
+
+                Repeater {
+                    model: root.addingCalendar ? [] : Calendar.sources
+
+                    delegate: SourceChip {}
+                }
+            }
+        }
+    }
+
     // ---- The timer and the alarm --------------------------------------------------
 
     function clockFigure(seconds) {
@@ -628,9 +1018,9 @@ Item {
         contentReady: root.stage(1) > 0.999
 
         anchorX: root.sideWidth + root.gap + root.calendarWidth + root.gap
-        anchorY: 0
+        anchorY: root.monthTop
         nodeX: root.sideWidth + root.gap + root.calendarWidth + root.gap
-        nodeY: root.panelHeight / 2
+        nodeY: root.monthTop + root.panelHeight / 2
 
         Column {
             anchors.fill: parent
@@ -858,11 +1248,133 @@ Item {
         TapHandler { onTapped: pill.pressed() }
     }
 
+    // A calendar read: its name, and a cross. The cross asks first — the
+    // address behind it was found once, in another application's settings,
+    // and should not be lost to a slip — and the second press anywhere on the
+    // chip answers; leaving it withdraws the question.
+    component SourceChip: Item {
+        id: chip
+
+        required property var modelData
+        required property int index
+
+        property bool asking: false
+        readonly property string trouble: Calendar.troubleOf(chip.index)
+
+        width: Math.min(chipText.implicitWidth, 110 * root.factor) + 36 * root.factor
+        height: 26 * root.factor
+
+        readonly property bool navigable: true
+
+        function activate() {
+            if (chip.asking)
+                Calendar.forget(chip.index);
+            else
+                chip.asking = true;
+        }
+
+        function discard() {
+            chip.activate();
+        }
+
+        KeyMark {
+            factor: root.factor
+            outset: 3 * root.factor
+        }
+
+        Rectangle {
+            anchors.fill: parent
+            radius: Metrics.radiusFor(height, root.metrics)
+            antialiasing: true
+            color: "transparent"
+            border.width: Metrics.rim(Screen.devicePixelRatio)
+            border.color: chip.asking || chip.trouble.length > 0 ? Theme.alert
+                        : chipHover.hovered ? Theme.text : Theme.line
+        }
+
+        Text {
+            id: chipText
+            anchors.left: parent.left
+            anchors.leftMargin: 11 * root.factor
+            anchors.verticalCenter: parent.verticalCenter
+            width: Math.min(implicitWidth, 110 * root.factor)
+            text: chip.asking ? "FORGET?" : String(chip.modelData.name || "Calendar").toUpperCase()
+            elide: Text.ElideRight
+            color: chip.asking || chip.trouble.length > 0 ? Theme.alert : Theme.textMuted
+            font: root.technical(root.metrics.fontMeta)
+        }
+
+        Icon {
+            anchors.right: parent.right
+            anchors.rightMargin: 10 * root.factor
+            anchors.verticalCenter: parent.verticalCenter
+            width: 9 * root.factor
+            height: width
+            name: "close"
+            colour: chip.asking ? Theme.alert : crossHover.hovered ? Theme.text : Theme.textMuted
+
+            HoverHandler { id: crossHover }
+        }
+
+        HoverHandler {
+            id: chipHover
+            onHoveredChanged: if (!hovered) chip.asking = false
+        }
+
+        TapHandler { onTapped: chip.activate() }
+    }
+
+    // The dashed chip that adds something, and is the way back out of the
+    // field it opened while that is open.
+    component AddChip: Item {
+        id: addChip
+
+        property string label: ""
+        property bool lit: false
+        signal pressed
+        signal keyed
+
+        width: addChipText.implicitWidth + 28 * root.factor
+        height: 26 * root.factor
+
+        // From the keyboard the field it opens takes the keys, and the mark
+        // lets go so the caret is the one thing that says where typing goes.
+        readonly property bool navigable: true
+
+        function activate() {
+            addChip.keyed();
+        }
+
+        KeyMark {
+            factor: root.factor
+            outset: 3 * root.factor
+        }
+
+        DashedSlot {
+            anchors.fill: parent
+            radius: Metrics.radiusFor(parent.height, root.metrics)
+            colour: addChip.lit ? Theme.primary : Qt.alpha(Theme.line, 0.7)
+        }
+
+        Text {
+            id: addChipText
+            anchors.centerIn: parent
+            text: addChip.label
+            color: addChip.lit ? Theme.primary : Theme.textMuted
+            font: root.technical(root.metrics.fontMeta)
+        }
+
+        TapHandler { onTapped: addChip.pressed() }
+    }
+
     function shapes() {
-        return [
+        const out = [
             { "item": calendar, "radius": calendar.radius },
             { "item": places, "radius": places.radius },
             { "item": timers, "radius": timers.radius }
         ];
+        if (root.agendaPlaced)
+            out.push({ "item": agenda, "radius": agenda.radius });
+        return out;
     }
 }
