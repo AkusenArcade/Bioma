@@ -8,19 +8,23 @@ import qs.core
 
 // What is on the calendar.
 //
-// Read from iCalendar feeds: an address each — Google's secret one,
-// mailbox.org's, Posteo's, Fastmail's, a Nextcloud export — or a file on
-// disk. No account, no OAuth, nothing tied to one provider: moving the
-// calendar elsewhere is a new address, not new code (Akusen's choice,
-// 2026-10-12, on the way out of Google's services).
+// Two kinds of source, both added from the clock cell.
 //
-// A calendar is added from the clock cell by pasting its address (`add`):
-// the address is read once to make sure it is a calendar and to learn the
-// name it gives itself, and is then kept in the keyring, because a secret
-// address is a password. The configuration keeps only what to call it:
+// - **The calendars of an account in GNOME Online Accounts.** GOA holds the
+//   sign-in — Google's OAuth, or the password of a WebDAV or Nextcloud
+//   account (mailbox.org, Posteo, Fastmail) — and its calendars are found
+//   over CalDAV (`discover`), each switched on with a touch. Nothing secret
+//   is kept by Bioma. Moving off Google is another account in Online
+//   Accounts, not new code (Akusen's choice, 2026-10-12).
+// - **An iCalendar address**, pasted (`add`), for what has no account: it is
+//   read once to make sure it is a calendar and to learn the name it gives
+//   itself, and kept in the keyring, because a secret address is a password.
+//
+// The configuration keeps only what to call them:
 //
 //   "calendar": {
-//       "sources": [{ "id": "…", "name": "Personal" }],
+//       "sources": [{ "goa": "account_…", "href": "https://…/events/", "name": "Family" },
+//                   { "id": "…", "name": "Personal" }],
 //       "days": 62,
 //       "minutes": 15
 //   }
@@ -44,7 +48,8 @@ Singleton {
 
     readonly property var sources: (Config.get("calendar.sources", []) || [])
         .filter(source => source && (typeof source.id === "string" && source.id.length > 0
-                                     || typeof source.url === "string" && source.url.trim().length > 0))
+                                     || typeof source.url === "string" && source.url.trim().length > 0
+                                     || typeof source.goa === "string" && typeof source.href === "string"))
     readonly property bool active: root.sources.length > 0
 
     // How far ahead, from today. Two months by default: the clock's month and
@@ -284,8 +289,60 @@ Singleton {
         root.added(answer.source.name);
     }
 
+    // ---- The accounts in GNOME Online Accounts ---------------------------------------
+
+    // [{ "goa", "identity", "provider", "calendars": [{ "href", "name" }],
+    //    "problem"? }]: every account with its calendar on, as last looked at.
+    property var accounts: []
+
+    // Whether GOA answered at all; without it only addresses can be added.
+    property bool accountsPresent: false
+
+    readonly property bool discovering: discoverer.running
+
+    // Looks again at the accounts and their calendars: asked whenever the
+    // way to a new calendar opens, so an account added a moment ago is there.
+    function discover() {
+        if (discoverer.running)
+            return;
+        discoverer.environment = Proxy.environment;
+        discoverer.running = true;
+    }
+
+    Process {
+        id: discoverer
+
+        command: [Quickshell.shellPath("scripts/calendar"), "accounts"]
+
+        stdout: StdioCollector {
+            onStreamFinished: {
+                let answer = null;
+                try {
+                    answer = JSON.parse(text);
+                } catch (e) {
+                    return;
+                }
+                root.accounts = answer.accounts || [];
+                root.accountsPresent = answer.present === true;
+            }
+        }
+    }
+
+    function holds(goa, href) {
+        return root.sources.some(source => source.goa === goa && source.href === href);
+    }
+
+    // Switches on one calendar of an account.
+    function addFromAccount(goa, calendar) {
+        if (root.holds(goa, calendar.href))
+            return;
+        Config.set("calendar.sources", root.sources.concat([{
+            "goa": goa, "href": calendar.href, "name": calendar.name
+        }]));
+    }
+
     // Takes a source out of the configuration, and its address out of the
-    // keyring.
+    // keyring if it had one there.
     function forget(index) {
         const source = root.sources[index];
         if (!source)

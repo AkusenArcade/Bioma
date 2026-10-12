@@ -697,6 +697,7 @@ Item {
             root.adding = false;
             Calendar.addProblem = "";
             calendarField.text = "";
+            Calendar.discover();
             Focus.type(calendarField);
         }
     }
@@ -799,7 +800,7 @@ Item {
                 id: addCalendar
                 anchors.right: parent.right
                 anchors.top: parent.top
-                label: root.addingCalendar ? "Cancel" : "+ Calendar"
+                label: root.addingCalendar ? "Done" : "+ Calendar"
                 lit: root.addingCalendar
                 onPressed: root.addingCalendar = !root.addingCalendar
                 onKeyed: {
@@ -906,76 +907,198 @@ Item {
                 font.pixelSize: root.metrics.fontSecondary
             }
 
-            // A new one: paste its address, Enter. It is read before it is
-            // taken, and the name it gives itself is the one it keeps.
-            Column {
+            // A new one. First the calendars of the accounts in Online
+            // Accounts, each switched on with a touch — several in a row, so
+            // the field stays open until Done. Under the rule, for what has
+            // no account, an address pasted and Enter: it is read before it
+            // is taken, and the name it gives itself is the one it keeps.
+            Flickable {
+                id: addingList
+
                 visible: root.addingCalendar
                 anchors.top: agendaTitle.bottom
                 anchors.topMargin: 6 * root.factor
+                anchors.bottom: parent.bottom
                 width: parent.width
-                spacing: 8 * root.factor
+                clip: true
+                contentHeight: addingColumn.height
+                boundsBehavior: Flickable.StopAtBounds
 
-                Item {
+                Column {
+                    id: addingColumn
                     width: parent.width
-                    height: 34 * root.factor
+                    spacing: 6 * root.factor
 
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: Metrics.radiusFor(height, root.metrics)
-                        color: "transparent"
-                        border.width: Metrics.crisp(1.5, Screen.devicePixelRatio)
-                        border.color: Calendar.addProblem.length > 0 ? Theme.alert : Theme.primary
-                        antialiasing: true
+                    Text {
+                        visible: text.length > 0
+                        width: parent.width
+                        text: Calendar.discovering && Calendar.accounts.length === 0
+                              ? "Looking in Online Accounts…"
+                              : !Calendar.discovering && Calendar.accounts.length === 0
+                                ? "The calendars of the accounts in Online Accounts appear here."
+                                : ""
+                        color: Theme.textFaint
+                        wrapMode: Text.WordWrap
+                        font.family: Typography.expressive
+                        font.pixelSize: root.metrics.fontMeta
                     }
 
-                    TextInput {
-                        id: calendarField
-                        anchors.left: parent.left
-                        anchors.leftMargin: 14 * root.factor
-                        anchors.right: parent.right
-                        anchors.rightMargin: 14 * root.factor
-                        anchors.verticalCenter: parent.verticalCenter
-                        color: Theme.text
-                        readOnly: Calendar.checking
-                        font.family: Typography.expressive
-                        font.pixelSize: root.metrics.fontSecondary
-                        clip: true
+                    Repeater {
+                        model: Calendar.accounts
 
-                        onTextChanged: Calendar.addProblem = ""
-                        Keys.onEscapePressed: root.addingCalendar = false
-                        onAccepted: Calendar.add(text)
+                        delegate: Column {
+                            id: account
 
-                        Text {
-                            visible: calendarField.text.length === 0
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "The calendar's address"
-                            color: Theme.textFaint
-                            font: calendarField.font
+                            required property var modelData
+
+                            width: addingColumn.width
+                            spacing: 0
+
+                            Text {
+                                width: parent.width
+                                height: 22 * root.factor
+                                verticalAlignment: Text.AlignVCenter
+                                text: `${account.modelData.provider} · ${account.modelData.identity}`
+                                color: Theme.textFaint
+                                elide: Text.ElideRight
+                                font.family: Typography.expressive
+                                font.pixelSize: root.metrics.fontMeta
+                            }
+
+                            Text {
+                                visible: !!account.modelData.problem
+                                width: parent.width
+                                text: account.modelData.problem || ""
+                                color: Theme.alert
+                                wrapMode: Text.WordWrap
+                                font.family: Typography.expressive
+                                font.pixelSize: root.metrics.fontMeta
+                            }
+
+                            Repeater {
+                                model: account.modelData.calendars
+
+                                delegate: Item {
+                                    id: offered
+
+                                    required property var modelData
+
+                                    readonly property bool taken: Calendar.holds(account.modelData.goa, offered.modelData.href)
+
+                                    width: account.width
+                                    height: 30 * root.factor
+
+                                    readonly property bool navigable: !offered.taken
+
+                                    function activate() {
+                                        Calendar.addFromAccount(account.modelData.goa, offered.modelData);
+                                    }
+
+                                    KeyMark {
+                                        factor: root.factor
+                                    }
+
+                                    Text {
+                                        anchors.left: parent.left
+                                        anchors.leftMargin: 8 * root.factor
+                                        anchors.right: offeredState.left
+                                        anchors.rightMargin: 8 * root.factor
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: offered.modelData.name
+                                        elide: Text.ElideRight
+                                        color: offered.taken ? Theme.textMuted
+                                             : offeredHover.hovered ? Theme.primary : Theme.text
+                                        font.family: Typography.expressive
+                                        font.pixelSize: root.metrics.fontSecondary
+                                    }
+
+                                    Text {
+                                        id: offeredState
+                                        anchors.right: parent.right
+                                        anchors.rightMargin: 8 * root.factor
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: offered.taken ? "ADDED" : "ADD"
+                                        color: offered.taken ? Theme.textFaint
+                                             : offeredHover.hovered ? Theme.primary : Theme.textMuted
+                                        font: root.technical(root.metrics.fontMeta)
+                                    }
+
+                                    HoverHandler { id: offeredHover }
+                                    TapHandler {
+                                        enabled: !offered.taken
+                                        onTapped: offered.activate()
+                                    }
+                                }
+                            }
                         }
                     }
-                }
 
-                Text {
-                    visible: text.length > 0
-                    width: parent.width
-                    text: Calendar.checking ? "Reading it…" : Calendar.addProblem
-                    color: Calendar.checking ? Theme.textMuted : Theme.alert
-                    wrapMode: Text.WordWrap
-                    font.family: Typography.expressive
-                    font.pixelSize: root.metrics.fontMeta
-                }
+                    Item { width: 1; height: 2 * root.factor }
 
-                Text {
-                    width: parent.width
-                    text: "In Google Calendar it is under Settings, the calendar's name, Integrate "
-                          + "calendar: the secret address in iCal format. Elsewhere, the calendar's "
-                          + "iCal or webcal link. It is kept in the keyring."
-                    color: Theme.textFaint
-                    wrapMode: Text.WordWrap
-                    lineHeight: 1.15
-                    font.family: Typography.expressive
-                    font.pixelSize: root.metrics.fontMeta
+                    DashedRule {
+                        width: parent.width
+                    }
+
+                    Item { width: 1; height: 2 * root.factor }
+
+                    Item {
+                        width: parent.width
+                        height: 34 * root.factor
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: Metrics.radiusFor(height, root.metrics)
+                            color: "transparent"
+                            border.width: Metrics.crisp(1.5, Screen.devicePixelRatio)
+                            border.color: Calendar.addProblem.length > 0 ? Theme.alert
+                                        : calendarField.activeFocus ? Theme.primary : Theme.line
+                            antialiasing: true
+                        }
+
+                        TextInput {
+                            id: calendarField
+                            anchors.left: parent.left
+                            anchors.leftMargin: 14 * root.factor
+                            anchors.right: parent.right
+                            anchors.rightMargin: 14 * root.factor
+                            anchors.verticalCenter: parent.verticalCenter
+                            color: Theme.text
+                            readOnly: Calendar.checking
+                            font.family: Typography.expressive
+                            font.pixelSize: root.metrics.fontSecondary
+                            clip: true
+
+                            onTextChanged: Calendar.addProblem = ""
+                            Keys.onEscapePressed: root.addingCalendar = false
+                            onAccepted: Calendar.add(text)
+
+                            Text {
+                                visible: calendarField.text.length === 0
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "Or an iCal address"
+                                color: Theme.textFaint
+                                font: calendarField.font
+                            }
+                        }
+                    }
+
+                    Text {
+                        visible: text.length > 0
+                        width: parent.width
+                        text: Calendar.checking ? "Reading it…" : Calendar.addProblem
+                        color: Calendar.checking ? Theme.textMuted : Theme.alert
+                        wrapMode: Text.WordWrap
+                        font.family: Typography.expressive
+                        font.pixelSize: root.metrics.fontMeta
+                    }
                 }
+            }
+
+            Scroller {
+                flick: addingList
+                factor: root.factor
+                x: addingList.width - width
+                y: addingList.y
             }
 
             // The calendars read.

@@ -2,6 +2,7 @@
 """The events of the coming days, read from iCalendar feeds.
 
     BIOMA_CALENDAR_SOURCES='[{"id": "…", "name": "Personal"}]' calendar read 62 10
+    calendar accounts
     printf %s "$address" | calendar add
     calendar forget <id>
 
@@ -17,10 +18,20 @@ given number of days before today — the clock's month shows the start of its
 first week — to the given number after it. An event that began before the
 window and is still going is in it.
 
-A source is an iCalendar address — `https://`, `webcal://` — or a file on
-disk. Google's secret address, mailbox.org's, Posteo's, Fastmail's and a
-Nextcloud export are all one, so leaving one provider for another is a change
-of address, not of code.
+A source is one of two things.
+
+- **A calendar of an account in GNOME Online Accounts** — `{"goa", "href",
+  "name"}`. GOA holds the sign-in: an OAuth token for Google, a password for
+  a WebDAV or Nextcloud account (mailbox.org, Posteo, Fastmail, a Nextcloud).
+  Its calendars are found over CalDAV (`accounts` lists them), and only the
+  events of the window are asked for. Nothing secret is kept here: the token
+  or the password is asked of GOA at every reading, on stdout, never on a
+  command line.
+- **An iCalendar address** — `https://`, `webcal://` — or a file on disk, for
+  anything with no account: a shared calendar, a public one, an export.
+
+Either way leaving one provider for another is a change of account or of
+address, not of code.
 
 A secret calendar address is a password, and is kept as one. `add` reads it
 on stdin, makes sure it answers with a calendar, and puts it in the keyring
@@ -39,6 +50,7 @@ Recurrences are expanded by dateutil, in the event's own time zone, so a
 weekly meeting at nine stays at nine across a change of summer time.
 """
 
+import base64
 import hashlib
 import json
 import os
@@ -48,6 +60,7 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+import xml.etree.ElementTree as ET
 from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -110,9 +123,12 @@ def download(url):
     return text
 
 
-def fetch(source):
-    """The feed's text, cached on success."""
-    text = download(address(source))
+def fetch(source, window_start, window_end):
+    """The source's text, cached on success."""
+    if source.get("goa"):
+        text = goa_events(source, window_start, window_end)
+    else:
+        text = download(address(source))
     CACHE.mkdir(parents=True, exist_ok=True)
     path = cached(source)
     partial = path.with_suffix(".part")
@@ -123,8 +139,168 @@ def fetch(source):
 
 
 def cached(source):
-    key = str(source.get("id") or "").strip() or source["url"].strip()
+    if source.get("goa"):
+        key = f"goa:{source['goa']}:{source.get('href', '')}"
+    else:
+        key = str(source.get("id") or "").strip() or source["url"].strip()
     return CACHE / (hashlib.sha256(key.encode()).hexdigest()[:24] + ".ics")
+
+
+# ---- GNOME Online Accounts ----------------------------------------------------
+#
+# Spoken to through `busctl --json`, which every systemd machine has: no
+# Python binding to depend on. A token or a password comes back on busctl's
+# stdout and goes no further than this process's memory.
+
+GOA = "org.gnome.OnlineAccounts"
+DAV = "DAV:"
+CALDAV = "urn:ietf:params:xml:ns:caldav"
+NS = {"d": DAV, "c": CALDAV}
+
+
+class AccountProblem(Exception):
+    """An account GOA cannot sign in with until somebody does it again."""
+
+
+def bus(path, interface, method, *args):
+    command = ["busctl", "--user", "--json=short", "call", GOA, path, interface, method]
+    if args:
+        command += ["s" * len(args), *args]
+    done = subprocess.run(command, capture_output=True, text=True, timeout=15)
+    if done.returncode != 0:
+        raise AccountProblem(done.stderr.strip() or "Online Accounts did not answer")
+    return json.loads(done.stdout)["data"]
+
+
+def goa_accounts():
+    """{id: {"path", "identity", "provider", "uri", "oauth"}} for every
+    account with its calendar switched on."""
+    objects = bus("/org/gnome/OnlineAccounts", "org.freedesktop.DBus.ObjectManager", "GetManagedObjects")[0]
+    out = {}
+    for path, interfaces in objects.items():
+        account = interfaces.get(GOA + ".Account")
+        calendar = interfaces.get(GOA + ".Calendar")
+        if not account or not calendar:
+            continue
+        value = lambda props, key, fallback=None: props.get(key, {}).get("data", fallback)
+        if value(account, "CalendarDisabled", False):
+            continue
+        out[value(account, "Id")] = {
+            "path": path,
+            "identity": value(account, "PresentationIdentity") or value(account, "Identity") or "",
+            "user": value(account, "Identity") or "",
+            "provider": value(account, "ProviderName") or "",
+            "attention": bool(value(account, "AttentionNeeded", False)),
+            "uri": value(calendar, "Uri") or "",
+            "oauth": (GOA + ".OAuth2Based") in interfaces,
+        }
+    return out
+
+
+def authorisation(account):
+    """The header that signs a request in as the account."""
+    if account["attention"]:
+        raise AccountProblem("its account needs signing in again in Online Accounts")
+    if account["oauth"]:
+        token = bus(account["path"], GOA + ".OAuth2Based", "GetAccessToken")[0]
+        return "Bearer " + token
+    password = bus(account["path"], GOA + ".PasswordBased", "GetPassword", "password")[0]
+    pair = f"{account['user']}:{password}".encode()
+    return "Basic " + base64.b64encode(pair).decode()
+
+
+def dav(url, method, body, depth, auth):
+    """A WebDAV request; the multistatus it answers with, parsed. Redirects
+    are followed by hand: urllib follows them only for GET."""
+    for _ in range(5):
+        request = urllib.request.Request(url, data=body.encode(), method=method, headers={
+            "Authorization": auth, "Depth": depth, "Content-Type": "application/xml; charset=utf-8",
+            "User-Agent": "Bioma"})
+        try:
+            with urllib.request.urlopen(request, timeout=20) as response:
+                return ET.fromstring(response.read()), response.url
+        except urllib.error.HTTPError as error:
+            if error.code in (301, 302, 303, 307, 308) and error.headers.get("Location"):
+                url = urllib.parse.urljoin(url, error.headers["Location"])
+                continue
+            raise
+    raise ValueError("the server sent the request round in circles")
+
+
+def href_of(tree, path):
+    found = tree.find(path, NS)
+    return found.text.strip() if found is not None and found.text else None
+
+
+def calendars_of(account):
+    """[{"href", "name"}]: the account's calendars that hold events."""
+    auth = authorisation(account)
+    uri = account["uri"]
+    probe = ('<d:propfind xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav"><d:prop>'
+             '<d:current-user-principal/><c:calendar-home-set/></d:prop></d:propfind>')
+    tree, base = dav(uri, "PROPFIND", probe, "0", auth)
+    home = href_of(tree, ".//c:calendar-home-set/d:href")
+    if not home:
+        principal = href_of(tree, ".//d:current-user-principal/d:href")
+        if not principal:
+            raise ValueError("the server does not say where its calendars are")
+        tree, base = dav(urllib.parse.urljoin(base, principal), "PROPFIND", probe, "0", auth)
+        home = href_of(tree, ".//c:calendar-home-set/d:href")
+        if not home:
+            raise ValueError("the server does not say where its calendars are")
+
+    listing = ('<d:propfind xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav"><d:prop>'
+               '<d:displayname/><d:resourcetype/><c:supported-calendar-component-set/>'
+               '</d:prop></d:propfind>')
+    home_url = urllib.parse.urljoin(base, home)
+    tree, _ = dav(home_url, "PROPFIND", listing, "1", auth)
+    out = []
+    for response in tree.findall("d:response", NS):
+        if response.find(".//d:resourcetype/c:calendar", NS) is None:
+            continue
+        components_ = [c.get("name") for c in response.findall(".//c:supported-calendar-component-set/c:comp", NS)]
+        if components_ and "VEVENT" not in components_:
+            continue  # a task list
+        href = href_of(response, "d:href")
+        name = href_of(response, ".//d:displayname") or urllib.parse.unquote(href.rstrip("/").rsplit("/", 1)[-1])
+        out.append({"href": urllib.parse.urljoin(home_url, href), "name": name})
+    return out
+
+
+def goa_events(source, window_start, window_end):
+    """The calendar's objects that touch the window, as one text of
+    VCALENDARs: CalDAV filters by time, the recurrences are still expanded
+    here, as for a feed."""
+    account = goa_accounts().get(source["goa"])
+    if account is None:
+        raise AccountProblem("its account is no longer in Online Accounts")
+    stamp = lambda moment_: moment_.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    query = ('<c:calendar-query xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav">'
+             '<d:prop><c:calendar-data/></d:prop>'
+             '<c:filter><c:comp-filter name="VCALENDAR"><c:comp-filter name="VEVENT">'
+             f'<c:time-range start="{stamp(window_start)}" end="{stamp(window_end)}"/>'
+             '</c:comp-filter></c:comp-filter></c:filter></c:calendar-query>')
+    tree, _ = dav(source["href"], "REPORT", query, "1", authorisation(account))
+    parts = [data.text for data in tree.iter("{%s}calendar-data" % CALDAV) if data.text]
+    return "\n".join(parts)
+
+
+def accounts():
+    """Every account in GOA with its calendar on, and the calendars in it."""
+    try:
+        found = goa_accounts()
+    except (AccountProblem, OSError, subprocess.TimeoutExpired, json.JSONDecodeError):
+        return {"accounts": [], "present": False}
+    out = []
+    for ident, account in found.items():
+        entry = {"goa": ident, "identity": account["identity"], "provider": account["provider"]}
+        try:
+            entry["calendars"] = calendars_of(account)
+        except Exception as error:  # noqa: BLE001 — one account's trouble is its own
+            entry["calendars"] = []
+            entry["problem"] = f"Its calendars could not be read ({reason(error)})."
+        out.append(entry)
+    return {"accounts": out, "present": True}
 
 
 def unfold(text):
@@ -414,11 +590,11 @@ def read(ahead, back):
     for index, source in enumerate(sources):
         if not isinstance(source, dict):
             continue
-        if not str(source.get("url", "")).strip() and not str(source.get("id", "")).strip():
+        if not any(str(source.get(key, "")).strip() for key in ("url", "id", "goa")):
             continue
         name = str(source.get("name") or "Calendar")
         try:
-            text = fetch(source)
+            text = fetch(source, window_start, window_end)
         except Exception as error:  # noqa: BLE001 — any failure means "use the copy"
             path = cached(source)
             if path.exists():
@@ -494,6 +670,8 @@ def main():
     command = sys.argv[1] if len(sys.argv) > 1 else "read"
     if command == "add":
         answer = add(sys.stdin.read())
+    elif command == "accounts":
+        answer = accounts()
     elif command == "forget":
         answer = forget(sys.argv[2] if len(sys.argv) > 2 else "")
     else:
@@ -505,7 +683,11 @@ def main():
 
 
 def reason(error):
+    if isinstance(error, AccountProblem):
+        return str(error)
     if isinstance(error, urllib.error.HTTPError):
+        if error.code in (401, 403):
+            return "the server refused the sign-in"
         return f"the server answered {error.code}"
     if isinstance(error, urllib.error.URLError):
         return "the address could not be reached"
@@ -513,6 +695,8 @@ def reason(error):
         return "no such file"
     if isinstance(error, TimeoutError):
         return "the address took too long to answer"
+    if isinstance(error, ET.ParseError):
+        return "the server answered with something unreadable"
     return str(error) or type(error).__name__
 
 
