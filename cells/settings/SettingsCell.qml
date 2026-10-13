@@ -32,7 +32,7 @@ Cell {
 
     // Open, it is the title of its own expansion: the mark and the name, like
     // every other cell in the shell.
-    headerTitle: "SETTINGS"
+    headerTitle: root.inSetup ? "SETUP" : "SETTINGS"
     headerMarkSize: root.markSize
     headerMark: Component {
         Icon {
@@ -43,6 +43,11 @@ Cell {
     }
 
     replacesContent: true
+
+    // Shown as the setup — steps where the categories stand — while the
+    // walk-through is under way on this output (services/Setup.qml,
+    // docs/design/SETUP.md).
+    readonly property bool inSetup: Setup.active && root.output === Setup.output
 
     // Which category is being looked at. It lives on the cell rather than in
     // the expansion so that closing and reopening comes back to the same
@@ -82,7 +87,14 @@ Cell {
         root.panelHovered = false;
         root.fieldEngaged = false;
         root.fieldKeyed = false;
+        // Closed under the setup — Escape, a press outside — means later.
+        if (root.inSetup)
+            Setup.closed();
     }
+
+    // Rebuilt under the setup by the layout it applied: it reopens in the
+    // cell that replaces this one.
+    Component.onDestruction: if (root.inSetup && root.open) Setup.lost()
 
     expansion: Component {
         Loader {

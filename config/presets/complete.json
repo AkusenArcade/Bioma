@@ -1,0 +1,43 @@
+{
+  "$comment": "Everything Bioma has, on the primary monitor. The membranes and the floating tissues are the base layer's own (config/default.json), named here rather than copied so the two cannot drift apart; the organisms are this preset's.",
+  "name": "Complete",
+  "order": 0,
+  "line": "Every cell, the dock, and a few organisms on the desktop.",
+  "from_base": [
+    "membranes",
+    "floating"
+  ],
+  "organisms": [
+    {
+      "type": "clock",
+      "monitor": "primary",
+      "col": 0,
+      "row": 0
+    },
+    {
+      "type": "vitals",
+      "monitor": "primary",
+      "col": 2,
+      "row": 0,
+      "layout": "row"
+    },
+    {
+      "type": "calendar",
+      "monitor": "primary",
+      "col": 0,
+      "row": 1
+    },
+    {
+      "type": "media",
+      "monitor": "primary",
+      "col": 2,
+      "row": 1
+    },
+    {
+      "type": "lava",
+      "monitor": "primary",
+      "col": 4,
+      "row": 0
+    }
+  ]
+}

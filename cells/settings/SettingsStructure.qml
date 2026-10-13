@@ -1132,7 +1132,7 @@ Item {
                 height: root.chipHeight
                 verticalAlignment: Text.AlignVCenter
                 text: "PRESET"
-                color: Presets.saved.length > 0 ? Theme.text : Theme.textFaint
+                color: Presets.all.length > 0 ? Theme.text : Theme.textFaint
                 font: Qt.font({
                     "family": Typography.technical,
                     "pixelSize": root.metrics.fontMeta,
@@ -1154,7 +1154,7 @@ Item {
                 Item {
                     id: presetDrop
 
-                    readonly property bool usable: Presets.saved.length > 0
+                    readonly property bool usable: Presets.all.length > 0
 
                     width: 240 * root.factor
                     height: root.chipHeight
@@ -1376,9 +1376,12 @@ Item {
                 Choice {
                     metrics: root.metrics
                     // Saying what it will do: a name already in the list is
-                    // that preset written over.
-                    label: Presets.find(nameField.text.trim()) ? "REPLACE" : "SAVE"
+                    // that preset written over — unless the name is one of
+                    // Bioma's, which cannot be (SETUP.md, shipped presets).
+                    readonly property bool taken: Presets.reserved(nameField.text)
+                    label: taken ? "TAKEN" : Presets.find(nameField.text.trim()) ? "REPLACE" : "SAVE"
                     kind: "primary"
+                    dimmed: taken
                     onActivated: root.finishNaming()
                 }
 
@@ -2444,7 +2447,7 @@ Item {
 
     TextMetrics {
         id: presetLongest
-        text: Presets.saved.reduce((out, preset) => (preset.name || "").length > out.length
+        text: Presets.all.reduce((out, preset) => (preset.name || "").length > out.length
                                                     ? preset.name : out, "")
         font: Qt.font({
             "family": Typography.technical,
@@ -2484,7 +2487,7 @@ Item {
         targetWidth: Math.min(Math.max(presetDrop.width,
                                        presetLongest.width + 72 * root.factor + root.presetPadding * 2),
                               root.width - root.presetOriginX)
-        targetHeight: Math.min(Presets.saved.length, root.presetRows) * root.presetRowHeight
+        targetHeight: Math.min(Presets.all.length, root.presetRows) * root.presetRowHeight
                       + root.presetPadding * 2
         growth: root.presetGrowth
         contentReady: root.presetGrowth > 0.999
@@ -2515,8 +2518,8 @@ Item {
             id: presetView
 
             width: presetList.targetWidth - root.presetPadding * 2
-            height: Math.min(Presets.saved.length, root.presetRows) * root.presetRowHeight
-            model: Presets.saved
+            height: Math.min(Presets.all.length, root.presetRows) * root.presetRowHeight
+            model: Presets.all
             clip: true
             boundsBehavior: Flickable.StopAtBounds
 
@@ -2524,8 +2527,11 @@ Item {
                 id: option
 
                 required property var modelData
+                required property int index
 
                 readonly property string name: option.modelData.name || ""
+                // Bioma's own: no cross, because it cannot be forgotten.
+                readonly property bool shipped: option.modelData.shipped === true
                 readonly property bool current: Presets.active === option.name
                 readonly property bool armed: root.presetArmed === option.name
                 readonly property bool removing: root.presetRemoving === option.name
@@ -2552,11 +2558,23 @@ Item {
                 }
 
                 function discard() {
-                    root.forgetPreset(option.name);
+                    if (!option.shipped)
+                        root.forgetPreset(option.name);
                 }
 
                 KeyMark {
                     factor: root.factor
+                }
+
+                // Where the user's end and Bioma's begin: the dashed rule that
+                // separates what is kept from what is offered on every page.
+                DashedRule {
+                    visible: option.shipped && option.index > 0 && option.index === Presets.saved.length
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.leftMargin: 6 * root.factor
+                    anchors.rightMargin: 6 * root.factor
+                    y: 0
                 }
 
                 // Lit under the pointer, red while it asks.
@@ -2620,6 +2638,7 @@ Item {
                 Item {
                     id: optionCross
 
+                    visible: !option.shipped
                     anchors.right: parent.right
                     anchors.rightMargin: 4 * root.factor
                     anchors.verticalCenter: parent.verticalCenter
@@ -2651,7 +2670,7 @@ Item {
             flick: presetView
             factor: root.factor
             x: presetList.targetWidth - root.presetPadding * 2 - width
-            visible: Presets.saved.length > root.presetRows
+            visible: Presets.all.length > root.presetRows
         }
     }
 }

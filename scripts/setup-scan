@@ -1,0 +1,136 @@
+#!/usr/bin/env bash
+# What else draws this desktop, for the setup's CONFLICTS step.
+#
+#     setup-scan list                       one conflict per line
+#     setup-scan stop <pid> <name> <from>   stop it, and take it out of startup
+#
+# Someone arriving from another shell still has it starting with niri, and two
+# things then go wrong without saying why: two bars on one edge, and
+# notifications that never reach Bioma, because org.freedesktop.Notifications
+# has one owner per session (docs/design/SETUP.md).
+#
+# `list` prints tab-separated fields:
+#     pid   name   what (notifications | bar)   from
+# where `from` is `niri:<file>` for a spawn-at-startup line, `unit:<name>` for
+# an enabled systemd user unit, or `none`.
+#
+# `stop` comments a spawn line out — after a copy of the file, and only if
+# `niri validate` accepts the result — or disables the unit, then ends the
+# process. Nothing is deleted.
+set -euo pipefail
+
+here="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
+config="${NIRI_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/niri/config.kdl}"
+config_dir="$(dirname "$(readlink -f "$config" 2>/dev/null || echo "$config")")"
+
+# Shells and daemons a niri session is likely to have brought along. A
+# Quickshell configuration is found by its argument, so Bioma's own instance,
+# its lock screen and its greeter are never among them.
+known='waybar|mako|dunst|swaync|fnott|eww|ags|ironbar|hyprpanel|noctalia|dms|yambar|i3bar|sfwbar|nwg-panel|nwg-dock|swaybar'
+
+name_of() {   # pid → the name a person knows it by
+    local pid="$1" comm args
+    comm="$(cat "/proc/$pid/comm" 2>/dev/null || true)"
+    case "$comm" in
+        qs|quickshell|.quickshell-wra*)
+            args="$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null || true)"
+            # `-c name` or `-p path/to/<name>/shell.qml`
+            if [[ "$args" =~ (-c|--config)[[:space:]]+([^[:space:]]+) ]]; then
+                printf '%s' "${BASH_REMATCH[2]}"
+            elif [[ "$args" =~ /([^/[:space:]]+)/shell\.qml ]]; then
+                printf '%s' "${BASH_REMATCH[1]}"
+            else
+                printf 'quickshell'
+            fi
+            ;;
+        *) printf '%s' "$comm" ;;
+    esac
+}
+
+is_bioma() {   # pid
+    tr '\0' ' ' < "/proc/$1/cmdline" 2>/dev/null | grep -qF "$here/"
+}
+
+# Where it is started from: a spawn line in any of niri's files, else an
+# enabled user unit by its name.
+from_of() {   # name
+    local name="$1" file unit
+    for file in "$config_dir"/*.kdl "$config_dir"/**/*.kdl; do
+        [ -f "$file" ] || continue
+        if grep -qE "^[[:space:]]*spawn(-sh)?-at-startup[[:space:]].*\b$name\b" "$file"; then
+            printf 'niri:%s' "$file"
+            return
+        fi
+    done
+    for unit in "$name.service" "$name-shell.service"; do
+        if [ "$(systemctl --user is-enabled "$unit" 2>/dev/null)" = enabled ]; then
+            printf 'unit:%s' "$unit"
+            return
+        fi
+    done
+    printf 'none'
+}
+
+list() {
+    declare -A seen=()
+    local owner pid name
+
+    owner="$(busctl --user call org.freedesktop.DBus /org/freedesktop/DBus org.freedesktop.DBus \
+             GetConnectionUnixProcessID s org.freedesktop.Notifications 2>/dev/null | awk '{print $2}')"
+    if [ -n "$owner" ] && ! is_bioma "$owner"; then
+        name="$(name_of "$owner")"
+        printf '%s\t%s\tnotifications\t%s\n' "$owner" "$name" "$(from_of "$name")"
+        seen[$owner]=1
+    fi
+
+    while read -r pid; do
+        [ -n "$pid" ] || continue
+        [ -z "${seen[$pid]:-}" ] || continue
+        is_bioma "$pid" && continue
+        name="$(name_of "$pid")"
+        [ "$name" = quickshell ] && continue
+        printf '%s\t%s\tbar\t%s\n' "$pid" "$name" "$(from_of "$name")"
+        seen[$pid]=1
+    done < <(
+        pgrep -x "$known" 2>/dev/null || true
+        # Other Quickshell configurations, by their argument.
+        pgrep -x 'qs|quickshell' 2>/dev/null || true
+    )
+}
+
+stop() {
+    local pid="$1" name="$2" from="$3" file backup refusal
+    case "$from" in
+        niri:*)
+            file="${from#niri:}"
+            backup="$file.before-bioma-setup.$(date +%Y%m%d-%H%M%S)"
+            cp -p "$file" "$backup"
+            sed -i -E "s#^([[:space:]]*)(spawn(-sh)?-at-startup[[:space:]].*\\b$name\\b.*)#\\1// \\2  // turned off by Bioma's setup#" "$file"
+            if refusal="$(niri validate -c "$config" 2>&1)"; then
+                cmp -s "$backup" "$file" && rm -f "$backup"
+            else
+                cp -p "$backup" "$file"
+                rm -f "$backup"
+                printf '%s\n' "$refusal" | sed 's/\x1b\[[0-9;]*m//g' | tail -1 >&2
+                exit 1
+            fi
+            ;;
+        unit:*)
+            systemctl --user disable --now "${from#unit:}" >/dev/null 2>&1 || true
+            ;;
+    esac
+    if kill -0 "$pid" 2>/dev/null && ! is_bioma "$pid"; then
+        kill "$pid" 2>/dev/null || true
+        for _ in 1 2 3 4 5 6 7 8 9 10; do
+            kill -0 "$pid" 2>/dev/null || break
+            sleep 0.2
+        done
+    fi
+}
+
+shopt -s globstar nullglob
+case "${1:-list}" in
+    list) list ;;
+    stop) shift; [ "$#" -eq 3 ] || { echo "usage: setup-scan stop <pid> <name> <from>" >&2; exit 2; }; stop "$@" ;;
+    *) echo "usage: setup-scan list | stop <pid> <name> <from>" >&2; exit 2 ;;
+esac

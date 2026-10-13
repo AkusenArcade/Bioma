@@ -283,8 +283,17 @@ is 2 × 1, 2 × 2 or 2 × 3, the vitals' square 2 × 2 rather than a row.
 Saved layouts, written by the Structure page and never by hand. Each one is the
 whole composition — `membranes`, `floating` and `organisms`, on every monitor —
 under a name, and putting one back writes those three lists in a single write.
-The base layer ships none: a preset is a layout somebody made, not one Bioma
-offers (PRD §3.7).
+These are the user's own; the list starts empty.
+
+Beside them stand the three Bioma ships as starting points (PRD §3.7, amended
+2026-10-13): **Complete**, **Minimal** and **Empty**, one file each in
+`config/presets/`, offered by the setup and listed after the user's on the
+Structure page. A shipped file has a `name`, an `order`, a `line` saying who it
+is for, and the three lists — or `from_base`, naming lists it takes from the
+base layer instead: Complete borrows the default's `membranes` and `floating`
+and adds organisms of its own. Applying one copies its lists into the override,
+where they are the user's; their names are reserved, and they cannot be
+forgotten.
 
 | Key | Meaning |
 |---|---|
@@ -296,6 +305,18 @@ is not connected keeps that screen's blocks, and they appear when it returns.
 The same three things answer a key: `ipc call presets apply <name>`,
 `presets save <name>`, `presets create` (an empty layout), `presets list` and
 `presets current`.
+
+### setup
+
+The first-run walk-through (docs/design/SETUP.md), written by the shell.
+
+| Key | Meaning |
+|---|---|
+| `pending` | `true` from the first start until the walk-through is done or skipped: it opens again at every start meanwhile |
+| `done` | `true` once DONE or SKIP SETUP was pressed. After that it opens only by `ipc call setup open` |
+
+It opens by itself only when the shell starts with no override file at all, so
+an existing configuration never sees it.
 
 ### weather
 

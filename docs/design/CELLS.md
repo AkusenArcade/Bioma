@@ -714,7 +714,9 @@ current name — the button reads `REPLACE` for a name already in the list — s
 SAVE AS and Enter (Akusen, 2026-10-09: a change is not saved by itself). A press that would lose
 a layout kept under no name asks first, in its own place: the row or the NEW chip turns alert and
 says `DISCARD CHANGES?`, a row's cross says `FORGET …?`, the second press anywhere on it answers,
-and leaving it withdraws the question. A press elsewhere on the page, or a scroll, puts the list
+and leaving it withdraws the question. The three presets Bioma ships — Complete, Minimal, Empty —
+are listed below the user's, under a dashed rule, in the same rows but with no cross; their names
+are reserved, so SAVE AS over one reads `TAKEN`, dimmed (`SETUP.md`, Akusen, 2026-10-13). A press elsewhere on the page, or a scroll, puts the list
 away.
 Below them, pick the monitor, then switch on up to **six tissues**: three on the top
 membrane, three on the bottom. An unlit slot is dashed with a plus: click it to light it, empty

@@ -27,6 +27,17 @@ Singleton {
     // arrived and drop it.
     property var overrideValues: ({})
 
+    // The base layer alone, as the shell reads it: what a shipped preset that
+    // borrows the default's membranes reads them from (core/Presets.qml).
+    property var baseValues: ({})
+
+    // Whether the override file was there when last read. Absent, this is the
+    // first start on this account (services/Setup.qml).
+    property bool overrideExists: false
+    // And whether it has been looked for yet: the base layer is read first and
+    // the shell is ready before the override's answer arrives.
+    property bool overrideRead: false
+
     // True once the base layer has been parsed at least once.
     property bool ready: false
 
@@ -86,6 +97,7 @@ Singleton {
             return;
 
         const override = parse(overrideFile.text(), "override.json");
+        root.baseValues = root.current(JSON.parse(JSON.stringify(base)));
         root.overrideValues = override || ({});
         root.values = root.current(root.merge(base, override));
         root.ready = true;
@@ -180,8 +192,8 @@ Singleton {
         // Absent until the settings UI writes it for the first time, which is
         // the normal case and not worth a warning on every start.
         printErrors: false
-        onLoaded: root.rebuild()
-        onLoadFailed: root.rebuild()
+        onLoaded: { root.overrideExists = true; root.overrideRead = true; root.rebuild(); }
+        onLoadFailed: { root.overrideExists = false; root.overrideRead = true; root.rebuild(); }
         onFileChanged: reload()
 
         // The config directory may not exist on a first run. Create it once,

@@ -6,6 +6,13 @@
 #     scripts/install --autostart  also start Bioma with the niri session
 #     scripts/install --force      write the keys again over an existing copy
 #     scripts/install --check      only say what is missing
+#     scripts/install --report     what --check says, and what is already in
+#                                  niri's configuration, one fact per line in
+#                                  tab-separated fields — for the setup
+#     scripts/install --niri-only  write the keys and the includes without
+#                                  checking for programs first — for the setup,
+#                                  which says what is missing on a page of its
+#                                  own
 #
 # What it writes, all of it next to niri's config.kdl:
 #   - bioma-binds.kdl, from config/niri/bioma-binds.kdl.in with the repository's
@@ -26,12 +33,16 @@ here="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
 autostart=false
 force=false
 check_only=false
+report=false
+niri_only=false
 for arg in "$@"; do
     case "$arg" in
         --autostart) autostart=true ;;
         --force) force=true ;;
         --check) check_only=true ;;
-        -h|--help) sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        --report) report=true; check_only=true ;;
+        --niri-only) niri_only=true ;;
+        -h|--help) sed -n '2,28p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "unknown option: $arg" >&2; exit 2 ;;
     esac
 done
@@ -44,7 +55,18 @@ done
 
 missing_required=0
 
+# With --report, each check is one line: `required` or `optional`, `ok` or
+# `missing`, the name, what it is for, and the package.
+fact() {   # kind, present?, name, what for, package
+    printf '%s\t%s\t%s\t%s\t%s\n' "$1" "$([ "$2" = yes ] && echo ok || echo missing)" "$3" "$4" "$5"
+}
+
 need() {   # program, Arch package, what for
+    if $report; then
+        fact required "$(command -v "$1" >/dev/null 2>&1 && echo yes)" "$1" "$3" "$2"
+        command -v "$1" >/dev/null 2>&1 || missing_required=$((missing_required + 1))
+        return
+    fi
     if command -v "$1" >/dev/null 2>&1; then
         printf '  ok        %-16s %s\n' "$1" "$3"
     else
@@ -54,6 +76,11 @@ need() {   # program, Arch package, what for
 }
 
 need_part() {   # present?, name, what for, Arch package
+    if $report; then
+        fact required "$1" "$2" "$3" "$4"
+        [ "$1" = yes ] || missing_required=$((missing_required + 1))
+        return
+    fi
     if [ "$1" = yes ]; then
         printf '  ok        %-16s %s\n' "$2" "$3"
     else
@@ -63,6 +90,10 @@ need_part() {   # present?, name, what for, Arch package
 }
 
 want_part() {   # present?, name, what for, Arch package
+    if $report; then
+        fact optional "$1" "$2" "$3" "$4"
+        return
+    fi
     if [ "$1" = yes ]; then
         printf '  ok        %-16s %s\n' "$2" "$3"
     else
@@ -75,7 +106,11 @@ has() { command -v "$1" >/dev/null 2>&1 && echo yes; }
 # and under pipefail a font that is there reads as missing.
 font() { fc-list : family 2>/dev/null | grep -i "$1" >/dev/null && echo yes; }
 
-echo "Required:"
+# Writing the niri files only, the checks run unheard: the setup has asked
+# for them already, and says what is missing on a page of its own.
+if $niri_only; then exec 3>&1 1>/dev/null; fi
+
+$report || echo "Required:"
 need niri       niri            "the compositor, 26.04 or later"
 need qs         quickshell      "the shell runtime, 0.3.1"
 need python3    python          "the helper scripts"
@@ -118,7 +153,7 @@ need hyprlock   hyprlock        "the lock screen's fallback"
 need greetd     greetd          "the Bioma greeter"
 need agreety    greetd-agreety  "the plain greeter, while the Bioma one has no copy to run"
 
-echo "Optional:"
+$report || echo "Optional:"
 # Dictation's parts. The package leaves them optional: the model alone is
 # half a gigabyte, for one button.
 model=/usr/share/whisper.cpp-model-large-v3-turbo-q5_0/ggml-large-v3-turbo-q5_0.bin
@@ -135,13 +170,45 @@ want_part "$([ -w /dev/uinput ] && echo yes)" "/dev/uinput" \
 want_part "$(has bnw)" "network wizard" \
     "company network setup, from the connectivity cell" "AUR business-network-wizard"
 
-if command -v niri >/dev/null 2>&1; then
+if ! $report && command -v niri >/dev/null 2>&1; then
     version="$(niri --version 2>/dev/null | awk '{print $2}')"
     major="${version%%.*}"
     if [ -n "$major" ] && [ "$major" -lt 26 ] 2>/dev/null; then
         echo "  niri $version is older than 26.04: blur (ext-background-effect) will not work." >&2
     fi
 fi
+
+# What is already in niri's configuration, for --report: the keys file, the
+# two includes, the line that starts Bioma with the session, and whether
+# anything can ask for a password — the setup's NIRI and LOGIN steps read
+# these rather than guessing.
+report_niri() {
+    local config real dir
+    config="${NIRI_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/niri/config.kdl}"
+    if [ ! -f "$config" ]; then
+        printf 'niri\tconfig\tmissing\n'
+    else
+        real="$(readlink -f "$config")"
+        dir="$(dirname "$real")"
+        printf 'niri\tconfig\tok\t%s\n' "$real"
+        found() { grep -qE "$1" "$real" && echo ok || echo missing; }
+        printf 'niri\tbinds\t%s\n' "$([ -f "$dir/bioma-binds.kdl" ] && echo ok || echo missing)"
+        printf 'niri\tinclude\t%s\n' \
+            "$(found '^[[:space:]]*include[[:space:]]+"[^"]*/config/niri/bioma\.kdl"')"
+        printf 'niri\tinclude-binds\t%s\n' \
+            "$(found '^[[:space:]]*include[[:space:]]+"(.*/)?bioma-binds\.kdl"')"
+        printf 'niri\tautostart\t%s\n' \
+            "$(found '^[[:space:]]*spawn-at-startup[[:space:]]+"[^"]*/scripts/shell"[[:space:]]+"start"')"
+    fi
+    # An authentication agent is a process of the session; there is no bus
+    # name to ask for. These are the ones a niri session is likely to run,
+    # Quickshell configurations that hold one of their own included.
+    if pgrep -f 'polkit.*agent|lxpolkit|hyprpolkitagent|soteria|xfce-polkit|polkit-mate|mate-polkit|polkit-kde|polkit-gnome' >/dev/null 2>&1; then
+        printf 'polkit\tagent\tok\n'
+    else
+        printf 'polkit\tagent\tmissing\n'
+    fi
+}
 
 # ---- System services ---------------------------------------------------------
 #
@@ -167,11 +234,19 @@ service cups.socket cups.service
 service avahi-daemon.service avahi-daemon.socket
 # power-profiles-daemon and tuned-ppd are started by D-Bus when first asked.
 
+if $report; then
+    for unit in "${disabled[@]}"; do printf 'service\tdisabled\t%s\n' "$unit"; done
+    report_niri
+    exit 0
+fi
+
 if [ "${#disabled[@]}" -gt 0 ]; then
     echo "Services not enabled — the cells that read them stay empty until they are:"
     printf '  %s\n' "${disabled[@]}"
     echo "  sudo systemctl enable --now ${disabled[*]}"
 fi
+
+if $niri_only; then exec 1>&3 3>&-; missing_required=0; fi
 
 if [ "$missing_required" -gt 0 ]; then
     echo

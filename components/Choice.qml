@@ -22,16 +22,23 @@ Item {
     property string label: ""
     property string kind: "plain"       // "plain" | "primary" | "alert"
 
+    // An answer that cannot be given now: it stays where it is, so the row
+    // does not move, and says so by fading. It takes no press.
+    property bool dimmed: false
+
     signal activated()
 
     readonly property real factor: metrics ? metrics.factor : 1
 
     // A stop for the keyboard (see `Focus`). A caller that reaches the
     // button through something larger turns it off.
-    property bool navigable: true
+    property bool navigable: !root.dimmed
+
+    opacity: root.dimmed ? 0.4 : 1
 
     function activate() {
-        root.activated();
+        if (!root.dimmed)
+            root.activated();
     }
     readonly property bool filled: kind !== "plain"
     readonly property int fontSize: Math.round(12 * factor)
@@ -89,5 +96,5 @@ Item {
         })
     }
 
-    TapHandler { onTapped: root.activated() }
+    TapHandler { onTapped: root.activate() }
 }

@@ -1,0 +1,143 @@
+#!/usr/bin/env bash
+# Make Bioma the login screen, or give the old one back.
+#
+#     greeter-setup status     what the machine logs in with now (no root)
+#     greeter-setup enable     Bioma's greeter in greetd, from the next boot
+#     greeter-setup disable    greetd's configuration as it was before Bioma
+#
+# `enable` and `disable` are run as root through pkexec, by the setup's LOGIN
+# step (docs/design/SETUP.md): the login screen is the one thing installing a
+# package must not change without asking, so the package no longer does it.
+#
+# Nothing is restarted. greetd reads its configuration when it starts, and
+# restarting it from inside a session ends that session: it takes effect at the
+# next boot.
+#
+# `status` prints one fact per line, tab-separated:
+#     manager   the unit display-manager.service points at, or `none`
+#     greeter   `bioma` when greetd's default session is Bioma's, else `other`
+#     copy      `ok` when the greeter has a copy of the desktop to run
+set -euo pipefail
+
+here="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
+
+greetd_config=/etc/greetd/config.toml
+greetd_backup=/etc/greetd/config.toml.before-bioma
+greeter_dir=/var/lib/bioma-greeter
+greeter_command="$here/scripts/greeter-session"
+
+manager() {
+    local dm
+    dm="$(readlink /etc/systemd/system/display-manager.service 2>/dev/null || true)"
+    if [ -z "$dm" ]; then echo none; else basename "$dm"; fi
+}
+
+status() {
+    printf 'manager\t%s\n' "$(manager)"
+    if [ -r "$greetd_config" ] && grep -q 'bioma' "$greetd_config"; then
+        printf 'greeter\tbioma\n'
+    else
+        printf 'greeter\tother\n'
+    fi
+    if [ -d "$greeter_dir/live" ]; then
+        printf 'copy\tok\n'
+    else
+        printf 'copy\tmissing\n'
+    fi
+}
+
+# Who asked: pkexec says by uid, sudo by name.
+asker() {
+    local user="${SUDO_USER:-}"
+    if [ -z "$user" ] && [ -n "${PKEXEC_UID:-}" ]; then
+        user="$(id -nu "$PKEXEC_UID" 2>/dev/null || true)"
+    fi
+    [ -n "$user" ] && [ "$user" != root ] && printf '%s' "$user"
+}
+
+# Rewrites [default_session] to run $1 as user `greeter`, and keeps everything
+# else in the file: the terminal, an initial_session, comments.
+point_at() {
+    local tmp
+    tmp="$(mktemp)"
+    awk -v cmd="$1" '
+        function emit() { if (!done) { print "command = \"" cmd "\""; print "user = \"greeter\""; done = 1 } }
+        /^[ \t]*\[/ {
+            if (section) emit()
+            section = ($0 ~ /^[ \t]*\[default_session\][ \t]*$/)
+            print; next
+        }
+        section && /^[ \t]*(command|user)[ \t]*=/ { next }
+        { print }
+        END {
+            if (section) emit()
+            else if (!done) { print ""; print "[default_session]"; emit() }
+        }
+    ' "$greetd_config" > "$tmp" && cat "$tmp" > "$greetd_config"
+    rm -f "$tmp"
+}
+
+enable() {
+    local user home dm
+    user="$(asker)" || { echo "greeter-setup: run it through pkexec or sudo, as yourself" >&2; exit 1; }
+    home="$(getent passwd "$user" | cut -d: -f6)"
+
+    if [ ! -f "$greetd_config" ]; then
+        echo "greeter-setup: greetd is not installed ($greetd_config is missing)" >&2
+        exit 1
+    fi
+
+    # The copy first, so the next boot already greets with it. The shell keeps
+    # it current from then on (services/GreeterSync.qml).
+    install -d -m 2750 -o "$user" -g greeter "$greeter_dir"
+    runuser -u "$user" -- env -i HOME="$home" USER="$user" LOGNAME="$user" \
+        PATH=/usr/local/bin:/usr/bin "$here/scripts/greeter-sync" "$greeter_dir" \
+        >/dev/null 2>&1 || echo "greeter-setup: the first copy failed; agreety greets until the shell makes one" >&2
+
+    if ! grep -q 'bioma' "$greetd_config"; then
+        [ -e "$greetd_backup" ] || cp -p "$greetd_config" "$greetd_backup"
+        point_at "$greeter_command"
+    fi
+
+    # greetd in place of whatever logged in before. The old manager is only
+    # disabled, never removed: `disable` here, or the user, can bring it back.
+    dm="$(manager)"
+    case "$dm" in
+        greetd.service) ;;
+        none) systemctl enable greetd.service ;;
+        *)
+            printf '%s\n' "$dm" > "$greeter_dir/.manager-before"
+            systemctl disable "$dm"
+            systemctl enable greetd.service
+            ;;
+    esac
+    echo "Bioma's greeter is the login screen from the next boot."
+}
+
+disable() {
+    local before=""
+    if [ -f "$greetd_config" ] && grep -q 'bioma' "$greetd_config"; then
+        if [ -f "$greetd_backup" ] && ! grep -q 'bioma' "$greetd_backup"; then
+            cat "$greetd_backup" > "$greetd_config"
+        else
+            point_at "agreety --cmd /bin/sh"
+        fi
+    fi
+    rm -f "$greetd_backup"
+
+    # The manager Bioma's greeter replaced, if it replaced one.
+    [ -f "$greeter_dir/.manager-before" ] && before="$(cat "$greeter_dir/.manager-before")"
+    if [ -n "$before" ] && systemctl cat "$before" >/dev/null 2>&1; then
+        systemctl disable greetd.service
+        systemctl enable "$before"
+    fi
+    rm -rf "$greeter_dir"
+    echo "The login screen is as it was before Bioma, from the next boot."
+}
+
+case "${1:-status}" in
+    status) status ;;
+    enable) enable ;;
+    disable) disable ;;
+    *) echo "usage: greeter-setup status|enable|disable" >&2; exit 2 ;;
+esac

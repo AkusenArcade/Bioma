@@ -237,7 +237,7 @@ ShellRoot {
         target: "presets"
 
         function list(): string {
-            return Presets.saved.map(preset => (preset.name === Presets.active ? "* " : "  ")
+            return Presets.all.map(preset => (preset.name === Presets.active ? "* " : "  ")
                                              + preset.name).join("\n");
         }
 
@@ -258,6 +258,50 @@ ShellRoot {
         function create(): string {
             Presets.blank();
             return "empty";
+        }
+    }
+
+    // The first-run walk-through: `open` shows it in the settings cell of the
+    // output the keyboard is on, `close` puts it away for later, `state` says
+    // where it is. docs/design/SETUP.md.
+    IpcHandler {
+        target: "setup"
+
+        function open(): string {
+            Setup.open(Niri.focusedOutput);
+            return `open on ${Setup.output}, step ${Setup.step}`;
+        }
+
+        // On a named output rather than the focused one.
+        function openOn(output: string): string {
+            Setup.open(output);
+            return `open on ${Setup.output}, step ${Setup.step}`;
+        }
+
+        function close(): string {
+            if (!Setup.active)
+                return "not open";
+            Focus.retire("settings", Setup.output);
+            return "closed";
+        }
+
+        function go(step: string): string {
+            if (!Setup.steps.some(entry => entry.key === step))
+                return `no step "${step}"`;
+            Setup.go(step);
+            return step;
+        }
+
+        function state(): string {
+            return JSON.stringify({
+                "active": Setup.active,
+                "output": Setup.output,
+                "step": Setup.step,
+                "steps": Setup.steps.map(entry => entry.key),
+                "outcomes": Setup.outcomes,
+                "done": Setup.done,
+                "pending": Setup.pending
+            });
         }
     }
 
@@ -289,6 +333,9 @@ ShellRoot {
     readonly property bool sessionLocked: Locker.locked
     readonly property bool greeterSynced: GreeterSync.synced
     readonly property string powerWanted: Power.wanted
+    // And the first run, which decides by itself whether to open
+    // (services/Setup.qml).
+    readonly property bool setupActive: Setup.active
 
     //
     // Volume, brightness and the transport keys act on the machine without

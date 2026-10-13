@@ -18,6 +18,12 @@ import qs.services
 // width is not — a category is as wide as it needs, and Structure needs more
 // than Appearance.
 //
+// While the setup is under way the same composition holds its steps instead:
+// the capsules are the steps, each line saying what was chosen once it is,
+// and the panel ends in BACK and NEXT (docs/design/SETUP.md). A wizard with a
+// window of its own would be the one part of the shell not speaking its
+// language.
+//
 // See docs/design/CELLS.md §12.
 Item {
     id: root
@@ -57,22 +63,34 @@ Item {
           "hint": "locking, power profile", "width": 540 }
     ]
 
-    readonly property string chosen: root.cell ? root.cell.category : "appearance"
+    // The setup's steps, or the categories.
+    readonly property bool setup: root.cell ? root.cell.inSetup === true : false
+    readonly property var entries: root.setup ? Setup.steps : root.categories
+
+    readonly property string chosen: root.setup ? Setup.step
+                                   : root.cell ? root.cell.category : "appearance"
 
     readonly property int chosenIndex: {
-        for (let i = 0; i < root.categories.length; i++)
-            if (root.categories[i].key === root.chosen)
+        for (let i = 0; i < root.entries.length; i++)
+            if (root.entries[i].key === root.chosen)
                 return i;
         return 0;
     }
 
-    readonly property real panelWidth: root.categories[root.chosenIndex].width * factor
+    function choose(key) {
+        if (root.setup)
+            Setup.go(key);
+        else if (root.cell)
+            root.cell.category = key;
+    }
+
+    readonly property real panelWidth: root.entries[root.chosenIndex].width * factor
     // One height for every category, and tall enough that none of them
     // scrolls as a page: Structure is the tallest, with the floating places
     // between its two edges and three rows of cell chips under them.
     readonly property real panelHeight: 540 * factor
 
-    readonly property real columnHeight: root.categories.length * capsulePitch - (capsulePitch - capsuleHeight)
+    readonly property real columnHeight: root.entries.length * capsulePitch - (capsulePitch - capsuleHeight)
 
     implicitWidth: capsuleWidth + threadLength + panelWidth
     implicitHeight: Math.max(columnHeight, panelHeight)
@@ -87,7 +105,7 @@ Item {
     // Every shape that arrives in order: the capsules, the thread, the
     // panel. The stagger's span is measured from this — a cascade told it has
     // three shapes when it has seven never finishes the last of them.
-    readonly property int shapeCount: root.categories.length + 2
+    readonly property int shapeCount: root.entries.length + 2
 
     // The composition keeps its capsules on the left wherever the cell is, so
     // which shape comes first depends on what the cell's thread lands on. At
@@ -99,8 +117,8 @@ Item {
     readonly property real panelX: root.capsuleWidth + root.threadLength
     readonly property bool fromPanel: root.cell ? root.cell.threadX > root.panelX : false
 
-    readonly property int panelStage: root.fromPanel ? 0 : root.categories.length + 1
-    readonly property int linkStage: root.fromPanel ? 1 : root.categories.length
+    readonly property int panelStage: root.fromPanel ? 0 : root.entries.length + 1
+    readonly property int linkStage: root.fromPanel ? 1 : root.entries.length
 
     function capsuleStage(index) {
         return root.fromPanel ? index + 2 : index;
@@ -156,7 +174,7 @@ Item {
         y: (root.height - height) / 2
 
         Repeater {
-            model: root.categories
+            model: root.entries
 
             delegate: Panel {
                 id: capsule
@@ -185,9 +203,13 @@ Item {
                 readonly property bool navigable: true
 
                 function activate() {
-                    if (root.cell)
-                        root.cell.category = capsule.modelData.key;
+                    root.choose(capsule.modelData.key);
                 }
+
+                // In the setup, what was chosen replaces what the step is
+                // about, and the glyph says whether the step wants attention.
+                readonly property string outcome: root.setup ? (Setup.outcomes[capsule.modelData.key] || "") : ""
+                readonly property string state: root.setup ? Setup.stateOf(capsule.modelData.key) : "muted"
 
                 // The capsule has no padding, so the mark sits inside its rim.
                 KeyMark {
@@ -212,7 +234,8 @@ Item {
                     height: width
                     name: capsule.modelData.glyph
                     gradient: capsule.chosen
-                    colour: Theme.textMuted
+                    colour: capsule.state === "alert" ? Theme.alert
+                          : capsule.state === "active" ? Theme.active : Theme.textMuted
                 }
 
                 Column {
@@ -241,15 +264,15 @@ Item {
                     Text {
                         width: parent.width
                         elide: Text.ElideRight
-                        text: capsule.modelData.hint
-                        color: Theme.textMuted
+                        text: capsule.outcome.length > 0 ? capsule.outcome : capsule.modelData.hint
+                        color: capsule.outcome.length > 0 ? Theme.text : Theme.textMuted
                         font.family: Typography.expressive
                         font.pixelSize: root.metrics.fontSecondary
                     }
                 }
 
                 TapHandler {
-                    onTapped: if (root.cell) root.cell.category = capsule.modelData.key
+                    onTapped: root.choose(capsule.modelData.key)
                 }
             }
         }
@@ -322,8 +345,17 @@ Item {
                 id: body
 
                 anchors.fill: parent
+                anchors.bottomMargin: root.setup ? footer.height + root.padding : 0
 
                 source: {
+                    if (root.setup) {
+                        // The step as the list has it, so a choice made a
+                        // moment before the list caught up loads nothing.
+                        const key = root.entries[root.chosenIndex].key;
+                        if (!Setup.steps.some(step => step.key === key))
+                            return "";
+                        return Qt.resolvedUrl("Setup" + key.charAt(0).toUpperCase() + key.slice(1) + ".qml");
+                    }
                     if (root.chosen === "appearance")
                         return Qt.resolvedUrl("SettingsAppearance.qml");
                     if (root.chosen === "cells")
@@ -359,6 +391,69 @@ Item {
                     color: Theme.textFaint
                     font.family: Typography.expressive
                     font.pixelSize: root.metrics.fontTitle
+                }
+            }
+
+            // The setup's way through: SKIP SETUP at the start, BACK and NEXT
+            // at the end, DONE in NEXT's place on the last step. The capsules
+            // can be pressed in any order, so NEXT is a convenience, not a
+            // gate.
+            Item {
+                id: footer
+
+                visible: root.setup
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                height: 26 * root.factor
+
+                Text {
+                    id: skip
+
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "SKIP SETUP"
+                    color: skipHover.hovered ? Theme.primary : Theme.textMuted
+                    font: Qt.font({
+                        "family": Typography.technical,
+                        "pixelSize": root.metrics.fontMeta,
+                        "letterSpacing": Typography.tracking(root.metrics.fontMeta,
+                                                             Typography.labelTracking)
+                    })
+
+                    readonly property bool navigable: root.setup
+
+                    function activate() {
+                        Setup.finish();
+                    }
+
+                    KeyMark {
+                        factor: root.factor
+                        outset: 4 * root.factor
+                    }
+
+                    HoverHandler { id: skipHover }
+                    TapHandler { onTapped: Setup.finish() }
+                }
+
+                Row {
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 8 * root.factor
+
+                    Choice {
+                        metrics: root.metrics
+                        label: "BACK"
+                        dimmed: Setup.stepIndex === 0
+                        onActivated: Setup.back()
+                    }
+
+                    Choice {
+                        metrics: root.metrics
+                        label: Setup.last ? "DONE" : "NEXT"
+                        kind: "primary"
+                        onActivated: Setup.last ? Setup.finish() : Setup.next()
+                    }
                 }
             }
         }

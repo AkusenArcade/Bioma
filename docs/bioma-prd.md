@@ -30,12 +30,16 @@ redrawn when it changes (reopened 2026-10-05; `docs/design/CURSORS.md`,
 `docs/design/ICON_THEME.md`). The icon theme draws folders and files; the
 rest comes from a theme the user chooses under it.
 
+**Lock screen and greeter are in scope** (reopened and built by 2026-09-27:
+`lock/`, `greeter/`). They were left out because a bug there locks the user out
+of the session; each has a fallback for that reason (hyprlock for the lock,
+agreety for the greeter). Making Bioma the login screen is the user's choice,
+asked during setup (§9.14), never done by installing the package.
+
 **Out of scope for v1.**
 - Theming third-party components: other icon themes, system UI fonts. Bioma
   themes itself. (Working code for this exists in Prisma and can be ported
   later if wanted.)
-- Lock screen / greeter — use an external one. A bug here locks the user out of
-  their session.
 - Localisation. English only; the i18n layer from Prisma is deliberately dropped.
 
 **Palette propagation is in scope.** Bioma owns the palette and renders it to
@@ -72,8 +76,12 @@ be resolvable by reference to one of these.
 7. **Vocabulary, not presets.** The system offers composable rules; the user
    composes. The shipped default demonstrates a sensible composition.
    A layout the user composed and saved under a name (Settings → Structure)
-   is not a preset in this sense: Bioma ships none, and every one is the
-   user's own composition.
+   is not a preset in this sense: every one is the user's own composition.
+   *Amended 2026-10-13:* Bioma ships three layouts as starting points —
+   Complete (the default's membranes with a few organisms), Minimal, Empty —
+   chosen during setup
+   (§9.14). They are compositions of the same vocabulary, nothing the user
+   could not build, and once applied they are the user's to change.
 
 ---
 
@@ -904,6 +912,21 @@ screenshots, OCR and recording. The Utility cell reads both.
   launcher provides the easy 20% (desktop file enumeration, launching); **fuzzy
   matching, frequency ranking and robust icon resolution are absent and are the
   actual work.** Specify it fully here, build it once the cell system is proven.
+
+### 9.14 Setup (first run)
+
+- **What.** The settings cell in another form: steps in place of categories,
+  opened by itself the first time the shell starts with no override file, and
+  by IPC afterwards. It grows from the settings cell like any expansion.
+- **Steps.** Layout (one of the three shipped presets, applied live), look
+  (palette, wallpaper, other applications), niri (keys, includes, autostart —
+  what `bioma-install` does), login (Bioma's greeter or the existing login
+  manager, through `pkexec`), conflicts and system (only when something is
+  found: another shell or notification daemon, missing packages, services that
+  are off), keys.
+- **Install.** `post_install` no longer sets up greetd; the login step does,
+  when asked. Uninstalling still restores greetd's previous configuration.
+- **Spec.** `docs/design/SETUP.md`.
 
 ---
 

@@ -1,0 +1,226 @@
+{
+  "$comment": "The cells a desktop needs and nothing it can do without: where you are, what is playing, the connections, the sound, and the way to settings and out. No dock, no organisms.",
+  "name": "Minimal",
+  "order": 1,
+  "line": "Workspaces, title, sound and connections. No dock.",
+  "membranes": [
+    {
+      "monitor": "primary",
+      "edge": "top",
+      "reserve_space": true,
+      "auto_hide": false,
+      "scale": "normal",
+      "tissues": [
+        {
+          "percentage": 30,
+          "growth": "inward",
+          "orientation": "horizontal",
+          "cells": [
+            {
+              "type": "workspaces",
+              "enabled": true,
+              "visibility": {
+                "type": "always"
+              },
+              "min_width": {
+                "value": 96
+              },
+              "width": {
+                "max": 220
+              }
+            },
+            {
+              "type": "window_title",
+              "enabled": true,
+              "visibility": {
+                "type": "conditional",
+                "enter": 1,
+                "exit": 1,
+                "confirm": 0,
+                "dwell": 200
+              },
+              "min_width": {
+                "value": 0
+              },
+              "width": {
+                "elastic": true,
+                "max_percent": 28
+              }
+            }
+          ]
+        },
+        {
+          "percentage": 20,
+          "growth": "symmetric",
+          "orientation": "horizontal",
+          "cells": [
+            {
+              "type": "media",
+              "enabled": true,
+              "visibility": {
+                "type": "conditional",
+                "enter": 0.02,
+                "exit": 0.005,
+                "confirm": 200,
+                "dwell": 4000
+              },
+              "min_width": {
+                "value": 81
+              },
+              "width": {
+                "elastic": true,
+                "max_percent": 22
+              }
+            },
+            {
+              "type": "privacy",
+              "enabled": true,
+              "visibility": {
+                "type": "conditional"
+              }
+            }
+          ]
+        },
+        {
+          "percentage": 30,
+          "growth": "inward",
+          "orientation": "horizontal",
+          "cells": [
+            {
+              "type": "connectivity",
+              "enabled": true,
+              "visibility": {
+                "type": "conditional",
+                "enter": 1,
+                "exit": 1,
+                "confirm": 0,
+                "dwell": 1000
+              },
+              "min_width": {
+                "value": 64
+              }
+            },
+            {
+              "type": "tray",
+              "enabled": true,
+              "visibility": {
+                "type": "conditional",
+                "enter": 1,
+                "exit": 1,
+                "confirm": 0,
+                "dwell": 1000
+              },
+              "min_width": {
+                "value": 40
+              }
+            },
+            {
+              "type": "audio",
+              "enabled": true,
+              "visibility": {
+                "type": "always",
+                "shortcut": "Mod+A"
+              },
+              "min_width": {
+                "value": 40
+              }
+            },
+            {
+              "type": "settings",
+              "enabled": true,
+              "visibility": {
+                "type": "always",
+                "shortcut": "Mod+Comma"
+              },
+              "min_width": {
+                "value": 40
+              }
+            },
+            {
+              "type": "system",
+              "enabled": true,
+              "visibility": {
+                "type": "always",
+                "shortcut": "Mod+Escape"
+              },
+              "min_width": {
+                "value": 40
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "floating": [
+    {
+      "anchor": "top-right",
+      "margins": {
+        "top": 12,
+        "right": 12
+      },
+      "orientation": "vertical",
+      "$comment": "Two notification cells in a column: a critical one sits on top and does not leave by itself, and the ordinary ones keep going past it underneath. One block with no `options.show` shows everything, urgent first.",
+      "cells": [
+        {
+          "type": "notifications",
+          "options": {
+            "show": "urgent"
+          },
+          "enabled": true,
+          "visibility": {
+            "type": "conditional",
+            "enter": 1,
+            "exit": 1,
+            "confirm": 0,
+            "dwell": 400
+          },
+          "min_width": {
+            "value": 220
+          },
+          "width": {
+            "max": 300
+          }
+        },
+        {
+          "type": "notifications",
+          "options": {
+            "show": "ordinary"
+          },
+          "enabled": true,
+          "visibility": {
+            "type": "conditional",
+            "enter": 1,
+            "exit": 1,
+            "confirm": 0,
+            "dwell": 400
+          },
+          "min_width": {
+            "value": 220
+          },
+          "width": {
+            "max": 300
+          }
+        }
+      ]
+    },
+    {
+      "anchor": "center",
+      "orientation": "vertical",
+      "cells": [
+        {
+          "type": "launcher",
+          "enabled": true,
+          "visibility": {
+            "type": "invoked",
+            "shortcut": "Mod+Space"
+          },
+          "min_width": {
+            "value": 480
+          }
+        }
+      ]
+    }
+  ],
+  "organisms": []
+}
