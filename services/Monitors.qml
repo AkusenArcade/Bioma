@@ -14,6 +14,11 @@ import "niri-config.js" as NiriKdl
 // configuration says what was *asked* for: the `output` sections, where they
 // are written, and which one is focused at startup.
 //
+// A monitor is switched off and on through niri's IPC, never the
+// configuration: `niri msg output … off` lasts until niri restarts, so every
+// monitor comes back on with the machine. The last one on cannot be switched
+// off — there would be nothing left to switch it back on from.
+//
 // Moving a monitor writes `position` into its section; making one primary
 // writes niri's only notion of a primary output, `focus-at-startup`, and takes
 // it off every other. niri does not merge `output` sections — two naming one
@@ -23,11 +28,18 @@ import "niri-config.js" as NiriKdl
 Singleton {
     id: root
 
-    readonly property bool busy: NiriConfig.busy || asker.running
+    readonly property bool busy: NiriConfig.busy || asker.running || switcher.running
     readonly property string error: NiriConfig.error
 
     // What niri reports, one entry per output that is on.
     property var live: []
+
+    // Connected but switched off: niri lists them with no geometry.
+    property var dark: []
+
+    // Where each output last was while it was on, so one switched off stays
+    // where it was in the drawing.
+    property var seen: ({})
 
     // The configuration's output sections, in the order niri reads them.
     readonly property var sections: NiriConfig.items.filter(item => item.kind === "output")
@@ -38,6 +50,7 @@ Singleton {
             const named = root.sections.filter(section =>
                 NiriKdl.names(section, output.name, output.description));
             out.push(Object.assign({}, output, {
+                "on": true,
                 "sections": named,
                 "primary": named.some(section => section.primary)
             }));
@@ -45,10 +58,45 @@ Singleton {
         return out;
     }
 
+    // The ones switched off, placed where they last were, or else where their
+    // section puts them, or else beside the others: where niri will put them
+    // back when they come on.
+    readonly property var off: {
+        let right = 0;
+        for (const output of root.live)
+            right = Math.max(right, output.x + output.width);
+
+        const out = [];
+        for (const output of root.dark) {
+            const named = root.sections.filter(section =>
+                NiriKdl.names(section, output.name, output.description));
+            const written = named.find(section => section.position);
+            let place = root.seen[output.name];
+            if (!place) {
+                place = {
+                    "x": written ? written.position.x : right,
+                    "y": written ? written.position.y : 0,
+                    "width": output.modeWidth,
+                    "height": output.modeHeight,
+                    "scale": 1
+                };
+                right += output.modeWidth;
+            }
+            out.push(Object.assign({}, output, place, {
+                "on": false,
+                "sections": named,
+                "primary": named.some(section => section.primary)
+            }));
+        }
+        return out;
+    }
+
+    // Outputs that are on.
     readonly property int count: root.outputs.length
 
     function outputOf(name) {
-        return root.outputs.find(output => output.name === name) || null;
+        return root.outputs.find(output => output.name === name)
+            || root.off.find(output => output.name === name) || null;
     }
 
     // ---- Asking niri ---------------------------------------------------------
@@ -78,10 +126,30 @@ Singleton {
                 }
 
                 const out = [];
+                const dark = [];
+                const seen = Object.assign({}, root.seen);
                 for (const name of Object.keys(parsed).sort()) {
                     const o = parsed[name];
-                    if (!o.logical)
+                    if (!o.logical) {
+                        const mode = o.modes.find(m => m.is_preferred) || o.modes[0] || null;
+                        if (!mode)
+                            continue;
+                        dark.push({
+                            "name": name,
+                            "description": [o.make, o.model, o.serial || "Unknown"].join(" "),
+                            "modeWidth": mode.width,
+                            "modeHeight": mode.height,
+                            "refresh": mode.refresh_rate / 1000
+                        });
                         continue;
+                    }
+                    seen[name] = {
+                        "x": o.logical.x,
+                        "y": o.logical.y,
+                        "width": o.logical.width,
+                        "height": o.logical.height,
+                        "scale": o.logical.scale
+                    };
                     const mode = o.current_mode !== null && o.modes[o.current_mode]
                         ? o.modes[o.current_mode] : null;
                     out.push({
@@ -97,6 +165,8 @@ Singleton {
                         "refresh": mode ? mode.refresh_rate / 1000 : 0
                     });
                 }
+                root.seen = seen;
+                root.dark = dark;
                 root.live = out;
             }
         }
@@ -124,6 +194,25 @@ Singleton {
     onScreenCountChanged: settle.restart()
 
     Component.onCompleted: root.refresh()
+
+    // ---- Switching on and off ------------------------------------------------
+
+    // False when refused: the last monitor on stays on.
+    function power(name, on) {
+        const output = root.outputOf(name);
+        if (!output || output.on === on || switcher.running)
+            return true;
+        if (!on && root.count <= 1)
+            return false;
+        switcher.command = ["niri", "msg", "output", name, on ? "on" : "off"];
+        switcher.running = true;
+        return true;
+    }
+
+    Process {
+        id: switcher
+        onExited: root.refresh()
+    }
 
     // ---- Writing -------------------------------------------------------------
 

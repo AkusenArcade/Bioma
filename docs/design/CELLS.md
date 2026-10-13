@@ -741,7 +741,11 @@ none would go, and `NO ROOM` when the edge cannot grant what its cells need.
 **Invoked only**. Options a cell cannot have stay visible but dimmed.
 
 **Monitors** — dragged and snapped, including one below the other. Name and mode on two lines
-inside the rectangle, so they stay centred at any size.
+inside the rectangle, so they stay centred at any size. The chosen monitor is **switched on and
+off** from a switch in the footer, through niri's IPC and never its configuration: off lasts
+until niri restarts, so the machine always starts with every monitor on. One that is off stays
+where it was as an outline with faint text, and is not dragged; the last one on cannot be
+switched off, so its switch is dimmed (Akusen, 2026-10-13).
 
 **Keybinds** — added, edited and removed. The combination is recorded by pressing it, not by
 typing it.

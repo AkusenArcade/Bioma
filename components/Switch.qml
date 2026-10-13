@@ -15,10 +15,14 @@ Item {
     property bool settling: false
     property real factor: 1
 
+    // A change it cannot make: shown at faint weight, not removed, and deaf
+    // to presses — as a dimmed option in a segmented control.
+    property bool dimmed: false
+
     signal toggled(bool on)
 
     // A stop for the keyboard (see `Focus`): Enter does what a press does.
-    property bool navigable: true
+    property bool navigable: !root.dimmed
 
     function activate() {
         root.toggled(!root.on);
@@ -34,7 +38,7 @@ Item {
     // bottom and whichever end it is at.
     readonly property real inset: (root.implicitHeight - knobSize) / 2
 
-    opacity: settling ? 0.6 : 1
+    opacity: dimmed ? 0.45 : settling ? 0.6 : 1
     Behavior on opacity { NumberAnimation { duration: Timing.transition } }
 
     KeyMark {
@@ -93,6 +97,7 @@ Item {
     }
 
     TapHandler {
+        enabled: !root.dimmed
         onTapped: root.toggled(!root.on)
     }
 }

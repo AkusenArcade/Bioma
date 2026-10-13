@@ -22,8 +22,14 @@ import qs.services
 // what niri reports, not from where the hand left them. Two monitors may not
 // overlap — niri would quietly move one — so a drop that overlaps goes back.
 //
-// Below the area, the chosen monitor: its name, whether it is the one niri
-// focuses at startup — niri's only notion of a primary output — and its scale.
+// Below the area, the chosen monitor: its name, whether it is on, whether it
+// is the one niri focuses at startup — niri's only notion of a primary output
+// — and its scale.
+//
+// A monitor switched off stays in the drawing where it was, as an outline
+// with nothing inside it, and is not dragged: niri gives it no place until it
+// is on again. Off lasts until niri restarts — the machine always starts with
+// every monitor on — and the last one on cannot be switched off.
 //
 // See docs/design/CELLS.md §12.
 Item {
@@ -37,16 +43,19 @@ Item {
     readonly property real margin: 36 * factor
     readonly property real snapDistance: 12 * factor
 
+    // The ones that are on, which are the layout, and every one, which is
+    // what is drawn.
     readonly property var outputs: Monitors.outputs
+    readonly property var all: Monitors.outputs.concat(Monitors.off)
 
     // The monitor being looked at, shared with the Structure page: choosing
     // one there and coming here should be looking at the same screen.
     readonly property string chosen: {
         const wanted = root.cell ? root.cell.monitor : "";
-        for (const output of root.outputs)
+        for (const output of root.all)
             if (output.name === wanted)
                 return wanted;
-        return root.outputs.length > 0 ? root.outputs[0].name : "";
+        return root.all.length > 0 ? root.all[0].name : "";
     }
 
     readonly property var chosenOutput: Monitors.outputOf(root.chosen)
@@ -78,11 +87,11 @@ Item {
     readonly property var fit: {
         if (root.frozen)
             return root.frozen;
-        if (root.outputs.length === 0 || area.width <= 0)
+        if (root.all.length === 0 || area.width <= 0)
             return { "scale": 1, "x": 0, "y": 0, "minX": 0, "minY": 0 };
 
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-        for (const output of root.outputs) {
+        for (const output of root.all) {
             minX = Math.min(minX, output.x);
             minY = Math.min(minY, output.y);
             maxX = Math.max(maxX, output.x + output.width);
@@ -269,7 +278,7 @@ Item {
         }
 
         Repeater {
-            model: root.outputs
+            model: root.all
 
             delegate: Item {
                 id: monitor
@@ -277,6 +286,7 @@ Item {
                 required property var modelData
 
                 readonly property bool isChosen: root.chosen === monitor.modelData.name
+                readonly property bool lit: monitor.modelData.on
                 readonly property bool carried: root.held === monitor.modelData.name
                 readonly property var at: root.toArea(root.positionOf(monitor.modelData).x,
                                                       root.positionOf(monitor.modelData).y)
@@ -326,13 +336,15 @@ Item {
                     anchors.margins: 2 * root.factor
                     radius: 10 * root.factor
                     antialiasing: true
-                    color: Qt.alpha(Theme.lift(Theme.background,
-                                               monitor.isChosen ? 0.06 : 0.02), 0.9)
+                    color: monitor.lit ? Qt.alpha(Theme.lift(Theme.background,
+                                                             monitor.isChosen ? 0.06 : 0.02), 0.9)
+                                       : "transparent"
                     border.width: monitor.isChosen ? Metrics.crisp(1.5, Screen.devicePixelRatio)
                                                   : Metrics.rim(Screen.devicePixelRatio)
                     border.color: monitor.isChosen ? Theme.primary : Theme.line
 
                     Behavior on border.color { ColorAnimation { duration: Timing.transition } }
+                    Behavior on color { ColorAnimation { duration: Timing.transition } }
                 }
 
                 Column {
@@ -345,7 +357,8 @@ Item {
                         horizontalAlignment: Text.AlignHCenter
                         elide: Text.ElideRight
                         text: monitor.modelData.name
-                        color: monitor.isChosen ? Theme.text : Theme.textMuted
+                        color: !monitor.lit ? Theme.textFaint
+                                            : monitor.isChosen ? Theme.text : Theme.textMuted
                         font: Qt.font({
                             "family": Typography.technical,
                             "pixelSize": root.metrics.fontSecondary,
@@ -362,7 +375,7 @@ Item {
                         elide: Text.ElideRight
                         text: monitor.modelData.modeWidth + " × " + monitor.modelData.modeHeight
                               + " · " + Math.round(monitor.modelData.refresh) + " Hz"
-                        color: Theme.textMuted
+                        color: monitor.lit ? Theme.textMuted : Theme.textFaint
                         font: Typography.tabular(Qt.font({
                             "family": Typography.technical,
                             "pixelSize": root.metrics.fontMeta,
@@ -381,7 +394,7 @@ Item {
                     id: drag
 
                     target: null
-                    enabled: !Monitors.busy
+                    enabled: !Monitors.busy && monitor.lit
 
                     property real grabX: 0
                     property real grabY: 0
@@ -412,7 +425,7 @@ Item {
 
         Text {
             anchors.centerIn: parent
-            visible: root.outputs.length === 0
+            visible: root.all.length === 0
             text: "Asking niri…"
             color: Theme.textFaint
             font.family: Typography.expressive
@@ -451,7 +464,7 @@ Item {
         Text {
             anchors.left: chosenName.right
             anchors.leftMargin: 14 * root.factor
-            anchors.right: role.left
+            anchors.right: power.left
             anchors.rightMargin: 14 * root.factor
             anchors.verticalCenter: parent.verticalCenter
             elide: Text.ElideRight
@@ -459,6 +472,27 @@ Item {
             color: Theme.alert
             font.family: Typography.expressive
             font.pixelSize: root.metrics.fontMeta
+        }
+
+        Switch {
+            id: power
+
+            readonly property bool lit: root.chosenOutput !== null && root.chosenOutput.on
+
+            anchors.right: role.left
+            anchors.rightMargin: 14 * root.factor
+            anchors.verticalCenter: parent.verticalCenter
+
+            factor: root.factor
+            on: power.lit
+            settling: Monitors.busy
+            dimmed: power.lit && Monitors.count <= 1
+
+            onToggled: value => {
+                if (!root.chosenOutput || Monitors.busy)
+                    return;
+                root.refusal = Monitors.power(root.chosen, value) ? "" : "The last monitor stays on";
+            }
         }
 
         Segmented {
@@ -473,15 +507,17 @@ Item {
             buttonHeight: 26 * root.factor
             buttonPadding: 14 * root.factor
 
+            readonly property bool fixed: Monitors.busy || !power.lit
+
             current: root.chosenOutput && root.chosenOutput.primary ? "primary" : "secondary"
 
             options: [
-                { "key": "primary", "label": "Primary", "dimmed": Monitors.busy },
-                { "key": "secondary", "label": "Secondary", "dimmed": Monitors.busy }
+                { "key": "primary", "label": "Primary", "dimmed": role.fixed },
+                { "key": "secondary", "label": "Secondary", "dimmed": role.fixed }
             ]
 
             onChose: key => {
-                if (Monitors.busy || !root.chosenOutput)
+                if (role.fixed || !root.chosenOutput)
                     return;
                 if (key === "primary")
                     Monitors.makePrimary(root.chosen);
@@ -496,7 +532,7 @@ Item {
             anchors.right: parent.right
             anchors.rightMargin: 4 * root.factor
             anchors.verticalCenter: parent.verticalCenter
-            text: root.chosenOutput ? "scale " + root.chosenOutput.scale.toFixed(1) : ""
+            text: power.lit ? "scale " + root.chosenOutput.scale.toFixed(1) : ""
             color: Theme.textMuted
             font.family: Typography.expressive
             font.pixelSize: root.metrics.fontSecondary
