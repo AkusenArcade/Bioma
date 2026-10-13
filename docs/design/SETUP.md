@@ -62,12 +62,24 @@ As `CELLS.md` §12 Settings, with three differences:
 
 **Steps exist when they have something to say.** CONFLICTS and SYSTEM appear only when they found
 something. On a machine where everything is in place they have no capsule, and the walk-through is
-five steps long.
+six steps long, the welcome included.
 
 ## Steps
 
 In this order (Akusen, 2026-10-13: the desktop first, so it is there to look at while the rest is
 answered).
+
+### 0 · WELCOME — glyph `mark`
+
+What this is, before anything is asked (Akusen, 2026-10-13). The greeter's welcome, set inside
+the panel: *Welcome to* in Spectral, then the logotype — mark, name, line — then one paragraph
+saying what the steps are for and that every answer can be changed later. Each line comes in from
+4 px above, a `welcome_stagger` after the one before, over `welcome_open`; once there, nothing
+moves. The footer has no BACK here, and NEXT reads **START**.
+
+**Why not a splash screen** — a surface of its own over the desktop would appear from nowhere,
+and the mark belongs to the settings cell alone. Inside the setup it is both where it grows from
+and the one place the mark may be.
 
 ### 1 · LAYOUT — glyph `structure`
 

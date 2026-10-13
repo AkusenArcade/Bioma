@@ -918,7 +918,8 @@ screenshots, OCR and recording. The Utility cell reads both.
 - **What.** The settings cell in another form: steps in place of categories,
   opened by itself the first time the shell starts with no override file, and
   by IPC afterwards. It grows from the settings cell like any expansion.
-- **Steps.** Layout (one of the three shipped presets, applied live), look
+- **Steps.** Welcome (the logotype and what the steps are for), layout (one
+  of the three shipped presets, applied live), look
   (palette, wallpaper, other applications), niri (keys, includes, autostart —
   what `bioma-install` does), login (Bioma's greeter or the existing login
   manager, through `pkexec`), conflicts and system (only when something is

@@ -441,16 +441,18 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 8 * root.factor
 
+                    // Nothing comes before the welcome, so there is no way
+                    // back from it; the way forward is the start.
                     Choice {
                         metrics: root.metrics
                         label: "BACK"
-                        dimmed: Setup.stepIndex === 0
+                        visible: Setup.stepIndex > 0
                         onActivated: Setup.back()
                     }
 
                     Choice {
                         metrics: root.metrics
-                        label: Setup.last ? "DONE" : "NEXT"
+                        label: Setup.last ? "DONE" : Setup.stepIndex === 0 ? "START" : "NEXT"
                         kind: "primary"
                         onActivated: Setup.last ? Setup.finish() : Setup.next()
                     }

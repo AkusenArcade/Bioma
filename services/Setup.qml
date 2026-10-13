@@ -31,7 +31,7 @@ Singleton {
     // Shown, in the settings cell of this output.
     property bool active: false
     property string output: ""
-    property string step: "layout"
+    property string step: "welcome"
 
     readonly property bool done: Config.get("setup.done", false) !== false
     readonly property bool pending: Config.get("setup.pending", false) === true
@@ -39,6 +39,8 @@ Singleton {
     // CONFLICTS and SYSTEM exist when they have something to say.
     readonly property var steps: {
         const out = [
+            { "key": "welcome", "label": "WELCOME", "glyph": "mark",
+              "hint": "what this is", "width": 520 },
             { "key": "layout", "label": "LAYOUT", "glyph": "structure",
               "hint": "where everything goes", "width": 640 },
             { "key": "look", "label": "LOOK", "glyph": "theme",
