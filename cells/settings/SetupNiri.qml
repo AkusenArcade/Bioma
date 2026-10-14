@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import qs.core
 import qs.components
 import qs.services
@@ -128,7 +129,11 @@ Item {
             SetupLine {
                 metrics: root.metrics
                 color: Theme.textMuted
-                text: Setup.niriConfig.replace(/^\/home\/[^/]+/, "~")
+                text: {
+                    const home = Quickshell.env("HOME") || "";
+                    const path = Setup.niriConfig;
+                    return home.length > 0 && path.startsWith(home + "/") ? "~" + path.slice(home.length) : path;
+                }
             }
         }
     }

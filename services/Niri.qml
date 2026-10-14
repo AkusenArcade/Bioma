@@ -361,7 +361,8 @@ Singleton {
     // outputs, workspaces, windows and layers and nothing else — so this reads
     // niri's own file and watches it.
 
-    readonly property string configPath: `${Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config"}/niri/config.kdl`
+    readonly property string configPath: Quickshell.env("NIRI_CONFIG")
+        || `${Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config"}/niri/config.kdl`
 
     property real windowGap: 0
     property var struts: ({ "top": 0, "bottom": 0, "left": 0, "right": 0 })
