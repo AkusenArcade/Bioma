@@ -26,6 +26,12 @@ Item {
     property real rate: 0
     // 0..1, how full: the memory's level, the battery's charge.
     property real level: 0
+    // Watts going into the battery, and nothing else's: zero unless it is
+    // charging. Drops come in as often as they do.
+    property real inflow: 0
+    // The battery full with the charger in: nothing comes in any more, so the
+    // drops cannot say it, and a bolt is cut out of the charge instead.
+    property bool mainsFull: false
 
     // A scale the user moves would be a control and would stay primary; these
     // are measurements, so they speak in the state colours.
@@ -310,8 +316,56 @@ Item {
         anchors.fill: parent
         visible: root.kind === "battery"
         source: charge
-        maskSource: liquidShape
+        maskSource: chargeShape
     }
+
+    // The vessel the charge is held in, and, full on the mains, a bolt cut
+    // out of it: a hole, so what shows through is whatever the indicator sits
+    // on, never a colour copied in. Still — there is no value in it to move
+    // with, only a state.
+    Item {
+        id: chargeShape
+        anchors.fill: parent
+        opacity: 0
+        layer.enabled: true
+
+        Shape {
+            anchors.fill: parent
+            preferredRendererType: Shape.CurveRenderer
+
+            ShapePath {
+                fillRule: ShapePath.OddEvenFill
+                strokeWidth: -1
+                fillColor: "#ffffff"
+
+                PathAngleArc {
+                    centerX: root.centre; centerY: root.centre
+                    radiusX: root.ringRadius - root.ringStroke
+                    radiusY: root.ringRadius - root.ringStroke
+                    startAngle: 0; sweepAngle: 360; moveToStart: true
+                }
+                // In the 64 grid, centred on the ring.
+                PathPolyline {
+                    path: root.kind === "battery" && root.mainsFull ? [
+                        Qt.point(36 * root.unit, 16 * root.unit),
+                        Qt.point(23 * root.unit, 35 * root.unit),
+                        Qt.point(31 * root.unit, 35 * root.unit),
+                        Qt.point(28 * root.unit, 48 * root.unit),
+                        Qt.point(41 * root.unit, 29 * root.unit),
+                        Qt.point(33 * root.unit, 29 * root.unit),
+                        Qt.point(36 * root.unit, 16 * root.unit)
+                    ] : []
+                }
+            }
+        }
+    }
+
+    // The front sits where the charge is, measured against the vessel — the
+    // inside of the ring, not the square it is drawn in — as the memory's
+    // surface is: measured against the square, the first seventh of the
+    // charge fell behind the glass, and a nearly flat battery read as empty.
+    readonly property real chargeVessel: (ringRadius - ringStroke) * 2
+    readonly property real chargeFront: centre - chargeVessel / 2 + level * chargeVessel
 
     Item {
         id: charge
@@ -322,9 +376,118 @@ Item {
         Rectangle {
             x: 0
             y: 0
-            width: root.width * root.level
+            width: root.chargeFront
             height: root.height
             color: root.base
+        }
+    }
+
+    // Charging, drops come in and melt into the level, as often as watts go
+    // in — the nucleus's vocabulary (ORGANISMS §14), so the two say a charger
+    // the same way. They are born inside the ring, against its wall on the
+    // empty side, and fall leftwards onto the level the way the level itself
+    // grows; nothing is drawn outside the ring. Full on the mains, or with no
+    // watts reported, nothing comes in and it is still.
+    //
+    // Constants, not durations: the nucleus's, its fall scaled from its
+    // envelope to this ring.
+    readonly property var physics: ({
+        "dropsPerWatt": 1 / 20,
+        "fewest": 0.3,
+        "most": 2.5,
+        "drop": 0.13,       // a drop's radius, as a share of the ring's
+        "fall": 260 / 70,   // the nucleus's 260 px/s² over its 70 px envelope, in rings a second²
+        "absorb": 0.25      // seconds a drop takes to be taken in
+    })
+
+    readonly property real dropRate: kind === "battery" && inflow > 0.5
+        ? Math.max(physics.fewest, Math.min(physics.most, inflow * physics.dropsPerWatt)) : 0
+    readonly property real dropRadius: ringRadius * physics.drop
+
+    // Three in flight at most, as in the nucleus.
+    property var drops: []
+    property real untilNext: 0
+
+    function dropWait() {
+        return root.dropRate > 0 ? -Math.log(1 - Math.random()) / root.dropRate : 0;
+    }
+
+    onDropRateChanged: if (root.dropRate > 0 && root.untilNext <= 0) root.untilNext = root.dropWait()
+
+    // The room a drop's centre has inside the ring: the circle it can move in
+    // without leaving the glass.
+    readonly property real dropRoom: ringRadius - ringStroke - dropRadius
+
+    // Where the centre of a drop at height `y` stops: sunk into the level's
+    // front, or against the far wall where the level does not reach that row.
+    function landing(y) {
+        const dy = Math.min(root.dropRoom, Math.abs(y - root.centre));
+        const wall = root.centre - Math.sqrt(root.dropRoom * root.dropRoom - dy * dy);
+        return Math.max(wall, root.chargeFront + root.dropRadius * 0.2);
+    }
+
+    function dropStep(dt) {
+        const p = root.physics;
+        const next = [];
+        // Each drop is a new object every frame: one changed in place is the
+        // same value to the binding that reads it, and the disc would move only
+        // when another drop came or went.
+        for (const old of root.drops) {
+            const drop = Object.assign({}, old);
+            if (drop.absorbing >= 0) {
+                drop.absorbing += dt;
+                if (drop.absorbing < p.absorb)
+                    next.push(drop);
+                continue;
+            }
+            drop.speed += p.fall * root.ringRadius * dt;
+            drop.x -= drop.speed * dt;
+            const touching = root.landing(drop.y);
+            if (drop.x <= touching) {
+                drop.x = touching;
+                drop.absorbing = 0;
+            }
+            next.push(drop);
+        }
+
+        if (root.dropRate > 0) {
+            root.untilNext -= dt;
+            if (root.untilNext <= 0 && next.length < 3) {
+                // Against the inside of the ring, on the empty side, no
+                // further up or down than the level can take it in.
+                const angle = (Math.random() - 0.5) * 100 * Math.PI / 180;
+                next.push({
+                    "x": root.centre + Math.cos(angle) * root.dropRoom,
+                    "y": root.centre + Math.sin(angle) * root.dropRoom,
+                    "speed": 0,
+                    "absorbing": -1
+                });
+                root.untilNext = root.dropWait();
+            }
+        }
+        root.drops = next;
+    }
+
+    FrameAnimation {
+        running: root.visible && (root.dropRate > 0 || root.drops.length > 0)
+        onTriggered: root.dropStep(Math.min(frameTime, 0.05))
+    }
+
+    Repeater {
+        model: 3
+
+        Disc {
+            required property int index
+            readonly property var drop: root.drops[index] ?? null
+            readonly property real radius: drop === null ? 0
+                : root.dropRadius * (drop.absorbing >= 0 ? 1 - drop.absorbing / root.physics.absorb : 1)
+
+            visible: drop !== null && radius > 0
+            base: root.base
+            width: radius * 2
+            height: width
+            x: (drop?.x ?? 0) - radius
+            y: (drop?.y ?? 0) - radius
         }
     }
 }

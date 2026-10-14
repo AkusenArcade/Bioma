@@ -135,6 +135,8 @@ Cell {
                    ? SystemMonitor.batteryLevelRaw / 100
                    : SystemMonitor.batteryLevelRaw
             load: 1 - level
+            inflow: SystemMonitor.batteryInflow
+            mainsFull: SystemMonitor.batteryMainsFull
         }
     }
 

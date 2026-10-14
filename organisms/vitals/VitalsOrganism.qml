@@ -113,6 +113,8 @@ Item {
                     load: pod.load
                     rate: root.rateOf(pod.key)
                     level: root.levelOf(pod.key)
+                    inflow: SystemMonitor.batteryInflow
+                    mainsFull: SystemMonitor.batteryMainsFull
                 }
 
                 Item { width: 1; height: 10 * root.factor }

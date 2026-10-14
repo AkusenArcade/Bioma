@@ -266,6 +266,8 @@ Item {
                     load: root.loadOf(pod.key)
                     rate: root.rateOf(pod.key)
                     level: root.levelOf(pod.key)
+                    inflow: SystemMonitor.batteryInflow
+                    mainsFull: SystemMonitor.batteryMainsFull
                 }
 
                 Item { width: 1; height: 10 * root.factor }
@@ -340,6 +342,8 @@ Item {
                     load: root.loadOf(pod.key)
                     rate: root.rateOf(pod.key)
                     level: root.levelOf(pod.key)
+                    inflow: SystemMonitor.batteryInflow
+                    mainsFull: SystemMonitor.batteryMainsFull
                 }
 
                 Column {

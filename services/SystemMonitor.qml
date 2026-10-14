@@ -590,6 +590,11 @@ Singleton {
 
     readonly property bool onBattery: UPower.onBattery
 
+    // Full with the charger in: the one plugged-in state the drops cannot
+    // say, since nothing goes in any more.
+    readonly property bool batteryMainsFull: hasBattery && !onBattery && !discharging
+        && batteryLevel >= 0.995
+
     // The level as a fraction, whichever scale UPower answers in — the guard
     // the vitals cell already keeps, kept once here for what came after it.
     readonly property real batteryLevel: Math.max(0, Math.min(1, batteryLevelRaw > 1 ? batteryLevelRaw / 100
@@ -599,6 +604,10 @@ Singleton {
     // (`EnergyRate`): a magnitude, the direction is `charging`. Zero while it
     // is still measuring, and on a machine that does not report it.
     readonly property real batteryWatts: Math.abs(batteryDevice?.changeRate ?? 0)
+
+    // The same, only while they are going in: what the vitals' battery draws
+    // its drops from.
+    readonly property real batteryInflow: charging ? batteryWatts : 0
 
     // ── Processes ────────────────────────────────────────────────────────
     //
