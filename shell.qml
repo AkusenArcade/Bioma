@@ -56,9 +56,9 @@ ShellRoot {
         function onReadyChanged() { root.refreshLayout(); }
     }
 
-    // Which monitor a membrane belongs to. `primary` is the first screen the
-    // compositor reports — niri has no notion of a primary output — and `all`
-    // puts the same membrane on every one of them.
+    // Which monitor a membrane belongs to. `primary` is the one niri focuses
+    // at startup — `focus-at-startup`, its only notion of a primary output —
+    // and `all` puts the same membrane on every one of them.
     function membraneMatches(entry, screen) {
         return Strips.belongs(entry, screen);
     }

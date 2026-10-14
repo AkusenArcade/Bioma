@@ -63,7 +63,8 @@ Item {
         for (const screen of root.outputs)
             if (screen.name === wanted)
                 return wanted;
-        return root.outputs.length > 0 ? root.outputs[0].name : "";
+        return Monitors.primary.length > 0 ? Monitors.primary
+             : root.outputs.length > 0 ? root.outputs[0].name : "";
     }
 
     readonly property var screenItem: {
@@ -73,7 +74,8 @@ Item {
         return null;
     }
 
-    // A block may name a monitor or say `primary`, which is the first screen.
+    // A block may name a monitor or say `primary`, the one niri focuses at
+    // startup (`Monitors.primary`).
     function claims(block) {
         return root.claimsOn(block, root.monitor);
     }
@@ -83,8 +85,7 @@ Item {
             return false;
         if (block.monitor === monitor)
             return true;
-        return block.monitor === "primary" && root.outputs.length > 0
-            && root.outputs[0].name === monitor;
+        return block.monitor === "primary" && Monitors.primary === monitor;
     }
 
     function membraneFor(edge) {
@@ -188,7 +189,7 @@ Item {
 
     readonly property var floats: Config.get("floating", [])
 
-    // A floating block names a monitor, says `primary` (the first screen) or
+    // A floating block names a monitor, says `primary` (`Monitors.primary`) or
     // `all`; with nothing named it is the primary's.
     function floatShownHere(block) {
         const monitor = block.monitor || "primary";

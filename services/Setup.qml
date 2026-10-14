@@ -182,6 +182,8 @@ Singleton {
     }
 
     function primaryOutput() {
+        if (Monitors.primary.length > 0)
+            return Monitors.primary;
         return Quickshell.screens.length > 0 ? Quickshell.screens[0].name : "";
     }
 

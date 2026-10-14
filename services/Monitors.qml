@@ -94,6 +94,27 @@ Singleton {
     // Outputs that are on.
     readonly property int count: root.outputs.length
 
+    // The primary monitor, which is what a block on `primary` means: the one
+    // `focus-at-startup` marks, else the first screen. Empty until niri and
+    // its configuration have both answered, so a block on `primary` waits a
+    // moment rather than appearing on one screen and moving to another.
+    property bool answered: false
+    readonly property string primary: {
+        if (!root.answered || !NiriConfig.ready)
+            return "";
+        const marked = root.outputs.find(output => output.primary);
+        if (marked)
+            return marked.name;
+        return Quickshell.screens.length > 0 ? Quickshell.screens[0].name : "";
+    }
+
+    // Not niri, or niri not answering: the first screen, after a while.
+    Timer {
+        running: !root.answered
+        interval: 2000
+        onTriggered: root.answered = true
+    }
+
     function outputOf(name) {
         return root.outputs.find(output => output.name === name)
             || root.off.find(output => output.name === name) || null;
@@ -122,6 +143,7 @@ Singleton {
                 try {
                     parsed = JSON.parse(this.text);
                 } catch (e) {
+                    root.answered = true;
                     return;
                 }
 
@@ -168,6 +190,7 @@ Singleton {
                 root.seen = seen;
                 root.dark = dark;
                 root.live = out;
+                root.answered = true;
             }
         }
 

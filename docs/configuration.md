@@ -168,7 +168,7 @@ figure by tightening the cascade, not by shortening `grow`.
 
 | Key | Meaning |
 |---|---|
-| `monitor` | `primary`, or an output name |
+| `monitor` | `primary`, or an output name. `primary` is the output marked `focus-at-startup` in niri's configuration (Settings → Monitors, ROLE), else the first screen |
 | `edge` | `top` \| `bottom` \| `left` \| `right` |
 | `reserve_space` | Cede a strip to the window layout. **Only horizontal edges may reserve** — geometric rule, no exceptions. The strip stays reserved even while a conditional cell inside is invisible, so windows never reflow. |
 | `auto_hide` | Slide out of view, reveal on pointer-at-edge. Implies `reserve_space: false`. Governs every tissue on the membrane, the dock included. |

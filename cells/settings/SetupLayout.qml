@@ -47,7 +47,12 @@ Item {
     Component.onCompleted: if (root.summary.length > 0) Setup.note("layout", root.summary)
 
     // The primary screen's proportions, for the drawing.
-    readonly property var screen: Quickshell.screens.length > 0 ? Quickshell.screens[0] : null
+    readonly property var screen: {
+        for (const screen of Quickshell.screens)
+            if (screen.name === Monitors.primary)
+                return screen;
+        return Quickshell.screens.length > 0 ? Quickshell.screens[0] : null;
+    }
     readonly property real screenWidth: root.screen ? root.screen.width : 1920
     readonly property real screenHeight: root.screen ? root.screen.height : 1080
 
@@ -272,7 +277,7 @@ Item {
             metrics: root.metrics
             visible: Quickshell.screens.length > 1
             color: Theme.textMuted
-            text: "These are for the first screen. The others start empty; compose them in Settings → Structure."
+            text: "These are for the primary screen. The others start empty; compose them in Settings → Structure."
         }
     }
 }

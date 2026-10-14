@@ -20,7 +20,7 @@ same thread, the same panel. It grows from the settings cell and goes back into 
 - It **opens by itself** the first time the shell starts with no override file
   (`~/.config/bioma/override.json`). Someone updating from a beta has one, so they never see it.
   That first start applies **Complete** and writes `setup.pending`, then opens the setup once the
-  shell has settled (`Timing.settle`), in the settings cell of the first screen.
+  shell has settled (`Timing.settle`), in the settings cell of the primary monitor.
 - Afterwards it is opened on purpose: by **SETUP** at the right end of the PRESET row on the
   Structure page — in the same panel, from WELCOME, with what the last run chose forgotten — or by
   IPC, `setup open` (the focused output) or `setup openOn <output>`. Running it again never touches
@@ -95,7 +95,7 @@ Spectral saying who it is for.
 - On a first start the one on screen is **Complete**, so the first row starts chosen. Run again
   over a layout kept under no name, a row asks first — *DISCARD THE LAYOUT ON SCREEN?* — and the
   second press answers, as on the Structure page.
-- On more than one monitor, one line under the rows: *These are for the first screen. The others
+- On more than one monitor, one line under the rows: *These are for the primary screen. The others
   start empty; compose them in Settings → Structure.*
 
 ### 2 · LOOK — glyph `theme`
