@@ -4,6 +4,7 @@ import Quickshell
 import qs.core
 import qs.components
 import qs.cells
+import qs.services
 
 // How the shell is laid out: which tissues exist on which edge, and what is in
 // them.
@@ -1389,6 +1390,20 @@ Item {
                     metrics: root.metrics
                     label: "CANCEL"
                     onActivated: root.naming = false
+                }
+            }
+
+            // The walk-through again, from WELCOME, in this same panel: the
+            // first start is where a layout is chosen, so a second one is
+            // asked for here. It leaves the saved presets alone (Setup.restart).
+            Choice {
+                anchors.right: parent.right
+                metrics: root.metrics
+                label: "SETUP"
+                onActivated: {
+                    root.presetsOpen = false;
+                    root.naming = false;
+                    Setup.restart(root.cell ? root.cell.output : "");
                 }
             }
         }

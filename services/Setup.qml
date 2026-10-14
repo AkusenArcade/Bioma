@@ -16,7 +16,8 @@ import qs.core
 // someone updating from a beta has one, and never sees it. `setup.pending` is
 // written at once, so the walk-through survives its own first write — the
 // preset it applies creates the override — and Escape means *later*. DONE and
-// SKIP write `setup.done`, and it opens again only when asked for by IPC.
+// SKIP write `setup.done`, and it opens again only when asked for: SETUP on
+// the Structure page, or IPC.
 //
 // What it finds out comes from scripts, asked when it opens and again after
 // each action: `install --report` (programs, services, niri, a polkit agent),
@@ -127,6 +128,22 @@ Singleton {
         const cell = Focus.cellFor("settings", root.output);
         if (!cell || !cell.open)
             Focus.invoke("settings", root.output);
+    }
+
+    // From the beginning, on purpose: the Structure page's SETUP, after it was
+    // done. What the last run chose and what failed in it are forgotten, so
+    // the steps read as on a first start. Nothing is written until a step is
+    // answered, and no step writes the saved presets: LAYOUT puts a shipped
+    // one on screen, and asks first when the layout there is kept nowhere.
+    function restart(output) {
+        if (root.active)
+            return;
+        root.outcomes = {};
+        root.niriError = "";
+        root.loginError = "";
+        root.stopErrors = {};
+        root.enableErrors = {};
+        root.open(output);
     }
 
     // The settings cell closed under it — Escape, a press outside: later.

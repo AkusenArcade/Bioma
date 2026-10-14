@@ -21,8 +21,11 @@ same thread, the same panel. It grows from the settings cell and goes back into 
   (`~/.config/bioma/override.json`). Someone updating from a beta has one, so they never see it.
   That first start applies **Complete** and writes `setup.pending`, then opens the setup once the
   shell has settled (`Timing.settle`), in the settings cell of the first screen.
-- Afterwards it is opened on purpose: by IPC, `setup open` (the focused output) or
-  `setup openOn <output>`. `setup state` reports the steps and what each one chose; `setup go
+- Afterwards it is opened on purpose: by **SETUP** at the right end of the PRESET row on the
+  Structure page — in the same panel, from WELCOME, with what the last run chose forgotten — or by
+  IPC, `setup open` (the focused output) or `setup openOn <output>`. Running it again never touches
+  the saved presets: LAYOUT puts a shipped one on screen, and asks first when the layout there is
+  kept under no name. `setup state` reports the steps and what each one chose; `setup go
   <step>` and `setup close` exist for keys and for tests.
 - **Escape**, or a press outside, means *later*: setup closes, and while `setup.pending` holds it
   opens again at the next start.
@@ -271,15 +274,13 @@ As `CELLS.md` §12 unless listed here.
 
 ```json
 "setup": { "pending": false,   // true from the first start until DONE or SKIP
-           "done": true }      // written by DONE or SKIP; then only IPC opens it
+           "done": true }      // written by DONE or SKIP; then only SETUP or IPC opens it
 ```
 
 `config/presets/*.json` holds the shipped presets.
 
 ## Open
 
-- **Where setup is opened again from**, besides IPC: a capsule at the end of the settings column,
-  an entry the launcher finds, or neither.
 - **A polkit agent of Bioma's own.** Quickshell 0.3.1 has `Quickshell.Services.Polkit`. Bioma
   drawing its own password prompt would remove the *no agent* rows above, but it is a component
   that can lock someone out of an action they need, so it is a decision of its own.
