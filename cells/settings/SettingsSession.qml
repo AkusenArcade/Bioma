@@ -160,130 +160,151 @@ Item {
         lineHeight: 1.15
     }
 
-    Column {
+    // The panel is one height for every category, and on a laptop's scale a
+    // fifth well does not fit in it: the page scrolls rather than running out
+    // of its capsule.
+    Scroller {
+        flick: page
+        factor: root.factor
+        x: root.width - width
+    }
+
+    Flickable {
+        id: page
+
         anchors.fill: parent
-        spacing: root.gap
+        anchors.rightMargin: 8 * root.factor
+        contentHeight: column.height
+        boundsBehavior: Flickable.StopAtBounds
+        clip: true
 
-        // Minutes without input before the session locks. `0` is never.
-        Section {
-            label: "LOCK AFTER"
+        Column {
+            id: column
 
-            Segmented {
-                metrics: root.metrics
-                fontSize: root.metrics.fontMeta
-                options: [
-                    { "key": "0", "label": "Never" },
-                    { "key": "5", "label": "5 min" },
-                    { "key": "10", "label": "10 min" },
-                    { "key": "15", "label": "15 min" },
-                    { "key": "30", "label": "30 min" }
-                ]
-                current: String(root.idleMinutes)
-                onChose: key => Config.set("lock.idle_minutes", parseInt(key, 10))
+            width: page.width
+            spacing: root.gap
+
+            // Minutes without input before the session locks. `0` is never.
+            Section {
+                label: "LOCK AFTER"
+
+                Segmented {
+                    metrics: root.metrics
+                    fontSize: root.metrics.fontMeta
+                    options: [
+                        { "key": "0", "label": "Never" },
+                        { "key": "5", "label": "5 min" },
+                        { "key": "10", "label": "10 min" },
+                        { "key": "15", "label": "15 min" },
+                        { "key": "30", "label": "30 min" }
+                    ]
+                    current: String(root.idleMinutes)
+                    onChose: key => Config.set("lock.idle_minutes", parseInt(key, 10))
+                }
+
+                Line {
+                    text: root.idleMinutes > 0
+                          ? `After ${root.idleMinutes} minutes without input, the session locks.`
+                          : "The session never locks by itself. The key and the System cell still do."
+                }
             }
 
-            Line {
-                text: root.idleMinutes > 0
-                      ? `After ${root.idleMinutes} minutes without input, the session locks.`
-                      : "The session never locks by itself. The key and the System cell still do."
-            }
-        }
+            // Minutes without input before the machine suspends. `0`, the
+            // default, is never (services/Session.qml). Longer stops than the
+            // lock's: sleeping is the heavier of the two, and it comes after.
+            Section {
+                label: "SLEEP AFTER"
 
-        // Minutes without input before the machine suspends. `0`, the
-        // default, is never (services/Session.qml). Longer stops than the
-        // lock's: sleeping is the heavier of the two, and it comes after.
-        Section {
-            label: "SLEEP AFTER"
+                Segmented {
+                    metrics: root.metrics
+                    fontSize: root.metrics.fontMeta
+                    options: [
+                        { "key": "0", "label": "Never" },
+                        { "key": "15", "label": "15 min" },
+                        { "key": "30", "label": "30 min" },
+                        { "key": "60", "label": "1 h" },
+                        { "key": "120", "label": "2 h" }
+                    ]
+                    current: String(root.sleepMinutes)
+                    onChose: key => Config.set("sleep.idle_minutes", parseInt(key, 10))
+                }
 
-            Segmented {
-                metrics: root.metrics
-                fontSize: root.metrics.fontMeta
-                options: [
-                    { "key": "0", "label": "Never" },
-                    { "key": "15", "label": "15 min" },
-                    { "key": "30", "label": "30 min" },
-                    { "key": "60", "label": "1 h" },
-                    { "key": "120", "label": "2 h" }
-                ]
-                current: String(root.sleepMinutes)
-                onChose: key => Config.set("sleep.idle_minutes", parseInt(key, 10))
-            }
-
-            Line {
-                readonly property string after: root.sleepMinutes >= 60
-                    ? `${root.sleepMinutes / 60} ${root.sleepMinutes === 60 ? "hour" : "hours"}`
-                    : `${root.sleepMinutes} minutes`
-                text: root.sleepMinutes <= 0
-                      ? "The machine never sleeps by itself. The System cell still suspends it."
-                      : !Session.available("suspend")
-                      ? "There is no suspend command, so nothing happens. It is session.suspend in the configuration."
-                      : `After ${after} without input, the machine suspends. A video playing keeps it awake.`
-                color: root.sleepMinutes > 0 && !Session.available("suspend") ? Theme.alert : Theme.text
-            }
-        }
-
-        // Before a suspend, so the machine never wakes on the desktop it went
-        // to sleep with.
-        Section {
-            label: "BEFORE SLEEP"
-
-            trailing: Switch {
-                anchors.verticalCenter: parent.verticalCenter
-                factor: root.factor
-                on: root.beforeSleep
-                onToggled: value => Config.set("lock.before_sleep", value)
+                Line {
+                    readonly property string after: root.sleepMinutes >= 60
+                        ? `${root.sleepMinutes / 60} ${root.sleepMinutes === 60 ? "hour" : "hours"}`
+                        : `${root.sleepMinutes} minutes`
+                    text: root.sleepMinutes <= 0
+                          ? "The machine never sleeps by itself. The System cell still suspends it."
+                          : !Session.available("suspend")
+                          ? "There is no suspend command, so nothing happens. It is session.suspend in the configuration."
+                          : `After ${after} without input, the machine suspends. A video playing keeps it awake.`
+                    color: root.sleepMinutes > 0 && !Session.available("suspend") ? Theme.alert : Theme.text
+                }
             }
 
-            Line {
-                text: root.beforeSleep
-                      ? "The session locks before the machine suspends, so it wakes locked."
-                      : "The machine suspends as it is, and wakes on the open desktop."
-            }
-        }
+            // Before a suspend, so the machine never wakes on the desktop it went
+            // to sleep with.
+            Section {
+                label: "BEFORE SLEEP"
 
-        // Not a setting: what scripts/lock hands the screen to if Bioma's own
-        // lock screen fails to come up.
-        Section {
-            label: "IF THE LOCK FAILS"
-            visible: root.fallbackKnown
+                trailing: Switch {
+                    anchors.verticalCenter: parent.verticalCenter
+                    factor: root.factor
+                    on: root.beforeSleep
+                    onToggled: value => Config.set("lock.before_sleep", value)
+                }
 
-            Line {
-                text: root.fallback === "none"
-                      ? "Nothing takes over, and only a TTY is left. Install hyprlock or swaylock."
-                      : `${root.fallback} takes over, so the session is never left open.`
-                // The one sentence here that reports a risk.
-                color: root.fallback === "none" ? Theme.alert : Theme.text
-            }
-        }
-
-        // The profile the machine switches to when the plug changes.
-        Section {
-            label: "POWER PROFILE"
-            visible: Power.present && Power.hasBattery
-
-            ProfileRow {
-                label: "ON BATTERY"
-                path: "power.on_battery"
-                value: Power.onBatteryProfile
+                Line {
+                    text: root.beforeSleep
+                          ? "The session locks before the machine suspends, so it wakes locked."
+                          : "The machine suspends as it is, and wakes on the open desktop."
+                }
             }
 
-            ProfileRow {
-                label: "PLUGGED IN"
-                path: "power.on_mains"
-                value: Power.onMainsProfile
+            // Not a setting: what scripts/lock hands the screen to if Bioma's own
+            // lock screen fails to come up.
+            Section {
+                label: "IF THE LOCK FAILS"
+                visible: root.fallbackKnown
+
+                Line {
+                    text: root.fallback === "none"
+                          ? "Nothing takes over, and only a TTY is left. Install hyprlock or swaylock."
+                          : `${root.fallback} takes over, so the session is never left open.`
+                    // The one sentence here that reports a risk.
+                    color: root.fallback === "none" ? Theme.alert : Theme.text
+                }
             }
 
-            Line {
-                text: {
-                    const battery = Power.onBatteryProfile;
-                    const mains = Power.onMainsProfile;
-                    if (battery === "keep" && mains === "keep")
-                        return "The profile is left alone, on battery and plugged in. It is chosen in the System cell.";
-                    const unplugged = battery === "keep" ? "On battery the profile is left alone"
-                                                         : `On battery the machine switches to ${battery}`;
-                    const plugged = mains === "keep" ? "plugged in, it is left alone"
-                                                     : `plugged in, to ${mains}`;
-                    return `${unplugged}; ${plugged}. A profile chosen by hand holds until the plug next changes.`;
+            // The profile the machine switches to when the plug changes.
+            Section {
+                label: "POWER PROFILE"
+                visible: Power.present && Power.hasBattery
+
+                ProfileRow {
+                    label: "ON BATTERY"
+                    path: "power.on_battery"
+                    value: Power.onBatteryProfile
+                }
+
+                ProfileRow {
+                    label: "PLUGGED IN"
+                    path: "power.on_mains"
+                    value: Power.onMainsProfile
+                }
+
+                Line {
+                    text: {
+                        const battery = Power.onBatteryProfile;
+                        const mains = Power.onMainsProfile;
+                        if (battery === "keep" && mains === "keep")
+                            return "The profile is left alone, on battery and plugged in. It is chosen in the System cell.";
+                        const unplugged = battery === "keep" ? "On battery the profile is left alone"
+                                                             : `On battery the machine switches to ${battery}`;
+                        const plugged = mains === "keep" ? "plugged in, it is left alone"
+                                                         : `plugged in, to ${mains}`;
+                        return `${unplugged}; ${plugged}. A profile chosen by hand holds until the plug next changes.`;
+                    }
                 }
             }
         }
