@@ -41,8 +41,10 @@ depends=(
     'matugen'
     'zenity'
     'librsvg'
-    # Launcher: files found by name in the home, and opened.
+    # Launcher: files found by name in the home, and opened; sums and
+    # conversions answered in the field.
     'fd'
+    'libqalculate'
     'xdg-utils'
     # The weather organism: Open-Meteo, through the proxy when one is on.
     'curl'

@@ -177,18 +177,34 @@ Cell {
         "detail": file.folder
     }))
 
+    // A sum or a conversion, answered on the first row: the figure is what
+    // was asked for, so it is the name, and Enter copies it. It is there only
+    // when the query is unmistakably a calculation — figures and an operator,
+    // a conversion, a function, or a leading `=` — because the first row is
+    // the one Enter takes, and an application whose name holds a figure must
+    // still launch (`services/Calculator.qml`).
+    readonly property var sums: Calculator.result.length > 0 ? [{
+        "kind": "sum",
+        "group": "",
+        "name": Calculator.result,
+        "at": [],
+        "icon": "accessories-calculator",
+        "detail": "CALCULATOR"
+    }] : []
+
     // With files to show, the applications are the few that answer best: a
     // subsequence over three letters matches half the menu, and the tail of it
     // would push every file out of sight.
-    readonly property var results: root.files.length > 0
+    readonly property var results: root.sums.concat(root.files.length > 0
         ? root.applications.slice(0, root.shownRows).concat(root.files)
-        : root.applications
+        : root.applications)
 
-    readonly property bool searching: Files.searching
+    readonly property bool searching: Files.searching || Calculator.pending
 
     onQueryChanged: {
         root.chosen = 0;
         Files.query = root.query;
+        Calculator.query = root.query;
     }
     onResultsChanged: if (root.chosen >= root.results.length) root.chosen = 0
 
@@ -200,6 +216,12 @@ Cell {
         const result = root.results[index];
         if (!result)
             return;
+
+        if (result.kind === "sum") {
+            Calculator.copy();
+            root.dismiss();
+            return;
+        }
 
         if (result.kind === "file") {
             if (reveal)

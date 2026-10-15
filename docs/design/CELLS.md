@@ -861,6 +861,13 @@ applications at most while files are shown. Enter opens a file with its default 
 Ctrl+Enter, or Ctrl+click, shows it selected in the file manager. Hidden and git-ignored paths are
 not searched — that is where the noise lives. "Nothing answers" waits until the walk is back.
 
+**Sums** — a query that is unmistakably a calculation is answered on the first row: figures
+joined by an operator, a conversion from a quantity (`30 eur to usd`, `3.5 km in mi`), a function
+called (`sqrt(2)`), or anything after a leading `=`. The answer is the row's name, CALCULATOR its
+category, and Enter copies it. Strict on purpose: the first row is the one Enter takes, and an
+application with a figure in its name — `7zip`, `gnome-2048` — must still launch. `qalc` does
+the work in the C locale, and refreshes its exchange rates in the background once a day.
+
 **Decided** — with an empty field, the most used. The PRD puts the launcher last because it
 carries identity, and a launcher's identity is entirely in what it shows *before* you type. An
 alphabetical list is an archive; the most used are an answer.
