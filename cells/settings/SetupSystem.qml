@@ -111,12 +111,17 @@ Item {
 
                 SetupLine {
                     metrics: root.metrics
-                    text: "No polkit agent is running, so nothing in Bioma that needs your password can ask for it. Install one and start it with niri — polkit-gnome is the usual choice."
+                    text: Polkit.wanted
+                          ? "No polkit agent is running, so nothing in Bioma that needs your password can ask for it. Bioma's own could not register with polkit; the shell's log says why."
+                          : "No polkit agent is running, so nothing in Bioma that needs your password can ask for it. Bioma has its own, and it is switched off: turn it back on, or install another and start it with niri — polkit-gnome is the usual choice."
                 }
 
-                SetupCommand {
+                Choice {
                     metrics: root.metrics
-                    command: "sudo pacman -S --needed polkit-gnome"
+                    visible: !Polkit.wanted
+                    label: "Use Bioma's agent"
+                    kind: "primary"
+                    onActivated: Config.set("polkit.agent", true)
                 }
             }
 

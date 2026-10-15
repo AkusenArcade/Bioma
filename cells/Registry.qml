@@ -34,6 +34,7 @@ Singleton {
         "timer": "timer/TimerCell.qml",
         "download": "download/DownloadCell.qml",
         "drives": "drives/DrivesCell.qml",
+        "polkit": "polkit/PolkitCell.qml",
         "emoji": "emoji/EmojiCell.qml"
     })
 
@@ -121,6 +122,16 @@ Singleton {
         return root.retired.indexOf(type) >= 0;
     }
 
+    // Cells the shell summons by itself and nobody places: the polkit cell
+    // comes when polkit asks for a password, and a button for it on a
+    // membrane would open onto nothing. They are built like any other cell
+    // and offered nowhere — not on the Structure page, not to a keybind.
+    readonly property var internal: ["polkit"]
+
+    function isInternal(type) {
+        return root.internal.indexOf(root.canonical(type)) >= 0;
+    }
+
     // A membrane or floating list with every old name replaced and every
     // retired cell dropped, for the pages that write the layout back.
     function renamed(list) {
@@ -175,6 +186,7 @@ Singleton {
         "timer": ["conditional"],
         "download": ["conditional"],
         "drives": ["conditional"],
+        "polkit": ["invoked"],
         "emoji": ["always", "invoked"]
     })
 

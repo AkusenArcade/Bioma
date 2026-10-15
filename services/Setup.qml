@@ -227,7 +227,10 @@ Singleton {
     property var disabled: []        // unit names
     property var niriState: ({})     // config, binds, include, include-binds, autostart → ok | missing
     property string niriConfig: ""
-    property bool polkitAgent: true
+    // An agent is there when another program runs one, or when Bioma's own
+    // registered (services/Polkit.qml): either way something can ask.
+    property bool otherAgent: true
+    readonly property bool polkitAgent: root.otherAgent || Polkit.registered
 
     readonly property var missing: root.required.filter(entry => !entry.ok)
     readonly property bool systemWanted: root.reportRead
@@ -276,7 +279,7 @@ Singleton {
             root.optional = optional;
             root.disabled = disabled;
             root.niriState = niri;
-            root.polkitAgent = agent;
+            root.otherAgent = agent;
             root.reportRead = true;
         }
     }

@@ -1075,3 +1075,38 @@ the user's loop devices as drives, to try the cell without a stick.
 | thread | 44 × 6 px | the download's (`components/RateThread.qml`) |
 | panel | 380 px | a well, rows of 56, 22 more for a reason |
 | dwell | 0 | gone with the drive |
+
+---
+
+## 19 · Authentication
+
+*Summoned by polkit · never placed · the lock's field.*
+
+*Built 2026-10-15, from "Nuove idee".* Bioma is the session's polkit agent (`services/Polkit.qml`,
+on Quickshell's own `PolkitAgent`), and this is what it asks with. Nobody places it and no key
+calls it: when something the user started needs permission — mounting a disk, a system service,
+`pkexec` — the cell is summoned into the middle of the screen the keyboard is on, wearing
+AUTHENTICATION with the `lock` glyph, and the request hangs from it. When the request ends, however
+it ends, it goes. It is offered nowhere: not on the Structure page, not to a keybind.
+
+**Expanded** — what asks first: the action's icon in the dark circle every third-party icon sits
+in (the `lock` glyph, muted, when it has none), the message polkit was given in Spectral 15 — up
+to four lines — and the action's id under it in Orbitron 11 faint. Then the field, drawn as the
+lock screen draws it: the capsule, the outline in the primary while it has the keys, in the alert
+once the password was refused, the typed text left selected so the next key replaces it. What
+polkit says back stands under the field; a refusal it does not explain reads "That password was
+not accepted". CANCEL and AUTHENTICATE close the panel.
+
+**Behaviour**
+- Enter answers. Between the answer and polkit's reply the field steps back to 60 %, as the lock's
+  does while PAM checks, and AUTHENTICATE dims: nothing moves without a value.
+- Closing it is "no": Escape, a press outside or CANCEL cancels the request at once, so the
+  program that asked is told rather than left to wait.
+- One agent per session is polkit's rule. With another one running, whichever registered first
+  answers; the setup's System page shows the agent missing only when neither did.
+
+| Measure | Value | Note |
+|---|---|---|
+| panel | 380 px | icon 36 px; message Spectral 15; id Orbitron 11 faint |
+| field | 44 px | the lock's capsule, Spectral 16, centred bullets |
+| buttons | Choice | CANCEL plain, AUTHENTICATE primary |

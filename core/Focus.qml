@@ -487,9 +487,10 @@ Singleton {
     readonly property var domains: {
         const out = [];
         for (const domain in Registry.files)
-            out.push(domain);
+            if (!Registry.isInternal(domain))
+                out.push(domain);
         for (const cell of root.known)
-            if (cell && out.indexOf(cell.domain) < 0)
+            if (cell && out.indexOf(cell.domain) < 0 && !Registry.isInternal(cell.domain))
                 out.push(cell.domain);
         return out.sort();
     }

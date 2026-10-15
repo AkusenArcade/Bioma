@@ -322,8 +322,8 @@ ShellRoot {
     // them: the proxy that follows the networks, the display that answers a
     // key, the timer and alarm that ring, the palette carried to the
     // applications, the cursors and icons redrawn in it, the power profile
-    // that follows the plug. Unbound, they would start only when their panel
-    // was first opened.
+    // that follows the plug, the agent that asks for a password. Unbound,
+    // they would start only when their panel was first opened.
     readonly property bool proxyOn: Proxy.on
     readonly property string osdKind: Osd.kind
     readonly property bool alarmOn: Time.alarm.on === true
@@ -333,6 +333,7 @@ ShellRoot {
     readonly property bool sessionLocked: Locker.locked
     readonly property bool greeterSynced: GreeterSync.synced
     readonly property string powerWanted: Power.wanted
+    readonly property bool polkitAsking: Polkit.asking
     // And the first run, which decides by itself whether to open
     // (services/Setup.qml).
     readonly property bool setupActive: Setup.active

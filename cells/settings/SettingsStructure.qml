@@ -1056,7 +1056,7 @@ Item {
         if (!root.chosen)
             return out;
         for (const type in Registry.files)
-            if (root.placedHere.indexOf(type) < 0)
+            if (root.placedHere.indexOf(type) < 0 && !Registry.isInternal(type))
                 out.push(type);
         return out;
     }
