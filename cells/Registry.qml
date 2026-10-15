@@ -33,6 +33,7 @@ Singleton {
         "privacy": "privacy/PrivacyCell.qml",
         "timer": "timer/TimerCell.qml",
         "download": "download/DownloadCell.qml",
+        "drives": "drives/DrivesCell.qml",
         "emoji": "emoji/EmojiCell.qml"
     })
 
@@ -59,6 +60,7 @@ Singleton {
         "privacy": "Privacy",
         "timer": "Timer",
         "download": "Downloads",
+        "drives": "Drives",
         "emoji": "Emoji"
     })
 
@@ -87,6 +89,7 @@ Singleton {
         "privacy": "While the microphone, a camera or the screen is being taken, and two seconds after.",
         "timer": "While a timer runs, or waits, paused, to be resumed.",
         "download": "While a browser is downloading into the downloads folder, and until a minute after it stalls.",
+        "drives": "While a removable drive is attached — a stick, a card, a disk on a cable.",
         "emoji": "Never by itself: it comes when its keybind asks for it."
     })
 
@@ -171,6 +174,7 @@ Singleton {
         "privacy": ["conditional"],
         "timer": ["conditional"],
         "download": ["conditional"],
+        "drives": ["conditional"],
         "emoji": ["always", "invoked"]
     })
 
@@ -222,6 +226,7 @@ Singleton {
         "privacy": 64,
         "timer": 40,
         "download": 90,
+        "drives": 40,
         "emoji": 40
     })
 
@@ -312,7 +317,10 @@ Singleton {
         // Gone when it ends: the notification and the sound say so.
         "timer": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 0 },
         // A moment after the last one finishes: it was there to be seen.
-        "download": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 3000 }
+        "download": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 3000 },
+        // Gone as soon as the drive is: it was pulled out or powered off, and
+        // either way there is nothing left on it to open.
+        "drives": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 0 }
     })
 
     // Boolean, appearing promptly and leaving slowly, for a domain with

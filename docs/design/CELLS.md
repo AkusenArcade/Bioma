@@ -1035,3 +1035,43 @@ time the cell opens; drawn in Noto Color Emoji.
 | emoji | 24 px | ten to a row; the chosen one on a primary fill at 14%, radius 10 |
 | tones | 26 px | the raised hand at 15 px; the one in use on a primary fill at 16% |
 | group label | 26 px | Orbitron 11, faint |
+
+---
+
+## 18 · Drives
+
+*Conditional on a removable drive · a stick for each · the thread while it is written to.*
+
+*Built 2026-10-15, from "Nuove idee".* There while a removable drive is attached — a stick, a
+card, a disk on a cable: udisks' `Removable`, `MediaRemovable`, or a USB, SDIO or FireWire bus.
+Contracted it is the `drive` glyph once per drive, so the width is the count, as in connectivity.
+No figure at rest.
+
+**Safe to remove** — the reason the cell exists. A copy finishes for the program that made it long
+before it finishes for the stick: the rest waits in the page cache and goes on being written. So
+while the kernel is writing to the drive (its own count, `/sys/block/<disk>/stat`, above 4 KB/s)
+the contracted cell carries the download's thread beside the glyphs, its light running as fast
+as the bytes land. While it runs, the stick is not to be pulled; still and gone, it is.
+
+**Expanded** — DRIVES, and one row per drive: the glyph (gradient when mounted, muted when not),
+the volume's label or the drive's name in Spectral 14, and under it in Orbitron 11 muted
+`67 MB · VFAT · MOUNTED` — or `WRITING · 791 KB/S` with the thread beside it. OPEN mounts if it
+has to and opens the folder; EJECT unmounts every filesystem on the drive — which is the wait for
+the last write — and powers it off, so the drive leaves the list when it is really safe to pull.
+While it waits, the loader stands where the buttons were. When it cannot — a file still open on
+the stick — the reason is under the row with `error`, in the alert colour, and the drive stays.
+The last drive gone closes the cell.
+
+**Source** — `scripts/drives`: `udisksctl monitor` read only as the signal to look again (line
+buffered through `stdbuf`, or a small event waits in its buffer), the looking one
+`GetManagedObjects` through `busctl`, and the write count read once a second only while a
+removable filesystem is mounted. `services/Drives.qml` runs it while a drives cell holds it; open
+and eject go through `udisksctl`, so the polkit rules are udisks' own. `drives.include_loop` counts
+the user's loop devices as drives, to try the cell without a stick.
+
+| Measure | Value | Note |
+|---|---|---|
+| glyph | 18 px, 6 apart | light gradient; one is a round cell |
+| thread | 44 × 6 px | the download's (`components/RateThread.qml`) |
+| panel | 380 px | a well, rows of 56, 22 more for a reason |
+| dwell | 0 | gone with the drive |

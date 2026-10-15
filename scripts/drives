@@ -1,0 +1,199 @@
+#!/usr/bin/env python3
+# Say which removable drives are attached, and whether they are being
+# written to, whenever that changes.
+#
+#     drives [--loop]
+#
+# Prints one JSON line per change: {"drives": [...]}, each drive
+#
+#     {"id", "name", "device", "power_off", "rate", "volumes": [
+#         {"device", "label", "type", "size", "mounts": [...]}]}
+#
+# where `rate` is the bytes a second being written to it right now — the
+# kernel's own count, so a copy that has finished for the program that made it
+# but still sits in the page cache is still being written, and the stick is
+# not yet safe to pull. The first line is the state at start.
+#
+# udisks says when something comes, goes or is mounted: `udisksctl monitor`
+# is read only as the signal to look again, and the looking is one
+# GetManagedObjects through busctl — the monitor's own text is for people.
+# Nothing polls for drives. The write count is read once a second, and only
+# while a removable filesystem is mounted: a drive that is not mounted is not
+# being written to through the filesystem, and the cell has nothing to say.
+#
+# --loop counts loop devices set up by the user (`udisksctl loop-setup`) as
+# removable drives, so the cell can be tried without a stick in the machine.
+
+import json
+import os
+import select
+import subprocess
+import sys
+import time
+
+LOOP = "--loop" in sys.argv[1:]
+
+UDISKS = "org.freedesktop.UDisks2"
+BLOCK = UDISKS + ".Block"
+DRIVE = UDISKS + ".Drive"
+FILESYSTEM = UDISKS + ".Filesystem"
+PARTITION = UDISKS + ".Partition"
+LOOP_IFACE = UDISKS + ".Loop"
+
+
+def value(interface, key, fallback=None):
+    entry = (interface or {}).get(key)
+    return entry["data"] if entry is not None else fallback
+
+
+def text(raw):
+    if isinstance(raw, list):
+        return bytes(b for b in raw if b != 0).decode("utf-8", "replace")
+    return raw or ""
+
+
+def objects():
+    try:
+        out = subprocess.run(
+            ["busctl", "--system", "--json=short", "call", UDISKS, "/org/freedesktop/UDisks2",
+             "org.freedesktop.DBus.ObjectManager", "GetManagedObjects"],
+            capture_output=True, text=True, timeout=5)
+        return json.loads(out.stdout)["data"][0]
+    except (OSError, ValueError, KeyError, IndexError, subprocess.TimeoutExpired):
+        return {}
+
+
+def removable(drive):
+    return bool(value(drive, "Removable") or value(drive, "MediaRemovable")
+                or value(drive, "ConnectionBus") in ("usb", "sdio", "ieee1394"))
+
+
+def read():
+    managed = objects()
+    drives = {}
+
+    # The drives first, then what is on them: a block names its drive, and a
+    # loop device has none, so it is its own.
+    for path, interfaces in managed.items():
+        drive = interfaces.get(DRIVE)
+        if drive is None or not removable(drive):
+            continue
+        name = " ".join(p for p in (value(drive, "Vendor", "").strip(),
+                                    value(drive, "Model", "").strip()) if p)
+        drives[path] = {"id": path, "name": name, "device": "",
+                        "power_off": bool(value(drive, "CanPowerOff")), "volumes": []}
+
+    for path, interfaces in managed.items():
+        block = interfaces.get(BLOCK)
+        if block is None or value(block, "HintIgnore"):
+            continue
+        device = text(value(block, "PreferredDevice")) or text(value(block, "Device"))
+        owner = value(block, "Drive", "/")
+
+        if LOOP and LOOP_IFACE in interfaces and value(interfaces[LOOP_IFACE], "SetupByUID") == os.getuid():
+            owner = path
+            if owner not in drives:
+                backing = text(value(interfaces[LOOP_IFACE], "BackingFile"))
+                drives[owner] = {"id": owner, "name": os.path.basename(backing) or device,
+                                 "device": device, "power_off": False, "volumes": []}
+
+        if owner not in drives:
+            continue
+        if PARTITION not in interfaces and owner != path:
+            # The whole disk: what the write count is read from, and what is
+            # powered off.
+            drives[owner]["device"] = device
+        if FILESYSTEM not in interfaces:
+            continue
+        mounts = [text(m) for m in value(interfaces[FILESYSTEM], "MountPoints", [])]
+        drives[owner]["volumes"].append({
+            "device": device,
+            "label": value(block, "IdLabel", "") or value(block, "HintName", ""),
+            "type": value(block, "IdType", ""),
+            "size": value(block, "Size", 0),
+            "mounts": [m for m in mounts if m],
+        })
+
+    for drive in drives.values():
+        if not drive["device"] and drive["volumes"]:
+            drive["device"] = drive["volumes"][0]["device"]
+        if not drive["name"]:
+            labels = [v["label"] for v in drive["volumes"] if v["label"]]
+            drive["name"] = labels[0] if labels else os.path.basename(drive["device"])
+        drive["volumes"].sort(key=lambda v: v["device"])
+
+    # A drive with nothing on it to open — a card reader with no card in it —
+    # has nothing to say.
+    return [d for d in sorted(drives.values(), key=lambda d: d["device"]) if d["volumes"]]
+
+
+def sectors_written(device):
+    # /sys/block/<disk>/stat, field 7: sectors written, always in 512 bytes.
+    name = os.path.basename(os.path.realpath(device)) if device else ""
+    try:
+        with open(f"/sys/block/{name}/stat") as stat:
+            return int(stat.read().split()[6])
+    except (OSError, IndexError, ValueError):
+        return None
+
+
+def main():
+    # Line-buffered, or a small event — an unmount, a stick pulled out — sits
+    # in udisksctl's stdio buffer until enough others arrive to fill it.
+    monitor = subprocess.Popen(["stdbuf", "-oL", "udisksctl", "monitor"], stdout=subprocess.PIPE,
+                               stderr=subprocess.DEVNULL, bufsize=0)
+    drives = read()
+    written = {}
+    rates = {}
+    said = None
+    stale = False
+    first = True
+
+    while True:
+        mounted = any(v["mounts"] for d in drives for v in d["volumes"])
+        timeout = 0 if first else 1.0 if mounted or stale else None
+        first = False
+        ready, _, _ = select.select([monitor.stdout], [], [], timeout)
+
+        if ready:
+            chunk = os.read(monitor.stdout.fileno(), 65536)
+            if not chunk:
+                return
+            # A plug-in is a burst of a dozen objects: let it finish, then
+            # look once.
+            stale = True
+            continue
+
+        if stale:
+            drives = read()
+            stale = False
+
+        now = time.monotonic()
+        for drive in drives:
+            count = sectors_written(drive["device"])
+            last = written.get(drive["id"])
+            # Unmounted, it is no longer read, so a rate measured during the
+            # unmount's own sync would stand there for good.
+            if not any(v["mounts"] for v in drive["volumes"]):
+                written.pop(drive["id"], None)
+                rates[drive["id"]] = 0
+                continue
+            if count is not None and last is not None and now > last[1]:
+                rates[drive["id"]] = max(0, count - last[0]) * 512 / (now - last[1])
+            else:
+                rates[drive["id"]] = 0
+            if count is not None:
+                written[drive["id"]] = (count, now)
+
+        out = [dict(d, rate=round(rates.get(d["id"], 0))) for d in drives]
+        line = json.dumps({"drives": out})
+        if line != said:
+            print(line, flush=True)
+            said = line
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        pass

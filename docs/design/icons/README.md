@@ -1,6 +1,6 @@
 # Bioma icons
 
-67 glyphs, 24 × 24, `currentColor`, no width/height assumptions beyond the viewBox.
+68 glyphs, 24 × 24, `currentColor`, no width/height assumptions beyond the viewBox.
 
 Icons are the one graphic alphabet in Bioma that is not an indicator: they say **what**
 something is, never **how hard** it is working.
@@ -43,6 +43,7 @@ something is, never **how hard** it is working.
 | `picker.svg` | the utility cell's Colour tab: a pipette, the bulb up and the glass tip down, at 45° like the hand holds it |
 | `camera.svg` | privacy cell: a camera in use. A video camera — the body and the lens's cone — beside `microphone` and `screen`, the other two things the cell says are being taken |
 | `download.svg` | download cell: an arrow coming down onto the line it lands on |
+| `drive.svg` | drives cell: a stick, its plug up and a label line on the body — one per removable drive attached |
 | `emoji.svg` | emoji cell: a face, two nodes for the eyes and a smile — the one face in the set, because the cell is the one that sends faces |
 | `lock.svg` | session command; also the secured-network marker at 12 px |
 | `suspend.svg` `restart.svg` `power.svg` `logout.svg` | session commands |

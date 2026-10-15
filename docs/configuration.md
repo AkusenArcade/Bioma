@@ -390,6 +390,7 @@ What `conditional` means is the cell's own, from `cells/Registry.qml`:
 | `privacy` | while the microphone, a camera or the screen is being taken, then two seconds |
 | `timer` | while a timer runs, or waits, paused, to be resumed |
 | `download` | while a browser's partial file in the downloads folder is growing, until a minute after it stalls |
+| `drives` | while a removable drive is attached |
 
 The five seconds are the dwell, so a block may set its own (`visibility.dwell`),
 and the pointer on the cell holds it. Nothing that happens in the first
@@ -414,7 +415,8 @@ what a cell displays. A cell's own settings live in its `options`.
 | `sinestesia.effect` | How the band draws the sound, in the media cell, its open capsule and the media organism alike: `bars` (the default), `plasma`, `vesicles` or `eardrum` — CELLS §04. Chosen from the dropdown on the Media row of the Cells page. |
 | `brightness.backend` | `auto` \| `backlight` \| `ddc` \| `none`. `auto` prefers a real backlight and falls back to DDC. |
 | `brightness.display` | Which DDC display to drive, by connector (`DP-1`) or I²C bus. Empty means the first found. |
-| `capture.what` / `capture.from` | The last pair the utility cell used — `image` \| `video` \| `text`, and `screen` \| `window` \| `region`. Written by the cell itself, so the common case stays one press. |
+| `capture.what` / `capture.from` | The last pair the utility cell used — `image` \| `video` \| `text` \| `colour`, and `screen` \| `window` \| `region`. Written by the cell itself, so the common case stays one press. Colour remembers the tab and no place. |
+| `capture.colours` / `capture.colour_count` | The colours picked last, newest first, as hex, and how many are kept (8). Written by the utility cell; the Colour tab shows the first two. |
 | `capture.folder` / `capture.video_folder` | Where stills and recordings are kept. A recording is written to a temporary directory first and moved here only when saved, so a discarded one never appears. |
 | `capture.notify` | Whether a saved screenshot or recording is announced with a notification whose action, "Open folder", opens where it went (true). |
 | `capture.clipboard` | Whether a capture also takes the clipboard. §9.6 wants it; a window capture always does, because the compositor is what produces the image. |
@@ -442,6 +444,7 @@ what a cell displays. A cell's own settings live in its `options`.
 | `proxy.profiles` / `proxy.mode` | Proxy profiles — `{ "id", "name", "type": "http" \| "socks5", "host", "port", "noProxy", "triggers": [{ "kind": "vpn", "uuid" } \| { "kind": "wifi", "ssid" } \| { "kind": "wired" }] }` — and which is on: `auto` (the first whose trigger matches), `off`, or a profile's id. Written by the connectivity cell. The one on is set as the desktop's proxy (`org.gnome.system.proxy`) and handed to the programs the shell starts as `http_proxy` and the rest. With no profiles the shell leaves the desktop's proxy alone. |
 | `keyboard.layouts` | The layouts the keyboard cell has set, as `[{ "layout": "it", "variant": "" }]`, in order — the first is the one niri starts with. Absent until the list is first changed from the cell; until then the layouts are whatever the system and niri's configuration already say. Written to niri as `bioma-keyboard.kdl`. |
 | `clipboard.history` | How many copies the clipboard cell keeps (50). Kept in `~/.cache/bioma/clipboard`, private to the user, while the shell runs; what a password manager marks sensitive is never kept. |
+| `drives.include_loop` | Count loop devices the user set up (`udisksctl loop-setup -f image`) as removable drives (false). It is there so the drives cell can be tried without a stick in the machine. |
 | `emoji.tone` | The skin tone the emoji cell sends, for every emoji that has one: `0` none (the standard's yellow), `1`–`5` light to dark. The tones beside the cell's field write it, and so do Tab and Shift+Tab. |
 | `emoji.recent` / `emoji.recent_count` | The emoji sent last, newest first, as base characters so a new tone reaches them, and how many are kept (20). Written by the cell; with an empty field they come first, and they lead the search among equals. |
 | `dock.pinned` | The applications the dock keeps, by desktop entry id, in the order they are shown. Empty is a legitimate setting: with nothing kept the dock is a window list. |

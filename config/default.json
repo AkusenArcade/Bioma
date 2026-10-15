@@ -213,6 +213,11 @@
               "type": "download",
               "enabled": true,
               "visibility": { "type": "conditional" }
+            },
+            {
+              "type": "drives",
+              "enabled": true,
+              "visibility": { "type": "conditional" }
             }
           ]
         },

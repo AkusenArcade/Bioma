@@ -41,6 +41,8 @@ depends=(
     'matugen'
     'zenity'
     'librsvg'
+    # Drives: removable drives attached, opened and ejected.
+    'udisks2'
     # Launcher: files found by name in the home, and opened; sums and
     # conversions answered in the field.
     'fd'
