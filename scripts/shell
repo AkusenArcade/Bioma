@@ -13,7 +13,8 @@
 #     shell restart         stop Bioma and start it again — a new version, or
 #                           a cell's file that does not reload by itself
 #     shell start           start whichever is remembered — this is the line
-#                           niri spawns at login
+#                           niri spawns at login, and the package's XDG
+#                           autostart entry runs
 #
 # The choice is remembered in ~/.config/bioma/shell, outside the repository,
 # because it is a fact about this machine's session and not about the project.
@@ -92,13 +93,30 @@ stop_noctalia() {
     done
 }
 
+# Two starts can come at the same moment: the package's XDG autostart entry
+# and the `spawn-at-startup` line the setup writes into niri's configuration
+# both fire at login, and each would find no Bioma running and start one. So
+# the look and the start happen under one lock, held until the new shell can
+# be seen, and the second start finds it there. The shell itself does not
+# inherit the lock.
 start_bioma() {
-    bioma_running && return 0
+    local lock="${XDG_RUNTIME_DIR:-/tmp}/bioma-start.lock"
+    exec 9>"$lock"
+    flock -w 10 9 || true
+    if bioma_running; then
+        exec 9>&-
+        return 0
+    fi
     # A new version may bring keys: they reach bioma-binds.kdl here, so an
     # update gets them on the restart it asks for, and niri reloads by itself.
     "$here/scripts/binds" >/dev/null 2>&1 || true
-    setsid "$here/scripts/bioma" >/dev/null 2>&1 < /dev/null &
+    setsid "$here/scripts/bioma" >/dev/null 2>&1 < /dev/null 9>&- &
     disown || true
+    for _ in $(seq 1 50); do
+        bioma_running && break
+        sleep 0.1
+    done
+    exec 9>&-
 }
 
 start_noctalia() {

@@ -294,13 +294,21 @@ From the AUR, as `bioma-shell`:
 
 ```sh
 paru -S bioma-shell          # or yay, or makepkg from packaging/aur
-bioma-install --autostart
 ```
 
+Then log in to niri: the package's autostart entry
+(`/etc/xdg/autostart/bioma.desktop`, shown only in niri) starts Bioma, and the
+first start opens the setup — layout, look, keys, login screen. Already inside
+niri, or starting niri from a TTY instead of a login manager, which runs no
+autostart entries? Run `bioma -d` from a terminal in niri once; the setup's
+NIRI step writes a `spawn-at-startup` line for the next logins. To keep Bioma
+from starting, copy the entry to `~/.config/autostart/` and add `Hidden=true`.
+
 The package puts Bioma in `/usr/share/bioma` and builds the spectrum tool for
-Sinestesia. `bioma-install` is `scripts/install` below; run it once per user.
-Coming from a clone, it points the existing includes, the autostart line and the
-keys at the package, and leaves the keys themselves as they are.
+Sinestesia. `bioma-install` is `scripts/install` below: the setup's NIRI step
+from a terminal, run once per user. Coming from a clone, it points the existing
+includes, the autostart line and the keys at the package, and leaves the keys
+themselves as they are.
 
 Or from a clone:
 
@@ -455,13 +463,14 @@ from a copy in `/var/lib/bioma-greeter`. The shell keeps that copy current by
 itself: the configuration, the wallpaper, the palette, the monitors, the
 keyboard layout, the cursor and your picture.
 
-**The AUR package sets it up.** Installing it makes the copy for the user who
-installed it, keeps greetd's configuration as
+**The setup asks.** Installing the package does not change the login screen:
+the setup's LOGIN step offers it, and on yes `scripts/greeter-setup enable`
+runs through pkexec. It makes the copy, keeps greetd's configuration as
 `/etc/greetd/config.toml.before-bioma`, points greetd at
-`/usr/share/bioma/scripts/greeter-session`, and enables greetd — unless another
-login manager is enabled, which it leaves alone and names, with the line that
-switches. Nothing restarts: it takes effect at the next boot. Removing the
-package puts the old configuration back.
+`/usr/share/bioma/scripts/greeter-session`, and enables greetd in place of the
+login manager that was enabled. Nothing restarts: it takes effect at the next
+boot. `greeter-setup disable`, or removing the package, puts the old login
+screen back.
 
 While there is no copy to run, the same command shows greetd's plain greeter,
 agreety, so the login screen is never empty.

@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Name=Bioma
+Comment=A living desktop shell for niri
+# Started at every niri login, so the first one opens the setup by itself:
+# a package that installs a shell and leaves it to a line in pacman's output
+# left people on a bare niri (2026-10-15). `shell start` starts whichever
+# shell was last chosen, and does nothing when Bioma is already running.
+# To keep it from starting, copy this file to ~/.config/autostart/ and add
+# Hidden=true.
+Exec=/usr/share/bioma/scripts/shell start
+OnlyShowIn=niri;
+NoDisplay=true
+X-GNOME-Autostart-enabled=true
