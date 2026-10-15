@@ -5,7 +5,7 @@ import qs.components
 import qs.structure
 import qs.services
 
-// Screenshots, regions, text recognition, recording and dictation.
+// Screenshots, regions, text recognition, recording, dictation and colour.
 //
 // The first purely functional cell: at rest it has nothing to represent, so it
 // shows its icon and nothing else — no figure, no state colour, because it
@@ -87,6 +87,7 @@ Cell {
     Connections {
         target: Capture
         function onCaptured() { root.pulse(); }
+        function onPicked() { root.pulse(); }
     }
 
     Connections {
@@ -136,6 +137,10 @@ Cell {
     // pair that cannot be done is shown as unavailable rather than offered and
     // then refused — dictation too, when the engine or its model is missing.
     function supports(what, from) {
+        // Under Colour the row is the pick and the last two colours picked,
+        // and a colour not picked yet is not there to copy.
+        if (what === "colour")
+            return from === "pick" || root.recentColour(from).length > 0;
         if (what === "video" && !root.idle)
             return false;
         if (from !== "window")
@@ -403,9 +408,27 @@ Cell {
 
     // ---- Doing it -----------------------------------------------------------
 
+    // `recent0` is the last colour picked, `recent1` the one before.
+    function recentColour(key) {
+        const at = key === "recent0" ? 0 : key === "recent1" ? 1 : -1;
+        return at >= 0 && at < Capture.colours.length ? Capture.colours[at] : "";
+    }
+
     function capture(what, from) {
         if (!root.supports(what, from))
             return;
+
+        // A colour is a pick, not a place: it remembers the tab and nothing
+        // else, so the last place used for an image is still the one waiting.
+        if (what === "colour") {
+            Config.set("capture.what", what);
+            root.open = false;
+            if (from === "pick")
+                Capture.pickColour();
+            else
+                Capture.copyColour(root.recentColour(from));
+            return;
+        }
 
         Config.set("capture.what", what);
         Config.set("capture.from", from);

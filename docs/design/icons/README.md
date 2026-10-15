@@ -1,6 +1,6 @@
 # Bioma icons
 
-66 glyphs, 24 × 24, `currentColor`, no width/height assumptions beyond the viewBox.
+67 glyphs, 24 × 24, `currentColor`, no width/height assumptions beyond the viewBox.
 
 Icons are the one graphic alphabet in Bioma that is not an indicator: they say **what**
 something is, never **how hard** it is working.
@@ -40,6 +40,7 @@ something is, never **how hard** it is working.
 | `screen.svg` `window.svg` `region.svg` | capture targets |
 | `appearance.svg` `structure.svg` `cells.svg` `monitors.svg` `organisms.svg` | settings categories, beside `keyboard.svg` and `lock.svg`. `organisms` is a desktop with its membrane and one panel standing on it |
 | `microphone.svg` | dictation: the Text tab's middle source, and the utility cell while it listens |
+| `picker.svg` | the utility cell's Colour tab: a pipette, the bulb up and the glass tip down, at 45° like the hand holds it |
 | `camera.svg` | privacy cell: a camera in use. A video camera — the body and the lens's cone — beside `microphone` and `screen`, the other two things the cell says are being taken |
 | `download.svg` | download cell: an arrow coming down onto the line it lands on |
 | `emoji.svg` | emoji cell: a face, two nodes for the eyes and a smile — the one face in the set, because the cell is the one that sends faces |

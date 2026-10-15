@@ -464,6 +464,13 @@ ShellRoot {
             return Niri.focusedTitle;
         }
 
+        // A colour from the screen, picked with niri's own crosshair; the hex
+        // goes to the clipboard and to the front of the utility's colours.
+        function colour(): string {
+            Capture.pickColour();
+            return "picking";
+        }
+
         // A recording can always be stopped, whatever the layout shows: the
         // utility cell may be crowded out, or not on any membrane at all.
         // Stopped, it still asks whether to keep the file.

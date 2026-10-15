@@ -132,6 +132,11 @@ binds {
         spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "capture" "window"
     }
 
+    // A colour from anywhere on the screen, its hex on the clipboard.
+    Mod+Alt+C repeat=false hotkey-overlay-title="Bioma: pick a colour" {
+        spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "capture" "colour"
+    }
+
     // A recording can be stopped without finding the utility cell: it may be
     // crowded off a narrow membrane, or on another monitor. Stopped, it still
     // asks whether to keep the file.

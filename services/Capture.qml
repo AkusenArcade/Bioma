@@ -434,6 +434,82 @@ Singleton {
         }
     }
 
+    // ── Colour ───────────────────────────────────────────────────────────
+    //
+    // One pixel, picked by niri's own picker: the compositor already draws the
+    // crosshair and reads the frame it composited, so there is nothing for a
+    // shell surface to add — a second picker would only be a second cursor.
+    // The answer is the hex, on the clipboard, and the last few are kept so a
+    // colour picked a minute ago is one press away rather than another pick.
+
+    readonly property int colourCount: Config.get("capture.colour_count", 8)
+    readonly property var colours: Config.get("capture.colours", [])
+
+    signal picked(string hex)
+
+    function pickColour() {
+        root.lastError = "";
+        picker.buffer = "";
+        root.settleThen(() => {
+            picker.running = false;
+            picker.running = true;
+        });
+    }
+
+    // A colour from the list goes back on the clipboard and to the front of it.
+    function copyColour(hex) {
+        if (!hex)
+            return;
+        root.copyText(hex);
+        root.remember(hex);
+        root.picked(hex);
+    }
+
+    function remember(hex) {
+        const next = [hex].concat(root.colours.filter(c => c !== hex));
+        Config.set("capture.colours", next.slice(0, root.colourCount));
+    }
+
+    function hexOf(rgb) {
+        const channel = value => {
+            const byte = Math.round(Math.max(0, Math.min(1, value)) * 255);
+            return byte.toString(16).padStart(2, "0");
+        };
+        return "#" + rgb.map(channel).join("").toUpperCase();
+    }
+
+    // `{"rgb":[r,g,b]}` with each channel between 0 and 1, or `null` when the
+    // pick was cancelled — which is a result, not an error.
+    Process {
+        id: picker
+        property string buffer: ""
+        running: false
+        command: ["niri", "msg", "--json", "pick-color"]
+
+        stdout: SplitParser {
+            onRead: line => picker.buffer += line
+        }
+
+        onExited: code => {
+            if (code !== 0) {
+                root.fail(`colour picker failed (${code})`);
+                return;
+            }
+            let answer = null;
+            try {
+                answer = JSON.parse(picker.buffer);
+            } catch (error) {
+                root.fail(`colour picker said something unreadable: ${picker.buffer}`);
+                return;
+            }
+            if (!answer || !Array.isArray(answer.rgb) || answer.rgb.length < 3) {
+                root.cancelled();
+                return;
+            }
+            root.copyColour(root.hexOf(answer.rgb.slice(0, 3)));
+        }
+    }
+
     // ── Video ────────────────────────────────────────────────────────────
     //
     // No audio (§9.6), H.264, and the file is written to a temporary directory

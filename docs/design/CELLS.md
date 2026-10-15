@@ -316,7 +316,7 @@ exist and port when decided.
 
 *Icon only · no state · counts while it records · listens while it dictates.*
 
-Screenshots, regions, OCR, recording and dictation. The first purely functional cell: at rest it has
+Screenshots, regions, OCR, recording, dictation and colour. The first purely functional cell: at rest it has
 nothing to represent, so it shows only its icon. While it records, it is the recording: a
 recording has a duration, and what has a duration needs a cell to say so.
 
@@ -326,6 +326,10 @@ recording has a duration, and what has a duration needs a cell to say so.
 (Screen, Window, Region). Two independent choices, never a list of six. Under **Text** the row
 reads **OCR SCREEN · DICTATION · OCR REGION**: text is never recognised from a window, so the
 middle place is dictation's, with the same size and position and the `microphone` glyph.
+Under **Colour** it reads **PICK · the last colour · the one before**: a colour is taken from a
+point, which has no place to choose, so the places are the colours already taken — a 28 px disc of
+the colour itself where the icon would be, its hex as the label, `NONE` and an empty ring until
+there is one. A press on one copies it again.
 
 **While recording** — the cell itself shows the elapsed time and a stop control, and is present
 even when its visibility is conditional. The dot pulses in the alert colour, because here the
@@ -350,7 +354,10 @@ process, and the video sits in a temporary directory until it is saved.
   surface, so the visual identity holds across the whole desktop. Capture stays with `grim` and
   the recorder.
 - Image: the result goes to the clipboard **and** the screenshots folder. Text: recognises the
-  region, text to the clipboard.
+  region, text to the clipboard. Colour: niri's own picker (`niri msg pick-color`) — the
+  compositor already draws the crosshair, and a second one would only be a second cursor — and
+  the hex goes to the clipboard. The cell answers a pick the way it answers a screenshot: it is
+  there for a moment. `qs ipc call capture colour` picks from anywhere.
 - Video: no audio, H.264 High Profile, 60 fps, MP4 container.
 - Dictation: whisper.cpp, run locally. The text is pasted into the focused window through the
   clipboard, which is then restored. One capture at a time: dictation is unavailable during a

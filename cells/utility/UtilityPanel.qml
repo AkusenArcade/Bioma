@@ -35,6 +35,7 @@ Item {
     readonly property string what: root.cell ? root.cell.what : "image"
     readonly property string from: root.cell ? root.cell.from : "screen"
     readonly property bool forText: root.what === "text"
+    readonly property bool forColour: root.what === "colour"
 
     Segmented {
         id: kinds
@@ -44,7 +45,8 @@ Item {
         options: [
             { "key": "image", "label": "Image" },
             { "key": "video", "label": "Video" },
-            { "key": "text", "label": "Text" }
+            { "key": "text", "label": "Text" },
+            { "key": "colour", "label": "Colour" }
         ]
         current: root.what
 
@@ -64,7 +66,15 @@ Item {
         property string label: ""
         property string icon: ""
 
-        readonly property bool chosen: root.from === source.key
+        // A colour stands in for the icon: under Colour the two right-hand
+        // places are the last colours picked, drawn as what they are.
+        property bool holdsColour: false
+        property string swatch: ""
+
+        // Under Colour nothing is remembered as a place: the pick is the
+        // control, and the colours beside it are wells.
+        readonly property bool chosen: root.forColour ? source.key === "pick"
+                                                      : root.from === source.key
         readonly property bool available: root.cell ? root.cell.supports(root.what, source.key) : true
 
         width: root.buttonWidth
@@ -106,8 +116,22 @@ Item {
             anchors.centerIn: parent
             spacing: 12 * root.factor
 
+            Rectangle {
+                anchors.horizontalCenter: parent.horizontalCenter
+                visible: source.holdsColour
+                width: 28 * root.factor
+                height: width
+                radius: width / 2
+                antialiasing: true
+                // An empty place is a ring, never a colour that was not picked.
+                color: source.swatch.length > 0 ? source.swatch : "transparent"
+                border.width: Metrics.rim(Screen.devicePixelRatio)
+                border.color: Qt.alpha(Theme.text, 0.5)
+            }
+
             Icon {
                 anchors.horizontalCenter: parent.horizontalCenter
+                visible: !source.holdsColour
                 name: source.icon
                 width: 28 * root.factor
                 height: width
@@ -145,19 +169,27 @@ Item {
         // is never recognised from a window, so the middle place is
         // dictation's, same size, same position (PRD §9.6). The key stays
         // `window`, which is what the configuration remembers.
+        //
+        // Under Colour it reads PICK · the last colour · the one before: a
+        // colour is taken from a point, which has no place to choose, so the
+        // places are the colours already taken, and a press copies one again.
         Source {
-            key: "screen"
-            label: root.forText ? "OCR SCREEN" : "SCREEN"
-            icon: "screen"
+            key: root.forColour ? "pick" : "screen"
+            label: root.forColour ? "PICK" : root.forText ? "OCR SCREEN" : "SCREEN"
+            icon: root.forColour ? "picker" : "screen"
         }
         Source {
-            key: "window"
-            label: root.forText ? "DICTATION" : "WINDOW"
+            key: root.forColour ? "recent0" : "window"
+            holdsColour: root.forColour
+            swatch: root.forColour && root.cell ? root.cell.recentColour("recent0") : ""
+            label: root.forColour ? (swatch || "NONE") : root.forText ? "DICTATION" : "WINDOW"
             icon: root.forText ? "microphone" : "window"
         }
         Source {
-            key: "region"
-            label: root.forText ? "OCR REGION" : "REGION"
+            key: root.forColour ? "recent1" : "region"
+            holdsColour: root.forColour
+            swatch: root.forColour && root.cell ? root.cell.recentColour("recent1") : ""
+            label: root.forColour ? (swatch || "NONE") : root.forText ? "OCR REGION" : "REGION"
             icon: "region"
         }
     }
