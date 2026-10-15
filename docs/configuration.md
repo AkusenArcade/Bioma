@@ -349,7 +349,8 @@ in GNOME Online Accounts, or paste an iCal address.
 | `days` | How far ahead events are read. Default 62: this month and the next |
 | `minutes` | How often they are read. Default 15 |
 
-Online Accounts covers Google, Nextcloud and any WebDAV/CalDAV
+Online Accounts covers Google, Microsoft 365 / Outlook.com (read through
+Microsoft Graph, since Microsoft has no CalDAV), Nextcloud and any WebDAV/CalDAV
 server (mailbox.org, Posteo, Fastmail). Outside GNOME its accounts are added
 with `gnome-online-accounts-gtk`. A calendar that cannot be read shows its last
 copy, and says why under the clock's agenda.

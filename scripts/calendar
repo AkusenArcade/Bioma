@@ -21,10 +21,12 @@ window and is still going is in it.
 A source is one of two things.
 
 - **A calendar of an account in GNOME Online Accounts** — `{"goa", "href",
-  "name"}`. GOA holds the sign-in: an OAuth token for Google, a password for
-  a WebDAV or Nextcloud account (mailbox.org, Posteo, Fastmail, a Nextcloud).
-  Its calendars are found over CalDAV (`accounts` lists them), and only the
-  events of the window are asked for. Nothing secret is kept here: the token
+  "name"}`. GOA holds the sign-in: an OAuth token for Google and Microsoft, a
+  password for a WebDAV or Nextcloud account (mailbox.org, Posteo, Fastmail, a
+  Nextcloud). Its calendars are found over CalDAV (`accounts` lists them) —
+  or, for Microsoft, which has no CalDAV, over Microsoft Graph, its events
+  written back as iCalendar so the rest reads them as any other — and only
+  the events of the window are asked for. Nothing secret is kept here: the token
   or the password is asked of GOA at every reading, on stdout, never on a
   command line.
 - **An iCalendar address** — `https://`, `webcal://` — or a file on disk, for
@@ -193,6 +195,7 @@ def goa_accounts():
             "attention": bool(value(account, "AttentionNeeded", False)),
             "uri": value(calendar, "Uri") or "",
             "oauth": (GOA + ".OAuth2Based") in interfaces,
+            "graph": value(account, "ProviderType") == "ms_graph",
         }
     return out
 
@@ -234,6 +237,8 @@ def href_of(tree, path):
 
 def calendars_of(account):
     """[{"href", "name"}]: the account's calendars that hold events."""
+    if account["graph"]:
+        return graph_calendars(account)
     auth = authorisation(account)
     uri = account["uri"]
     probe = ('<d:propfind xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav"><d:prop>'
@@ -274,6 +279,8 @@ def goa_events(source, window_start, window_end):
     account = goa_accounts().get(source["goa"])
     if account is None:
         raise AccountProblem("its account is no longer in Online Accounts")
+    if account["graph"]:
+        return graph_events(account, source["href"], window_start, window_end)
     stamp = lambda moment_: moment_.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     query = ('<c:calendar-query xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav">'
              '<d:prop><c:calendar-data/></d:prop>'
@@ -283,6 +290,75 @@ def goa_events(source, window_start, window_end):
     tree, _ = dav(source["href"], "REPORT", query, "1", authorisation(account))
     parts = [data.text for data in tree.iter("{%s}calendar-data" % CALDAV) if data.text]
     return "\n".join(parts)
+
+
+# ---- Microsoft Graph -----------------------------------------------------------
+#
+# Microsoft's calendars have no CalDAV. GOA's Microsoft 365 account hands over
+# a token that Graph accepts, and Graph answers in JSON: the calendars, and
+# each one's `calendarView`, which is the window with every recurrence already
+# expanded. Each occurrence is written back as a VEVENT of its own, in UTC, so
+# the reading below is the same for every source.
+
+GRAPH = "https://graph.microsoft.com/v1.0"
+
+
+def graph(url, auth):
+    """Every page of a Graph collection."""
+    out = []
+    while url:
+        request = urllib.request.Request(url, headers={
+            "Authorization": auth, "Accept": "application/json",
+            "Prefer": 'outlook.timezone="UTC"', "User-Agent": "Bioma"})
+        with urllib.request.urlopen(request, timeout=20) as response:
+            page = json.load(response)
+        out += page.get("value", [])
+        url = page.get("@odata.nextLink")
+    return out
+
+
+def graph_calendars(account):
+    found = graph(f"{GRAPH}/me/calendars?$select=id,name", authorisation(account))
+    return [{"href": f"{GRAPH}/me/calendars/{urllib.parse.quote(c['id'], safe='')}",
+             "name": c.get("name") or "Calendar"} for c in found]
+
+
+def ics_text(value):
+    return (str(value or "").replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,")
+            .replace("\r\n", "\\n").replace("\n", "\\n"))
+
+
+def graph_events(account, href, window_start, window_end):
+    stamp = lambda moment_: moment_.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    query = urllib.parse.urlencode({
+        "startDateTime": stamp(window_start), "endDateTime": stamp(window_end),
+        "$select": "id,subject,location,start,end,isAllDay,isCancelled", "$top": "200"})
+    found = graph(f"{href}/calendarView?{query}", authorisation(account))
+
+    lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Bioma//Graph//EN"]
+    for event in found:
+        if event.get("isCancelled"):
+            continue
+        start = (event.get("start") or {}).get("dateTime", "")
+        end = (event.get("end") or {}).get("dateTime", "")
+        if not start or not end:
+            continue
+        lines += ["BEGIN:VEVENT", "UID:" + ics_text(event.get("id"))]
+        if event.get("isAllDay"):
+            # Midnight to midnight, on the dates as written: an all-day
+            # event belongs to no zone.
+            lines += ["DTSTART;VALUE=DATE:" + start[:10].replace("-", ""),
+                      "DTEND;VALUE=DATE:" + end[:10].replace("-", "")]
+        else:
+            moment_ = lambda text: text[:19].replace("-", "").replace(":", "") + "Z"
+            lines += ["DTSTART:" + moment_(start), "DTEND:" + moment_(end)]
+        lines.append("SUMMARY:" + ics_text(event.get("subject")))
+        place = ((event.get("location") or {}).get("displayName") or "").strip()
+        if place:
+            lines.append("LOCATION:" + ics_text(place))
+        lines.append("END:VEVENT")
+    lines.append("END:VCALENDAR")
+    return "\r\n".join(lines) + "\r\n"
 
 
 def accounts():
