@@ -104,15 +104,17 @@ does.
 | Notifications | a notification as it arrives; set to *always*, the bell alone in between | the history |
 | Dock | the pinned and running applications, with an optional launcher at its head | — |
 | Tray | the applications' own tray icons | their menus, drawn by Bioma |
-| Utility | the recording, while one runs: its beat, its time, its stop | screenshots and recordings of a screen, a window or a region; text recognition; [dictation](#dictation) |
+| Utility | the recording, while one runs: its beat, its time, its stop | screenshots and recordings of a screen, a window or a region; text recognition; a colour picked from the screen, its hex copied; [dictation](#dictation) |
 | Theme | — | wallpaper, palette, icons, cursor, application templates |
 | Clipboard | — | what was copied, newest first, text and images; never what a password manager marks sensitive |
 | Keyboard | the layout's code | the layouts niri has loaded, and a search of every layout there is |
 | Privacy | while something is captured: the microphone, a camera or the screen, and who is taking it | one row per use, with its device |
 | Timer | while a timer runs: the dial, emptying at the speed of time | the time left, the presets, start, pause, stop |
 | Downloads | while a browser is downloading: a thread whose light runs as fast as the bytes arrive | each download, its bytes and rate; a press shows the file |
+| Drives | while a stick or a disk is plugged in | each drive, OPEN and EJECT, and whether it is safe to unplug yet |
+| Polkit | — | when something asks for permission: who is asking and why, and a password field in the lock screen's style. Bioma is the session's authentication agent |
 | Emoji | — | a search by name, the skin tones, recent picks first; the one chosen is pasted into the window that had the focus |
-| Launcher | — | applications, and from the third letter files in the home found by name |
+| Launcher | — | applications, from the third letter files in the home found by name, and a calculator: an expression or a conversion answers as the first row, Enter copies it |
 | Settings | — | see [below](#settings-in-the-shell) |
 
 A — at rest means the cell's glyph alone, or nothing at all when the cell is
@@ -234,8 +236,17 @@ the tissue would be there. The page also keeps whole layouts as presets
 between or to start again from an empty desktop.
 
 Appearance sets the blur's strength as well as whether there is one, for every
-surface niri blurs. Session sets the idle lock and, on a laptop, the power
-profile to follow the plug: one on battery, another on mains.
+surface niri blurs. Monitors arranges the screens by dragging them, picks the
+primary, switches one off, and sets its variable refresh — off, on demand with
+a switch for games, or always. Session sets the idle lock, the idle sleep
+(never, unless chosen) and, on a laptop, the power profile to follow the plug:
+one on battery, another on mains.
+
+The first start walks through a setup in the same panel: a starting layout,
+the look, Bioma's keys and autostart in niri's configuration, the login
+screen, and what is still missing on the machine. Nothing outside Bioma's own
+files changes until a step is answered, and SETUP on the Structure page runs
+it again.
 
 <p align="center">
   <img src="docs/media/settings-structure.webp" width="440" alt="Settings, Structure: the tissues on each membrane and the floating ones, per monitor">
@@ -260,7 +271,8 @@ the whole shell. Only the second table is left to you.
 | niri 26.04 or later | `niri` | the compositor; 26.04 is the first with `ext-background-effect` blur |
 | Quickshell 0.3.1 | `quickshell` | the shell runtime |
 | Qt 5 Compat | `qt6-5compat` | the masks the wallpaper tiles and faces are drawn through (`Qt5Compat.GraphicalEffects`), which Quickshell does not bring |
-| Python 3 | `python` | the helper scripts in `scripts/` |
+| Python 3, dateutil | `python`, `python-dateutil` | the helper scripts in `scripts/`; the calendars' recurring events |
+| libsecret | `libsecret` | the calendars' passwords and tokens, kept in the keyring |
 | gsettings | `glib2` | the desktop's settings: palette, icons, cursor, proxy |
 | wl-clipboard | `wl-clipboard` | the clipboard cell |
 | Noto Color Emoji | `noto-fonts-emoji` | the emoji cell's emoji |
@@ -269,6 +281,9 @@ the whole shell. Only the second table is left to you.
 | Spectral, Orbitron | AUR `ttf-spectral`, AUR `ttf-orbitron` | the two voices, expressive and technical. Both are SIL OFL |
 | matugen, zenity | `matugen`, `zenity` | palettes computed from the wallpaper; the wallpaper folder picker |
 | fd, xdg-utils | `fd`, `xdg-utils` | files found by name in the launcher, and opened with their default application |
+| libqalculate | `libqalculate` | the launcher's calculator (`qalc`) |
+| UDisks | `udisks2` | the drives cell: mounting, opening and ejecting |
+| polkit | `polkit` | the polkit cell, Bioma's authentication agent, and the setup's login screen step |
 | curl | `curl` | the weather organism's forecast, from Open-Meteo |
 | grim, tesseract, wl-screenrec | `grim`, `tesseract`, `tesseract-data-eng`, AUR `wl-screenrec` | screenshots, text recognition, screen recording (VAAPI) |
 | PipeWire | `pipewire`, `pipewire-audio` | audio, the alarm's sound, the microphone |
@@ -352,7 +367,7 @@ Then start it with `scripts/shell bioma`, or log in again. After an update,
 | Key | Opens |
 |---|---|
 | `Mod+Space` | the launcher |
-| `Mod+Period` | emoji, pasted into the window that has the focus |
+| `Mod+Alt+Period` | emoji, pasted into the window that has the focus |
 | `Mod+Alt+S` | settings |
 | `Mod+Alt+T` | theme: wallpaper, palette, icons, cursor, application templates |
 | `Mod+Alt+V` | vitals and tasks |
@@ -365,6 +380,7 @@ Then start it with `scripts/shell bioma`, or log in again. After an update,
 | `Mod+Print` | a screenshot of the monitor the keyboard is on |
 | `Alt+Print` | a screenshot of the window that has the focus |
 | `Shift+Print` | stop a recording, wherever the utility cell is |
+| `Mod+Alt+C` | pick a colour from the screen; its hex goes to the clipboard |
 | `Mod+Alt+D` | dictation: press to speak, press again to type it into the focused window |
 | `Mod+Alt+L` | lock the session |
 | `Mod+Alt+B` | switch between Bioma and the other shell |
