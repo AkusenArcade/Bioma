@@ -19,15 +19,20 @@ import qs.core
 // One agent per session is polkit's rule, so this one registers only when
 // `polkit.agent` is on (the default), and a session that already runs
 // another — polkit-gnome started by niri, say — keeps whichever registered
-// first. `registered` says which it was.
+// first. `registered` says which it was. When the other one is taken away —
+// Setup → System does it, where it is started — `retry` registers again
+// without restarting the shell.
 Singleton {
     id: root
 
     readonly property bool wanted: Config.get("polkit.agent", true)
 
+    // Off for a moment while `retry` lets go of a refused registration.
+    property bool resting: false
+
     LazyLoader {
         id: loader
-        active: root.wanted
+        active: root.wanted && !root.resting
 
         PolkitAgent {}
     }
@@ -68,6 +73,31 @@ Singleton {
     // Set by the cell while it is on screen, so a second request arriving
     // while the first is still leaving does not toggle it away.
     property bool shown: false
+
+    // polkit learns the other agent is gone when its process is, a moment
+    // after the signal: a few tries, a second apart, until one holds.
+    function retry() {
+        if (!root.wanted || root.registered)
+            return;
+        again.tries = 5;
+        again.restart();
+    }
+
+    Timer {
+        id: again
+        property int tries: 0
+        interval: 1000
+        repeat: true
+        onTriggered: {
+            if (root.registered || again.tries <= 0) {
+                again.stop();
+                return;
+            }
+            again.tries--;
+            root.resting = true;
+            Qt.callLater(() => root.resting = false);
+        }
+    }
 
     function submit(password) {
         if (root.flow && root.flow.isResponseRequired)

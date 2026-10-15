@@ -21,7 +21,8 @@ import qs.core
 //
 // What it finds out comes from scripts, asked when it opens and again after
 // each action: `install --report` (programs, services, niri, a polkit agent),
-// `greeter-setup status`, and `setup-scan list` (other shells). Nothing polls.
+// `polkit-agent report` (another agent, and what starts it), `greeter-setup
+// status`, and `setup-scan list` (other shells). Nothing polls.
 //
 // See docs/design/SETUP.md.
 Singleton {
@@ -96,7 +97,8 @@ Singleton {
             return "alert";
         if (key === "conflicts" && root.conflicts.length > 0)
             return "active";
-        if (key === "system" && (root.missing.length > 0 || root.disabled.length > 0 || !root.polkitAgent))
+        if (key === "system" && (root.missing.length > 0 || root.disabled.length > 0
+                                 || !root.polkitAgent || root.polkitRival.length > 0))
             return "active";
         return "muted";
     }
@@ -234,7 +236,8 @@ Singleton {
 
     readonly property var missing: root.required.filter(entry => !entry.ok)
     readonly property bool systemWanted: root.reportRead
-        && (root.missing.length > 0 || root.disabled.length > 0 || !root.polkitAgent)
+        && (root.missing.length > 0 || root.disabled.length > 0 || !root.polkitAgent
+            || root.polkitRival.length > 0)
 
     readonly property bool niriSet: root.niriState.binds === "ok" && root.niriState.include === "ok"
                                     && root.niriState["include-binds"] === "ok"
@@ -243,6 +246,8 @@ Singleton {
     function refresh() {
         report.collected = [];
         report.running = true;
+        agents.collected = [];
+        agents.running = true;
         greeter.collected = [];
         greeter.running = true;
         scan.collected = [];
@@ -281,6 +286,74 @@ Singleton {
             root.niriState = niri;
             root.otherAgent = agent;
             root.reportRead = true;
+        }
+    }
+
+    // ---- Another polkit agent ------------------------------------------------
+    //
+    // polkit allows one agent per session and the first to register keeps it,
+    // so another one started at login — by niri, by systemd, by autostart —
+    // either holds the session already or races Bioma's at every start. With
+    // Bioma's wanted, that is a rival: named here by its program, with where
+    // it is started, and handed over in one press (`scripts/polkit-agent
+    // takeover`). Keeping it instead switches Bioma's off, which ends the race
+    // the other way.
+
+    property var polkitSources: []     // [{ kind, name, where }]
+    readonly property string polkitRival: {
+        if (!Polkit.wanted || root.polkitSources.length === 0)
+            return "";
+        const name = root.polkitSources[0].name;
+        return name.replace(/-authentication-agent-1$/, "").replace(/-agent$/, "") || name;
+    }
+    property bool handingOver: false
+    property string handOverError: ""
+
+    Process {
+        id: agents
+        property var collected: []
+        command: [Quickshell.shellPath("scripts/polkit-agent"), "report"]
+        stdout: SplitParser { onRead: line => agents.collected.push(line) }
+        onExited: {
+            const found = [];
+            for (const line of agents.collected) {
+                const f = line.split("\t");
+                if (f.length >= 3)
+                    found.push({ "kind": f[0], "name": f[1], "where": f.slice(2).join(":") });
+            }
+            root.polkitSources = found;
+        }
+    }
+
+    function useBiomaAgent() {
+        if (root.handingOver)
+            return;
+        root.handingOver = true;
+        root.handOverError = "";
+        handOver.running = true;
+    }
+
+    function keepOtherAgent() {
+        Config.set("polkit.agent", false);
+    }
+
+    Process {
+        id: handOver
+        command: [Quickshell.shellPath("scripts/polkit-agent"), "takeover"]
+        stderr: StdioCollector {
+            onStreamFinished: {
+                const lines = this.text.split("\n").filter(line => line.startsWith("error\t"));
+                root.handOverError = lines.length > 0 ? lines[0].slice(6) : "";
+            }
+        }
+        onExited: {
+            root.handingOver = false;
+            // The other agent has let go of the session: Bioma's asks again.
+            Polkit.retry();
+            agents.collected = [];
+            agents.running = true;
+            report.collected = [];
+            report.running = true;
         }
     }
 

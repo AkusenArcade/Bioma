@@ -1,0 +1,324 @@
+#!/usr/bin/env python3
+"""Another polkit agent in the session: where it runs, and handing over to Bioma's.
+
+    polkit-agent report     what runs, and what starts it, one fact per line
+    polkit-agent takeover   stop it where it is started, then stop it
+
+polkit allows one agent per session, and whichever registers first keeps it,
+so Bioma's own (services/Polkit.qml) can only ask once the other is gone — and
+gone at the next login too, or the two race again. An agent is usually started
+in one of three places, and each is undone the way its owner would undo it:
+
+  niri       a `spawn-at-startup` line in niri's configuration, or a file it
+             includes: commented out, with a note saying why, so it reads as a
+             decision and is one keystroke to take back.
+  systemd    an enabled user unit (hyprpolkitagent, plasma-polkit-agent, …):
+             disabled and stopped.
+  autostart  an XDG autostart entry the session would run: shadowed by a copy
+             in ~/.config/autostart with `Hidden=true`, the spec's own off
+             switch, leaving the system's file alone.
+
+Then the running agent is sent SIGTERM. Nothing is ever deleted.
+
+`report` prints tab-separated lines, NAME being the agent's program:
+  running   NAME  PID
+  niri      NAME  FILE  LINE
+  unit      NAME  UNIT
+  autostart NAME  FILE
+`takeover` prints the same for what it changed, and `error  REASON` on stderr
+for what it could not; niri's configuration is validated before it is written.
+"""
+
+import os
+import re
+import signal
+import subprocess
+import sys
+
+AGENTS = re.compile(
+    r"polkit.*agent|lxpolkit|hyprpolkitagent|soteria|xfce-polkit|polkit-mate"
+    r"|mate-polkit|polkit-kde|polkit-gnome|lxqt-policykit")
+
+HOME = os.path.expanduser("~")
+CONFIG_HOME = os.environ.get("XDG_CONFIG_HOME") or os.path.join(HOME, ".config")
+NIRI_CONFIG = os.environ.get("NIRI_CONFIG") or os.path.join(CONFIG_HOME, "niri", "config.kdl")
+NOTE = "// Bioma's own polkit agent asks for passwords now (Setup → System).\n"
+
+
+# ---- What runs ---------------------------------------------------------------
+
+def running():
+    own = os.getpid()
+    found = []
+    for entry in os.listdir("/proc"):
+        if not entry.isdigit() or int(entry) == own:
+            continue
+        try:
+            with open(f"/proc/{entry}/cmdline", "rb") as f:
+                argv = f.read().split(b"\0")
+            with open(f"/proc/{entry}/status") as f:
+                uid = next(int(l.split()[1]) for l in f if l.startswith("Uid:"))
+        except (OSError, StopIteration, ValueError):
+            continue
+        if uid != os.getuid() or not argv or not argv[0]:
+            continue
+        program = argv[0].decode(errors="replace")
+        # The program itself, not an argument that happens to name one —
+        # an editor open on polkit-gnome's source is not an agent.
+        if AGENTS.search(os.path.basename(program)):
+            found.append((os.path.basename(program), int(entry)))
+    return found
+
+
+# ---- niri --------------------------------------------------------------------
+
+def niri_files():
+    """The configuration and every file it includes, in niri's order."""
+    out, seen = [], set()
+
+    def walk(path):
+        path = os.path.realpath(path)
+        if path in seen or not os.path.isfile(path):
+            return
+        seen.add(path)
+        out.append(path)
+        with open(path, encoding="utf-8", errors="replace") as f:
+            for line in f:
+                m = re.match(r'\s*include\b.*"([^"]+)"', line)
+                if m:
+                    target = os.path.expanduser(m.group(1))
+                    if not os.path.isabs(target):
+                        target = os.path.join(os.path.dirname(path), target)
+                    walk(target)
+
+    walk(NIRI_CONFIG)
+    return out
+
+
+SPAWN = re.compile(r'^\s*spawn(-sh)?-at-startup\b(.*)$')
+
+
+def program(command):
+    """The program a command line starts, by its own name."""
+    words = re.findall(r'"([^"]*)"|(\S+)', command)
+    for quoted, bare in words:
+        word = quoted or bare
+        if AGENTS.search(os.path.basename(word)):
+            return os.path.basename(word)
+    first = words[0][0] or words[0][1] if words else ""
+    return os.path.basename(first)
+
+
+def niri_spawns():
+    found = []
+    for path in niri_files():
+        with open(path, encoding="utf-8", errors="replace") as f:
+            for number, line in enumerate(f, 1):
+                m = SPAWN.match(line)
+                if m and AGENTS.search(m.group(2)):
+                    found.append((path, number, program(m.group(2))))
+    return found
+
+
+# ---- systemd -----------------------------------------------------------------
+
+def units():
+    try:
+        listing = subprocess.run(
+            ["systemctl", "--user", "list-unit-files", "--state=enabled",
+             "--type=service", "--no-legend", "--plain"],
+            capture_output=True, text=True, timeout=10).stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return []
+    found = []
+    for line in listing.splitlines():
+        unit = line.split()[0] if line.split() else ""
+        if not unit or "@" in unit:
+            continue
+        try:
+            body = subprocess.run(["systemctl", "--user", "cat", unit],
+                                  capture_output=True, text=True, timeout=5).stdout
+        except (OSError, subprocess.TimeoutExpired):
+            continue
+        for l in body.splitlines():
+            if l.startswith("ExecStart=") and AGENTS.search(l):
+                found.append((unit, program(l.split("=", 1)[1].lstrip("@-:+!"))))
+                break
+    return found
+
+
+# ---- XDG autostart -------------------------------------------------------------
+
+def desktop_entry(path):
+    entry, inside = {}, False
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith("["):
+                    inside = line == "[Desktop Entry]"
+                elif inside and "=" in line:
+                    key, value = line.split("=", 1)
+                    entry.setdefault(key.strip(), value.strip())
+    except OSError:
+        pass
+    return entry
+
+
+def autostarts():
+    """Entries the session's autostart would run: the user's directory shadows
+    the system's by file name, and OnlyShowIn/NotShowIn are honoured for
+    niri, as systemd's generator does."""
+    desktops = [d for d in (os.environ.get("XDG_CURRENT_DESKTOP") or "niri").split(":") if d]
+    dirs = [os.path.join(CONFIG_HOME, "autostart")] + [
+        os.path.join(d, "autostart")
+        for d in (os.environ.get("XDG_CONFIG_DIRS") or "/etc/xdg").split(":") if d]
+    found, seen = [], set()
+    for directory in dirs:
+        try:
+            names = sorted(os.listdir(directory))
+        except OSError:
+            continue
+        for name in names:
+            if not name.endswith(".desktop") or name in seen:
+                continue
+            seen.add(name)
+            path = os.path.join(directory, name)
+            entry = desktop_entry(path)
+            if entry.get("Hidden", "").lower() == "true":
+                continue
+            only = [d for d in entry.get("OnlyShowIn", "").split(";") if d]
+            never = [d for d in entry.get("NotShowIn", "").split(";") if d]
+            if only and not any(d in only for d in desktops):
+                continue
+            if any(d in never for d in desktops):
+                continue
+            if AGENTS.search(entry.get("Exec", "")):
+                found.append((path, program(entry["Exec"])))
+    return found
+
+
+# ---- Commands ----------------------------------------------------------------
+
+def report():
+    for name, pid in running():
+        print(f"running\t{name}\t{pid}")
+    for path, number, name in niri_spawns():
+        print(f"niri\t{name}\t{path}\t{number}")
+    for unit, name in units():
+        print(f"unit\t{name}\t{unit}")
+    for path, name in autostarts():
+        print(f"autostart\t{name}\t{path}")
+
+
+def validate(main, replaced):
+    """niri's verdict on its configuration with some files replaced — written
+    to a scratch copy of the whole tree, so nothing is touched until it is
+    accepted."""
+    import tempfile
+    files = niri_files()
+    root = os.path.dirname(os.path.realpath(main))
+    with tempfile.TemporaryDirectory(prefix="bioma-polkit-") as scratch:
+        mapping = {}
+        for path in files:
+            rel = os.path.relpath(path, root)
+            target = os.path.join(scratch, rel) if not rel.startswith("..") else None
+            if target is None:
+                continue
+            os.makedirs(os.path.dirname(target), exist_ok=True)
+            with open(target, "w", encoding="utf-8") as out:
+                if path in replaced:
+                    out.write(replaced[path])
+                else:
+                    with open(path, encoding="utf-8", errors="replace") as src:
+                        out.write(src.read())
+            mapping[path] = target
+        result = subprocess.run(
+            ["niri", "validate", "-c", mapping[os.path.realpath(main)]],
+            capture_output=True, text=True)
+        return result.returncode == 0, re.sub(r"\x1b\[[0-9;]*m", "", result.stderr)
+
+
+def takeover():
+    failed = False
+
+    # niri: every spawn line commented out, all files validated together.
+    spawns = niri_spawns()
+    if spawns:
+        replaced = {}
+        for path in {p for p, _, _ in spawns}:
+            with open(path, encoding="utf-8") as f:
+                lines = f.readlines()
+            for p, number, _ in sorted(spawns, key=lambda s: -s[1]):
+                if p != path:
+                    continue
+                line = lines[number - 1]
+                indent = line[:len(line) - len(line.lstrip())]
+                lines[number - 1] = indent + "// " + line.lstrip()
+                lines.insert(number - 1, indent + NOTE)
+            replaced[path] = "".join(lines)
+        ok, reason = validate(NIRI_CONFIG, replaced)
+        if ok:
+            for path, text in replaced.items():
+                tmp = f"{path}.bioma-tmp"
+                with open(tmp, "w", encoding="utf-8") as f:
+                    f.write(text)
+                os.replace(tmp, path)
+            for path, number, name in spawns:
+                print(f"niri\t{name}\t{path}\t{number}")
+        else:
+            lines = [l for l in reason.splitlines() if l.strip()]
+            print(f"error\tniri refused the change: {lines[-1] if lines else 'unknown'}",
+                  file=sys.stderr)
+            failed = True
+
+    # systemd: disabled and stopped.
+    for unit, name in units():
+        result = subprocess.run(["systemctl", "--user", "disable", "--now", unit],
+                                capture_output=True, text=True)
+        if result.returncode == 0:
+            print(f"unit\t{name}\t{unit}")
+        else:
+            print(f"error\t{unit}: {result.stderr.strip()}", file=sys.stderr)
+            failed = True
+
+    # Autostart: shadowed, or switched off in the user's own copy.
+    user_dir = os.path.join(CONFIG_HOME, "autostart")
+    for path, name in autostarts():
+        target = os.path.join(user_dir, os.path.basename(path))
+        try:
+            os.makedirs(user_dir, exist_ok=True)
+            with open(path, encoding="utf-8", errors="replace") as f:
+                text = f.read()
+            text = re.sub(r"(?m)^Hidden=.*\n?", "", text)
+            text = re.sub(r"(?m)^\[Desktop Entry\]\s*$",
+                          "[Desktop Entry]\n# Bioma's own polkit agent asks for passwords now.\nHidden=true",
+                          text, count=1)
+            with open(target, "w", encoding="utf-8") as f:
+                f.write(text)
+            print(f"autostart\t{name}\t{path}")
+        except OSError as e:
+            print(f"error\t{path}: {e.strerror}", file=sys.stderr)
+            failed = True
+
+    # And the one running now.
+    for name, pid in running():
+        try:
+            os.kill(pid, signal.SIGTERM)
+            print(f"running\t{name}\t{pid}")
+        except OSError as e:
+            print(f"error\t{name}: {e.strerror}", file=sys.stderr)
+            failed = True
+
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    command = sys.argv[1] if len(sys.argv) > 1 else ""
+    if command == "report":
+        report()
+    elif command == "takeover":
+        sys.exit(takeover())
+    else:
+        print(__doc__.strip(), file=sys.stderr)
+        sys.exit(2)

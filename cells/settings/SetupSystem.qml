@@ -9,6 +9,9 @@ import qs.services
 // are for, with the one command that installs them all: Bioma never runs a
 // package manager. Services that are installed but off are enabled in place,
 // through pkexec. Dictation is optional, and its size is said plainly.
+// Another polkit agent started with the session is named, with where it is
+// started, and handed over to Bioma's in one press — or kept, which switches
+// Bioma's off: polkit allows one, and two only race.
 //
 // See docs/design/SETUP.md, step 6.
 Item {
@@ -24,6 +27,8 @@ Item {
             parts.push(Setup.missing.length === 1 ? "One to install" : `${Setup.missing.length} to install`);
         if (Setup.disabled.length > 0)
             parts.push(Setup.disabled.length === 1 ? "one service off" : `${Setup.disabled.length} services off`);
+        if (Setup.polkitRival.length > 0)
+            parts.push(parts.length > 0 ? "another polkit agent" : "Another polkit agent");
         return parts.length > 0 ? parts.join(", ") : "Nothing missing";
     }
     onOutcomeChanged: Setup.note("system", root.outcome)
@@ -105,9 +110,62 @@ Item {
             }
 
             SetupSection {
+                id: rival
+
                 metrics: root.metrics
                 label: "PASSWORDS"
-                visible: !Setup.polkitAgent
+                visible: Setup.polkitRival.length > 0
+
+                readonly property var places: {
+                    const said = { "niri": "niri's configuration", "unit": "a systemd unit",
+                                   "autostart": "the session's autostart", "running": "" };
+                    const out = [];
+                    for (const source of Setup.polkitSources)
+                        if (said[source.kind].length > 0 && out.indexOf(said[source.kind]) < 0)
+                            out.push(said[source.kind]);
+                    return out;
+                }
+
+                SetupLine {
+                    metrics: root.metrics
+                    text: `${Setup.polkitRival} asks for passwords in this session`
+                          + (rival.places.length > 0 ? `, started by ${rival.places.join(" and ")}. ` : ". ")
+                          + "Bioma has its own agent, with the lock screen's field, and polkit allows only one. "
+                          + "Switching turns the other off where it starts — commented out, disabled or hidden, never deleted."
+                }
+
+                SetupFact {
+                    metrics: root.metrics
+                    visible: Setup.handOverError.length > 0
+                    label: "NOT SWITCHED"
+                    detail: Setup.handOverError
+                    state: "alert"
+                }
+
+                Row {
+                    spacing: 8 * root.factor
+
+                    Choice {
+                        metrics: root.metrics
+                        label: Setup.handingOver ? "Switching" : "Use Bioma's agent"
+                        kind: "primary"
+                        dimmed: Setup.handingOver
+                        onActivated: Setup.useBiomaAgent()
+                    }
+
+                    Choice {
+                        metrics: root.metrics
+                        label: `Keep ${Setup.polkitRival}`
+                        dimmed: Setup.handingOver
+                        onActivated: Setup.keepOtherAgent()
+                    }
+                }
+            }
+
+            SetupSection {
+                metrics: root.metrics
+                label: "PASSWORDS"
+                visible: !Setup.polkitAgent && Setup.polkitRival.length === 0
 
                 SetupLine {
                     metrics: root.metrics

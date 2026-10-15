@@ -175,6 +175,17 @@ without saying why: two bars on one edge, and notifications that never reach Bio
   agent, the command with COPY instead.
 - **No polkit agent** is itself a row here: without one, nothing in Bioma that needs a password
   can ask for it.
+- **Another polkit agent.** Bioma carries its own (CELLS.md §19), and polkit allows one per
+  session: the first to register keeps it, so another agent started at login holds the session
+  or races Bioma's at every start. When `scripts/polkit-agent report` finds one running or set to
+  start — a `spawn-at-startup` line in niri's configuration or a file it includes, an enabled
+  systemd user unit, an XDG autostart entry the session would run — PASSWORDS names it and where
+  it starts, with two answers (Akusen, 2026-10-15):
+  - **Use Bioma's agent** runs `polkit-agent takeover`: the niri line is commented out under a
+    note (validated by niri first), the unit disabled and stopped, the autostart entry shadowed in
+    `~/.config/autostart` with `Hidden=true`, and the running agent sent SIGTERM. Nothing is
+    deleted. Bioma's agent then registers again in place, no restart.
+  - **Keep** it switches `polkit.agent` off, which ends the race the other way.
 - **Optional**, in its own well below a dashed rule: dictation, with its size said plainly
   (*about half a gigabyte, for one key*) and its command.
 
@@ -281,6 +292,5 @@ As `CELLS.md` §12 unless listed here.
 
 ## Open
 
-- **A polkit agent of Bioma's own.** Quickshell 0.3.1 has `Quickshell.Services.Polkit`. Bioma
-  drawing its own password prompt would remove the *no agent* rows above, but it is a component
-  that can lock someone out of an action they need, so it is a decision of its own.
+- ~~**A polkit agent of Bioma's own.**~~ Built (CELLS.md §19, 2026-10-15), on by default, with
+  the hand-over from another agent in the SYSTEM step above.
