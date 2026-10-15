@@ -507,7 +507,7 @@ Item {
                                 width: 9 * root.factor
                                 height: width
                                 name: "close"
-                                colour: removeHover.hovered ? Theme.text : Theme.textMuted
+                                colour: removeHover.hovered ? Theme.alert : Theme.text
                             }
 
                             HoverHandler { id: removeHover }
@@ -669,7 +669,7 @@ Item {
                     id: addLabel
                     anchors.centerIn: parent
                     text: root.adding ? "Cancel" : "+ Place"
-                    color: root.adding ? Theme.primary : Theme.textMuted
+                    color: root.adding ? Theme.primary : Theme.text
                     font: root.technical(root.metrics.fontMeta)
                 }
 
@@ -1019,7 +1019,7 @@ Item {
                                         anchors.verticalCenter: parent.verticalCenter
                                         text: offered.taken ? "ADDED" : "ADD"
                                         color: offered.taken ? Theme.textFaint
-                                             : offeredHover.hovered ? Theme.primary : Theme.textMuted
+                                             : offeredHover.hovered ? Theme.primary : Theme.text
                                         font: root.technical(root.metrics.fontMeta)
                                     }
 
@@ -1322,7 +1322,7 @@ Item {
             height: width
             rotation: chevron.pointsLeft ? 180 : 0
             name: "chevron-right"
-            colour: chevronHover.hovered ? Theme.text : Theme.textMuted
+            colour: chevronHover.hovered ? Theme.primary : Theme.text
         }
 
         HoverHandler { id: chevronHover }
@@ -1423,7 +1423,7 @@ Item {
             width: Math.min(implicitWidth, 110 * root.factor)
             text: chip.asking ? "FORGET?" : String(chip.modelData.name || "Calendar").toUpperCase()
             elide: Text.ElideRight
-            color: chip.asking || chip.trouble.length > 0 ? Theme.alert : Theme.textMuted
+            color: chip.asking || chip.trouble.length > 0 ? Theme.alert : Theme.text
             font: root.technical(root.metrics.fontMeta)
         }
 
@@ -1434,7 +1434,7 @@ Item {
             width: 9 * root.factor
             height: width
             name: "close"
-            colour: chip.asking ? Theme.alert : crossHover.hovered ? Theme.text : Theme.textMuted
+            colour: chip.asking ? Theme.alert : crossHover.hovered ? Theme.alert : Theme.text
 
             HoverHandler { id: crossHover }
         }
@@ -1483,7 +1483,7 @@ Item {
             id: addChipText
             anchors.centerIn: parent
             text: addChip.label
-            color: addChip.lit ? Theme.primary : Theme.textMuted
+            color: addChip.lit ? Theme.primary : Theme.text
             font: root.technical(root.metrics.fontMeta)
         }
 

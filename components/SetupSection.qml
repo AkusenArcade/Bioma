@@ -26,7 +26,7 @@ Well {
         height: root.headerHeight
         verticalAlignment: Text.AlignVCenter
         text: root.label
-        color: Theme.textMuted
+        color: Theme.text
         font: Qt.font({
             "family": Typography.technical,
             "pixelSize": root.metrics.fontSecondary,

@@ -729,7 +729,7 @@ Item {
                                         height: width
                                         name: star.liked ? "star-filled" : "star"
                                         gradient: star.liked
-                                        colour: likeArea.containsMouse ? Theme.text : Theme.textMuted
+                                        colour: likeArea.containsMouse ? Theme.primary : Theme.text
                                     }
 
                                     // A mouse area rather than a handler: it has to

@@ -95,6 +95,9 @@ Singleton {
     readonly property color cell: lift(background, 0.075)
     readonly property color wellSurface: lift(background, 0.02)
 
+    // Only for a secondary label nobody presses, or an option not chosen.
+    // Never for an enabled control, a title, or a setting's name or value:
+    // muted, those read as disabled (STYLE_GUIDE.md, Interface).
     readonly property color textMuted: Qt.alpha(text, 0.56)
     readonly property color textFaint: Qt.alpha(text, 0.38)
     readonly property color border: Qt.alpha(text, isDark ? 0.09 : 0.14)

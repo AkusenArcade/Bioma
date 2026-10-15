@@ -213,7 +213,7 @@ Item {
                 anchors.left: parent.left
                 anchors.verticalCenter: quiet.verticalCenter
                 text: "HISTORY"
-                color: Theme.textMuted
+                color: Theme.text
                 font: Qt.font({
                     "family": Typography.technical,
                     "pixelSize": root.metrics.fontLabel,
@@ -241,7 +241,7 @@ Item {
                 anchors.rightMargin: 8 * root.factor
                 anchors.verticalCenter: quiet.verticalCenter
                 text: "QUIET"
-                color: Theme.textMuted
+                color: Theme.text
                 font: Qt.font({
                     "family": Typography.technical,
                     "pixelSize": root.metrics.fontMeta,
@@ -292,7 +292,7 @@ Item {
                     id: clearLabel
                     anchors.centerIn: parent
                     text: "CLEAR"
-                    color: clearHover.hovered ? Theme.text : Theme.textMuted
+                    color: Theme.text
                     font: Qt.font({
                         "family": Typography.technical,
                         "pixelSize": root.metrics.fontMeta,

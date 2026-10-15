@@ -280,7 +280,7 @@ Item {
                         width: 9 * root.factor
                         height: width
                         name: "close"
-                        colour: dropHover.hovered ? Theme.alert : Theme.textMuted
+                        colour: dropHover.hovered ? Theme.alert : Theme.text
                     }
 
                     HoverHandler { id: dropHover }

@@ -76,14 +76,22 @@ it is what matugen generates and what thin line icons use.
 | `background` | `#12160f` | fill of tissues and cells |
 | `elevated` | `#1b2117` | raised surface |
 | `cell` | `#232a1e` | cell fill before glass |
-| `text` | `#eaf1e6` | content, labels |
-| `text-muted` | `rgba(234,241,230,.56)` | secondary text |
+| `text` | `#eaf1e6` | content, titles, the names and values of settings, every enabled control |
+| `text-muted` | `rgba(234,241,230,.56)` | secondary labels nobody presses, and options not chosen |
 | `border` | `rgba(255,255,255,.09)` | documentation borders, not shell surfaces |
 | `line` | `#4f6340` | outlines and threads |
 | `node` | `#6b8457` | thread ends, running marks |
 | `rim` | `#8ba86e` | light on the top edge |
 | `primary` | `#b9de6b` | icons, controls, selections, stateless indicators |
 | `secondary` | `#3fbfa0` | supporting accents |
+
+**Muted is not a resting state.** `text-muted` is for two things only: a secondary label that
+cannot be pressed (a hint, a time, a unit, a count beside a name), and an option that is not the
+chosen one (the other segments of a control, the categories the thread does not leave from). An
+enabled button, a title, the name of a setting and the value beside its slider are `text`, at
+rest as well as under the pointer — muted, they read as disabled (Akusen, 2026-10-15). Hover
+answers in the border, the fill or the primary, not by lifting muted to `text`. What really
+cannot be used is `text-faint` or dimmed.
 
 ### State — fixed, hand-written, never generated
 

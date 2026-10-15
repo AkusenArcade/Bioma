@@ -332,7 +332,7 @@ Item {
         Text {
             anchors.verticalCenter: parent.verticalCenter
             text: section.title
-            color: Theme.textMuted
+            color: Theme.text
             font: Qt.font({
                 "family": Typography.technical,
                 "pixelSize": section.metrics.fontLabel,
@@ -415,7 +415,7 @@ Item {
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     text: family.searching ? "STOP" : "SEARCH"
-                    color: family.searching ? Theme.text : Theme.textMuted
+                    color: Theme.text
                     font: Qt.font({
                         "family": Typography.technical,
                         "pixelSize": family.metrics.fontMeta,
@@ -1000,7 +1000,7 @@ Item {
                             width: 9 * root.factor
                             height: width
                             name: "close"
-                            colour: forgetHover.hovered ? Theme.alert : Theme.textMuted
+                            colour: forgetHover.hovered ? Theme.alert : Theme.text
                         }
 
                         HoverHandler { id: forgetHover }
@@ -1154,7 +1154,7 @@ Item {
                                     width: 9 * root.factor
                                     height: width
                                     name: "close"
-                                    colour: removeHover.hovered ? Theme.alert : Theme.textMuted
+                                    colour: removeHover.hovered ? Theme.alert : Theme.text
                                 }
 
                                 HoverHandler { id: removeHover }
@@ -1794,7 +1794,7 @@ Item {
                                 width: 9 * root.factor
                                 height: width
                                 name: "close"
-                                colour: printerRemoveHover.hovered ? Theme.alert : Theme.textMuted
+                                colour: printerRemoveHover.hovered ? Theme.alert : Theme.text
                             }
 
                             HoverHandler { id: printerRemoveHover }

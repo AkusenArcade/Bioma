@@ -190,7 +190,7 @@ Item {
                 id: clearText
                 anchors.centerIn: parent
                 text: clear.armed ? "CLEAR ALL?" : "CLEAR"
-                color: clear.armed ? Theme.alert : Theme.textMuted
+                color: clear.armed ? Theme.alert : Theme.text
                 font: Qt.font({
                     "family": Typography.technical,
                     "pixelSize": root.metrics.fontMeta,
@@ -346,7 +346,7 @@ Item {
                         width: 9 * root.factor
                         height: width
                         name: "close"
-                        colour: dropHover.hovered ? Theme.alert : Theme.textMuted
+                        colour: dropHover.hovered ? Theme.alert : Theme.text
                     }
 
                     HoverHandler { id: dropHover }

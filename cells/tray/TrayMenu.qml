@@ -165,7 +165,7 @@ Item {
                     width: 14 * root.factor
                     height: width
                     name: "chevron-right"
-                    colour: backHover.hovered ? Theme.text : Theme.textMuted
+                    colour: backHover.hovered ? Theme.primary : Theme.text
                     rotation: 180
                 }
 
@@ -183,7 +183,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     text: root.heading
                     elide: Text.ElideRight
-                    color: Theme.textMuted
+                    color: Theme.text
                     font.family: Typography.expressive
                     font.pixelSize: root.metrics.fontSecondary
                 }

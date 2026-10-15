@@ -371,7 +371,7 @@ Item {
             width: 34 * stream.factor
             horizontalAlignment: Text.AlignRight
             text: `${Math.round(stream.level * 100)}%`
-            color: Theme.textMuted
+            color: Theme.text
             opacity: stream.muted ? 0.45 : 1
             font: Typography.tabular(Qt.font({
                 "family": Typography.technical,
