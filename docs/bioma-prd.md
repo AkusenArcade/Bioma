@@ -548,7 +548,9 @@ read-only and coexist freely.
 
 **Full-screen input surface.** A transparent full-screen surface that receives
 input is required by three features: click-outside-to-close, pointer-positioned
-cells, and Bioma-styled screenshot region selection. Wayland gives a client no
+cells (deferred 2026-10-15: the engine keeps the `pointer` anchor, the settings
+no longer offer it — see `docs/configuration.md`), and Bioma-styled screenshot
+region selection. Wayland gives a client no
 way to query pointer position, so this surface is how it is obtained. **It is the
 single most uncertain piece in the project — prototype it early.**
 

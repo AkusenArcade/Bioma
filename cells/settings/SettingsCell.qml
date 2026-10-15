@@ -49,14 +49,13 @@ Cell {
     // docs/design/SETUP.md).
     readonly property bool inSetup: Setup.active && root.output === Setup.output
 
-    // Which category is being looked at. It lives on the cell rather than in
-    // the expansion so that closing and reopening comes back to the same
-    // place — somebody adjusting a margin closes this to look at the result.
-    property string category: "appearance"
-
-    // Which monitor and which slot the structure page is looking at. Same
-    // reason as the category: somebody widening a tissue closes this to look at
-    // the result, and comes back to the tissue they were widening.
+    // Which category is being looked at lives in cells/SettingsPlace.qml, so that
+    // closing and reopening — on any screen — comes back to the same place.
+    //
+    // Which monitor and which slot the structure page is looking at, so that
+    // closing and reopening comes back to them too: somebody widening a tissue
+    // closes this to look at the result, and comes back to the tissue they
+    // were widening.
     property string monitor: ""
     property string slotEdge: "top"
     property int slot: -1

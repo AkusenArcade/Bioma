@@ -142,7 +142,7 @@ Item {
             height: root.headerHeight
             verticalAlignment: Text.AlignVCenter
             text: section.label
-            color: Theme.textMuted
+            color: Theme.text
             font: root.labelFont
         }
 
@@ -316,7 +316,7 @@ Item {
                                         width: 9 * root.factor
                                         height: width
                                         name: "close"
-                                        colour: crossHover.hovered ? Theme.text : Theme.textMuted
+                                        colour: crossHover.hovered ? Theme.alert : Theme.text
                                     }
 
                                     HoverHandler { id: crossHover }

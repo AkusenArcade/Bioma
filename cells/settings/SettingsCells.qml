@@ -326,7 +326,7 @@ Item {
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: extra.dock ? "LAUNCHER" : "EFFECT"
-                        color: Theme.textMuted
+                        color: Theme.text
                         font: Qt.font({
                             "family": Typography.technical,
                             "pixelSize": root.metrics.fontMeta,
@@ -443,7 +443,7 @@ Item {
                     Text {
                         anchors.centerIn: parent
                         text: "?"
-                        color: row.open || helpHover.hovered ? Theme.text : Theme.textMuted
+                        color: Theme.text
                         font: Qt.font({
                             "family": Typography.technical,
                             "pixelSize": root.metrics.fontMeta,

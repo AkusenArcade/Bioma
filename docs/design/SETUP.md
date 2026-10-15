@@ -276,7 +276,7 @@ As `CELLS.md` §12 unless listed here.
 | Event | Motion | Timing |
 |---|---|---|
 | first start | the shell comes up as always; once it has settled, the settings cell expands into setup | `open` after `settle` |
-| changing step | the thread slides to the new capsule, the panel's content cross-fades, its width animates | `transition`, `contentFade` |
+| changing step | the thread slides to the new capsule, the panel's content cross-fades; its width holds — the widest step's, as in the settings | `transition`, `contentFade` |
 | a preset applied | the desktop reflows behind the panel, the panel does not move | `reflow` |
 | an action running | the button holds the loader, whose spin is the work still pending — not a decoration | `loader` |
 | DONE, SKIP, Escape | the panel goes back into the settings cell | `close` |

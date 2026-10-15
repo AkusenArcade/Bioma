@@ -703,8 +703,10 @@ is the mark, and this is the only place it appears.
 the panel. Each capsule carries a glyph, its name and one line saying what is inside, in the
 session menu's arrangement: the glyph gives the column an order the eye holds before it reads.
 The chosen one carries more light, not an outline: its glyph takes the primary gradient and its
-name the primary. **The panel is as wide as the category needs**: Appearance fits in 440 px, Structure
-wants 720.
+name the primary. **The panel is one width for every category** — the widest one's, Monitors' 720
+px — as it is one height: a panel that changed width from one category to the next moved the
+column under a pointer running down it (Akusen, 2026-10-15). It opens on the page left open last,
+on whichever screen, and on the first category, Structure, until one is chosen.
 
 **Appearance** — opacity, blur, radius, scale, and three distinct margins: screen **edge**,
 **tissue** to cell, and the **gap** between the shapes of an open cell. Plus the timing set.
@@ -725,7 +727,8 @@ and leaving it withdraws the question. The three presets Bioma ships — Complet
 are listed below the user's, under a dashed rule, in the same rows but with no cross; their names
 are reserved, so SAVE AS over one reads `TAKEN`, dimmed (`SETUP.md`, Akusen, 2026-10-13). A press elsewhere on the page, or a scroll, puts the list
 away.
-Below them, pick the monitor, then switch on up to **six tissues**: three on the top
+A hairline separates the presets, which are every monitor at once, from the rest of the page.
+Below it, pick the monitor — under a `MONITOR` title, as the edges have theirs — then switch on up to **six tissues**: three on the top
 membrane, three on the bottom. An unlit slot is dashed with a plus: click it to light it, empty
 it to switch it off. Each membrane is **fixed or auto-hide**, and that applies to the whole
 edge. **The tissues of an edge share it whole**: their widths always add up to 100%. Widening
@@ -766,10 +769,12 @@ windows and gamescope — in and out of `bioma-vrr.kdl`, emptied rather than del
 **Keybinds** — added, edited and removed. The combination is recorded by pressing it, not by
 typing it.
 
-**Session** — when the screen locks by itself, in three wells: **lock after** idle (Never, 5,
-10, 15, 30 min), **before sleep** (a switch on the label's line), and **if the lock fails**,
+**Session** — when the screen locks and the machine sleeps by itself, in four wells: **lock
+after** idle (Never, 5, 10, 15, 30 min), **sleep after** idle (Never — the default —, 15, 30
+min, 1, 2 h; Akusen, 2026-10-15, asked for by the people watching the demo), **before sleep**
+(a switch on the label's line), and **if the lock fails**,
 which is not a setting but says what takes over (hyprlock, swaylock, or in the alert colour
-nothing but a TTY). On a machine with a battery and a power-profile daemon a fourth well,
+nothing but a TTY). On a machine with a battery and a power-profile daemon a fifth well,
 **power profile**, sets what the machine switches to **on battery** and **plugged in** (Keep,
 Saver, Balanced, Performance); elsewhere there is no plug to follow and the well is not there.
 Each well ends with a line in Spectral saying what the current choice does.
@@ -799,10 +804,10 @@ advertising itself on someone else's desktop.
 | category capsule | 240 × 64 px | full pill, 76 px pitch |
 | category glyph | 26 px box, 21 px in | `structure` `cells` `organisms` `appearance` `monitors` `keyboard` `lock`, in that order (Akusen, 2026-10-09: what is placed first, how it looks after); muted, primary gradient when chosen |
 | category name / line | 15 / 13 | Orbitron 500 (700 chosen, primary) over Spectral muted, 3 px apart, 16 px after the glyph |
-| panel | 440 – 720 px | as wide as the category asks; fixed height with scrolling |
-| setting row | 44 px | label 92 px in Orbitron 12, slider 150 px |
+| panel | 720 × 620 px | the widest category's width, for all of them; one height, tall enough for Structure with a tissue of up to seven cells open; scrolls past that |
+| setting row | 44 px | label 92 px in Orbitron 12, slider to a 56 px right-aligned figure column |
 | list row | 38 px | cells, monitors, shortcuts |
-| tissue slot | 196 × 26 px | three per edge, radius 11, dashed when empty |
+| tissue slot | ⅓ of the page × 26 px | three per edge across the page width, 14 px apart, radius 11, dashed when empty |
 | cell chip | 26 px | 9 px cross to remove, dashed to add |
 | kind chips | 26 px | outline only, Orbitron 11, 6 px apart, primary on hover; in a row under the tissue's chips |
 | preset dropdown | 240 × 26 px | name in Orbitron 12, chevron 9, `CHANGED` in Orbitron 11; list rows 30 px, eight before it scrolls; name field 220 px |

@@ -32,15 +32,22 @@ Item {
 
     readonly property real factor: metrics.factor
 
-    readonly property real slotWidth: 196 * factor
     readonly property real slotHeight: 26 * factor
     readonly property real slotGap: 14 * factor
 
-    // Three slots and two gaps: the page is drawn to this, so the membrane's
-    // own control lines up with the end of its last tissue.
-    readonly property real slotsWidth: 3 * slotWidth + 2 * slotGap
+    // Three slots and two gaps across the whole page: the settings panel is
+    // one width for every category, so the slots take what it gives rather
+    // than leaving a strip of nothing on the right (Akusen, 2026-10-15). The
+    // membrane's own control lines up with the end of its last tissue.
+    readonly property real slotsWidth: root.width
+    readonly property real slotWidth: Math.max(0, (slotsWidth - 2 * slotGap) / 3)
     readonly property real chipHeight: 26 * factor
     readonly property real threadLength: metrics.gap
+
+    // Between a row's title line and its slots. The edges carry their
+    // Fixed / Auto-hide control on that line, and at six pixels it sat on the
+    // tissues it does not belong to (Akusen, 2026-10-15).
+    readonly property real headSpacing: 12 * factor
 
     readonly property var places: ["start", "centre", "end"]
     readonly property var edges: ["top", "bottom"]
@@ -181,7 +188,7 @@ Item {
     // ---- Floating tissues --------------------------------------------------
     //
     // The tissues with no membrane: over the windows, anchored to a corner, the
-    // middle or the pointer. They are part of the layout as much as the tissues on
+    // middle or — only when one is already there — the pointer. They are part of the layout as much as the tissues on
     // a membrane are, and a layout with a part that cannot be seen from here is a layout
     // somebody cannot fix — the default's notification column kept showing
     // every notification a second time on a desktop whose owner had put the
@@ -1298,7 +1305,7 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         text: blankChip.armed ? "DISCARD CHANGES?" : "NEW"
                         color: blankChip.armed ? Theme.alert
-                             : blankHover.hovered ? Theme.primary : Theme.textMuted
+                             : blankHover.hovered ? Theme.primary : Theme.text
                         font: Qt.font({
                             "family": Typography.technical,
                             "pixelSize": root.metrics.fontMeta,
@@ -1409,26 +1416,60 @@ Item {
             }
         }
 
+        // The presets are every monitor at once, and what follows is one
+        // monitor: a hairline says the page changes subject here.
+        Item {
+            width: layout.width
+            height: 9 * root.factor
+
+            Rectangle {
+                anchors.verticalCenter: parent.verticalCenter
+                width: parent.width
+                height: Metrics.rim(Screen.devicePixelRatio)
+                color: Qt.alpha(Theme.line, 0.7)
+            }
+        }
+
         // One monitor at a time: six slots are already the most a person can
         // hold in their eye, and two monitors' worth side by side would be
-        // twelve.
-        Segmented {
+        // twelve. Titled as the edges are, so the rows below read as that
+        // monitor's.
+        Column {
             visible: root.outputs.length > 1
-            metrics: root.metrics
-            fontSize: root.metrics.fontMeta
-            buttonHeight: 22 * root.factor
-            buttonPadding: 12 * root.factor
-            current: root.monitor
-            options: {
-                const out = [];
-                for (const screen of root.outputs)
-                    out.push({ "key": screen.name, "label": screen.name });
-                return out;
+            width: layout.width
+            spacing: root.headSpacing
+
+            Text {
+                height: 22 * root.factor
+                verticalAlignment: Text.AlignVCenter
+                text: "MONITOR"
+                color: Theme.text
+                font: Qt.font({
+                    "family": Typography.technical,
+                    "pixelSize": root.metrics.fontMeta,
+                    "weight": Typography.weightLabel,
+                    "letterSpacing": Typography.tracking(root.metrics.fontMeta,
+                                                         Typography.labelTracking)
+                })
             }
-            onChose: key => {
-                if (root.cell) {
-                    root.cell.monitor = key;
-                    root.cell.slot = -1;
+
+            Segmented {
+                metrics: root.metrics
+                fontSize: root.metrics.fontMeta
+                buttonHeight: 22 * root.factor
+                buttonPadding: 12 * root.factor
+                current: root.monitor
+                options: {
+                    const out = [];
+                    for (const screen of root.outputs)
+                        out.push({ "key": screen.name, "label": screen.name });
+                    return out;
+                }
+                onChose: key => {
+                    if (root.cell) {
+                        root.cell.monitor = key;
+                        root.cell.slot = -1;
+                    }
                 }
             }
         }
@@ -1443,11 +1484,20 @@ Item {
         // a place — lit when a tissue is anchored there, dashed and free when
         // not. The pointer is not a place on the screen, so it is a slot of
         // its own beside the name.
+        //
+        // **And it is no longer offered** (Akusen, 2026-10-15). A place in the
+        // layout says "this is where it lives", and a cell at the pointer only
+        // makes sense as a gesture: one that is always shown was fixed where
+        // the pointer happened to be when it was added, and its blur stayed in
+        // the middle of the screen while it stood elsewhere. Where a summoned
+        // cell appears belongs to the cell, not to the layout; until that is
+        // designed, the slot shows only a tissue already put there, so it can
+        // still be seen and removed, and is never a free place or a target.
         Item {
             id: floatGroup
 
             width: layout.width
-            height: floatTitle.height + 6 * root.factor + floatGrid.height
+            height: floatTitle.height + root.headSpacing + floatGrid.height
 
             Text {
                 id: floatTitle
@@ -1468,6 +1518,7 @@ Item {
                 id: pointerSlot
                 anchor: "pointer"
                 label: "POINTER"
+                visible: root.floatAt("pointer") !== null
                 x: root.slotsWidth - width
                 width: root.slotWidth
                 height: floatTitle.height
@@ -1476,7 +1527,7 @@ Item {
             Grid {
                 id: floatGrid
 
-                y: floatTitle.height + 6 * root.factor
+                y: floatTitle.height + root.headSpacing
                 columns: 3
                 columnSpacing: root.slotGap
                 rowSpacing: 6 * root.factor
@@ -1645,7 +1696,7 @@ Item {
             id: buttonLabel
             anchors.centerIn: parent
             text: button.label
-            color: button.lit ? Theme.text : Theme.textMuted
+            color: Theme.text
             font: Qt.font({
                 "family": Typography.technical,
                 "pixelSize": root.metrics.fontMeta,
@@ -1681,7 +1732,7 @@ Item {
             readonly property var block: root.membraneFor(edgeGroup.modelData)
 
             width: layout.width
-            spacing: 6 * root.factor
+            spacing: root.headSpacing
 
             Item {
                 width: root.slotsWidth
@@ -1983,7 +2034,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     width: 60 * root.factor
                     text: "WIDTH"
-                    color: Theme.textMuted
+                    color: Theme.text
                     font: Qt.font({
                         "family": Typography.technical,
                         "pixelSize": root.metrics.fontMeta,
@@ -1992,6 +2043,16 @@ Item {
                     })
                 }
 
+                // The longest thing the floor can say, so the slider keeps one
+                // length from one tissue to the next.
+                TextMetrics {
+                    id: floorRoom
+                    text: "the whole edge"
+                    font: floorText.font
+                }
+
+                // As long as the row allows: from its label to the figure,
+                // which stands where the floor's longest sentence begins.
                 Slider {
                     id: span
 
@@ -1999,7 +2060,9 @@ Item {
                     anchors.left: widthLabel.right
                     anchors.leftMargin: 10 * root.factor
                     anchors.verticalCenter: parent.verticalCenter
-                    width: 180 * root.factor
+                    width: Math.max(120 * root.factor,
+                                    douser.x - 14 * root.factor - floorRoom.advanceWidth
+                                    - 14 * root.factor - spanFigure.width - 10 * root.factor - span.x)
                     factor: root.factor
 
                     value: root.chosen ? (root.chosen.percentage || 0) / 100 : 0
@@ -2010,12 +2073,14 @@ Item {
                 }
 
                 Text {
+                    id: spanFigure
                     visible: !root.floatingChosen
                     anchors.left: span.right
                     anchors.leftMargin: 10 * root.factor
+                    width: 44 * root.factor
                     anchors.verticalCenter: parent.verticalCenter
                     text: root.chosen ? `${root.chosen.percentage || 0}%` : ""
-                    color: Theme.textMuted
+                    color: Theme.text
                     font: Typography.tabular(Qt.font({
                         "family": Typography.technical,
                         "pixelSize": root.metrics.fontSecondary
@@ -2025,6 +2090,7 @@ Item {
                 // The floor, said rather than only enforced: a slider that
                 // stops with no reason given reads as a slider that is broken.
                 Text {
+                    id: floorText
                     anchors.right: douser.left
                     anchors.rightMargin: 14 * root.factor
                     anchors.verticalCenter: parent.verticalCenter
@@ -2096,7 +2162,7 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         width: 9 * root.factor
                         height: width
-                        colour: douserHover.hovered ? Theme.alert : Theme.textMuted
+                        colour: douserHover.hovered ? Theme.alert : Theme.text
                         name: "close"
                     }
 
@@ -2107,7 +2173,7 @@ Item {
                         anchors.leftMargin: douser.afterCross
                         anchors.verticalCenter: parent.verticalCenter
                         text: "REMOVE TISSUE"
-                        color: douserHover.hovered ? Theme.alert : Theme.textMuted
+                        color: douserHover.hovered ? Theme.alert : Theme.text
                         font: Qt.font({
                             "family": Typography.technical,
                             "pixelSize": root.metrics.fontMeta,
@@ -2252,7 +2318,7 @@ Item {
                                 width: 9 * root.factor
                                 height: width
                                 name: "close"
-                                colour: crossArea.hovered ? Theme.text : Theme.textMuted
+                                colour: crossArea.hovered ? Theme.alert : Theme.text
                             }
 
                             HoverHandler { id: crossArea }

@@ -14,9 +14,9 @@ import qs.services
 // that", and it applies to every two-level case that comes after.
 //
 // The height is fixed and the panel scrolls inside it: a settings surface that
-// changes height with every category is unbearable to move around in. The
-// width is not — a category is as wide as it needs, and Structure needs more
-// than Appearance.
+// changes height with every category is unbearable to move around in. So is
+// one that changes width: the panel is as wide as the widest category, for
+// all of them.
 //
 // While the setup is under way the same composition holds its steps instead:
 // the capsules are the steps, each line saying what was chosen once it is,
@@ -67,8 +67,10 @@ Item {
     readonly property bool setup: root.cell ? root.cell.inSetup === true : false
     readonly property var entries: root.setup ? Setup.steps : root.categories
 
+    // The page left open last, or the first one.
     readonly property string chosen: root.setup ? Setup.step
-                                   : root.cell ? root.cell.category : "appearance"
+                                   : SettingsPlace.category.length > 0 ? SettingsPlace.category
+                                   : root.entries[0].key
 
     readonly property int chosenIndex: {
         for (let i = 0; i < root.entries.length; i++)
@@ -80,15 +82,21 @@ Item {
     function choose(key) {
         if (root.setup)
             Setup.go(key);
-        else if (root.cell)
-            root.cell.category = key;
+        else
+            SettingsPlace.category = key;
     }
 
-    readonly property real panelWidth: root.entries[root.chosenIndex].width * factor
+    // Each entry says how wide its page needs to be, and the panel is as wide
+    // as the widest of them, whichever is open: a panel that changed width
+    // from one category to the next moved the column under a pointer running
+    // down it, and the pointer had to find its place again (Akusen,
+    // 2026-10-15).
+    readonly property real panelWidth: Math.max(...root.entries.map(entry => entry.width)) * factor
     // One height for every category, and tall enough that none of them
-    // scrolls as a page: Structure is the tallest, with the floating places
-    // between its two edges and three rows of cell chips under them.
-    readonly property real panelHeight: 540 * factor
+    // scrolls as a page: Structure is the tallest, and with a tissue open —
+    // its width, its buttons and two rows of cell chips, up to seven cells —
+    // it still fits without scrolling (Akusen, 2026-10-15).
+    readonly property real panelHeight: 620 * factor
 
     readonly property real columnHeight: root.entries.length * capsulePitch - (capsulePitch - capsuleHeight)
 
@@ -376,9 +384,13 @@ Item {
                 onLoaded: {
                     item.metrics = Qt.binding(() => root.metrics);
                     // A page that keeps state across a close asks the cell for
-                    // it; the ones that do not declare no such property.
+                    // it; the ones that do not declare no such property. Bound,
+                    // not assigned: the page that opens first can load before
+                    // the cell is handed to this expansion, and one given the
+                    // null of that moment kept it — every press on Structure
+                    // asked a cell that was not there and did nothing.
                     if (item.cell !== undefined)
-                        item.cell = root.cell;
+                        item.cell = Qt.binding(() => root.cell);
                 }
 
                 // The categories that are not written yet say so rather than
@@ -413,7 +425,7 @@ Item {
                     anchors.left: parent.left
                     anchors.verticalCenter: parent.verticalCenter
                     text: "SKIP SETUP"
-                    color: skipHover.hovered ? Theme.primary : Theme.textMuted
+                    color: skipHover.hovered ? Theme.primary : Theme.text
                     font: Qt.font({
                         "family": Typography.technical,
                         "pixelSize": root.metrics.fontMeta,

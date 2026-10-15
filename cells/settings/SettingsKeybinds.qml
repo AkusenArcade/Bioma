@@ -608,7 +608,7 @@ Item {
                         height: width
                         name: row.live ? "close" : "edit"
                         colour: slotHover.hovered ? Theme.text
-                              : row.live ? Theme.textMuted : Theme.textFaint
+                              : row.live ? Theme.text : Theme.textFaint
                     }
 
                     HoverHandler { id: slotHover }
@@ -672,7 +672,7 @@ Item {
             id: adderLabel
             anchors.centerIn: parent
             text: "+ Shortcut"
-            color: root.picking ? Theme.primary : Theme.textMuted
+            color: root.picking ? Theme.primary : Theme.text
             font: Qt.font({
                 "family": Typography.technical,
                 "pixelSize": root.metrics.fontMeta,

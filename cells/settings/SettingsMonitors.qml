@@ -45,6 +45,9 @@ Item {
     readonly property real factor: metrics.factor
     readonly property real lineHeight: 44 * factor
     readonly property real footerHeight: 2 * lineHeight
+    // Between the area and the controls under it: they belong to the chosen
+    // monitor, not to the drawing, and touching it they read as part of it.
+    readonly property real footerGap: 14 * factor
     readonly property real margin: 36 * factor
     readonly property real snapDistance: 12 * factor
 
@@ -261,7 +264,7 @@ Item {
         metrics: root.metrics
         inset: 6 * root.factor
         width: parent.width
-        height: parent.height - root.footerHeight
+        height: parent.height - root.footerHeight - root.footerGap
 
         // The guides, only while something is snapping to them.
         Rectangle {
@@ -564,10 +567,23 @@ Item {
                 anchors.left: parent.left
                 anchors.leftMargin: 4 * root.factor
                 anchors.verticalCenter: parent.verticalCenter
-                text: refresh.offered ? "Variable refresh" : "No variable refresh on this monitor"
-                color: refresh.offered ? Theme.textMuted : Theme.textFaint
-                font.family: Typography.expressive
-                font.pixelSize: root.metrics.fontSecondary
+                // The name of a setting is the machine's voice, as every
+                // label on these pages is; the sentence saying it is not
+                // offered is the human one.
+                text: refresh.offered ? "VARIABLE REFRESH" : "No variable refresh on this monitor"
+                color: refresh.offered ? Theme.text : Theme.textFaint
+                font: refresh.offered
+                      ? Qt.font({
+                            "family": Typography.technical,
+                            "pixelSize": root.metrics.fontMeta,
+                            "weight": Typography.weightLabel,
+                            "letterSpacing": Typography.tracking(root.metrics.fontMeta,
+                                                                 Typography.labelTracking)
+                        })
+                      : Qt.font({
+                            "family": Typography.expressive,
+                            "pixelSize": root.metrics.fontSecondary
+                        })
             }
 
             Text {
@@ -591,10 +607,15 @@ Item {
                 anchors.rightMargin: 8 * root.factor
                 anchors.verticalCenter: parent.verticalCenter
                 visible: games.visible
-                text: "Games"
-                color: Theme.textMuted
-                font.family: Typography.expressive
-                font.pixelSize: root.metrics.fontSecondary
+                text: "GAMES"
+                color: Theme.text
+                font: Qt.font({
+                    "family": Typography.technical,
+                    "pixelSize": root.metrics.fontMeta,
+                    "weight": Typography.weightLabel,
+                    "letterSpacing": Typography.tracking(root.metrics.fontMeta,
+                                                         Typography.labelTracking)
+                })
             }
 
             Switch {

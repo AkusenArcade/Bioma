@@ -23,7 +23,12 @@ Item {
     readonly property real factor: metrics.factor
     readonly property real rowHeight: 44 * factor
     readonly property real labelWidth: 92 * factor
-    readonly property real sliderWidth: 150 * factor
+    // The figures are right-aligned in a column of their own, wide enough for
+    // the longest of them, and the sliders run from the labels to it: the
+    // panel is one width for every category, and a longer travel is a finer
+    // control (Akusen, 2026-10-15).
+    readonly property real valueWidth: 56 * factor
+    readonly property real sliderWidth: Math.max(0, root.width - labelWidth - valueWidth - 24 * factor)
 
     // Each row: what it is called, where it is kept, its range, and how it
     // says itself. `step` snaps a travel to values that mean something — the
@@ -92,7 +97,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     width: root.labelWidth
                     text: row.modelData.label
-                    color: Theme.textMuted
+                    color: Theme.text
                     font: Qt.font({
                         "family": Typography.technical,
                         "pixelSize": root.metrics.fontSecondary,
@@ -127,8 +132,10 @@ Item {
                 Text {
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
+                    width: root.valueWidth
+                    horizontalAlignment: Text.AlignRight
                     text: `${Math.round(row.value * row.modelData.scale)}${row.modelData.unit}`
-                    color: Theme.textMuted
+                    color: Theme.text
                     font: Typography.tabular(Qt.font({
                         "family": Typography.technical,
                         "pixelSize": root.metrics.fontSecondary
@@ -152,7 +159,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 width: root.labelWidth
                 text: "BLUR"
-                color: Theme.textMuted
+                color: Theme.text
                 font: Qt.font({
                     "family": Typography.technical,
                     "pixelSize": root.metrics.fontSecondary,
@@ -192,8 +199,10 @@ Item {
             Text {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
+                width: root.valueWidth
+                horizontalAlignment: Text.AlignRight
                 text: String(Metrics.blurStrength)
-                color: Theme.textMuted
+                color: Theme.text
                 opacity: glass.on ? 1 : 0.45
                 font: Typography.tabular(Qt.font({
                     "family": Typography.technical,
@@ -213,7 +222,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 width: root.labelWidth
                 text: "SCALE"
-                color: Theme.textMuted
+                color: Theme.text
                 font: Qt.font({
                     "family": Typography.technical,
                     "pixelSize": root.metrics.fontSecondary,
@@ -249,7 +258,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 width: root.labelWidth
                 text: "TIMING"
-                color: Theme.textMuted
+                color: Theme.text
                 font: Qt.font({
                     "family": Typography.technical,
                     "pixelSize": root.metrics.fontSecondary,
