@@ -14,6 +14,8 @@ quiet when nothing is happening.
   daily use, with the settings cell, the launcher, the organisms on the
   desktop, a lock screen and a greeter of its own. See `PROGRESS.md` for
   what is left and what has not been verified on real hardware
+- **Community**: questions, help and ideas in the
+  [Bioma space on Matrix](https://matrix.to/#/#bioma---a-living-shell-for-the-linux-desktop:matrix.org)
 
 ![The desktop at rest](docs/media/at-rest.webp)
 
@@ -667,6 +669,12 @@ qs -p "$PWD/shell.qml"
 - `PROGRESS.md` — where the work stands, and what is not done
 - `services/INVENTORY.md` — the Prisma inventory and every decision taken since
 - `CLAUDE.md` — architecture rules for anyone (or anything) writing code here
+
+## Community
+
+Questions, help with an install, bugs and ideas: join the
+[Bioma space on Matrix](https://matrix.to/#/#bioma---a-living-shell-for-the-linux-desktop:matrix.org). Bugs with steps to reproduce are welcome as
+GitHub issues too.
 
 ## Licence
 
