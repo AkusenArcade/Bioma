@@ -4,6 +4,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import Quickshell.Wayland
 import qs.core
 
 // Who is logged in, and the five ways to leave.
@@ -253,5 +254,26 @@ Singleton {
 
     function cancel() {
         root.pending = "";
+    }
+
+    // ── Sleep after a time idle ─────────────────────────────────────────
+    //
+    // Minutes without input before the machine suspends, `sleep.idle_minutes`,
+    // set on the Session page of the settings cell; `0`, the default, is
+    // never — a desktop that puts itself to sleep is a choice its owner makes,
+    // not one made for them. Asked for by the people watching the demo,
+    // 2026-10-15. It runs the same suspend command the System cell does, so a
+    // machine whose suspend is not `systemctl` sleeps its own way, and the
+    // lock before a suspend (services/Locker.qml) covers it like any other.
+    //
+    // Respecting inhibitors: a video playing full screen, or anything holding
+    // an idle inhibitor, is not somebody who walked away.
+    readonly property int sleepMinutes: Config.get("sleep.idle_minutes", 0)
+
+    IdleMonitor {
+        enabled: root.sleepMinutes > 0 && root.available("suspend")
+        timeout: Math.max(1, root.sleepMinutes) * 60
+        respectInhibitors: true
+        onIsIdleChanged: if (isIdle) Quickshell.execDetached(root.suspendCommand)
     }
 }

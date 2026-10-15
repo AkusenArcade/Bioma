@@ -137,6 +137,11 @@
     "before_sleep": true
   },
 
+  "sleep": {
+    "$comment": "Minutes without input before the machine suspends, through session.suspend (0 never, the default). Idle inhibitors hold it back, as they hold back the lock; with lock.before_sleep the session locks first.",
+    "idle_minutes": 0
+  },
+
   "power": {
     "$comment": "The power profile to switch to when the machine goes on battery and when it is plugged in again: saver, balanced, performance, or keep to leave it alone. Needs a battery and power-profiles-daemon (or tuned-ppd). A profile chosen by hand holds until the power source next changes.",
     "on_battery": "keep",

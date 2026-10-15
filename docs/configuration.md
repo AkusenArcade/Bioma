@@ -193,6 +193,10 @@ larger half of it. It is for invoked cells — `{ "anchor": "pointer", "monitor"
 "all", "cells": [ { "type": "audio", "visibility": { "type": "invoked" } } ] }`
 brings the audio capsule up under the hand. With the pointer on another output
 it takes the middle of this one after `timing.locate` milliseconds.
+**Experimental, and not offered by the settings** (2026-10-15): a cell there
+that is always shown stays wherever the pointer was when it appeared, and its
+blur does not follow it. Only invoked cells belong there, and the Structure
+page shows a pointer tissue only so that one already written can be removed.
 
 Without `margins`, a tissue anchored to the top or the bottom never takes a
 membrane's place: it sits just past the membrane's strip, on the line the
@@ -455,6 +459,7 @@ what a cell displays. A cell's own settings live in its `options`.
 | `lock.idle_minutes` | Lock after this many minutes without input (10). `0` never. An application that inhibits idle — a video playing — holds it off. Set from the settings cell's Session page. |
 | `greeter.directory` | Where the greeter's copy of the desktop is kept (`/var/lib/bioma-greeter`). The shell refreshes it whenever the configuration, the wallpaper, the palette, the monitors, the keyboard layout, the cursor or the avatar change. Without the directory nothing is copied. |
 | `lock.before_sleep` | Lock before a suspend, holding the suspend back until the screens are covered (true). |
+| `sleep.idle_minutes` | Suspend after this many minutes without input (0, never). It runs `session.suspend`, so with `lock.before_sleep` the session locks first; an application that inhibits idle holds it off, as it holds off the lock. Set from the settings cell's Session page. |
 | `vitals.interval` | Sampling cadence, milliseconds. One cadence for load, memory, clock and GPU — they are read at the same instant so they can be compared. |
 | `vitals.clock_average` | How many samples the CPU clock is averaged over. **Not optional** (PRD §9.2): the raw clock swings hundreds of megahertz between samples and an unsmoothed beat is arrhythmic. At the default cadence, 5 samples is ten seconds. |
 | `vitals.gpu_card` | Which card to sample, matched against its sysfs path (`card1`). Empty picks the one with the most VRAM, which on a machine with an integrated and a discrete GPU is the discrete one. |

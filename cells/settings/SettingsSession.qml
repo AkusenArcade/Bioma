@@ -5,16 +5,18 @@ import qs.core
 import qs.components
 import qs.services
 
-// When the session locks by itself.
+// When the session locks, and the machine sleeps, by itself.
 //
-// Two settings, both writing straight into the override layer, which
-// services/Locker.qml is bound to: a choice here is the lock's behaviour
-// changing, not a preview of it. Locking on request is not here, because it
-// is not a setting — the key and the System cell's LOCK always lock.
+// Settings writing straight into the override layer, which services/Locker.qml
+// and services/Session.qml are bound to: a choice here is the behaviour
+// changing, not a preview of it. Locking or suspending on request is not here,
+// because it is not a setting — the key and the System cell always do it.
 //
-// The idle time is a handful of stops rather than a slider: nobody means
+// The idle times are a handful of stops rather than a slider: nobody means
 // thirteen minutes, and a figure that travels under the finger is a figure
-// that has to be read. Akusen asked for it to be set from here, 2026-09-23.
+// that has to be read. Akusen asked for the lock's to be set from here,
+// 2026-09-23; the sleep's, never by default, was asked for by the people
+// watching the demo, 2026-10-15.
 //
 // Laid out in wells, one per thing that decides when the screen is locked,
 // each with a line in Spectral saying what the current choice does. Two bare
@@ -45,6 +47,7 @@ Item {
 
     readonly property int idleMinutes: Config.get("lock.idle_minutes", 10)
     readonly property bool beforeSleep: Config.get("lock.before_sleep", true)
+    readonly property int sleepMinutes: Config.get("sleep.idle_minutes", 0)
 
     // What scripts/lock falls back to, asked once when the page opens.
     property string fallback: ""
@@ -83,7 +86,7 @@ Item {
             height: root.headerHeight
             verticalAlignment: Text.AlignVCenter
             text: section.label
-            color: Theme.textMuted
+            color: Theme.text
             font: root.labelFont
         }
 
@@ -183,6 +186,39 @@ Item {
                 text: root.idleMinutes > 0
                       ? `After ${root.idleMinutes} minutes without input, the session locks.`
                       : "The session never locks by itself. The key and the System cell still do."
+            }
+        }
+
+        // Minutes without input before the machine suspends. `0`, the
+        // default, is never (services/Session.qml). Longer stops than the
+        // lock's: sleeping is the heavier of the two, and it comes after.
+        Section {
+            label: "SLEEP AFTER"
+
+            Segmented {
+                metrics: root.metrics
+                fontSize: root.metrics.fontMeta
+                options: [
+                    { "key": "0", "label": "Never" },
+                    { "key": "15", "label": "15 min" },
+                    { "key": "30", "label": "30 min" },
+                    { "key": "60", "label": "1 h" },
+                    { "key": "120", "label": "2 h" }
+                ]
+                current: String(root.sleepMinutes)
+                onChose: key => Config.set("sleep.idle_minutes", parseInt(key, 10))
+            }
+
+            Line {
+                readonly property string after: root.sleepMinutes >= 60
+                    ? `${root.sleepMinutes / 60} ${root.sleepMinutes === 60 ? "hour" : "hours"}`
+                    : `${root.sleepMinutes} minutes`
+                text: root.sleepMinutes <= 0
+                      ? "The machine never sleeps by itself. The System cell still suspends it."
+                      : !Session.available("suspend")
+                      ? "There is no suspend command, so nothing happens. It is session.suspend in the configuration."
+                      : `After ${after} without input, the machine suspends. A video playing keeps it awake.`
+                color: root.sleepMinutes > 0 && !Session.available("suspend") ? Theme.alert : Theme.text
             }
         }
 

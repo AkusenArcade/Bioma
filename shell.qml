@@ -322,7 +322,8 @@ ShellRoot {
     // them: the proxy that follows the networks, the display that answers a
     // key, the timer and alarm that ring, the palette carried to the
     // applications, the cursors and icons redrawn in it, the power profile
-    // that follows the plug, the agent that asks for a password. Unbound,
+    // that follows the plug, the agent that asks for a password, the sleep
+    // after a time idle. Unbound,
     // they would start only when their panel was first opened.
     readonly property bool proxyOn: Proxy.on
     readonly property string osdKind: Osd.kind
@@ -331,6 +332,7 @@ ShellRoot {
     readonly property string templatesSignature: Templates.signature
     readonly property string looksDrawn: Looks.iconRequest + Looks.cursorRequest
     readonly property bool sessionLocked: Locker.locked
+    readonly property int sleepAfter: Session.sleepMinutes
     readonly property bool greeterSynced: GreeterSync.synced
     readonly property string powerWanted: Power.wanted
     readonly property bool polkitAsking: Polkit.asking
