@@ -754,7 +754,12 @@ inside the rectangle, so they stay centred at any size. The chosen monitor is **
 off** from a switch in the footer, through niri's IPC and never its configuration: off lasts
 until niri restarts, so the machine always starts with every monitor on. One that is off stays
 where it was as an outline with faint text, and is not dragged; the last one on cannot be
-switched off, so its switch is dimmed (Akusen, 2026-10-13).
+switched off, so its switch is dimmed (Akusen, 2026-10-13). A second footer line holds its
+**variable refresh** — `Off · On demand · Always`, written as `variable-refresh-rate` into every
+section that names it — offered only where niri reports the monitor supports it, and saying so
+in faint text where it does not. On demand turns on only for a window a rule asks it for; while
+no `window-rule` in the configuration does, the line says so in the alert colour (Akusen,
+2026-10-15).
 
 **Keybinds** — added, edited and removed. The combination is recorded by pressing it, not by
 typing it.

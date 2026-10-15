@@ -234,10 +234,10 @@ function parseNodes(tokens, at, nested) {
 
 // ---- What a file says ---------------------------------------------------------
 
-// Scan one file: its includes, its binds and its outputs, in the order they
-// appear, and the one `binds` block. `items` interleaves them, because the
-// order between an include and a bind is what decides which of two binds on
-// one key wins.
+// Scan one file: its includes, its binds, its outputs and its window rules,
+// in the order they appear, and the one `binds` block. `items` interleaves
+// them, because the order between an include and a bind is what decides
+// which of two binds on one key wins.
 function scan(text) {
     const top = parseNodes(tokenize(text), 0, false).nodes;
     const items = [];
@@ -255,6 +255,16 @@ function scan(text) {
 
         if (node.name === "output" && node.args.length > 0 && node.children) {
             items.push(outputOf(node));
+            continue;
+        }
+
+        // Of a window rule, only whether it asks for variable refresh:
+        // what an output set to `on-demand` waits for.
+        if (node.name === "window-rule" && node.children) {
+            const vrr = node.children.nodes.find(child =>
+                !child.dropped && child.name === "variable-refresh-rate") || null;
+            items.push({ "kind": "rule", "start": node.start, "end": node.end,
+                         "vrr": vrr !== null && (vrr.args.length === 0 || truthy(vrr.args[0].value)) });
             continue;
         }
 
@@ -519,6 +529,7 @@ function outputOf(node) {
         "children": children,
         "off": named("off") !== null,
         "primary": named("focus-at-startup") !== null,
+        "vrr": vrrOf(named("variable-refresh-rate")),
         "position": position ? {
             "start": position.start,
             "end": position.end,
@@ -526,6 +537,19 @@ function outputOf(node) {
             "y": Number(position.props.y)
         } : null
     };
+}
+
+// KDL's booleans, in either version's spelling.
+function truthy(value) {
+    return value === true || value === "true" || value === "#true";
+}
+
+// `variable-refresh-rate` is always on, `variable-refresh-rate on-demand=true`
+// only while a window rule asks for it; absent is off.
+function vrrOf(node) {
+    if (!node)
+        return "off";
+    return truthy(node.props["on-demand"]) ? "demand" : "on";
 }
 
 // Whether a section names this output. niri accepts the connector or the
@@ -577,6 +601,19 @@ function withFlag(text, output, flag, on) {
     if (!on && present)
         return without(text, present);
     return text;
+}
+
+// Variable refresh, as `off`, `on` or `demand`: the line replaced where it
+// is written, added when it is not, removed for off.
+function withVrr(text, output, mode) {
+    const present = output.children.find(child => child.name === "variable-refresh-rate") || null;
+    const entry = mode === "demand" ? "variable-refresh-rate on-demand=true"
+                                    : "variable-refresh-rate";
+    if (mode === "off")
+        return present ? without(text, present) : text;
+    if (present)
+        return text.slice(0, present.start) + entry + text.slice(present.end);
+    return withChild(text, output, entry, output.children[output.children.length - 1] || null);
 }
 
 // A section for an output the configuration does not mention yet.

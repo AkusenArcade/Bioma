@@ -25,6 +25,11 @@ import "niri-config.js" as NiriKdl
 // monitor are both kept — so an edit is made in **every** section that names
 // it, and an output nobody has written a section for gets one, beside the
 // others. The files, and validation before writing, are `NiriConfig`'s.
+//
+// Variable refresh is written the same way, as `variable-refresh-rate` in
+// the section, offered only where niri says the monitor supports it. Set to
+// `on-demand` it waits for a window rule that asks for it, so whether any
+// rule does is read from the configuration too.
 Singleton {
     id: root
 
@@ -44,6 +49,10 @@ Singleton {
     // The configuration's output sections, in the order niri reads them.
     readonly property var sections: NiriConfig.items.filter(item => item.kind === "output")
 
+    // Whether any window rule asks for variable refresh: without one, an
+    // output set to on-demand never turns it on.
+    readonly property bool vrrRule: NiriConfig.items.some(item => item.kind === "rule" && item.vrr)
+
     readonly property var outputs: {
         const out = [];
         for (const output of root.live) {
@@ -52,7 +61,9 @@ Singleton {
             out.push(Object.assign({}, output, {
                 "on": true,
                 "sections": named,
-                "primary": named.some(section => section.primary)
+                "primary": named.some(section => section.primary),
+                // niri reads the first section that names it.
+                "vrr": named.length > 0 ? named[0].vrr : "off"
             }));
         }
         return out;
@@ -85,7 +96,9 @@ Singleton {
             out.push(Object.assign({}, output, place, {
                 "on": false,
                 "sections": named,
-                "primary": named.some(section => section.primary)
+                "primary": named.some(section => section.primary),
+                // niri reads the first section that names it.
+                "vrr": named.length > 0 ? named[0].vrr : "off"
             }));
         }
         return out;
@@ -161,7 +174,8 @@ Singleton {
                             "description": [o.make, o.model, o.serial || "Unknown"].join(" "),
                             "modeWidth": mode.width,
                             "modeHeight": mode.height,
-                            "refresh": mode.refresh_rate / 1000
+                            "refresh": mode.refresh_rate / 1000,
+                            "vrrSupported": o.vrr_supported === true
                         });
                         continue;
                     }
@@ -184,7 +198,8 @@ Singleton {
                         "scale": o.logical.scale,
                         "modeWidth": mode ? mode.width : o.logical.width,
                         "modeHeight": mode ? mode.height : o.logical.height,
-                        "refresh": mode ? mode.refresh_rate / 1000 : 0
+                        "refresh": mode ? mode.refresh_rate / 1000 : 0,
+                        "vrrSupported": o.vrr_supported === true
                     });
                 }
                 root.seen = seen;
@@ -305,6 +320,22 @@ Singleton {
                 return NiriKdl.withOutput(text, output.name, wanted.x, wanted.y);
             return root.rewrite(text, output,
                                 (t, section) => NiriKdl.withPosition(t, section, wanted.x, wanted.y));
+        });
+    }
+
+    // `off`, `on` or `demand`, for one output.
+    function setVrr(name, mode) {
+        root.apply((text, output) => {
+            if (output.name !== name || output.vrr === mode)
+                return text;
+            if (output.sections.length === 0) {
+                if (mode === "off")
+                    return text;
+                const added = NiriKdl.withOutput(text, output.name, output.x, output.y);
+                const section = NiriKdl.scan(added).items.filter(item => item.kind === "output").pop();
+                return NiriKdl.withVrr(added, section, mode);
+            }
+            return root.rewrite(text, output, (t, section) => NiriKdl.withVrr(t, section, mode));
         });
     }
 

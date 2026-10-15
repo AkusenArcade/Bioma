@@ -24,7 +24,10 @@ import qs.services
 //
 // Below the area, the chosen monitor: its name, whether it is on, whether it
 // is the one niri focuses at startup — niri's only notion of a primary output
-// — and its scale.
+// — and its scale. On a second line, its variable refresh: off, on demand or
+// always, offered only where niri says the monitor can. On demand waits for a
+// window rule that asks for it; while no rule does, the line says so, because
+// otherwise it is a setting that silently never turns on.
 //
 // A monitor switched off stays in the drawing where it was, as an outline
 // with nothing inside it, and is not dragged: niri gives it no place until it
@@ -39,7 +42,8 @@ Item {
     property var metrics: Metrics.step("normal")
 
     readonly property real factor: metrics.factor
-    readonly property real footerHeight: 44 * factor
+    readonly property real lineHeight: 44 * factor
+    readonly property real footerHeight: 2 * lineHeight
     readonly property real margin: 36 * factor
     readonly property real snapDistance: 12 * factor
 
@@ -448,7 +452,7 @@ Item {
 
             anchors.left: parent.left
             anchors.leftMargin: 4 * root.factor
-            anchors.verticalCenter: parent.verticalCenter
+            anchors.verticalCenter: power.verticalCenter
             text: root.chosen
             color: Theme.text
             font: Qt.font({
@@ -466,7 +470,7 @@ Item {
             anchors.leftMargin: 14 * root.factor
             anchors.right: power.left
             anchors.rightMargin: 14 * root.factor
-            anchors.verticalCenter: parent.verticalCenter
+            anchors.verticalCenter: power.verticalCenter
             elide: Text.ElideRight
             text: root.refusal.length > 0 ? root.refusal : Monitors.error
             color: Theme.alert
@@ -481,7 +485,7 @@ Item {
 
             anchors.right: role.left
             anchors.rightMargin: 14 * root.factor
-            anchors.verticalCenter: parent.verticalCenter
+            y: (root.lineHeight - height) / 2
 
             factor: root.factor
             on: power.lit
@@ -500,7 +504,7 @@ Item {
 
             anchors.right: scaleLabel.left
             anchors.rightMargin: 14 * root.factor
-            anchors.verticalCenter: parent.verticalCenter
+            anchors.verticalCenter: power.verticalCenter
 
             metrics: root.metrics
             fontSize: root.metrics.fontMeta
@@ -531,11 +535,81 @@ Item {
 
             anchors.right: parent.right
             anchors.rightMargin: 4 * root.factor
-            anchors.verticalCenter: parent.verticalCenter
+            anchors.verticalCenter: power.verticalCenter
             text: power.lit ? "scale " + root.chosenOutput.scale.toFixed(1) : ""
             color: Theme.textMuted
             font.family: Typography.expressive
             font.pixelSize: root.metrics.fontSecondary
+        }
+
+        // ---- Variable refresh ---------------------------------------------------
+
+        Item {
+            id: refresh
+
+            readonly property bool offered: power.lit && root.chosenOutput.vrrSupported
+            readonly property string mode: power.lit ? root.chosenOutput.vrr : "off"
+            readonly property bool fixed: Monitors.busy
+
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            height: root.lineHeight
+            visible: power.lit
+
+            Text {
+                id: refreshLabel
+
+                anchors.left: parent.left
+                anchors.leftMargin: 4 * root.factor
+                anchors.verticalCenter: parent.verticalCenter
+                text: refresh.offered ? "Variable refresh" : "No variable refresh on this monitor"
+                color: refresh.offered ? Theme.textMuted : Theme.textFaint
+                font.family: Typography.expressive
+                font.pixelSize: root.metrics.fontSecondary
+            }
+
+            Text {
+                anchors.left: refreshLabel.right
+                anchors.leftMargin: 14 * root.factor
+                anchors.right: vrr.left
+                anchors.rightMargin: 14 * root.factor
+                anchors.verticalCenter: parent.verticalCenter
+                visible: refresh.offered && refresh.mode === "demand" && !Monitors.vrrRule
+                elide: Text.ElideRight
+                text: "No window rule asks for it yet"
+                color: Theme.alert
+                font.family: Typography.expressive
+                font.pixelSize: root.metrics.fontMeta
+            }
+
+            Segmented {
+                id: vrr
+
+                anchors.right: parent.right
+                anchors.rightMargin: 4 * root.factor
+                anchors.verticalCenter: parent.verticalCenter
+                visible: refresh.offered
+
+                metrics: root.metrics
+                fontSize: root.metrics.fontMeta
+                buttonHeight: 26 * root.factor
+                buttonPadding: 14 * root.factor
+
+                current: refresh.mode
+
+                options: [
+                    { "key": "off", "label": "Off", "dimmed": refresh.fixed },
+                    { "key": "demand", "label": "On demand", "dimmed": refresh.fixed },
+                    { "key": "on", "label": "Always", "dimmed": refresh.fixed }
+                ]
+
+                onChose: key => {
+                    if (refresh.fixed || !root.chosenOutput || key === refresh.mode)
+                        return;
+                    Monitors.setVrr(root.chosen, key);
+                }
+            }
         }
     }
 }
