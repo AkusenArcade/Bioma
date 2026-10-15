@@ -1,6 +1,5 @@
 import QtQuick
 import Quickshell
-import Quickshell.Io
 import qs.core
 import qs.components
 import qs.services
@@ -21,11 +20,11 @@ import qs.services
 // Laid out in wells, one per thing that decides when the screen is locked,
 // each with a line in Spectral saying what the current choice does. Two bare
 // rows at the top of a panel of fixed height left three quarters of it empty
-// and said nothing a person could check against (Akusen, 2026-09-29). The
-// third well is not a setting: it says what takes over if the lock screen
-// fails, because that is the part of locking nobody sees until it matters.
+// and said nothing a person could check against (Akusen, 2026-09-29). A well
+// saying what took over if the lock screen failed was dropped to make room
+// for the power profile's (Akusen, 2026-10-15): it was not a setting.
 //
-// The fourth is the power profile following the plug, and it is there only on
+// The last is the power profile following the plug, and it is there only on
 // a machine with a battery and a daemon to ask: elsewhere there is no plug to
 // follow. It lives here because, like locking, it is the session doing
 // something by itself; choosing a profile by hand stays in the System cell.
@@ -48,23 +47,6 @@ Item {
     readonly property int idleMinutes: Config.get("lock.idle_minutes", 10)
     readonly property bool beforeSleep: Config.get("lock.before_sleep", true)
     readonly property int sleepMinutes: Config.get("sleep.idle_minutes", 0)
-
-    // What scripts/lock falls back to, asked once when the page opens.
-    property string fallback: ""
-    property bool fallbackKnown: false
-
-    Process {
-        running: true
-        command: ["sh", "-c",
-                  "command -v hyprlock >/dev/null && echo hyprlock "
-                  + "|| { command -v swaylock >/dev/null && echo swaylock; } || echo none"]
-        stdout: SplitParser {
-            onRead: line => {
-                root.fallback = line.trim();
-                root.fallbackKnown = true;
-            }
-        }
-    }
 
     // A well: its label, perhaps its control on the same line, then what it
     // means. Everything under the label is the well's own content.
@@ -160,9 +142,9 @@ Item {
         lineHeight: 1.15
     }
 
-    // The panel is one height for every category, and on a laptop's scale a
-    // fifth well does not fit in it: the page scrolls rather than running out
-    // of its capsule.
+    // The panel is one height for every category. The wells fit in it; if a
+    // scale or a font ever makes them taller, the page scrolls rather than
+    // running out of its capsule.
     Scroller {
         flick: page
         factor: root.factor
@@ -258,21 +240,6 @@ Item {
                     text: root.beforeSleep
                           ? "The session locks before the machine suspends, so it wakes locked."
                           : "The machine suspends as it is, and wakes on the open desktop."
-                }
-            }
-
-            // Not a setting: what scripts/lock hands the screen to if Bioma's own
-            // lock screen fails to come up.
-            Section {
-                label: "IF THE LOCK FAILS"
-                visible: root.fallbackKnown
-
-                Line {
-                    text: root.fallback === "none"
-                          ? "Nothing takes over, and only a TTY is left. Install hyprlock or swaylock."
-                          : `${root.fallback} takes over, so the session is never left open.`
-                    // The one sentence here that reports a risk.
-                    color: root.fallback === "none" ? Theme.alert : Theme.text
                 }
             }
 
