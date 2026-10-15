@@ -62,6 +62,7 @@ Cell {
     readonly property bool showsName: root.named && root.available >= root.leastName
 
     contentWidth: bandWidth + (named ? spacing + label.implicitWidth : 0)
+    leastWidth: bandWidth + paddingLeading + paddingTrailing
 
     readonly property real available: Math.max(0, width - paddingLeading - paddingTrailing
                                                  - bandWidth - spacing)

@@ -231,6 +231,28 @@ Singleton {
         return value === undefined ? 24 : value;
     }
 
+    // How wide a cell may grow, and whether it shares what its tissue has left
+    // rather than asking for its whole content. The same figures
+    // `config/default.json` ships; a block that names its own still wins.
+    //
+    // A cell that carries a title is elastic by nature, not by configuration:
+    // a block the settings cell wrote carries its kind and nothing else, and a
+    // window title without its elasticity asked for the whole string, took the
+    // band before the cells that are always there, and pushed them out of it
+    // (Akusen, 2026-10-15). A title elides; it never makes a neighbour wait.
+    readonly property var widths: ({
+        "window_title": { "elastic": true, "max_percent": 28 },
+        "media": { "elastic": true, "max_percent": 22 },
+        "workspaces": { "max": 220 },
+        "notifications": { "max": 300 }
+    })
+
+    function widthOf(type) {
+        type = root.canonical(type);
+        const own = root.widths[type];
+        return own === undefined ? ({}) : own;
+    }
+
     // What a band would have to grant to hold these cells at their narrowest.
     // `cells` is a list of configuration blocks, the way a membrane declares
     // them, so a page can ask about a list it has not built yet.

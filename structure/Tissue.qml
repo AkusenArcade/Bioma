@@ -378,35 +378,51 @@ Item {
         if (!cell.elastic || !root.horizontal)
             return cell.contractedWidth;
         const share = root.elasticShare;
-        return Math.max(cell.minWidth, Math.min(cell.contractedWidth, share));
+        return Math.max(cell.minWidth, cell.leastWidth, Math.min(cell.contractedWidth, share));
     }
 
     // Equal share among the elastic cells, each capped by its own limit, the
     // remainder redistributed. With one elastic cell — the usual case — this is
     // simply what the others left.
+    //
+    // Measured over the same cells the placement counts. Counting only the
+    // shown ones left out a neighbour still on its way out, the elastic cell
+    // took its room, and the placement — which does count it — had to drop
+    // somebody to make the sum fit.
     readonly property real elasticShare: {
         revision;
         if (slotLength <= 0)
             return Number.MAX_VALUE;
 
         let fixed = 0;
-        let elastic = 0;
-        let visible = 0;
+        let counted = 0;
+        const elastic = [];
         for (const cell of root.cells) {
-            if (!cell.shown)
+            if (!root.counts(cell))
                 continue;
-            visible++;
+            counted++;
             if (cell.elastic)
-                elastic++;
+                elastic.push(cell.contractedWidth);
             else
                 fixed += cell.contractedWidth;
         }
-        if (elastic === 0)
+        if (elastic.length === 0)
             return 0;
 
-        const gaps = visible > 0 ? gap * (visible - 1) : 0;
-        const free = slotLength - padding * 2 - gaps - fixed;
-        return Math.max(0, free / elastic);
+        const gaps = gap * (counted - 1);
+        let free = Math.max(0, slotLength - padding * 2 - gaps - fixed);
+
+        // A cell that asks for less than an equal share takes what it asks,
+        // and what it leaves goes to the ones that wanted more.
+        elastic.sort((a, b) => a - b);
+        let left = elastic.length;
+        for (const asked of elastic) {
+            if (asked > free / left)
+                return free / left;
+            free -= asked;
+            left--;
+        }
+        return Number.MAX_VALUE;
     }
 
     // What holds a place in the row is what the tissue measured, and nothing

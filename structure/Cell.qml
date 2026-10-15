@@ -42,14 +42,31 @@ Item {
     property real minWidth: (config.min_width && config.min_width.value !== undefined
                              ? config.min_width.value : 24) * metrics.factor
 
+    // The narrowest the content can be drawn at all, whatever the block says:
+    // an elastic cell is never granted less. Text needs none — it elides — but
+    // a drawing does not shrink, and the media band granted less than itself
+    // stood outside its own pill.
+    property real leastWidth: 0
+
     // Elastic cells take the remaining space in their tissue. `width` is an
     // object rather than a bare number so a per-cell weight stays possible
-    // later without a schema change.
-    property bool elastic: config.width ? config.width.elastic === true : false
+    // later without a schema change. Each key the block leaves out is the
+    // domain's (`Registry.widthOf`).
+    readonly property var widthRule: {
+        const own = Registry.widthOf(root.domain);
+        const declared = config.width || {};
+        const declaresMax = declared.max !== undefined || declared.max_percent !== undefined;
+        return {
+            "elastic": declared.elastic !== undefined ? declared.elastic === true
+                                                      : own.elastic === true,
+            "max": declaresMax ? declared.max : own.max,
+            "max_percent": declaresMax ? declared.max_percent : own.max_percent
+        };
+    }
+
+    property bool elastic: widthRule.elastic
     property real maxWidth: {
-        const width = config.width;
-        if (!width)
-            return -1;
+        const width = root.widthRule;
         if (width.max !== undefined)
             return width.max * metrics.factor;
         if (width.max_percent !== undefined)
