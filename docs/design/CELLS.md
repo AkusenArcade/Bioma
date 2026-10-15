@@ -758,8 +758,10 @@ switched off, so its switch is dimmed (Akusen, 2026-10-13). A second footer line
 **variable refresh** — `Off · On demand · Always`, written as `variable-refresh-rate` into every
 section that names it — offered only where niri reports the monitor supports it, and saying so
 in faint text where it does not. On demand turns on only for a window a rule asks it for; while
-no `window-rule` in the configuration does, the line says so in the alert colour (Akusen,
-2026-10-15).
+no `window-rule` in the configuration does, the line says so in the alert colour. Beside the
+selector, while it is on demand, **Games** switches Bioma's own rule — Steam's `steam_app_*`
+windows and gamescope — in and out of `bioma-vrr.kdl`, emptied rather than deleted when it goes
+(Akusen, 2026-10-15).
 
 **Keybinds** — added, edited and removed. The combination is recorded by pressing it, not by
 typing it.

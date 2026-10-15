@@ -27,7 +27,8 @@ import qs.services
 // — and its scale. On a second line, its variable refresh: off, on demand or
 // always, offered only where niri says the monitor can. On demand waits for a
 // window rule that asks for it; while no rule does, the line says so, because
-// otherwise it is a setting that silently never turns on.
+// otherwise it is a setting that silently never turns on — and GAMES beside it
+// puts Bioma's own rule for games in place, or takes it back.
 //
 // A monitor switched off stays in the drawing where it was, as an outline
 // with nothing inside it, and is not dragged: niri gives it no place until it
@@ -572,7 +573,7 @@ Item {
             Text {
                 anchors.left: refreshLabel.right
                 anchors.leftMargin: 14 * root.factor
-                anchors.right: vrr.left
+                anchors.right: games.visible ? gamesLabel.left : vrr.left
                 anchors.rightMargin: 14 * root.factor
                 anchors.verticalCenter: parent.verticalCenter
                 visible: refresh.offered && refresh.mode === "demand" && !Monitors.vrrRule
@@ -581,6 +582,37 @@ Item {
                 color: Theme.alert
                 font.family: Typography.expressive
                 font.pixelSize: root.metrics.fontMeta
+            }
+
+            Text {
+                id: gamesLabel
+
+                anchors.right: games.left
+                anchors.rightMargin: 8 * root.factor
+                anchors.verticalCenter: parent.verticalCenter
+                visible: games.visible
+                text: "Games"
+                color: Theme.textMuted
+                font.family: Typography.expressive
+                font.pixelSize: root.metrics.fontSecondary
+            }
+
+            Switch {
+                id: games
+
+                anchors.right: vrr.left
+                anchors.rightMargin: 14 * root.factor
+                anchors.verticalCenter: parent.verticalCenter
+                visible: refresh.offered && refresh.mode === "demand"
+
+                factor: root.factor
+                on: Monitors.gamesRule
+                settling: Monitors.busy
+
+                onToggled: value => {
+                    if (!refresh.fixed)
+                        Monitors.setGamesRule(value);
+                }
             }
 
             Segmented {

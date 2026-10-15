@@ -29,11 +29,15 @@ import "niri-config.js" as NiriKdl
 // Variable refresh is written the same way, as `variable-refresh-rate` in
 // the section, offered only where niri says the monitor supports it. Set to
 // `on-demand` it waits for a window rule that asks for it, so whether any
-// rule does is read from the configuration too.
+// rule does is read from the configuration too. Bioma offers one of its own
+// for games — Steam's and gamescope's windows — in `bioma-vrr.kdl`, through
+// `scripts/niri-include` like its other niri files: emptied rather than
+// deleted when it is taken back, so the include stays harmless.
 Singleton {
     id: root
 
     readonly property bool busy: NiriConfig.busy || asker.running || switcher.running
+                                 || gamesWriter.running
     readonly property string error: NiriConfig.error
 
     // What niri reports, one entry per output that is on.
@@ -52,6 +56,10 @@ Singleton {
     // Whether any window rule asks for variable refresh: without one, an
     // output set to on-demand never turns it on.
     readonly property bool vrrRule: NiriConfig.items.some(item => item.kind === "rule" && item.vrr)
+
+    // Whether Bioma's own rule for games is the one in place.
+    readonly property bool gamesRule: NiriConfig.items.some(item =>
+        item.kind === "rule" && item.vrr && item.file.endsWith("/bioma-vrr.kdl"))
 
     readonly property var outputs: {
         const out = [];
@@ -337,6 +345,45 @@ Singleton {
             }
             return root.rewrite(text, output, (t, section) => NiriKdl.withVrr(t, section, mode));
         });
+    }
+
+    function setGamesRule(on) {
+        if (on === root.gamesRule || gamesWriter.running)
+            return;
+        gamesWriter.body = on
+            ? "// Written by Bioma's settings cell (MONITORS). Variable refresh set to on demand\n"
+              + "// turns on for these windows; switching Games off there empties this file.\n"
+              + "window-rule {\n"
+              + "    match app-id=r#\"^steam_app_\"#\n"
+              + "    match app-id=\"^gamescope$\"\n"
+              + "    variable-refresh-rate true\n"
+              + "}"
+            : "// Written by Bioma's settings cell (MONITORS). Games is off: no rule here.";
+        gamesWriter.running = true;
+    }
+
+    Process {
+        id: gamesWriter
+
+        property string body: ""
+
+        command: [Quickshell.shellPath("scripts/niri-include"), "vrr"]
+        stdinEnabled: true
+
+        onStarted: {
+            gamesWriter.write(gamesWriter.body);
+            gamesWriter.stdinEnabled = false;
+        }
+
+        stderr: StdioCollector {
+            onStreamFinished: {
+                const reason = this.text.trim();
+                if (reason.length > 0)
+                    NiriConfig.error = "niri refused it: " + reason;
+            }
+        }
+
+        onExited: gamesWriter.stdinEnabled = true
     }
 
     function makePrimary(name) {
