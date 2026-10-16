@@ -192,6 +192,11 @@ Singleton {
 
     Process {
         id: importer
+        // The answer is read for the profile's name and uuid, and nmcli
+        // translates it: on an Italian desktop it said "Connessione «…»", the
+        // match failed, and an import that had worked was reported as refused
+        // and never given its credentials.
+        environment: ({ "LC_ALL": "C.UTF-8" })
         stdout: StdioCollector { id: importAnswer }
         stderr: StdioCollector { id: importComplaint }
         onExited: code => {

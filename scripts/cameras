@@ -26,6 +26,10 @@ import sys
 IN_OPEN = 0x00000020
 IN_CLOSE_WRITE = 0x00000008
 IN_CLOSE_NOWRITE = 0x00000010
+IN_ATTRIB = 0x00000004
+IN_CREATE = 0x00000100
+IN_DELETE = 0x00000200
+DEVICE_EVENTS = IN_OPEN | IN_CLOSE_WRITE | IN_CLOSE_NOWRITE
 IGNORED = {"pipewire", "wireplumber", "pipewire-pulse"}
 
 libc = ctypes.CDLL("libc.so.6", use_errno=True)
@@ -75,10 +79,18 @@ def main():
     fd = libc.inotify_init1(os.O_CLOEXEC)
     if fd < 0:
         sys.exit("cameras: inotify unavailable")
-    devices = glob.glob("/dev/video*")
-    for device in devices:
-        libc.inotify_add_watch(fd, device.encode(), IN_OPEN | IN_CLOSE_WRITE | IN_CLOSE_NOWRITE)
+    # A camera plugged in later is a node that did not exist at start, so /dev
+    # itself is watched too, and every node is watched again after a change
+    # there — adding a watch twice is harmless. IN_ATTRIB because udev gives
+    # the seat's user access a moment after the node appears, and until then
+    # the node cannot be watched.
+    libc.inotify_add_watch(fd, b"/dev", IN_CREATE | IN_DELETE | IN_ATTRIB)
 
+    def watch_devices():
+        for device in glob.glob("/dev/video*"):
+            libc.inotify_add_watch(fd, device.encode(), DEVICE_EVENTS)
+
+    watch_devices()
     last = None
     while True:
         now = holders()
@@ -90,6 +102,7 @@ def main():
         select.select([fd], [], [])
         while select.select([fd], [], [], 0.3)[0]:
             os.read(fd, 4096)
+        watch_devices()
 
 
 if __name__ == "__main__":

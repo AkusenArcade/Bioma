@@ -432,6 +432,23 @@ Singleton {
     // this monitor rather than the next id.
     function focusWorkspaceDown() { root.dispatch(["action", "focus-workspace-down"]); }
     function focusWorkspaceUp() { root.dispatch(["action", "focus-workspace-up"]); }
+
+    // The same, on a given monitor. Both actions work on the monitor the
+    // keyboard is on, and a wheel over another monitor's workspaces cell does
+    // not move it there — no click — so the second monitor's wheel turned the
+    // first one's workspaces. That monitor is focused first, in the same
+    // process: a second `dispatch` would stop the first before it ran.
+    function focusWorkspaceStep(output, down) {
+        const step = down ? "focus-workspace-down" : "focus-workspace-up";
+        if (!output || output === root.focusedOutput) {
+            root.dispatch(["action", step]);
+            return;
+        }
+        actionProc.command = ["sh", "-c", 'niri msg action focus-monitor "$1" && niri msg action "$2"',
+                              "sh", output, step];
+        actionProc.running = false;
+        actionProc.running = true;
+    }
     function toggleOverview() { root.dispatch(["action", "toggle-overview"]); }
     // niri calls it `load-config-file`; `reload-config` is not an action it
     // knows, and the call failed silently because nothing here reads what

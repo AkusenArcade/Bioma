@@ -46,6 +46,10 @@ bioma_pids() {
 
 bioma_running() { [ -n "$(bioma_pids)" ]; }
 noctalia_running() { pgrep -x noctalia >/dev/null 2>&1; }
+# Most machines have no other shell to switch to. Mod+Alt+B is in every
+# bioma-binds.kdl, and without this it stopped Bioma, started nothing and
+# remembered `noctalia`, so every login after it came up with no shell at all.
+noctalia_installed() { command -v noctalia >/dev/null 2>&1; }
 
 # Asked to stop, Bioma sometimes crashes on its way out — a Qt Repeater torn
 # down in the wrong order — and Quickshell's crash handler starts it again a
@@ -155,6 +159,10 @@ to_bioma() {
 }
 
 to_noctalia() {
+    if ! noctalia_installed; then
+        echo "noctalia is not installed; Bioma stays" >&2
+        exit 1
+    fi
     stop_bioma
     start_noctalia
     remember noctalia
@@ -172,8 +180,9 @@ case "${1-status}" in
         to_bioma
         ;;
     start)
+        # A remembered Noctalia that has since been removed starts Bioma.
         case "$(remembered)" in
-            noctalia) start_noctalia ;;
+            noctalia) if noctalia_installed; then start_noctalia; else drop_noctalia_theme; start_bioma; remember bioma; fi ;;
             *)        drop_noctalia_theme; start_bioma ;;
         esac
         ;;

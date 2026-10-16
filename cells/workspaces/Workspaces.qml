@@ -114,9 +114,9 @@ Cell {
         acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
         onWheel: event => {
             if (event.angleDelta.y > 0)
-                Niri.focusWorkspaceUp();
+                Niri.focusWorkspaceStep(root.output, false);
             else if (event.angleDelta.y < 0)
-                Niri.focusWorkspaceDown();
+                Niri.focusWorkspaceStep(root.output, true);
         }
     }
 

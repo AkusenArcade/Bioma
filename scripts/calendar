@@ -224,10 +224,25 @@ def dav(url, method, body, depth, auth):
                 return ET.fromstring(response.read()), response.url
         except urllib.error.HTTPError as error:
             if error.code in (301, 302, 303, 307, 308) and error.headers.get("Location"):
-                url = urllib.parse.urljoin(url, error.headers["Location"])
+                target = urllib.parse.urljoin(url, error.headers["Location"])
+                if not same_holder(url, target):
+                    raise ValueError("the server sent the sign-in somewhere else")
+                url = target
                 continue
             raise
     raise ValueError("the server sent the request round in circles")
+
+
+def same_holder(before, after):
+    """Whether a redirect may carry the sign-in along: never from https to
+    http, where the password would cross the network in the clear, and never
+    to another domain. A host of the same domain is allowed — iCloud hands
+    caldav.icloud.com over to p…-caldav.icloud.com."""
+    a, b = urllib.parse.urlsplit(before), urllib.parse.urlsplit(after)
+    if a.scheme == "https" and b.scheme != "https":
+        return False
+    domain = lambda host: ".".join((host or "").lower().split(".")[-2:])
+    return domain(a.hostname) == domain(b.hostname)
 
 
 def href_of(tree, path):

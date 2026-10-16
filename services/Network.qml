@@ -37,7 +37,11 @@ Singleton {
 
     // ── Wired ────────────────────────────────────────────────────────────
 
-    readonly property var wiredDevice: devices.find(d => d.type === Net.DeviceType.Wired) ?? null
+    // The connected one first: a laptop on a dock has two, the built-in port
+    // empty and the dock's carrying the connection, and the first found was
+    // the empty one.
+    readonly property var wiredDevice: devices.find(d => d.type === Net.DeviceType.Wired && d.connected)
+        ?? devices.find(d => d.type === Net.DeviceType.Wired) ?? null
 
     readonly property bool wiredPresent: wiredDevice !== null
     readonly property bool wiredConnected: wiredDevice?.connected ?? false
@@ -64,7 +68,8 @@ Singleton {
 
     // ── Wi-Fi ────────────────────────────────────────────────────────────
 
-    readonly property var wifiDevice: devices.find(d => d.type === Net.DeviceType.Wifi) ?? null
+    readonly property var wifiDevice: devices.find(d => d.type === Net.DeviceType.Wifi && d.connected)
+        ?? devices.find(d => d.type === Net.DeviceType.Wifi) ?? null
     readonly property bool wifiPresent: wifiDevice !== null
 
     // Two different offs. `wifiEnabled` is the soft switch, ours to set;

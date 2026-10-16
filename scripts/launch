@@ -62,6 +62,10 @@ while IFS='=' read -r -d '' name _; do
     esac
 done < <(env -0)
 
+# A desktop entry's Path= that no longer exists fails the whole service on
+# CHDIR; the direct start above shrugs it off, and so does this one.
+[ -n "$dir" ] && [ ! -d "$dir" ] && dir=""
+
 id="${id%.desktop}"
 id="${id//[^A-Za-z0-9:_.]/_}"
 unit="app-bioma-${id:-app}-$(printf '%04x%04x' $RANDOM $RANDOM)"
