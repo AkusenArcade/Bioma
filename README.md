@@ -486,7 +486,9 @@ the setup's LOGIN step offers it, and on yes `scripts/greeter-setup enable`
 runs through pkexec. It makes the copy, keeps greetd's configuration as
 `/etc/greetd/config.toml.before-bioma`, points greetd at
 `/usr/share/bioma/scripts/greeter-session`, and enables greetd in place of the
-login manager that was enabled. Nothing restarts: it takes effect at the next
+login manager that was enabled. With gnome-keyring installed, it also adds
+`pam_gnome_keyring` to `/etc/pam.d/greetd`, as SDDM and GDM do, so the login
+password unlocks the keyring instead of GNOME's dialog asking for it again. Nothing restarts: it takes effect at the next
 boot. `greeter-setup disable`, or removing the package, puts the old login
 screen back.
 

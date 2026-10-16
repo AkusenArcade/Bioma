@@ -134,6 +134,10 @@ strangers installing Bioma, the login screen is the one thing it must not change
   `_greeter_install` does today: the copy of the desktop in `/var/lib/bioma-greeter`, greetd's
   `default_session` with the old file kept as `config.toml.before-bioma`, and greetd enabled in
   place of the old manager. The password is asked by the polkit agent, not by Bioma.
+- With gnome-keyring installed, `enable` also adds `pam_gnome_keyring` (auth and session, each
+  under a `# bioma:` mark) to `/etc/pam.d/greetd`, which has none: without it the keyring stays
+  locked after login and GNOME's own dialog asks for the password again. `disable` and
+  uninstalling remove only the marked lines.
 - One line in Spectral says *From the next boot*. Nothing is restarted: restarting greetd from
   inside a session ends that session.
 - **With no polkit agent running**, `pkexec` cannot ask. The row then shows the one command to

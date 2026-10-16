@@ -25,6 +25,12 @@ greetd_config=/etc/greetd/config.toml
 greetd_backup=/etc/greetd/config.toml.before-bioma
 greeter_dir=/var/lib/bioma-greeter
 greeter_command="$here/scripts/greeter-session"
+greetd_pam=/etc/pam.d/greetd
+keyring_module=/usr/lib/security/pam_gnome_keyring.so
+# The line above each line Bioma adds to greetd's PAM file, so `disable` takes
+# out those and nothing the user wrote. PAM reads `#` as a comment anywhere, so
+# the mark cannot share the line it marks.
+keyring_mark='# bioma: the login password unlocks the keyring'
 
 manager() {
     local dm
@@ -77,6 +83,45 @@ point_at() {
     rm -f "$tmp"
 }
 
+# A display manager such as SDDM or GDM hands the login password to
+# gnome-keyring; greetd's PAM file does not, and the keyring then asks for it
+# again, in GNOME's own dialog, the first time anything wants a secret. The
+# auth line goes after the last auth line, where the password has been read;
+# the session line goes last. Leading `-`: no error if the module is removed.
+keyring_add() {
+    [ -f "$keyring_module" ] && [ -f "$greetd_pam" ] || return 0
+    grep -q 'pam_gnome_keyring' "$greetd_pam" && return 0
+    local tmp
+    tmp="$(mktemp)"
+    awk -v mark="$keyring_mark" '
+        { line[NR] = $0 }
+        /^[ \t]*-?auth[ \t]/ { last_auth = NR }
+        /^[ \t]*-?session[ \t]/ { last_session = NR }
+        END {
+            for (i = 1; i <= NR; i++) {
+                print line[i]
+                if (i == last_auth) { print mark; print "-auth      optional     pam_gnome_keyring.so" }
+            }
+            if (!last_auth) { print mark; print "-auth      optional     pam_gnome_keyring.so" }
+            print mark; print "-session   optional     pam_gnome_keyring.so auto_start"
+        }
+    ' "$greetd_pam" > "$tmp" && cat "$tmp" > "$greetd_pam"
+    rm -f "$tmp"
+}
+
+# The lines keyring_add wrote, each with its mark; any other line stays.
+keyring_remove() {
+    [ -f "$greetd_pam" ] && grep -qxF "$keyring_mark" "$greetd_pam" || return 0
+    local tmp
+    tmp="$(mktemp)"
+    awk -v mark="$keyring_mark" '
+        skip { skip = 0; if ($0 ~ /pam_gnome_keyring/) next }
+        $0 == mark { skip = 1; next }
+        { print }
+    ' "$greetd_pam" > "$tmp" && cat "$tmp" > "$greetd_pam"
+    rm -f "$tmp"
+}
+
 enable() {
     local user home dm
     user="$(asker)" || { echo "greeter-setup: run it through pkexec or sudo, as yourself" >&2; exit 1; }
@@ -98,6 +143,7 @@ enable() {
         [ -e "$greetd_backup" ] || cp -p "$greetd_config" "$greetd_backup"
         point_at "$greeter_command"
     fi
+    keyring_add
 
     # greetd in place of whatever logged in before. The old manager is only
     # disabled, never removed: `disable` here, or the user, can bring it back.
@@ -124,6 +170,7 @@ disable() {
         fi
     fi
     rm -f "$greetd_backup"
+    keyring_remove
 
     # The manager Bioma's greeter replaced, if it replaced one.
     [ -f "$greeter_dir/.manager-before" ] && before="$(cat "$greeter_dir/.manager-before")"
