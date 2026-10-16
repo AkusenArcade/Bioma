@@ -70,7 +70,7 @@ Singleton {
 
     // ---- Asking -----------------------------------------------------------------------
 
-    readonly property int every: Config.get("weather.minutes", 30) * 60 * 1000
+    readonly property int every: Math.max(5, Config.get("weather.minutes", 30)) * 60 * 1000
 
     Timer {
         interval: root.every

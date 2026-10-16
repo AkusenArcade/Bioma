@@ -90,8 +90,11 @@ Singleton {
 
             if (id === wanted || label === wanted || startup === wanted)
                 return entry;
+            // Both ways round, and both fragments long enough: a short label
+            // inside a longer name — Vim in nvim — is somebody else's icon.
             if (wanted.length >= 4 && (id.indexOf(wanted) >= 0 || startup.indexOf(wanted) >= 0
-                                       || label.indexOf(wanted) >= 0 || wanted.indexOf(label) >= 0))
+                                       || label.indexOf(wanted) >= 0
+                                       || (label.length >= 4 && wanted.indexOf(label) >= 0)))
                 return entry;
         }
         return null;

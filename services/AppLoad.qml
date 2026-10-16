@@ -44,7 +44,7 @@ Singleton {
             root.holders = root.holders.filter(h => h !== owner);
     }
 
-    readonly property int interval: Config.get("vitals.process_interval", 3000)
+    readonly property int interval: Math.max(500, Config.get("vitals.process_interval", 3000))
 
     // Applications, heaviest first:
     //   { key, name, appId, icon, ram (MiB), cpu (% of one core),

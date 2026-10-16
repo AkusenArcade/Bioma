@@ -34,7 +34,8 @@ Singleton {
     // two figures — a load rising as a clock falls — impossible to trust,
     // because they were not read at the same moment.
 
-    readonly property int interval: Config.get("vitals.interval", 2000)
+    // A floor: a hand-written 0 would be a timer firing on every frame.
+    readonly property int interval: Math.max(250, Config.get("vitals.interval", 2000))
 
     Timer {
         interval: root.interval
@@ -623,7 +624,7 @@ Singleton {
     property bool listProcesses: false
     property var processes: []
 
-    readonly property int processInterval: Config.get("vitals.process_interval", 3000)
+    readonly property int processInterval: Math.max(500, Config.get("vitals.process_interval", 3000))
     readonly property int processCount: Config.get("vitals.process_count", 60)
 
     Timer {
