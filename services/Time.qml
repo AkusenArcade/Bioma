@@ -207,9 +207,13 @@ Singleton {
     SystemClock {
         id: minuteClock
         precision: SystemClock.Minutes
+        // The time is read whole, not from the clock's fields: at an alarm on
+        // the hour the hour and the minute change together, and in the
+        // handler for one the other can still be the old one.
         onMinutesChanged: {
             const alarm = root.alarm;
-            if (alarm && alarm.on && minuteClock.hours === alarm.hour && minuteClock.minutes === alarm.minute)
+            const now = new Date();
+            if (alarm && alarm.on && now.getHours() === alarm.hour && now.getMinutes() === alarm.minute)
                 root.ring("Alarm", `It is ${String(alarm.hour).padStart(2, "0")}:${String(alarm.minute).padStart(2, "0")}.`);
         }
     }

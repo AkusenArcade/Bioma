@@ -141,14 +141,17 @@ Singleton {
 
     property bool cancelling: false
 
+    // Idle first, then the paster stopped: its exit handler reads the state,
+    // and a stop on the way out of a good take is not a paster that died.
     function finish() {
         if (root.transcribing)
             hushTail.restart();
-        paster.running = false;
-        if (root.take.length > 0)
-            Quickshell.execDetached(["rm", "-f", root.take]);
+        const take = root.take;
         root.take = "";
         root.state = "idle";
+        paster.running = false;
+        if (take.length > 0)
+            Quickshell.execDetached(["rm", "-f", take]);
         root.cancelling = false;
     }
 
@@ -180,7 +183,18 @@ Singleton {
         }
 
         onExited: code => {
-            if (root.cancelling || root.state !== "transcribing")
+            if (root.cancelling)
+                return;
+            // Gone before it was asked to stop — no pw-record, a microphone
+            // that went away. Left listening, the take waited out its
+            // ceiling and then waited for this exit for ever, and no take
+            // could start again until the shell did.
+            if (root.listening) {
+                root.tell("Dictation stopped", `The recorder exited with ${code}.`);
+                root.finish();
+                return;
+            }
+            if (root.state !== "transcribing")
                 return;
             engine.text = "";
             engine.running = true;
@@ -259,6 +273,15 @@ Singleton {
         command: ["setpriv", "--pdeathsig", "TERM", Quickshell.shellPath("scripts/paste")]
 
         onStarted: paster.canPaste = false
+
+        // A paster that dies with a text on its way never answers `pasted`,
+        // and the take would stay transcribing for ever.
+        onExited: code => {
+            if (root.transcribing && !root.cancelling) {
+                root.tell("Dictation could not paste", `The paster exited with ${code}.`);
+                root.finish();
+            }
+        }
 
         stdout: SplitParser {
             onRead: line => {

@@ -120,10 +120,20 @@ Singleton {
         // The signal survives the script exec-ing into dbus-monitor.
         command: ["setpriv", "--pdeathsig", "TERM", root.script, "watch"]
         running: true
+        property double startedAt: 0
+        onStarted: watch.startedAt = Date.now()
         stdout: SplitParser {
             onRead: again.restart()
         }
-        onExited: rewatch.start()
+        onExited: {
+            // A watch that held for a while was a CUPS that restarted: back
+            // soon. One that fails at once is a CUPS that is not running —
+            // installed, as the package wants, and never enabled, as Arch
+            // leaves it — and asking every five seconds for ever is a poll.
+            rewatch.interval = Date.now() - watch.startedAt > 60000
+                ? 5000 : Math.min(rewatch.interval * 2, 10 * 60 * 1000);
+            rewatch.start();
+        }
     }
 
     // If CUPS or the bus restarts, so does the watch — a little later.

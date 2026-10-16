@@ -237,9 +237,11 @@ Singleton {
     // freedesktop call; the folder opened plainly when none does.
     //
     // The path travels as a URI inside a GVariant string literal, so a quote
-    // in a filename is percent-encoded rather than left to end the literal.
+    // in a filename is percent-encoded rather than left to end the literal —
+    // and so are `#` and `?`, which `encodeURI` leaves alone and a file
+    // manager then reads as the end of the path.
     function reveal(path, environment) {
-        const uri = "file://" + encodeURI(path).replace(/'/g, "%27");
+        const uri = "file://" + path.split("/").map(encodeURIComponent).join("/").replace(/'/g, "%27");
         const folder = path.slice(0, path.lastIndexOf("/")) || "/";
         Quickshell.execDetached({
             "command": ["bash", "-c",

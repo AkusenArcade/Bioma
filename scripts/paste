@@ -45,15 +45,23 @@ except Exception:
     print("no-uinput", flush=True)
 
 
+# A clipboard that does not answer is a failed read, not the end of the
+# paster: dying here left the dictation waiting for an answer for ever.
 def run(args):
-    return subprocess.run(args, capture_output=True, timeout=5)
+    try:
+        return subprocess.run(args, capture_output=True, timeout=5)
+    except subprocess.TimeoutExpired:
+        return subprocess.CompletedProcess(args, 1, b"", b"")
 
 
 # wl-copy forks a child that stays to serve the selection. Left holding a
 # pipe of ours, it keeps the pipe open and `run` waits out its timeout.
 def copy(content, kind):
-    subprocess.run(["wl-copy", "--type", kind], input=content,
-                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5)
+    try:
+        subprocess.run(["wl-copy", "--type", kind], input=content,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5)
+    except subprocess.TimeoutExpired:
+        pass
 
 
 def saved_clipboard():

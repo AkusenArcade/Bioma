@@ -151,15 +151,29 @@ Singleton {
             }
             lines.push(set(schema, "mode manual"));
         }
+        // A change arriving while the last one is still being written is
+        // written after it: setting `running` on a running process does
+        // nothing, and the desktop kept the proxy of the first of two.
+        if (writer.running) {
+            writer.again = true;
+            return;
+        }
         writer.command = ["bash", "-c", lines.join(" && ")];
         writer.running = true;
     }
 
     Process {
         id: writer
+        property bool again: false
         stderr: StdioCollector {
             onStreamFinished: if (this.text.trim().length > 0)
                 console.warn("Bioma: the proxy setting was not written —", this.text.trim())
+        }
+        onExited: {
+            if (writer.again) {
+                writer.again = false;
+                root.apply();
+            }
         }
     }
 

@@ -73,8 +73,18 @@ def main():
     fd = libc.inotify_init1(os.O_CLOEXEC)
     if fd < 0:
         sys.exit("downloads: inotify unavailable")
-    libc.inotify_add_watch(fd, where.encode(),
-                           IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVED_FROM | IN_MOVED_TO)
+    # A folder that is not there yet cannot be watched, and the watch that
+    # failed left this waiting on nothing for the life of the shell. Until it
+    # appears, the folder it would appear in is watched instead.
+    while libc.inotify_add_watch(fd, where.encode(),
+                                 IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVED_FROM | IN_MOVED_TO) < 0:
+        parent = libc.inotify_add_watch(fd, os.path.dirname(where).encode(), IN_CREATE | IN_MOVED_TO)
+        if parent < 0:
+            sys.exit(f"downloads: neither {where} nor the folder it would be in can be watched")
+        print("[]", flush=True)
+        select.select([fd], [], [])
+        os.read(fd, 65536)
+        libc.inotify_rm_watch(fd, parent)
 
     seen = {}       # path → (size, when, rate, grown) — `grown` wall-clock
     last = None
