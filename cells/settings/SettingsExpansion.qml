@@ -60,7 +60,9 @@ Item {
         { "key": "keybinds", "label": "KEYBINDS", "glyph": "keyboard",
           "hint": "shortcuts · niri.kdl", "width": 560 },
         { "key": "session", "label": "SESSION", "glyph": "lock",
-          "hint": "locking, power profile", "width": 540 }
+          "hint": "locking, power profile", "width": 540 },
+        { "key": "sounds", "label": "SOUNDS", "glyph": "sound-on",
+          "hint": "events, volume", "width": 540 }
     ]
 
     // The setup's steps, or the categories.
@@ -378,6 +380,8 @@ Item {
                         return Qt.resolvedUrl("SettingsKeybinds.qml");
                     if (root.chosen === "session")
                         return Qt.resolvedUrl("SettingsSession.qml");
+                    if (root.chosen === "sounds")
+                        return Qt.resolvedUrl("SettingsSounds.qml");
                     return "";
                 }
 

@@ -3,6 +3,7 @@ import Quickshell
 import qs.core
 import qs.cells
 import qs.components
+import qs.services
 
 // A unit of content with one domain. It has no position of its own and no max
 // width of its own: it takes what the tissue grants.
@@ -846,6 +847,11 @@ Item {
 
     onOpenChanged: {
         root.engage();
+
+        // Heard as well as seen, when it was asked for: a body that opened
+        // because the pointer brushed it has not been, and stays silent.
+        if (hasPanel && claimsFocus)
+            Sounds.cell(open);
 
         // The header is already showing by now, so the width is the one
         // last seen at rest. Reopened while still closing, it keeps the one

@@ -56,7 +56,8 @@ depends=(
     'tesseract'
     'tesseract-data-eng'
     'wl-screenrec'
-    # Audio: pw-play for the alarm, pw-record for the microphone.
+    # Audio: pw-play for the alarm and the sound effects, pw-record for the
+    # microphone.
     'pipewire'
     'pipewire-audio'
     # Connectivity: networks, Bluetooth, printers.

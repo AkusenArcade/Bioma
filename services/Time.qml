@@ -221,8 +221,9 @@ Singleton {
     // ---- Ringing ---------------------------------------------------------------
 
     function ring(title, body) {
+        // The alarm is its own sound, so the notification brings none.
         ringer.command = ["notify-send", "-u", "critical", "-a", "Bioma", "-i", "alarm-symbolic",
-                          title, body];
+                          "-h", "boolean:suppress-sound:true", title, body];
         ringer.running = true;
         sound.running = true;
     }

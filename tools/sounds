@@ -1,0 +1,318 @@
+#!/usr/bin/env python3
+# Synthesise Bioma's sound effects into assets/sounds/.
+#
+#     tools/sounds            write every sound
+#     tools/sounds NAME…      write only those (login, notification, open,
+#                             close, alert)
+#
+# The sounds are Bioma's own, made here from nothing but noise and sine
+# waves, so they can be regenerated, changed and argued about as code rather
+# than as files nobody can open. The files are committed: the shell plays them
+# with pw-play and never runs this. Needs numpy.
+#
+# Organic rather than electronic (Akusen, 2026-10-17: the first set, struck
+# sines, sounded like glass). So the sounds are modelled on things that live
+# in water and flesh rather than on instruments:
+#
+# - a **bubble** is a Minnaert resonance — a sine whose pitch rises as the
+#   bubble shrinks, dying in a few tens of milliseconds. A drop falling into
+#   water is one of these with a steep chirp.
+# - a **tine** is a kalimba's: a soft knock of filtered noise, a fundamental,
+#   and the inharmonic partials of a clamped reed, quickly gone. It gives the
+#   droplets a pitch to be remembered by.
+# - a **breath** is noise through vowel formants, swelling and falling.
+#
+# Nothing is perfectly regular. Every sound has its own seeded randomness —
+# a pitch a few cents off, a bubble a few milliseconds late — fixed so that a
+# regeneration writes the same files.
+#
+# Pitched parts share D major pentatonic, so sounds can follow one another
+# without clashing. The alert alone steps out of it.
+#
+# What each one says:
+#
+# - open:  a bubble rising out of the water — the cell growing out.
+# - close: the opening's bubbles a fourth lower — the cell going back.
+# - notification: two drops falling into still water, each with a tine under
+#   it, the second higher: something arrived.
+# - alert: an alarm call — three rising calls, the last held and pulsing,
+#   then the call again further off: a value went past its threshold.
+# - login: the desktop waking — a breath drawn in, a cloud of bubbles rising
+#   through it, a warm chord opening under them, and one drop at the end.
+import os
+import sys
+import wave
+
+import numpy as np
+
+HERE = os.path.dirname(os.path.realpath(__file__))
+OUT = os.path.join(os.path.dirname(HERE), "assets", "sounds")
+
+RATE = 48000
+
+
+def note(name):
+    """Frequency of a note name such as 'D5' or 'F#4', A4 = 440 Hz."""
+    steps = {"C": -9, "D": -7, "E": -5, "F": -4, "G": -2, "A": 0, "B": 2}
+    letter, rest = name[0], name[1:]
+    offset = steps[letter]
+    if rest.startswith("#"):
+        offset, rest = offset + 1, rest[1:]
+    elif rest.startswith("b"):
+        offset, rest = offset - 1, rest[1:]
+    return 440.0 * 2 ** ((offset + 12 * (int(rest) - 4)) / 12)
+
+
+def timeline(seconds):
+    return np.arange(int(seconds * RATE)) / RATE
+
+
+def track(seconds):
+    return np.zeros(int(seconds * RATE))
+
+
+def place(into, sound, at, gain=1.0):
+    start = int(at * RATE)
+    end = min(len(into), start + len(sound))
+    if end > start:
+        into[start:end] += gain * sound[:end - start]
+
+
+# ---- Filters -----------------------------------------------------------------
+
+def biquad(x, kind, freq, q):
+    """An RBJ cookbook biquad: 'low', 'high' or 'band' (constant peak)."""
+    w = 2 * np.pi * freq / RATE
+    alpha = np.sin(w) / (2 * q)
+    cos = np.cos(w)
+    if kind == "low":
+        b = [(1 - cos) / 2, 1 - cos, (1 - cos) / 2]
+    elif kind == "high":
+        b = [(1 + cos) / 2, -(1 + cos), (1 + cos) / 2]
+    else:
+        b = [alpha, 0.0, -alpha]
+    a = [1 + alpha, -2 * cos, 1 - alpha]
+    b0, b1, b2 = (v / a[0] for v in b)
+    a1, a2 = a[1] / a[0], a[2] / a[0]
+    y = np.empty_like(x)
+    x1 = x2 = y1 = y2 = 0.0
+    for i, v in enumerate(x):
+        out = b0 * v + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2
+        x2, x1, y2, y1 = x1, v, y1, out
+        y[i] = out
+    return y
+
+
+def noise(seconds, rng):
+    return rng.standard_normal(int(seconds * RATE))
+
+
+# ---- Voices ------------------------------------------------------------------
+
+def bubble(f0, seconds, decay, chirp, rng, attack=0.0015):
+    """A Minnaert bubble: pitch rising by `chirp` (a ratio) as it dies.
+
+    The rise follows the decay, as it does in water: most of the glide is in
+    the first few milliseconds, while the bubble is loud.
+    """
+    t = timeline(seconds)
+    f = f0 * (1 + rng.uniform(-0.02, 0.02))
+    freq = f * chirp ** (1 - np.exp(-t / decay))
+    phase = 2 * np.pi * np.cumsum(freq) / RATE
+    envelope = np.minimum(1.0, t / attack) * np.exp(-t / decay)
+    return np.sin(phase) * envelope
+
+
+def tine(freq, seconds, decay, rng, knock=0.25):
+    """A kalimba tine: a knock of filtered noise, then a fundamental and the
+    inharmonic partials of a clamped reed, the high ones short-lived."""
+    t = timeline(seconds)
+    f = freq * 2 ** (rng.uniform(-6, 6) / 1200)
+    out = np.zeros_like(t)
+    for multiple, gain, life in ((1.0, 1.0, 1.0), (5.93, 0.12, 0.18), (13.8, 0.03, 0.07)):
+        out += gain * np.sin(2 * np.pi * f * multiple * t) * np.exp(-t / (decay * life))
+    out *= np.minimum(1.0, t / 0.002)
+    thump = biquad(noise(0.03, rng), "band", f * 0.9, 1.6) * np.exp(-timeline(0.03) / 0.006)
+    out[:len(thump)] += knock * thump / (np.max(np.abs(thump)) + 1e-9)
+    return out
+
+
+def breath(seconds, rise, rng):
+    """Noise through two vowel formants, swelling for `rise` seconds and then
+    falling away — a breath drawn in and let go."""
+    t = timeline(seconds)
+    raw = noise(seconds, rng)
+    voiced = biquad(raw, "band", 720, 3.0) + 0.7 * biquad(raw, "band", 1180, 4.0) \
+        + 0.25 * biquad(raw, "band", 2600, 5.0)
+    voiced = biquad(voiced, "low", 3200, 0.7)
+    swell = np.where(t < rise, (t / rise) ** 2,
+                     np.exp(-(t - rise) / ((seconds - rise) / 3.5)))
+    voiced *= swell
+    return voiced / (np.max(np.abs(voiced)) + 1e-9)
+
+
+def pad(names, seconds, rise, rng):
+    """A warm chord: each voice a slightly detuned pair with a slow, uneven
+    vibrato, low-passed, swelling with the breath and fading after it."""
+    t = timeline(seconds)
+    out = np.zeros_like(t)
+    for i, name in enumerate(names):
+        f = note(name)
+        rate = rng.uniform(3.8, 5.2)
+        depth = 0.0025
+        wobble = 1 + depth * np.sin(2 * np.pi * rate * t + rng.uniform(0, 6.28))
+        for spread in (-0.0018, 0.0018):
+            phase = 2 * np.pi * np.cumsum(f * (1 + spread) * wobble) / RATE
+            out += (np.sin(phase) + 0.12 * np.sin(2 * phase)) / (1 + 0.35 * i)
+    out = biquad(out, "low", 1600, 0.6)
+    swell = np.where(t < rise, np.sin(np.pi / 2 * t / rise) ** 2,
+                     np.exp(-(t - rise) / ((seconds - rise) / 3.0)))
+    out *= swell
+    return out / (np.max(np.abs(out)) + 1e-9)
+
+
+# ---- Space -------------------------------------------------------------------
+
+def water(signal, seconds, mix, rng, brightness=0.25):
+    """A small wet room: the dry sound convolved with decaying, darkened noise
+    whose early part is dense, as a cave's is."""
+    t = timeline(seconds)
+    impulse = rng.standard_normal(len(t)) * np.exp(-t / (seconds / 6))
+    soft = np.empty_like(impulse)
+    state = 0.0
+    for i, value in enumerate(impulse):
+        state += brightness * (value - state)
+        soft[i] = state
+    soft /= np.sqrt(np.sum(soft ** 2))
+    size = len(signal) + len(soft) - 1
+    n = 1 << (size - 1).bit_length()
+    wet = np.fft.irfft(np.fft.rfft(signal, n) * np.fft.rfft(soft, n), n)[:size]
+    dry = np.concatenate([signal, np.zeros(size - len(signal))])
+    return dry * (1 - mix) + wet * mix
+
+
+def finish(signal, peak):
+    # Nothing under 40 Hz — no speaker plays it, and it eats headroom — then
+    # the level, the silence the room left trimmed, and a fade so nothing ends
+    # on a click.
+    signal = biquad(signal, "high", 40, 0.7)
+    signal = signal / np.max(np.abs(signal)) * peak
+    audible = np.nonzero(np.abs(signal) > peak * 0.002)[0]
+    signal = signal[:audible[-1] + 1] if len(audible) else signal
+    tail = min(len(signal), int(0.015 * RATE))
+    signal[-tail:] *= np.linspace(1, 0, tail)
+    return signal
+
+
+# ---- The sounds --------------------------------------------------------------
+
+def sound_open():
+    rng = np.random.default_rng(11)
+    out = track(0.3)
+    place(out, bubble(note("A5"), 0.2, decay=0.032, chirp=1.9, rng=rng), 0.0)
+    # A smaller bubble following the first up, as they come in pairs.
+    place(out, bubble(note("E6") * 1.06, 0.12, decay=0.016, chirp=1.6, rng=rng), 0.038, 0.35)
+    return finish(water(out, 0.3, 0.2, rng), 0.55)
+
+
+def sound_close():
+    # The opening's own bubbles, a fourth lower and a little slower: the same
+    # cell going back into the water.
+    rng = np.random.default_rng(11)
+    out = track(0.34)
+    place(out, bubble(note("D5"), 0.22, decay=0.036, chirp=1.9, rng=rng), 0.0)
+    place(out, bubble(note("A5") * 1.06, 0.13, decay=0.018, chirp=1.6, rng=rng), 0.042, 0.35)
+    return finish(water(out, 0.3, 0.22, rng, brightness=0.2), 0.5)
+
+
+def sound_notification():
+    rng = np.random.default_rng(13)
+    out = track(1.0)
+    for at, pitch, gain in ((0.0, "A5", 1.0), (0.13, "E6", 0.85)):
+        f = note(pitch)
+        # The drop: a steep chirp starting under the note and landing past it.
+        place(out, bubble(f * 0.8, 0.12, decay=0.022, chirp=2.2, rng=rng), at, 0.55 * gain)
+        # And the tine, a breath later, that gives it its pitch.
+        place(out, tine(f, 0.9, decay=0.2, rng=rng, knock=0.15), at + 0.006, 0.6 * gain)
+        # The splash: a few tiny bubbles, never in the same place twice.
+        for _ in range(3):
+            place(out, bubble(rng.uniform(2400, 3600), 0.04, decay=0.006, chirp=1.4, rng=rng),
+                  at + rng.uniform(0.015, 0.06), rng.uniform(0.06, 0.12) * gain)
+    return finish(water(out, 0.55, 0.26, rng), 0.6)
+
+
+def sound_alert():
+    # An alarm call, as birds make one: short, repeated, rising, and left
+    # hanging. Three calls climbing by a tritone and then a fourth — out of
+    # the pentatonic every other sound keeps to — the last one held with a
+    # quick pulse on it, then the whole call again, quieter, further off.
+    # Everything goes up: a sound that falls reads as something failing
+    # (Akusen, 2026-10-17, about a heartbeat over a falling hum).
+    rng = np.random.default_rng(14)
+    out = track(1.3)
+    for start, gain in ((0.0, 1.0), (0.42, 0.55)):
+        for i, (pitch, life) in enumerate((("A5", 0.07), ("D#6", 0.07), ("G#6", 0.2))):
+            at = start + i * 0.085 + rng.uniform(-0.004, 0.004)
+            f = note(pitch)
+            call = tine(f, 0.5, decay=life, rng=rng, knock=0.3)
+            call += 0.6 * np.concatenate([bubble(f * 0.75, 0.08, decay=0.018, chirp=1.5, rng=rng),
+                                          np.zeros(len(call) - int(0.08 * RATE))])
+            if i == 2:
+                t = timeline(0.5)
+                call *= 0.75 + 0.25 * np.cos(2 * np.pi * 11 * t)
+            place(out, call, at, gain * (0.8 if i < 2 else 1.0))
+    return finish(water(out, 0.4, 0.2, rng), 0.6)
+
+
+def sound_login():
+    rng = np.random.default_rng(15)
+    length = 3.6
+    rise = 1.1
+    out = track(length)
+    place(out, breath(length, rise, rng), 0.0, 0.32)
+    place(out, pad(["D3", "A3", "D4", "F#4", "A4"], length, rise + 0.25, rng), 0.0, 0.85)
+    # Bubbles rising through it: sparse, then dense as the breath peaks, then
+    # thinning — and higher the later they are, as if coming up from below.
+    for _ in range(34):
+        at = rise * np.sqrt(rng.uniform(0.05, 1.0)) + rng.normal(0, 0.12)
+        at = float(np.clip(at, 0.05, length - 0.5))
+        lift = at / (rise + 0.4)
+        f = rng.uniform(500, 900) * (1 + 1.6 * lift)
+        place(out, bubble(f, 0.1, decay=rng.uniform(0.008, 0.02), chirp=rng.uniform(1.3, 1.9), rng=rng),
+              at, rng.uniform(0.05, 0.14))
+    # And the drop at the end, the moment it is all there.
+    place(out, bubble(note("D6") * 0.8, 0.12, decay=0.022, chirp=2.2, rng=rng), rise + 0.35, 0.3)
+    place(out, tine(note("D6"), 1.2, decay=0.32, rng=rng, knock=0.12), rise + 0.356, 0.32)
+    return finish(water(out, 1.2, 0.3, rng), 0.5)
+
+
+SOUNDS = {
+    "open": sound_open,
+    "close": sound_close,
+    "notification": sound_notification,
+    "alert": sound_alert,
+    "login": sound_login,
+}
+
+
+def write(name, signal):
+    os.makedirs(OUT, exist_ok=True)
+    path = os.path.join(OUT, f"{name}.wav")
+    samples = np.clip(signal, -1, 1)
+    with wave.open(path, "wb") as out:
+        out.setnchannels(1)
+        out.setsampwidth(2)
+        out.setframerate(RATE)
+        out.writeframes((samples * 32767).astype("<i2").tobytes())
+    print(f"{path}  {len(samples) / RATE:.2f} s")
+
+
+def main(names):
+    for name in names or SOUNDS:
+        if name not in SOUNDS:
+            sys.exit(f"tools/sounds: no sound called {name!r} ({', '.join(SOUNDS)})")
+        write(name, SOUNDS[name]())
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

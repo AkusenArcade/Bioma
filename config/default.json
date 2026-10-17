@@ -137,6 +137,16 @@
     "before_sleep": true
   },
 
+  "sounds": {
+    "$comment": "Bioma's own sound effects (assets/sounds, made by tools/sounds), played through pw-play. One switch per kind of event: the desktop appearing after login, a notification without a sound of its own, a cell opening and closing, a measured value turning red. volume is the effects' own, under the system's. alert_gap is the seconds before the same value can sound again.",
+    "volume": 0.6,
+    "login": true,
+    "notifications": true,
+    "cells": true,
+    "alerts": true,
+    "alert_gap": 300
+  },
+
   "sleep": {
     "$comment": "Minutes without input before the machine suspends, through session.suspend (0 never, the default). Idle inhibitors hold it back, as they hold back the lock; with lock.before_sleep the session locks first.",
     "idle_minutes": 0

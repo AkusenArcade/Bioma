@@ -288,7 +288,7 @@ the whole shell. Only the second table is left to you.
 | polkit | `polkit` | the polkit cell, Bioma's authentication agent, and the setup's login screen step |
 | curl | `curl` | the weather organism's forecast, from Open-Meteo |
 | grim, tesseract, wl-screenrec | `grim`, `tesseract`, `tesseract-data-eng`, AUR `wl-screenrec` | screenshots, text recognition, screen recording (VAAPI) |
-| PipeWire | `pipewire`, `pipewire-audio` | audio, the alarm's sound, the microphone |
+| PipeWire | `pipewire`, `pipewire-audio` | audio, the alarm and the sound effects, the microphone |
 | NetworkManager | `networkmanager` | Wi-Fi, wired, VPN profiles, proxy triggers |
 | BlueZ | `bluez`, `bluez-utils` | Bluetooth |
 | CUPS, Avahi | `cups`, `avahi` | printers in the connectivity cell: the queues, the default, network printers found and added driverless. Adding and removing one needs CUPS's admin group (`sys` or `wheel` on Arch) |

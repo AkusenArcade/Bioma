@@ -422,6 +422,20 @@ ShellRoot {
         }
     }
 
+    // Bioma's sound effects, heard on request whatever the switches say:
+    // `play login`, `play notification`, `play open`, `play close`,
+    // `play alert` (services/Sounds.qml).
+    IpcHandler {
+        target: "sounds"
+
+        function play(name: string): string {
+            if (!["login", "notification", "open", "close", "alert"].includes(name))
+                return "login, notification, open, close or alert";
+            Sounds.play(name);
+            return `playing ${name} at ${Sounds.volume}`;
+        }
+    }
+
     IpcHandler {
         target: "brightness"
 
@@ -517,6 +531,8 @@ ShellRoot {
         // A fresh install puts Bioma's own icons and cursor on the desktop,
         // once (Looks.adopt).
         Looks.adopting = true;
+        // The desktop has appeared; the first time this session, it says so.
+        Sounds.greet();
         console.log("Bioma: configuration", Config.ready ? "loaded" : "pending");
     }
 }

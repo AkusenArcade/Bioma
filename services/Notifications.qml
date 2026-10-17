@@ -39,6 +39,11 @@ Singleton {
         persistenceSupported: true
         inlineReplySupported: false
 
+        // Kept so the sender's own sound can win over Bioma's
+        // (services/Sounds.qml); without them in this list the hints arrive
+        // and are dropped.
+        extraHints: ["sound-file", "sound-name", "suppress-sound"]
+
         onNotification: notification => root.receive(notification)
     }
 
@@ -212,6 +217,7 @@ Singleton {
 
         if (root.isCritical(notification)) {
             root.urgent = root.urgent.concat([notification]);
+            Sounds.notification(notification);
             return;
         }
 
@@ -230,6 +236,7 @@ Singleton {
         root.queue = root.queue.concat([notification]);
         if (root.queue.length === 1)
             root.begin();
+        Sounds.notification(notification);
     }
 
     // The only clock is the ordinary head's. It runs while that head can be
