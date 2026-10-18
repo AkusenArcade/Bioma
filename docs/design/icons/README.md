@@ -1,6 +1,6 @@
 # Bioma icons
 
-81 glyphs, 24 × 24, `currentColor`, no width/height assumptions beyond the viewBox.
+82 glyphs, 24 × 24, `currentColor`, no width/height assumptions beyond the viewBox.
 
 Icons are the one graphic alphabet in Bioma that is not an indicator: they say **what**
 something is, never **how hard** it is working.
@@ -38,7 +38,7 @@ something is, never **how hard** it is working.
 | `workspaces.svg` | workspaces cell; shifts one step on workspace change |
 | `capture.svg` | utility cell at rest |
 | `screen.svg` `window.svg` `region.svg` | capture targets |
-| `appearance.svg` `structure.svg` `cells.svg` `monitors.svg` `organisms.svg` | settings categories, beside `keyboard.svg` and `lock.svg`. `organisms` is a desktop with its membrane and one panel standing on it |
+| `appearance.svg` `structure.svg` `cells.svg` `monitors.svg` `organisms.svg` `sounds.svg` | settings categories, beside `keyboard.svg` and `lock.svg`. `organisms` is a desktop with its membrane and one panel standing on it; `sounds` is a bubble with two arcs leaving it — Bioma's sounds are bubbles. Not `sound-on`, which is a mute switch's unmuted state and only a circle |
 | `microphone.svg` | dictation: the Text tab's middle source, and the utility cell while it listens |
 | `picker.svg` | the utility cell's Colour tab: a pipette, the bulb up and the glass tip down, at 45° like the hand holds it |
 | `camera.svg` | privacy cell: a camera in use. A video camera — the body and the lens's cone — beside `microphone` and `screen`, the other two things the cell says are being taken |

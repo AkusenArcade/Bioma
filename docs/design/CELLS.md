@@ -812,7 +812,7 @@ advertising itself on someone else's desktop.
 | Measure | Value | Note |
 |---|---|---|
 | category capsule | 240 × 64 px | full pill, 76 px pitch |
-| category glyph | 26 px box, 21 px in | `structure` `cells` `organisms` `appearance` `monitors` `keyboard` `lock` `sound-on` `actions`, in that order (Akusen, 2026-10-09: what is placed first, how it looks after); muted, primary gradient when chosen |
+| category glyph | 26 px box, 21 px in | `structure` `cells` `organisms` `appearance` `monitors` `keyboard` `lock` `sounds` `actions`, in that order (Akusen, 2026-10-09: what is placed first, how it looks after); muted, primary gradient when chosen |
 | category name / line | 15 / 13 | Orbitron 500 (700 chosen, primary) over Spectral muted, 3 px apart, 16 px after the glyph |
 | panel | 720 × 620 px | the widest category's width, for all of them; one height, tall enough for Structure with a tissue of up to seven cells open, and never shorter than the column of categories (672 px with nine); scrolls past that |
 | setting row | 44 px | label 92 px in Orbitron 12, slider to a 56 px right-aligned figure column |

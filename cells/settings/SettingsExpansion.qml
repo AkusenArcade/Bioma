@@ -61,7 +61,7 @@ Item {
           "hint": "shortcuts · niri.kdl", "width": 560 },
         { "key": "session", "label": "SESSION", "glyph": "lock",
           "hint": "locking, power profile", "width": 540 },
-        { "key": "sounds", "label": "SOUNDS", "glyph": "sound-on",
+        { "key": "sounds", "label": "SOUNDS", "glyph": "sounds",
           "hint": "events, volume", "width": 540 },
         { "key": "actions", "label": "ACTIONS", "glyph": "actions",
           "hint": "the ring at the pointer", "width": 600 }
