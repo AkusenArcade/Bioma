@@ -13,9 +13,10 @@
 # The copy holds, under `live/`:
 #
 #   shell/         greeter.qml and the parts of Bioma it imports
-#   config/bioma/  the configuration layers, the wallpaper's state and the
-#                  palette — XDG_CONFIG_HOME points here, so the greeter reads
-#                  the user's own appearance through the ordinary paths
+#   config/bioma/  the configuration layers, the wallpaper's state, the
+#                  palette and the user's own palettes — XDG_CONFIG_HOME points
+#                  here, so the greeter reads the user's own appearance through
+#                  the ordinary paths
 #   wallpapers/    the images the wallpaper state names
 #   data/fonts/    Bioma's two faces, when they are installed in the home
 #   data/icons/    the cursor theme, when it is installed in the home
@@ -67,6 +68,13 @@ for file in override.json generated/palette.json; do
         cp "$config/bioma/$file" "$next/config/bioma/$file"
     fi
 done
+
+# The user's own palettes, where the greeter's Theme looks for them first.
+mkdir -p "$next/config/bioma/palettes"
+if [ -d "$config/bioma/palettes" ]; then
+    find "$config/bioma/palettes" -maxdepth 1 -name '*.json' -type f \
+        -exec cp {} "$next/config/bioma/palettes/" \;
+fi
 
 # The wallpaper's state, with its images copied and its paths pointed at the
 # copies, and everything the greeter needs to know about the user.

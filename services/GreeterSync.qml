@@ -31,6 +31,9 @@ Singleton {
         `${root.configHome}/bioma/override.json`,
         `${root.configHome}/bioma/wallpaper.json`,
         `${root.configHome}/bioma/generated/palette.json`,
+        // The palette on screen, when it is one of the user's: edited, it
+        // changes no other file.
+        `${Theme.userPalettesDirectory}/${Theme.manualPalette}.json`,
         `${root.configHome}/niri/outputs.kdl`,
         `${root.configHome}/niri/bioma-keyboard.kdl`,
         `${root.configHome}/niri/bioma-cursor.kdl`,

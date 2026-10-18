@@ -129,10 +129,16 @@ track metadata, notification body); `technical` carries machine measurement
 ### `theme`
 
 `source` is `matugen` or `manual`; `palette` names a file in
+`~/.config/bioma/palettes/` or, when there is none of that name there, in
 `config/palettes/`. Bioma ships `manual` with the `default` palette: its own
 wallpaper and its own colours, until the theme cell is asked for others. A palette declares only the four interface roles —
-`background`, `text`, `primary`, `secondary`. Light or dark is inferred from the
+`background`, `text`, `primary`, `secondary` — and a `name`. Light or dark is inferred from the
 background's luminance, never configured.
+
+The user's own palettes are made, edited and deleted in Settings → Appearance
+(`custom-1.json`, `custom-2.json`, …) and can be written by hand or copied in
+from somebody else: a file dropped into `~/.config/bioma/palettes/` appears in
+the list at once. The greeter is given a copy of them.
 
 `theme.state` holds the three state roles in a `light` and a `dark` variant.
 **These never come from matugen**: they are a semantic code, and a blue

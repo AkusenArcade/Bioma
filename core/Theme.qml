@@ -193,12 +193,30 @@ Singleton {
     readonly property string source: Config.get("theme.source", "manual")
     readonly property string manualPalette: Config.get("theme.palette", "default")
 
+    readonly property string configHome: Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config"
+
     // matugen writes this file through a template; the shell watches it and
     // hot-reloads. There is no direct dependency on matugen — if the file is
     // absent the manual palette stands.
-    readonly property string matugenPath: `${Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config"}/bioma/generated/palette.json`
+    readonly property string matugenPath: `${root.configHome}/bioma/generated/palette.json`
 
-    readonly property string manualPath: Qt.resolvedUrl(`../config/palettes/${manualPalette}.json`).toString().replace("file://", "")
+    // A manual palette is looked for among the user's own first, then among
+    // the shipped ones: a file of the user's with a shipped palette's name
+    // stands in for it. Asked for by name, there is no telling in advance
+    // which folder holds it, so the user's is read and a file that is not
+    // there sends the reader to the shipped one.
+    readonly property string userPalettesDirectory: `${root.configHome}/bioma/palettes`
+    readonly property string shippedPath: `${root.palettesDirectory}/${root.manualPalette}.json`
+    readonly property string userPath: `${root.userPalettesDirectory}/${root.manualPalette}.json`
+
+    property bool manualShipped: false
+    onManualPaletteChanged: root.manualShipped = false
+
+    readonly property string manualPath: root.manualShipped ? root.shippedPath : root.userPath
+
+    // While a palette is being edited the desktop follows the hand, not a
+    // quarter of a second behind it (services/Palettes.qml).
+    property bool immediate: false
 
     function applyPalette(palette) {
         if (!palette)
@@ -246,19 +264,35 @@ Singleton {
     // shell changing. The name comes from inside the file rather than from its
     // name on disk, because a theme has a name and the name is what is
     // remembered.
+    //
+    // The user's own live in `~/.config/bioma/palettes/`, in the same form:
+    // written by Settings → Appearance (services/Palettes.qml), or by hand,
+    // or copied from somebody else.
 
     readonly property string palettesDirectory:
         Qt.resolvedUrl("../config/palettes").toString().replace("file://", "")
 
-    property var paletteNames: ({})
+    // What each file says, by its path: its name and its four colours.
+    property var paletteData: ({})
 
-    // [{ "file": "default", "name": "Bioma" }], in the folder's own order.
+    // [{ "file": "default", "name": "Bioma", "own": false, "colours": {…} }]:
+    // the shipped ones in the folder's order, then the user's.
     readonly property var palettes: {
         const out = [];
+        const own = {};
+        for (let i = 0; i < userFiles.count; i++)
+            own[String(userFiles.get(i, "fileBaseName"))] = String(userFiles.get(i, "filePath"));
+        const add = (file, path, isOwn) => {
+            const data = root.paletteData[path] || {};
+            out.push({ "file": file, "name": data.name || file, "own": isOwn, "colours": data });
+        };
         for (let i = 0; i < paletteFiles.count; i++) {
             const file = String(paletteFiles.get(i, "fileBaseName"));
-            out.push({ "file": file, "name": root.paletteNames[file] || file });
+            if (own[file] === undefined)
+                add(file, String(paletteFiles.get(i, "filePath")), false);
         }
+        for (const file of Object.keys(own).sort())
+            add(file, own[file], true);
         return out;
     }
 
@@ -269,16 +303,16 @@ Singleton {
         return root.manualPalette;
     }
 
-    function noteName(file, text) {
+    function noteData(path, text) {
         if (!text)
             return;
         try {
             const palette = JSON.parse(text);
-            const names = Object.assign({}, root.paletteNames);
-            names[file] = palette.name || file;
-            root.paletteNames = names;
+            const data = Object.assign({}, root.paletteData);
+            data[path] = palette;
+            root.paletteData = data;
         } catch (error) {
-            console.warn(`Bioma: palette ${file}.json is not valid JSON — ${error.message}`);
+            console.warn(`Bioma: palette ${path} is not valid JSON — ${error.message}`);
         }
     }
 
@@ -291,25 +325,53 @@ Singleton {
         sortField: FolderListModel.Name
     }
 
-    // One reader per file, so that adding a palette is adding a file. They are
-    // read once, at their own size — four colours and a sentence — and then sit
-    // idle; nothing here watches or polls.
+    // A folder that is not there when it is listed is never listed again,
+    // whatever is written into it later, so it is made first. The lock screen
+    // and the greeter make it too, or find it made.
+    property bool userFolderReady: false
+
+    Process {
+        running: true
+        command: ["mkdir", "-p", root.userPalettesDirectory]
+        onExited: root.userFolderReady = true
+    }
+
+    FolderListModel {
+        id: userFiles
+        folder: root.userFolderReady ? `file://${root.userPalettesDirectory}` : ""
+        nameFilters: ["*.json"]
+        showDirs: false
+        showHidden: false
+        sortField: FolderListModel.Name
+    }
+
+    // One reader per file, so that adding a palette is adding a file. Four
+    // colours and a name each; the user's are watched, since they are
+    // edited, and the shipped ones are read once.
+    component Reader: QtObject {
+        id: entry
+
+        required property string filePath
+        property bool watched: false
+
+        readonly property FileView view: FileView {
+            path: entry.filePath
+            blockLoading: true
+            printErrors: false
+            watchChanges: entry.watched
+            onLoaded: root.noteData(entry.filePath, text())
+            onFileChanged: reload()
+        }
+    }
+
     Instantiator {
         model: paletteFiles
+        delegate: Reader {}
+    }
 
-        delegate: QtObject {
-            id: entry
-
-            required property string fileBaseName
-            required property string filePath
-
-            readonly property FileView view: FileView {
-                path: entry.filePath
-                blockLoading: true
-                printErrors: false
-                onLoaded: root.noteName(entry.fileBaseName, text())
-            }
-        }
+    Instantiator {
+        model: userFiles
+        delegate: Reader { watched: true }
     }
 
     FileView {
@@ -324,14 +386,36 @@ Singleton {
         id: manualFile
         path: root.source === "manual" ? root.manualPath : ""
         watchChanges: true
+        printErrors: false
         onLoaded: root.load(text(), root.manualPath)
+        // The path is moved after the failure has been reported, not while it
+        // is: a FileView given a new path inside its own `loadFailed` keeps the
+        // path and never reads it, and the desktop stayed in the palette before.
+        onLoadFailed: error => {
+            if (!root.manualShipped)
+                Qt.callLater(() => root.manualShipped = true);
+            else
+                console.warn(`Bioma: palette ${root.manualPalette} is in neither ${root.userPalettesDirectory} nor ${root.palettesDirectory}`);
+        }
         onFileChanged: reload()
     }
 
     // A theme change crosses every surface together, in one transition. If each
     // cell animated on its own the desktop would change colour in patches.
-    Behavior on background { ColorAnimation { duration: Timing.theme; easing.type: Easing.InOutQuad } }
-    Behavior on text { ColorAnimation { duration: Timing.theme; easing.type: Easing.InOutQuad } }
-    Behavior on primary { ColorAnimation { duration: Timing.theme; easing.type: Easing.InOutQuad } }
-    Behavior on secondary { ColorAnimation { duration: Timing.theme; easing.type: Easing.InOutQuad } }
+    Behavior on background {
+        enabled: !root.immediate
+        ColorAnimation { duration: Timing.theme; easing.type: Easing.InOutQuad }
+    }
+    Behavior on text {
+        enabled: !root.immediate
+        ColorAnimation { duration: Timing.theme; easing.type: Easing.InOutQuad }
+    }
+    Behavior on primary {
+        enabled: !root.immediate
+        ColorAnimation { duration: Timing.theme; easing.type: Easing.InOutQuad }
+    }
+    Behavior on secondary {
+        enabled: !root.immediate
+        ColorAnimation { duration: Timing.theme; easing.type: Easing.InOutQuad }
+    }
 }

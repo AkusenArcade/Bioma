@@ -710,6 +710,16 @@ on whichever screen, and on the first category, Structure, until one is chosen.
 
 **Appearance** — opacity, blur, radius, scale, and three distinct margins: screen **edge**,
 **tissue** to cell, and the **gap** between the shapes of an open cell. Plus the timing set.
+Under them two wells, and the page scrolls. **PALETTE**: every palette as a chip — its four
+colours as overlapping dots, then its name — Bioma's first, the user's after, the one on screen
+lit; a press chooses it (and sets the source to manual), and a dashed **NEW** makes a palette of
+the user's from the colours on screen now, matugen's included, and chooses it. **YOUR PALETTE**,
+only while one of the user's is on screen: its name (unique, never empty), DELETE (asks once,
+then Bioma's own palette comes back), and one row per interface role — swatch, role, the hex in
+a field, niri's eyedropper — the chosen row lit, with HUE, SATURATION and VALUE under the rows
+for it and a line on what the role colours. Every change is the desktop changing, without the
+theme's crossing; the file is written when the hand rests. The state roles are not offered: no
+palette changes them (Akusen, 2026-10-18).
 
 **Structure** — above everything, the **presets**, because a preset is every monitor at once:
 a **dropdown** with the preset in use (or `UNSAVED`, or `EMPTY`) and `CHANGED` beside the name

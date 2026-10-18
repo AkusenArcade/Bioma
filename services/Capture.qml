@@ -447,8 +447,13 @@ Singleton {
 
     signal picked(string hex)
 
-    function pickColour() {
+    // A pick for somebody else — the palette editor — answers on `picked`
+    // alone: the clipboard and the list are the utility's.
+    property bool pickKept: true
+
+    function pickColour(kept = true) {
         root.lastError = "";
+        root.pickKept = kept;
         picker.buffer = "";
         root.settleThen(() => {
             picker.running = false;
@@ -506,7 +511,11 @@ Singleton {
                 root.cancelled();
                 return;
             }
-            root.copyColour(root.hexOf(answer.rgb.slice(0, 3)));
+            const hex = root.hexOf(answer.rgb.slice(0, 3));
+            if (root.pickKept)
+                root.copyColour(hex);
+            else
+                root.picked(hex);
         }
     }
 

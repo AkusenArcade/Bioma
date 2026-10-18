@@ -87,7 +87,9 @@ Cell {
     Connections {
         target: Capture
         function onCaptured() { root.pulse(); }
-        function onPicked() { root.pulse(); }
+        // Not for a pick the palette editor asked for: that one is answered
+        // where it was asked.
+        function onPicked() { if (Capture.pickKept) root.pulse(); }
     }
 
     Connections {
