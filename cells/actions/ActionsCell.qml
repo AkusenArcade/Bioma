@@ -15,9 +15,10 @@ import qs.cells
 // until it fits. The pill in the middle says QUICK ACTIONS, then the name of
 // the macro the pointer points at; up to eight round capsules sit on an
 // circle around it, each tied to the pill by a thread, each the icon of one
-// macro. The ring grows out of the pill — every thread draws from the pill's
-// edge, and its capsule grows at the far end, sixteen milliseconds after the
-// one before.
+// macro. The ring grows out of the pill and goes back into it: every capsule
+// leaves the pill's edge as a point and travels out to its place on the
+// circle, growing as it goes, its thread drawn out behind it; closing, they
+// all come back in and only then does the pill go.
 //
 // Pointing chooses by direction: anywhere in the ring's field, the capsule
 // nearest the pointer's angle lights, and a press there runs it — on the
@@ -220,23 +221,25 @@ Cell {
                 readonly property real ux: sx / distance
                 readonly property real uy: sy / distance
 
-                // From the pill's edge to the capsule's.
+                // Where it leaves the pill, and how far out its centre has
+                // come: from that point on the pill's edge to its place on
+                // the circle, as the ring spreads.
                 readonly property real start: root.pillExit(ux, uy)
-                readonly property real end: distance - root.capsule / 2
+                readonly property real reach: start + (distance - start) * root.spread
 
-                property real threadProgress: 0
-                property real growth: 0
+                // The thread runs from the pill's edge to the capsule's.
+                readonly property real end: reach - width / 2
 
                 readonly property bool lit: root.chosen === index
 
                 // A stop for the arrows, and Enter runs it.
-                readonly property bool navigable: growth > 0.5
+                readonly property bool navigable: root.spread > 0.5
                 function activate() { root.choose(satellite.index); }
 
-                width: root.capsule * growth
+                width: root.capsule * root.spread
                 height: width
-                x: ring.cx + sx - width / 2
-                y: ring.cy + sy - height / 2
+                x: ring.cx + ux * reach - width / 2
+                y: ring.cy + uy * reach - height / 2
 
                 Shape {
                     // In the ring's frame, drawn from the satellite's: the
@@ -246,7 +249,7 @@ Cell {
                     width: ring.width
                     height: ring.height
                     preferredRendererType: Shape.CurveRenderer
-                    visible: satellite.threadProgress > 0
+                    visible: root.spread > 0
 
                     ShapePath {
                         strokeColor: Theme.line
@@ -258,15 +261,13 @@ Cell {
                         startY: ring.cy + satellite.uy * satellite.start
 
                         PathLine {
-                            readonly property real reach: satellite.start
-                                + (satellite.end - satellite.start) * satellite.threadProgress
-                            x: ring.cx + satellite.ux * reach
-                            y: ring.cy + satellite.uy * reach
+                            x: ring.cx + satellite.ux * satellite.end
+                            y: ring.cy + satellite.uy * satellite.end
                         }
                     }
                 }
 
-                // The nodes: on the pill, and travelling with the line's end.
+                // The nodes: on the pill, and travelling with the capsule.
                 Rectangle {
                     readonly property real at: satellite.start
                     width: Metrics.nodeSize * 2
@@ -274,20 +275,19 @@ Cell {
                     radius: width / 2
                     color: Theme.node
                     antialiasing: true
-                    visible: satellite.threadProgress > 0
+                    visible: root.spread > 0
                     x: ring.cx + satellite.ux * at - satellite.x - width / 2
                     y: ring.cy + satellite.uy * at - satellite.y - height / 2
                 }
 
                 Rectangle {
-                    readonly property real at: satellite.start
-                        + (satellite.end - satellite.start) * satellite.threadProgress
+                    readonly property real at: satellite.end
                     width: Metrics.nodeSize * 2
                     height: width
                     radius: width / 2
                     color: Theme.node
                     antialiasing: true
-                    visible: satellite.threadProgress > 0
+                    visible: root.spread > 0
                     x: ring.cx + satellite.ux * at - satellite.x - width / 2
                     y: ring.cy + satellite.uy * at - satellite.y - height / 2
                 }
@@ -298,7 +298,7 @@ Cell {
                     color: Qt.alpha(satellite.lit ? Theme.lift(Theme.cell, 0.05) : Theme.cell,
                                     root.cellOpacity)
                     antialiasing: true
-                    visible: satellite.growth > 0
+                    visible: root.spread > 0
 
                     Behavior on color { ColorAnimation { duration: Timing.transition } }
                 }
@@ -306,12 +306,13 @@ Cell {
                 Rim {
                     anchors.fill: parent
                     radius: width / 2
-                    visible: satellite.growth > 0
+                    visible: root.spread > 0
                     topColour: satellite.lit ? Theme.lift(Theme.rim, 0.10) : Theme.rim
                     bottomColour: satellite.lit ? Theme.lift(Theme.line, 0.06) : Theme.line
                 }
 
-                // Content arrives once the shape is at size.
+                // Content arrives once the shape is at size, and leaves
+                // before it shrinks.
                 Icon {
                     anchors.centerIn: parent
                     width: root.capsuleGlyph
@@ -319,67 +320,13 @@ Cell {
                     name: satellite.modelData.icon
                     colour: Theme.text
                     gradient: satellite.lit
-                    opacity: satellite.growth > 0.98 ? 1 : 0
+                    opacity: root.spread > 0.98 && !root.leaving ? 1 : 0
 
-                    Behavior on opacity { NumberAnimation { duration: Timing.contentFade } }
-                }
-
-                SequentialAnimation {
-                    id: unfold
-                    PauseAnimation { duration: Timing.stagger * (2 + satellite.index) }
-                    NumberAnimation {
-                        target: satellite
-                        property: "threadProgress"
-                        to: 1
-                        duration: Timing.grow
-                        easing.type: Easing.Bezier
-                        easing.bezierCurve: Timing.easeOpenFlat
-                    }
-                    NumberAnimation {
-                        target: satellite
-                        property: "growth"
-                        to: 1
-                        duration: Timing.grow
-                        easing.type: Easing.Bezier
-                        // A small capsule: the overshoot is allowed here.
-                        easing.bezierCurve: Timing.easeOpen
+                    Behavior on opacity {
+                        enabled: !root.leaving
+                        NumberAnimation { duration: Timing.contentFade }
                     }
                 }
-
-                ParallelAnimation {
-                    id: fold
-                    NumberAnimation {
-                        target: satellite
-                        property: "growth"
-                        to: 0
-                        duration: Timing.close / 2
-                        easing.type: Easing.Bezier
-                        easing.bezierCurve: Timing.easeClose
-                    }
-                    SequentialAnimation {
-                        PauseAnimation { duration: Timing.close / 3 }
-                        NumberAnimation {
-                            target: satellite
-                            property: "threadProgress"
-                            to: 0
-                            duration: Timing.close / 2
-                            easing.type: Easing.Bezier
-                            easing.bezierCurve: Timing.easeClose
-                        }
-                    }
-                }
-
-                function open() {
-                    fold.stop();
-                    unfold.restart();
-                }
-
-                function close() {
-                    unfold.stop();
-                    fold.restart();
-                }
-
-                Component.onCompleted: if (root.placed && !root.leaving) satellite.open()
             }
         }
     }
@@ -401,21 +348,57 @@ Cell {
         function onCountChanged() { root.gather(); }
     }
 
-    Component.onCompleted: root.gather()
+    Component.onCompleted: {
+        root.gather();
+        if (root.placed)
+            root.unfold();
+    }
 
-    function unfoldAll() {
-        for (let i = 0; i < satellites.count; i++)
-            satellites.itemAt(i)?.open();
+    // ---- Spreading and retracting ---------------------------------------------
+
+    // How far the ring has come out of the pill: 0 folded into it, 1 in place.
+    // Every capsule together — the ring is one form opening, not eight
+    // arriving.
+    property real spread: 0
+
+    // It opens with the pill, and goes back into it before the pill goes: the
+    // pill waits for half the retraction, so the ring is seen going home.
+    withdrawal: Timing.close / 2
+
+    NumberAnimation {
+        id: spreading
+        target: root
+        property: "spread"
+        to: 1
+        duration: Timing.open
+        easing.type: Easing.Bezier
+        // Small capsules: the overshoot is allowed here.
+        easing.bezierCurve: Timing.easeOpen
+    }
+
+    NumberAnimation {
+        id: retracting
+        target: root
+        property: "spread"
+        to: 0
+        duration: Timing.close
+        easing.type: Easing.Bezier
+        easing.bezierCurve: Timing.easeClose
+    }
+
+    function unfold() {
+        retracting.stop();
+        spreading.restart();
         keys.forceActiveFocus();
     }
 
-    function foldAll() {
-        for (let i = 0; i < satellites.count; i++)
-            satellites.itemAt(i)?.close();
+    function fold() {
+        spreading.stop();
+        retracting.restart();
     }
 
-    onPlacedChanged: if (root.placed) root.unfoldAll()
-    onLeavingChanged: if (root.leaving) root.foldAll()
+    onPlacedChanged: if (root.placed && !root.leaving) root.unfold()
+    onLeavingChanged: if (root.leaving) root.fold()
 
     // ---- Choosing --------------------------------------------------------------
 

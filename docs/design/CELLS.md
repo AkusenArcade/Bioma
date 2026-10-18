@@ -1145,9 +1145,13 @@ name never reaches the capsules at its sides: it elides. A circle, not an ellips
 2026-10-18). A pointer too near an edge for the whole ring moves the ring
 inward until it fits, 12 px from the edge.
 
-**Opening** — the pill grows into place as every summoned cell does; then each thread draws from
-the pill outward and its capsule grows at the far end, 16 ms after the one before (the small
-capsule's overshoot curve). Closing reverses it inside the closing time.
+**Opening** — the pill grows into place as every summoned cell does, and the ring spreads out of
+it at the same time: every capsule leaves the pill's edge as a point and travels out to its place
+on the circle, growing as it goes, its thread drawn out behind it — all together, over the opening
+time, on the small capsule's overshoot curve. The icons come in once the capsules are at size.
+**Closing** — the icons go first; the ring retracts into the pill over the closing time, and the
+pill begins its own shrink halfway through, so the ring is seen going home rather than fading with
+it (Akusen, 2026-10-18: "expand from the centre, and retract when it closes").
 
 **Choosing** — by direction. Anywhere in the ring's field the capsule nearest the pointer's angle
 is lit — the glass a step lighter, the icon in the primary gradient — and

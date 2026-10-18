@@ -450,6 +450,12 @@ Item {
     // what the eye sees is a panel that vanished rather than one that closed.
     property bool leaving: false
 
+    // How long the pill waits before it begins to go, for a cell that draws
+    // round itself: the quick actions' ring retracts into the pill on
+    // `leaving`, and a pill that faded at once took the ring with it before it
+    // was seen going back.
+    property int withdrawal: 0
+
     signal gone()
 
     function depart() {
@@ -459,23 +465,27 @@ Item {
         departure.restart();
     }
 
-    ParallelAnimation {
+    SequentialAnimation {
         id: departure
 
-        NumberAnimation {
-            target: root
-            property: "emergence"
-            to: 0.82
-            duration: Timing.close
-            easing.type: Easing.Bezier
-            easing.bezierCurve: Timing.easeClose
-        }
+        PauseAnimation { duration: root.withdrawal }
 
-        NumberAnimation {
-            target: root
-            property: "opacity"
-            to: 0
-            duration: Timing.close
+        ParallelAnimation {
+            NumberAnimation {
+                target: root
+                property: "emergence"
+                to: 0.82
+                duration: Timing.close
+                easing.type: Easing.Bezier
+                easing.bezierCurve: Timing.easeClose
+            }
+
+            NumberAnimation {
+                target: root
+                property: "opacity"
+                to: 0
+                duration: Timing.close
+            }
         }
 
         // Hidden before it is let go. The host clears the cell on `gone`, and
