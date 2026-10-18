@@ -156,4 +156,13 @@ Singleton {
     // whatever image is current.
     onVariantChanged: root.generate(Wallpaper.current)
     onSchemeChanged: root.generate(Wallpaper.current)
+
+    // And when the palette matugen left behind was made from another picture:
+    // the wallpaper changed under a manual palette, and the source was then
+    // set back to matugen. Its last palette came back, the previous
+    // wallpaper's, and stayed until the next image (2026-10-18).
+    readonly property bool stale: root.enabled && Wallpaper.loaded
+                                  && Theme.generatedImage.length > 0
+                                  && Theme.generatedImage !== Wallpaper.current
+    onStaleChanged: if (root.stale) root.generate(Wallpaper.current)
 }

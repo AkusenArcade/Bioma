@@ -21,6 +21,14 @@ import qs.core
 // NEW starts from the colours on screen now, whatever made them — a shipped
 // palette, a palette of the user's, or matugen reading the wallpaper — so a
 // wallpaper's colours can be kept, and then changed.
+//
+// And each wallpaper remembers the palette it was last worn with, with no
+// one asking it to: going back to a picture brings its palette back. The pair
+// is the source and what the source was told: for a manual one which palette,
+// for matugen which scheme it read the picture with — tonal spot, content,
+// expressive — since the same picture makes a different desktop under each
+// (Akusen, 2026-10-18). A picture never paired keeps whatever is on screen.
+// Noctalia did this and Akusen missed it, 2026-10-18.
 Singleton {
     id: root
 
@@ -140,6 +148,7 @@ Singleton {
         root.draftFile = "";
         root.choose("default");
         Quickshell.execDetached(["rm", "-f", `${Theme.userPalettesDirectory}/${file}.json`]);
+        root.forget(file);
     }
 
     // ---- Writing -----------------------------------------------------------------
@@ -191,6 +200,113 @@ Singleton {
             console.warn(`Bioma: could not write ${writer.path} — ${error}`);
         }
     }
+
+    // ---- Each wallpaper's palette ------------------------------------------------
+    //
+    // `theme.pairs`, in the override layer: { "<image>": { "source": "manual",
+    // "palette": "custom-1" } } or { "<image>": { "source": "matugen",
+    // "scheme": "scheme-content" } }.
+    // Written whole, never by a path: an image's path is full of dots.
+
+    readonly property var pairs: {
+        const saved = Config.get("theme.pairs", {});
+        return saved && typeof saved === "object" && !Array.isArray(saved) ? saved : {};
+    }
+
+    readonly property var pairNow: Theme.source === "matugen"
+        ? { "source": "matugen", "scheme": Matugen.scheme }
+        : { "source": "manual", "palette": Theme.manualPalette }
+
+    // A wallpaper and a palette are a pair once they have stayed together for
+    // `Timing.pair`: the pictures a carousel runs past are not.
+    Timer {
+        id: together
+        interval: Timing.pair
+        onTriggered: root.remember()
+    }
+
+    function settleTogether() {
+        if (Config.ready && Wallpaper.loaded && Wallpaper.current.length > 0)
+            together.restart();
+    }
+
+    function remember() {
+        const image = Wallpaper.current;
+        if (image.length === 0)
+            return;
+        const now = root.pairNow;
+        const saved = root.pairs[image];
+        if (saved && JSON.stringify(saved) === JSON.stringify(now))
+            return;
+        const next = Object.assign({}, root.pairs);
+        next[image] = now;
+        Config.set("theme.pairs", next);
+    }
+
+    // A deleted palette is forgotten by every picture that wore it, so none
+    // asks for it again.
+    function forget(file) {
+        const next = {};
+        let dropped = false;
+        for (const image of Object.keys(root.pairs)) {
+            const pair = root.pairs[image];
+            if (pair && pair.source === "manual" && pair.palette === file)
+                dropped = true;
+            else
+                next[image] = pair;
+        }
+        if (dropped)
+            Config.set("theme.pairs", next);
+    }
+
+    // The picture's own palette, if it has one and that palette still exists.
+    function recall(image) {
+        const pair = root.pairs[image];
+        if (!pair)
+            return;
+        if (pair.source === "matugen") {
+            root.flush();
+            // The scheme first: matugen runs once, with the picture's own.
+            if (typeof pair.scheme === "string" && pair.scheme.length > 0)
+                Config.set("theme.matugen.scheme", pair.scheme);
+            Config.set("theme.source", "matugen");
+        } else if (pair.source === "manual"
+                   && Theme.palettes.some(palette => palette.file === pair.palette)) {
+            root.choose(pair.palette);
+        }
+    }
+
+    // The first image is the one the session starts on, already with its own
+    // palette: only a change of picture recalls anything.
+    property string lastImage: ""
+
+    Connections {
+        target: Wallpaper
+        function onImageChanged(imagePath) {
+            const before = root.lastImage;
+            root.lastImage = imagePath;
+            if (before.length > 0 && imagePath !== before)
+                root.recall(imagePath);
+            root.settleTogether();
+        }
+    }
+
+    onPairNowChanged: root.settleTogether()
+
+    // This service starts after the wallpaper has been announced, so the
+    // picture on screen is taken as it is once both are known: unpaired, it
+    // is paired with what it is wearing, and the first change of picture has
+    // something to change from.
+    readonly property bool awake: Config.ready && Wallpaper.loaded
+
+    function wake() {
+        if (root.lastImage.length === 0)
+            root.lastImage = Wallpaper.current;
+        root.settleTogether();
+    }
+
+    onAwakeChanged: if (root.awake) root.wake()
+    Component.onCompleted: if (root.awake) root.wake()
 
     // ---- The eyedropper ----------------------------------------------------------
 

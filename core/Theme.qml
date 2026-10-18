@@ -227,11 +227,17 @@ Singleton {
         if (palette.secondary) root.secondaryTarget = palette.secondary;
     }
 
+    // The picture matugen's palette was made from, as its file says.
+    property string generatedImage: ""
+
     function load(text, label) {
         if (!text)
             return;
         try {
-            root.applyPalette(JSON.parse(text));
+            const palette = JSON.parse(text);
+            if (label === "palette.json")
+                root.generatedImage = palette.image || "";
+            root.applyPalette(palette);
         } catch (error) {
             console.warn(`Bioma: ${label} is not valid JSON — ${error.message}`);
         }

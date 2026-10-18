@@ -77,6 +77,12 @@ Singleton {
     // not answer faster because the shell was asked to move slower.
     readonly property int locate: Config.get("timing.locate", 120)
 
+    // How long a wallpaper and a palette stay together before they are
+    // remembered as a pair (services/Palettes.qml): long enough that the
+    // pictures a carousel runs past are not paired with anything. A dwell,
+    // not an animation, so not scaled.
+    readonly property int pair: Config.get("timing.pair", 2000)
+
     // How long the launcher waits after the last letter before it walks the
     // home for files: one walk per word rather than one per keystroke. Not an
     // animation, so not scaled — the disk does not answer slower because the

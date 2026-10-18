@@ -140,6 +140,16 @@ The user's own palettes are made, edited and deleted in Settings → Appearance
 from somebody else: a file dropped into `~/.config/bioma/palettes/` appears in
 the list at once. The greeter is given a copy of them.
 
+`theme.pairs` is written by the shell, never asked for: each wallpaper
+remembers the theme it was last worn with, `{ "source": "matugen", "scheme":
+"scheme-content" }` or `{ "source": "manual", "palette": "custom-1" }`, keyed by
+the image's path. Going back to a picture brings its theme back: its palette,
+or matugen reading it with the scheme it was last read with. A picture becomes a
+pair once it and the palette have stayed together for `timing.pair`
+milliseconds (2000), so the ones a carousel runs past are not paired. A
+picture never paired keeps the palette on screen; a deleted palette is
+forgotten by every picture that wore it.
+
 `theme.state` holds the three state roles in a `light` and a `dark` variant.
 **These never come from matugen**: they are a semantic code, and a blue
 wallpaper would turn them into three blues. The same hex values lose contrast on
