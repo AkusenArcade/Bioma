@@ -386,15 +386,19 @@ Cell {
         easing.bezierCurve: Timing.easeClose
     }
 
+    // Heard as a cell's panel is: the ring is this cell's opening, and it is
+    // only ever asked for (services/Sounds.qml).
     function unfold() {
         retracting.stop();
         spreading.restart();
         keys.forceActiveFocus();
+        Sounds.cell(true);
     }
 
     function fold() {
         spreading.stop();
         retracting.restart();
+        Sounds.cell(false);
     }
 
     onPlacedChanged: if (root.placed && !root.leaving) root.unfold()
