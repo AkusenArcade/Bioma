@@ -243,6 +243,11 @@ Singleton {
 
     // ---- Switching on and off ------------------------------------------------
 
+    // While niri is still being told. A second call in that moment is
+    // answered true and does nothing, so whoever switches several in a row —
+    // a quick action — waits for this to clear between them.
+    readonly property bool switching: switcher.running
+
     // False when refused: the last monitor on stays on.
     function power(name, on) {
         const output = root.outputOf(name);

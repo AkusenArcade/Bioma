@@ -802,9 +802,9 @@ advertising itself on someone else's desktop.
 | Measure | Value | Note |
 |---|---|---|
 | category capsule | 240 × 64 px | full pill, 76 px pitch |
-| category glyph | 26 px box, 21 px in | `structure` `cells` `organisms` `appearance` `monitors` `keyboard` `lock`, in that order (Akusen, 2026-10-09: what is placed first, how it looks after); muted, primary gradient when chosen |
+| category glyph | 26 px box, 21 px in | `structure` `cells` `organisms` `appearance` `monitors` `keyboard` `lock` `sound-on` `actions`, in that order (Akusen, 2026-10-09: what is placed first, how it looks after); muted, primary gradient when chosen |
 | category name / line | 15 / 13 | Orbitron 500 (700 chosen, primary) over Spectral muted, 3 px apart, 16 px after the glyph |
-| panel | 720 × 620 px | the widest category's width, for all of them; one height, tall enough for Structure with a tissue of up to seven cells open; scrolls past that |
+| panel | 720 × 620 px | the widest category's width, for all of them; one height, tall enough for Structure with a tissue of up to seven cells open, and never shorter than the column of categories (672 px with nine); scrolls past that |
 | setting row | 44 px | label 92 px in Orbitron 12, slider to a 56 px right-aligned figure column |
 | list row | 38 px | cells, monitors, shortcuts |
 | tissue slot | ⅓ of the page × 26 px | three per edge across the page width, 14 px apart, radius 11, dashed when empty |
@@ -1122,3 +1122,59 @@ not accepted". CANCEL and AUTHENTICATE close the panel.
 | panel | 380 px | icon 36 px; message Spectral 15; id Orbitron 11 faint |
 | field | 44 px | the lock's capsule, Spectral 16, centred bullets |
 | buttons | Choice | CANCEL plain, AUTHENTICATE primary |
+
+---
+
+## 20 · Quick actions
+
+*Invoked only · never placed · a ring around the pointer.*
+
+*Built 2026-10-18, from "Nuove idee".* Macros somebody writes, run from a ring that comes to the
+hand. Its key (Mod+Alt+Space, or Mod+Alt and the middle button) brings it to the point the pointer
+is at, **on the monitor the pointer is on** — which is not always the one the keyboard is pointed
+at, and Wayland tells a client neither, so for a moment every host surface takes input over its
+whole screen and the first sighting names the screen and the point (`Focus.seek`). Over a membrane,
+or with no sighting within `timing.locate`, it comes up in the middle of the screen the keyboard is
+on. It is offered to a keybind and never to the Structure page: a ring has no place on an edge.
+
+**Form** — the pill in the middle wears the `actions` glyph and QUICK ACTIONS; up to eight round
+capsules sit on a circle round it, clockwise from the top in the order the Settings page lists
+them, each tied to the pill by a thread from the pill's edge to its own, each the icon of one
+macro. The ring is laid out for the widest pill it allows (216 px, enough for QUICK ACTIONS), so a
+name never reaches the capsules at its sides: it elides. A circle, not an ellipse (Akusen,
+2026-10-18). A pointer too near an edge for the whole ring moves the ring
+inward until it fits, 12 px from the edge.
+
+**Opening** — the pill grows into place as every summoned cell does; then each thread draws from
+the pill outward and its capsule grows at the far end, 16 ms after the one before (the small
+capsule's overshoot curve). Closing reverses it inside the closing time.
+
+**Choosing** — by direction. Anywhere in the ring's field the capsule nearest the pointer's angle
+is lit — the glass a step lighter, the icon in the primary gradient — and
+the pill says its name in Spectral 700; inside the pill nothing is chosen, which is where the hand
+starts. A press runs the lit one, on the capsule or on the way to it. One to eight run the matching
+capsule; the arrows walk them and Enter runs the one reached; Escape and a press outside the field
+close. The ring goes first and the macro runs once it has gone, so a step that switches this
+monitor off, or puts back a preset, does not take the ring's surface from under it.
+
+**Empty** — with no macro written there is one capsule, `edit`, "Write quick actions", which opens
+Settings on the ACTIONS page.
+
+**The ACTIONS page** — four wells: the macros as the capsules the ring shows and a dashed NEW; the
+one chosen — its place in the ring with arrows to move it, RUN and DELETE (asks once), its name
+(unique, never empty; the error under the field) and its icon from the twelve; its steps, one row
+each read as a sentence, a press opening the row on what the step holds, the arrows and the cross
+beside it under the pointer; and one dashed chip per kind of step. Kinds and what they hold are in
+`docs/configuration.md` (`actions`); among them a **settings** step keeps the Appearance or the
+Sounds page as they are at CAPTURE NOW, to be put back later. No step places a window on a
+workspace (niri's window rules do), and no step switches every monitor off: one monitor at a time,
+never the last one on.
+
+| Measure | Value | Note |
+|---|---|---|
+| pill | 40 px, up to 216 px | glyph 20 px; QUICK ACTIONS Orbitron 15 / a name Spectral 14.5 700 |
+| capsules | 80 px | icon 40 px, `text` at rest, primary gradient when lit — twice a cell, to be read at a glance |
+| circle | 172 px radius | from the pill's centre to the capsules' |
+| threads | 1.3 px, nodes 2.5 px | from the pill's outline to the capsule's |
+| page | 600 px | wells of the Sounds page; step rows 34 px |
+

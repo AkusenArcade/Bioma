@@ -562,6 +562,9 @@ Singleton {
             return true;
         }
 
+        if (Registry.comesToPointer(domain))
+            return root.seek(domain, output);
+
         const host = root.hostFor(output);
         if (!host)
             return false;
@@ -576,6 +579,73 @@ Singleton {
         return host.summon(domain);
     }
 
+    // ---- At the pointer -----------------------------------------------------
+    //
+    // A cell that comes to the pointer has to be summoned on the monitor the
+    // pointer is on, which is not always the one the keyboard is pointed at,
+    // and Wayland tells a client neither. So for a moment every host takes
+    // input over its whole screen: niri tells a surface that starts taking
+    // input under a pointer that has not moved where that pointer is
+    // (core/Pointer.qml), and the first sighting newer than the question
+    // names the monitor and the point. The host there summons the cell
+    // around it. No answer within `Timing.locate` — the pointer is over a
+    // membrane, or over a window niri keeps above the shell — and it comes up
+    // in the middle of the monitor the keyboard is on.
+    property string seeking: ""
+    property string seekingOutput: ""
+    property int seekAsked: 0
+
+    function seek(domain, output) {
+        // Asked twice, it goes, from whichever monitor it came up on.
+        for (const surface of root.hosts) {
+            if (surface && surface.summoned === domain) {
+                surface.retire();
+                return true;
+            }
+        }
+        if (root.hosts.length === 0)
+            return false;
+        root.seekAsked = Pointer.seen;
+        root.seekingOutput = output || "";
+        root.seeking = domain;
+        seekTimer.restart();
+        return true;
+    }
+
+    function found(output, x, y) {
+        const domain = root.seeking;
+        if (domain.length === 0)
+            return;
+        seekTimer.stop();
+        root.seeking = "";
+        const host = root.hostFor(output);
+        if (host)
+            host.summonAt(domain, x, y);
+    }
+
+    Connections {
+        target: Pointer
+        enabled: root.seeking.length > 0
+        function onSeenChanged() {
+            if (Pointer.seen > root.seekAsked)
+                root.found(Pointer.output, Pointer.x, Pointer.y);
+        }
+    }
+
+    Timer {
+        id: seekTimer
+        interval: Timing.locate
+        // A cell already open has the full-screen catcher up, which has been
+        // reporting the pointer all along: its last sighting is where the
+        // pointer still is, and the question needs no new one.
+        onTriggered: {
+            if (root.anyOpen && Pointer.output.length > 0)
+                root.found(Pointer.output, Pointer.x, Pointer.y);
+            else
+                root.found(root.seekingOutput, NaN, NaN);
+        }
+    }
+
     function retire(domain, output) {
         domain = Registry.canonical(domain);
         const cell = root.cellFor(domain, output);
@@ -584,6 +654,16 @@ Singleton {
             if (cell.visibility.type === "invoked")
                 cell.visibility.invoked = false;
             return true;
+        }
+
+        if (Registry.comesToPointer(domain)) {
+            for (const surface of root.hosts) {
+                if (surface && surface.summoned === domain) {
+                    surface.retire();
+                    return true;
+                }
+            }
+            return false;
         }
 
         const host = root.hostFor(output);

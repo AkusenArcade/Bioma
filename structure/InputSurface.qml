@@ -96,7 +96,9 @@ PanelWindow {
 
             // A full-screen surface sees the pointer, and nothing else in the
             // shell reliably does — see core/Pointer.qml.
-            onContainsMouseChanged: if (containsMouse) root.report()
+            // After the enter is handled: `containsMouse` changes before the
+            // position does (see structure/Float.qml).
+            onContainsMouseChanged: if (containsMouse) Qt.callLater(root.report)
             onPositionChanged: root.report()
         }
     }

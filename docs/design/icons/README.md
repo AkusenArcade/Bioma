@@ -1,6 +1,6 @@
 # Bioma icons
 
-68 glyphs, 24 × 24, `currentColor`, no width/height assumptions beyond the viewBox.
+81 glyphs, 24 × 24, `currentColor`, no width/height assumptions beyond the viewBox.
 
 Icons are the one graphic alphabet in Bioma that is not an indicator: they say **what**
 something is, never **how hard** it is working.
@@ -67,6 +67,8 @@ something is, never **how hard** it is working.
 | `clipboard.svg` | the clipboard cell: what was copied, kept |
 | `keyboard.svg` | the keyboard cell's header: the layout, and switching it |
 | `brightness.svg` | the sun in the middle of the brightness display's dial |
+| `actions.svg` | quick actions: a pill with six threads to six nodes — the ring itself, and its Settings category |
+| `action-work.svg` `action-game.svg` `action-stream.svg` `action-music.svg` `action-relax.svg` `action-focus.svg` `action-night.svg` `action-call.svg` `action-code.svg` `action-design.svg` `action-home.svg` `action-travel.svg` | what a quick action is *for*, chosen on the ACTIONS page: a briefcase, a pad, a broadcast, a note, a cup, a target, the moon with a star, a handset, brackets, a nib, a house, a pin |
 
 ## QML
 

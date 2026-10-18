@@ -54,12 +54,21 @@ Item {
              + `</linearGradient></defs>`;
     }
 
+    readonly property int pixels: Math.max(1, Math.round(Math.max(root.width, root.height)
+                                                         * Screen.devicePixelRatio))
+
     readonly property string painted: {
         const source = file.text();
         if (!source)
             return "";
         const paint = root.gradient ? "url(#biomaGradient)" : root.rgb(root.colour);
-        const body = source.replace(/currentColor/g, paint);
+        // The size it is drawn at, written into the file itself. Qt scales an
+        // image it does not know is a vector only *down*, and a `data:` URL
+        // has no `.svg` to tell it: asked for more than the file's own 24, it
+        // rasterised at 24 and stretched the result, and the quick actions'
+        // 40 px glyphs came out soft (Akusen, 2026-10-18).
+        const body = source.replace(/currentColor/g, paint)
+                           .replace(/width="24" height="24"/, `width="${root.pixels}" height="${root.pixels}"`);
         return root.gradient
                ? body.replace(/(<svg[^>]*>)/, `$1${root.gradientDefs}`)
                : body;

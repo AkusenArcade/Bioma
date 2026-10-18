@@ -261,6 +261,27 @@ ShellRoot {
         }
     }
 
+    // Quick actions, from a key of their own as well as from the ring:
+    // `run <name>` runs one, `list` names them, `ring` brings the ring to the
+    // pointer, which is the same as `cell toggle actions`. services/Actions.qml.
+    readonly property int actionCount: Actions.macros.length
+
+    IpcHandler {
+        target: "actions"
+
+        function run(name: string): string {
+            return Actions.run(name) ? `running ${name}` : `no quick action "${name}"`;
+        }
+
+        function list(): string {
+            return Actions.macros.map(macro => macro.name).join("\n");
+        }
+
+        function ring(): string {
+            return Focus.invoke("actions", Niri.focusedOutput) ? "toggled actions" : "no ring";
+        }
+    }
+
     // The first-run walk-through: `open` shows it in the settings cell of the
     // output the keyboard is on, `close` puts it away for later, `state` says
     // where it is. docs/design/SETUP.md.

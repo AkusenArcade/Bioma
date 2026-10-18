@@ -1063,7 +1063,8 @@ Item {
         if (!root.chosen)
             return out;
         for (const type in Registry.files)
-            if (root.placedHere.indexOf(type) < 0 && !Registry.isInternal(type))
+            if (root.placedHere.indexOf(type) < 0 && !Registry.isInternal(type)
+                    && !Registry.comesToPointer(type))
                 out.push(type);
         return out;
     }

@@ -1029,11 +1029,30 @@ Item {
 
     onEngagingChanged: root.engage()
 
+    // Shapes a cell draws outside its pill on its own account — not a panel
+    // or an expansion, which hang off a thread below it, but satellites round
+    // it: the quick actions' capsules ring the pill they belong to. Each is
+    // `{ item, radius }`, and takes glass, blur and input like the pill.
+    // `reaching` is what the pointer is given besides: the field between the
+    // satellites, where a press chooses the one the pointer points at.
+    property var outlying: []
+    property var reaching: []
+
+    // How far that drawing reaches from the cell's centre, on each axis. A
+    // tissue at the pointer keeps the whole of it on the screen.
+    property real surroundX: 0
+    property real surroundY: 0
+
+    onOutlyingChanged: root.shapesSettling()
+    onReachingChanged: root.shapesSettling()
+
     // What the membrane needs to declare the blur region and the input mask:
     // every shape this cell actually occupies. The thread is not one of them —
     // it takes no input, and blurring a 1.3 px line would only smear it.
     function shapes() {
         const out = [{ "item": root, "radius": root.radius }];
+        for (const shape of root.outlying)
+            out.push(shape);
         if (root.panelVisible && root.panel !== null)
             out.push({ "item": panelShape, "radius": panelShape.radius });
         if (expansionSlot.item && expansionSlot.item.shapes)
@@ -1052,6 +1071,8 @@ Item {
         const out = root.shapes();
         if (root.expanded)
             out.push({ "item": bridge, "radius": 0 });
+        for (const shape of root.reaching)
+            out.push(shape);
         return out;
     }
 

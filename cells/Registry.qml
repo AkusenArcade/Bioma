@@ -35,7 +35,8 @@ Singleton {
         "download": "download/DownloadCell.qml",
         "drives": "drives/DrivesCell.qml",
         "polkit": "polkit/PolkitCell.qml",
-        "emoji": "emoji/EmojiCell.qml"
+        "emoji": "emoji/EmojiCell.qml",
+        "actions": "actions/ActionsCell.qml"
     })
 
     // What a cell is called when it is spoken about rather than drawn — the
@@ -62,7 +63,8 @@ Singleton {
         "timer": "Timer",
         "download": "Downloads",
         "drives": "Drives",
-        "emoji": "Emoji"
+        "emoji": "Emoji",
+        "actions": "Quick actions"
     })
 
     // When each cell is there by itself, said the way the settings cell's
@@ -91,7 +93,8 @@ Singleton {
         "timer": "While a timer runs, or waits, paused, to be resumed.",
         "download": "While a browser is downloading into the downloads folder, and until a minute after it stalls.",
         "drives": "While a removable drive is attached — a stick, a card, a disk on a cable.",
-        "emoji": "Never by itself: it comes when its keybind asks for it."
+        "emoji": "Never by itself: it comes when its keybind asks for it.",
+        "actions": "Never by itself: it comes to the pointer when its keybind asks for it."
     })
 
     function conditionOf(type) {
@@ -130,6 +133,17 @@ Singleton {
 
     function isInternal(type) {
         return root.internal.indexOf(root.canonical(type)) >= 0;
+    }
+
+    // Cells that come to the pointer when they are asked for. The quick
+    // actions are a ring around the point the hand is at, and a ring has no
+    // place on an edge: they are offered to a keybind and not to the
+    // Structure page, and summoned they appear where the pointer is, on
+    // whichever monitor it is on (core/Focus.qml, `seek`).
+    readonly property var pointer: ["actions"]
+
+    function comesToPointer(type) {
+        return root.pointer.indexOf(root.canonical(type)) >= 0;
     }
 
     // A membrane or floating list with every old name replaced and every
@@ -187,7 +201,8 @@ Singleton {
         "download": ["conditional"],
         "drives": ["conditional"],
         "polkit": ["invoked"],
-        "emoji": ["always", "invoked"]
+        "emoji": ["always", "invoked"],
+        "actions": ["invoked"]
     })
 
     // A cell whose form changes when it floats, and whose visibility changes
@@ -239,7 +254,8 @@ Singleton {
         "timer": 40,
         "download": 90,
         "drives": 40,
-        "emoji": 40
+        "emoji": 40,
+        "actions": 40
     })
 
     function minimumOf(type) {

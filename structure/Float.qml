@@ -49,6 +49,25 @@ PanelWindow {
     function summon(domain) {
         if (!root.host)
             return false;
+        root.summonedAtPointer = false;
+        root.summoned = domain;
+        return true;
+    }
+
+    // Summoned around a point the pointer was found at, by `Focus.seek`. The
+    // point is known before the cell exists, so there is nothing to look
+    // for: the cell is placed there from its first frame. No point (NaN) —
+    // the pointer was not found — and it takes the middle.
+    property bool summonedAtPointer: false
+
+    function summonAt(domain, x, y) {
+        if (!root.host)
+            return false;
+        root.pointerKnown = !isNaN(x) && !isNaN(y);
+        root.pointerX = root.pointerKnown ? x : 0;
+        root.pointerY = root.pointerKnown ? y : 0;
+        root.located = true;
+        root.summonedAtPointer = true;
         root.summoned = domain;
         return true;
     }
@@ -56,6 +75,11 @@ PanelWindow {
     function dismiss() {
         root.summoned = "";
         root.heldReach = 0;
+        if (root.summonedAtPointer) {
+            root.summonedAtPointer = false;
+            root.located = false;
+            root.pointerKnown = false;
+        }
     }
 
     // A summoned cell leaves the way it arrived — shrinking about its own
@@ -192,7 +216,7 @@ PanelWindow {
     // the middle and jump. No answer within `Timing.locate` — the pointer is
     // on another output, or over another of the shell's surfaces — and it
     // takes the middle.
-    readonly property bool atPointer: anchorName === "pointer"
+    readonly property bool atPointer: anchorName === "pointer" || root.summonedAtPointer
 
     readonly property bool anyShown: {
         for (const cell of tissue.cells)
@@ -310,7 +334,30 @@ PanelWindow {
         return Math.max(low, Math.min(high, value));
     }
 
-    readonly property real placedX: byPointer
+    // How far a cell draws past its own pill on every side, measured from its
+    // centre: the quick actions' ring. A pointer too near the edge for the
+    // whole of it moves the centre inward until it fits, rather than leaving
+    // part of the ring off the screen.
+    readonly property real surroundX: {
+        let out = 0;
+        for (const cell of tissue.cells)
+            if (cell.surroundX > out)
+                out = cell.surroundX;
+        return out;
+    }
+
+    readonly property real surroundY: {
+        let out = 0;
+        for (const cell of tissue.cells)
+            if (cell.surroundY > out)
+                out = cell.surroundY;
+        return out;
+    }
+
+    readonly property real placedX: byPointer && surroundX > 0
+        ? root.clamp(root.pointerX, root.metrics.marginEdge + surroundX,
+                     root.width - root.metrics.marginEdge - surroundX) - tissue.width / 2
+        : byPointer
         ? root.clamp(root.pointerX - tissue.width / 2, root.metrics.marginEdge,
                      root.width - tissue.width - root.metrics.marginEdge)
         : atLeft ? root.margin("left")
@@ -328,6 +375,9 @@ PanelWindow {
     // again: 698 to 634.5 and back, for as long as the pointer stayed.
     // Measured, 2026-09-23.
     readonly property real placedY: {
+        if (byPointer && surroundY > 0)
+            return root.clamp(root.pointerY, root.metrics.marginEdge + surroundY,
+                              root.height - root.metrics.marginEdge - surroundY) - tissue.height / 2;
         if (byPointer) {
             const edge = root.metrics.marginEdge;
             const wanted = root.pointerY - tissue.height / 2;
@@ -401,7 +451,11 @@ PanelWindow {
                 Pointer.saw(root.screenItem.name, sheet.mouseX, sheet.mouseY);
         }
 
-        onContainsMouseChanged: if (containsMouse) sheet.report()
+        // Read once the enter has been handled: `containsMouse` changes before
+        // the position does, and a report made on it carried the point the
+        // pointer last left this surface at — the quick actions opened where
+        // they had been the time before (2026-10-18).
+        onContainsMouseChanged: if (containsMouse) Qt.callLater(sheet.report)
         onPositionChanged: sheet.report()
     }
 
@@ -496,7 +550,10 @@ PanelWindow {
     // The whole surface, for the moment it takes to find the pointer.
     Region { id: everything; item: sheet }
 
-    mask: root.locating ? everything : (maskRegion ? maskRegion : nothing)
+    // And every host, while `Focus.seek` asks which screen the pointer is on.
+    readonly property bool seeking: root.host && Focus.seeking.length > 0 && root.summoned.length === 0
+
+    mask: root.locating || root.seeking ? everything : (maskRegion ? maskRegion : nothing)
     BackgroundEffect.blurRegion: blurRegion
 
     // This surface covers the output, so an item's own coordinates are already

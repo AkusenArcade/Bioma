@@ -62,7 +62,9 @@ Item {
         { "key": "session", "label": "SESSION", "glyph": "lock",
           "hint": "locking, power profile", "width": 540 },
         { "key": "sounds", "label": "SOUNDS", "glyph": "sound-on",
-          "hint": "events, volume", "width": 540 }
+          "hint": "events, volume", "width": 540 },
+        { "key": "actions", "label": "ACTIONS", "glyph": "actions",
+          "hint": "the ring at the pointer", "width": 600 }
     ]
 
     // The setup's steps, or the categories.
@@ -98,7 +100,8 @@ Item {
     // scrolls as a page: Structure is the tallest, and with a tissue open —
     // its width, its buttons and two rows of cell chips, up to seven cells —
     // it still fits without scrolling (Akusen, 2026-10-15).
-    readonly property real panelHeight: 620 * factor
+    // And never shorter than the column of categories beside it.
+    readonly property real panelHeight: Math.max(620 * factor, columnHeight)
 
     readonly property real columnHeight: root.entries.length * capsulePitch - (capsulePitch - capsuleHeight)
 
@@ -382,6 +385,8 @@ Item {
                         return Qt.resolvedUrl("SettingsSession.qml");
                     if (root.chosen === "sounds")
                         return Qt.resolvedUrl("SettingsSounds.qml");
+                    if (root.chosen === "actions")
+                        return Qt.resolvedUrl("SettingsActions.qml");
                     return "";
                 }
 

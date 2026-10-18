@@ -310,6 +310,44 @@ The same three things answer a key: `ipc call presets apply <name>`,
 `presets save <name>`, `presets create` (an empty layout), `presets list` and
 `presets current`.
 
+### actions
+
+Quick actions (CELLS.md §20), written by the Settings cell's ACTIONS page. The
+ring at the pointer shows the first eight, clockwise from the top; every one
+also runs from a key of its own: `ipc call actions run <name>`. `actions list`
+names them, `actions ring` brings the ring, as `cell toggle actions` does.
+
+| Key | Meaning |
+|---|---|
+| `macros` | `[{ "name", "icon", "steps" }]`, in the ring's order. `name` is unique; `icon` is one of the `action-*` glyphs |
+
+A step is a `type` and what that type holds. They run in order, each once the
+one before has finished; one that cannot run stops the macro and a
+notification says which step and why.
+
+| `type` | Holds | Does |
+|---|---|---|
+| `launch` | `app`, a desktop entry id | starts it as the launcher does; niri's window rules place it |
+| `open` | `path` (`~` allowed) | opens it in the application for its kind |
+| `volume` | `percent` 0–100 | the output's volume |
+| `brightness` | `percent` 1–100 | the display's brightness |
+| `settings` | `groups` (`appearance`, `sounds`), `values` `{ path: value }` | writes the captured values back in one write |
+| `monitor` | `output`, `on` | switches that monitor; never the last one on |
+| `preset` | `name` | puts the layout preset back |
+| `wallpaper` | `path`, one of the favourites | sets the wallpaper |
+| `quiet` | `on` | do not disturb |
+| `profile` | `profile`: `saver`, `balanced`, `performance` | the power profile |
+| `timer` | `minutes` | starts the timer |
+| `wait` | `seconds` | waits |
+| `command` | `command` | `sh -c`, as a user service of its own, not waited for |
+
+A `settings` step keeps the values as the shell read them when captured — the
+default and the override together — so putting it back undoes a change made
+since, even to a value equal to the default. `appearance` is the Appearance
+page plus the palette (`appearance.*`, `tissue.*`, `cell.*`, `scrim.opacity`,
+`timing.speed`, `theme.source`, `theme.palette`, `theme.matugen`); `sounds` is
+the Sounds page.
+
 ### setup
 
 The first-run walk-through (docs/design/SETUP.md), written by the shell.
