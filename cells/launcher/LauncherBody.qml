@@ -186,13 +186,15 @@ Item {
 
             // Selection is a fill and never an outline: the lit outline means
             // "surface" in this shell, and a row wearing one would read as a
-            // cell inside a cell.
+            // cell inside a cell. The pointer only lights the row it is over;
+            // the choice belongs to the keyboard, so Enter after opening the
+            // launcher takes the first result wherever the pointer was left.
             Rectangle {
                 anchors.fill: parent
                 anchors.rightMargin: 2 * root.metrics.factor
                 radius: Metrics.shaped(14 * root.metrics.factor)
-                color: Qt.alpha(Theme.primary, 0.12)
-                visible: result.picked
+                color: result.picked ? Qt.alpha(Theme.primary, 0.12)
+                     : rowHover.hovered ? Qt.alpha(Theme.text, 0.06) : "transparent"
                 antialiasing: true
             }
 
@@ -285,7 +287,7 @@ Item {
             }
 
             HoverHandler {
-                onHoveredChanged: if (hovered) cell.chosen = result.index
+                id: rowHover
             }
 
             TapHandler {
