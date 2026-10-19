@@ -580,7 +580,14 @@ PanelWindow {
         return out;
     }
 
-    function refreshRegions() {
+    // `reread`: let every leaf go and bind it again, which sends the region
+    // to the compositor even when it has not changed.
+    function refreshRegions(reread) {
+        if (reread === true) {
+            Regions.bind(root.maskRegion, []);
+            Regions.bind(root.blurRegion, []);
+        }
+
         const input = [];
         const blur = [];
 
@@ -600,7 +607,20 @@ PanelWindow {
         root.maskRegion = Regions.rebind(root, root.maskRegion, input);
         root.blurRegion = Regions.rebind(root, root.blurRegion, blur);
 
+        if (blur.length < root.blurCount)
+            blurShrunk.restart();
+        root.blurCount = blur.length;
+
         Focus.bump();
+    }
+
+    // A closing panel's glass can outlive its region; see `Membrane.qml`.
+    property int blurCount: 0
+
+    Timer {
+        id: blurShrunk
+        interval: Timing.blurSettle
+        onTriggered: root.refreshRegions(true)
     }
 
     Component.onCompleted: {

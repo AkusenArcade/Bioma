@@ -676,8 +676,28 @@ PanelWindow {
         root.maskRegion = Regions.rebind(root, root.maskRegion, input);
         root.blurRegion = Regions.rebind(root, root.blurRegion, blur);
 
+        if (blur.length < root.blurCount)
+            blurShrunk.restart();
+        root.blurCount = blur.length;
+
         // The catcher builds its own region out of these.
         Focus.bump();
+    }
+
+    // The same niri, outside the overview: a cell closes, its panel's shapes
+    // leave the region, the region without them is sent and followed by
+    // commits every frame — verified in the protocol trace — and the glass
+    // under the panel stays on the backdrop, often frozen halfway through
+    // the panel's collapse, until the region happens to be sent again. Seen
+    // on the laptop only, intermittently, 2026-10-19. So whenever the blur
+    // loses a shape, it is declared once more after niri has had time to go
+    // wrong.
+    property int blurCount: 0
+
+    Timer {
+        id: blurShrunk
+        interval: Timing.blurSettle
+        onTriggered: root.refreshRegions(true)
     }
 
     onRevealedChanged: refreshRegions()

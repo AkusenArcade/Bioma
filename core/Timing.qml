@@ -106,6 +106,12 @@ Singleton {
     // move at Bioma's speed.
     readonly property int overviewSettle: Config.get("timing.overview_settle", 800)
 
+    // How long after a surface's blur loses a shape it declares its blur
+    // again. niri can keep the glass of a closing panel after the region
+    // without it is sent and committed; see `Membrane.qml`. Not scaled, for
+    // the same reason as above.
+    readonly property int blurSettle: Config.get("timing.blur_settle", 400)
+
     // How long the on-screen display stays after the last change it shows.
     // A dwell, not an animation, so the speed setting leaves it alone.
     readonly property int osd: Config.get("timing.osd", 1500)
