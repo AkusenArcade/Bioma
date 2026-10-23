@@ -137,6 +137,11 @@
     "before_sleep": true
   },
 
+  "niri": {
+    "$comment": "What Bioma itself sets in niri. focus_ring is the width of the focused window's ring in logical pixels, written into niri's template (bioma-theme.kdl); 2 is a cell's rim. The other settings on the NIRI page are niri's own and live in niri's files.",
+    "focus_ring": 2
+  },
+
   "sounds": {
     "$comment": "Bioma's own sound effects (assets/sounds, made by tools/sounds), played through pw-play. One switch per kind of event: the desktop appearing after login, a notification without a sound of its own, a cell opening and closing, a measured value turning red. volume is the effects' own, under the system's. alert_gap is the seconds before the same value can sound again.",
     "volume": 0.6,

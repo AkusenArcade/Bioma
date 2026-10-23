@@ -21,8 +21,9 @@ import qs.core
 // make every terminal reload — or when a template has just been switched on.
 //
 // niri's template also carries the shell's corner radius to the windows: 20 px
-// at 100 % of the RADIUS slider, and in proportion below it — and an invoked
-// cell's shadow to the focused window.
+// at 100 % of the RADIUS slider, and in proportion below it — an invoked
+// cell's shadow to the focused window, and the focus ring's width from the
+// NIRI settings page (services/NiriSettings.qml).
 Singleton {
     id: root
 
@@ -144,12 +145,13 @@ Singleton {
     }
 
     readonly property int windowRadius: Math.round(20 * Metrics.radiusPercent / 100)
+    readonly property int focusWidth: Config.get("niri.focus_ring", 2)
     // The focused window is raised the way an invoked cell is.
     readonly property string windowShadow: root.hexa(Theme.shadowOf(Theme.targetIsDark))
 
     // ---- Rendering --------------------------------------------------------------------
 
-    readonly property string signature: JSON.stringify([root.colors, root.enabled, root.windowRadius,
+    readonly property string signature: JSON.stringify([root.colors, root.enabled, root.windowRadius, root.focusWidth,
                                                         root.windowShadow, Theme.targetIsDark])
 
     property var forced: []
@@ -184,7 +186,8 @@ Singleton {
         renderer.request = JSON.stringify({
             "colors": root.colors,
             "mode": Theme.targetIsDark ? "dark" : "light",
-            "vars": { "window_radius": root.windowRadius, "window_shadow": root.windowShadow },
+            "vars": { "window_radius": root.windowRadius, "window_shadow": root.windowShadow,
+                      "focus_width": root.focusWidth },
             "enabled": root.enabled,
             // A hook that failed ran against a file that is now written, so
             // the file will not change again to run it: it is asked again.

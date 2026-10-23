@@ -896,6 +896,10 @@ screenshots, OCR and recording. The Utility cell reads both.
   - per-cell settings where available, including visibility conditions
   - visual monitor management with relative positioning and snap
   - keybinds
+  - niri's own settings, written into niri's files in place (added 2026-10-23):
+    gaps, focus ring width, focus following the pointer, named workspaces,
+    startup entries, and per-application window rules for opacity, opening
+    width and workspace
 - **Visibility.** Invoked, optionally also an always-visible icon.
 - **Notes.** This is the second largest piece after the launcher. Both of the
   expensive parts exist in Prisma: `MonitorManager.qml` (drag-and-drop, magnetic

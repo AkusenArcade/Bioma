@@ -779,6 +779,20 @@ windows and gamescope — in and out of `bioma-vrr.kdl`, emptied rather than del
 **Keybinds** — added, edited and removed. The combination is recorded by pressing it, not by
 typing it.
 
+**Niri** — a few of niri's own settings, without opening its files (Akusen, 2026-10-23), one well
+each: **gaps** and **focus ring** as sliders with their figure, **focus follows the pointer** as a
+switch on the label's line, the named **workspaces** (rows that open on a name field and the
+monitor, ANY MONITOR included; arrows move one within its file; NEW), **at startup** (one row per
+line with a switch — switched off is commented out, so lines already commented out by hand read
+as off; APPLICATION and COMMAND add), and **window rules**, one row per rule that matches an
+app-id, named after the application, opening on **opacity**, **width when it opens** and **opens
+on**. Everything else a rule says is counted in a line and left alone; a rule that says nothing
+else can be removed. Rules that match by something other than the application are counted at the
+end. Written into niri's files in place, beside what is already there, the way Monitors and
+Keybinds write — never into a file of Bioma's, because niri cannot undo a flag from an include —
+except the focus ring's width, which Bioma's niri template already draws. Each well's line says
+which file it is written in.
+
 **Session** — when the screen locks and the machine sleeps by itself, in four wells: **lock
 after** idle (Never, 5, 10, 15, 30 min), **sleep after** idle (Never — the default —, 15, 30
 min, 1, 2 h; Akusen, 2026-10-15, asked for by the people watching the demo), **before sleep**

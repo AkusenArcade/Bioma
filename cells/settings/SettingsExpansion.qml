@@ -59,6 +59,8 @@ Item {
           "hint": "position, scale, snapping", "width": 720 },
         { "key": "keybinds", "label": "KEYBINDS", "glyph": "keyboard",
           "hint": "shortcuts · niri.kdl", "width": 560 },
+        { "key": "niri", "label": "NIRI", "glyph": "window",
+          "hint": "gaps, workspaces, rules", "width": 600 },
         { "key": "session", "label": "SESSION", "glyph": "lock",
           "hint": "locking, power profile", "width": 540 },
         { "key": "sounds", "label": "SOUNDS", "glyph": "sounds",
@@ -381,6 +383,8 @@ Item {
                         return Qt.resolvedUrl("SettingsMonitors.qml");
                     if (root.chosen === "keybinds")
                         return Qt.resolvedUrl("SettingsKeybinds.qml");
+                    if (root.chosen === "niri")
+                        return Qt.resolvedUrl("SettingsNiri.qml");
                     if (root.chosen === "session")
                         return Qt.resolvedUrl("SettingsSession.qml");
                     if (root.chosen === "sounds")

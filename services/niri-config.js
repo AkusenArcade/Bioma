@@ -28,7 +28,7 @@
 // quoted, raw and multi-line strings, braces, semicolons, `=`, line and
 // nested block comments, and the slashdash that comments out what follows.
 
-function tokenize(text) {
+function tokenize(text, comments) {
     const tokens = [];
     const n = text.length;
     let i = 0;
@@ -55,7 +55,12 @@ function tokenize(text) {
         if (c === "\n") { tokens.push({ "type": "newline", "start": i, "end": i + 1 }); i++; continue; }
 
         if (text.startsWith("//", i)) {
+            const from = i;
             while (i < n && text[i] !== "\n") i++;
+            // Kept only when asked for: a line commented out is how a
+            // configuration switches something off and keeps it.
+            if (comments)
+                tokens.push({ "type": "comment", "start": from, "end": i });
             continue;
         }
 
@@ -213,7 +218,8 @@ function parseNodes(tokens, at, nested) {
             }
 
             if (!skipNext)
-                node.args.push({ "value": u.value, "quoted": u.type === "string" });
+                node.args.push({ "value": u.value, "quoted": u.type === "string",
+                                 "start": u.start, "end": u.end });
             node.end = u.end;
             skipNext = false;
             i++;
@@ -234,21 +240,42 @@ function parseNodes(tokens, at, nested) {
 
 // ---- What a file says ---------------------------------------------------------
 
-// Scan one file: its includes, its binds, its outputs and its window rules,
-// in the order they appear, and the one `binds` block. `items` interleaves
-// them, because the order between an include and a bind is what decides
-// which of two binds on one key wins.
+// Scan one file: its includes, its binds, its outputs, its window rules, its
+// workspaces, what it starts, and its `layout` and `input` sections, in the
+// order they appear, and the one `binds` block. `items` interleaves them,
+// because the order between an include and a bind is what decides which of two
+// binds on one key wins.
+//
+// A startup line switched off — commented out, or slashdashed — is still an
+// item, with `on` false: switching it back on is a matter of taking the mark
+// away, and the line comes back exactly as it was written.
 function scan(text) {
     const top = parseNodes(tokenize(text), 0, false).nodes;
+    const notes = commentedNodes(text);
     const items = [];
     let block = null;
 
+    const inside = (at, node) => node.children !== null
+        && at > node.children.open && at < node.children.close;
+
+    for (const note of notes) {
+        if (isSpawn(note.node.name) && !top.some(node => inside(note.start, node)))
+            items.push(spawnOf(note.node, note));
+    }
+
     for (const node of top) {
+        if (isSpawn(node.name)) {
+            items.push(spawnOf(node, node.dropped ? { "start": node.start, "end": node.end,
+                                                      "bodyStart": node.nameStart } : null));
+            continue;
+        }
+
         if (node.dropped)
             continue;
 
         if (node.name === "include" && node.args.length > 0) {
             items.push({ "kind": "include", "path": node.args[node.args.length - 1].value,
+                         "start": node.start,
                          "optional": node.props.optional === "true" || node.props.optional === "#true" });
             continue;
         }
@@ -258,13 +285,30 @@ function scan(text) {
             continue;
         }
 
-        // Of a window rule, only whether it asks for variable refresh:
-        // what an output set to `on-demand` waits for.
         if (node.name === "window-rule" && node.children) {
-            const vrr = node.children.nodes.find(child =>
-                !child.dropped && child.name === "variable-refresh-rate") || null;
-            items.push({ "kind": "rule", "start": node.start, "end": node.end,
-                         "vrr": vrr !== null && (vrr.args.length === 0 || truthy(vrr.args[0].value)) });
+            items.push(ruleOf(node));
+            continue;
+        }
+
+        if (node.name === "workspace" && node.args.length > 0) {
+            items.push(workspaceOf(node));
+            continue;
+        }
+
+        if ((node.name === "layout" || node.name === "input") && node.children) {
+            items.push({
+                "kind": "section",
+                "name": node.name,
+                "start": node.start,
+                "end": node.end,
+                "open": node.children.open,
+                "close": node.children.close,
+                "children": node.children.nodes,
+                // Lines commented out directly in the section, not in a
+                // block inside it.
+                "commented": notes.filter(note => inside(note.start, node)
+                    && !node.children.nodes.some(child => inside(note.start, child)))
+            });
             continue;
         }
 
@@ -296,6 +340,10 @@ function scan(text) {
             });
         }
     }
+
+    // The commented lines were gathered first; the file's order is the
+    // position of each thing in it.
+    items.sort((a, b) => a.start - b.start);
 
     return { "items": items, "block": block };
 }
@@ -630,4 +678,263 @@ function outputsText(text) {
         if (item.kind === "output")
             out.push(text.slice(item.start, item.end));
     return out.join("\n") + "\n";
+}
+
+// ---- Lines commented out ----------------------------------------------------------
+//
+// `//spawn-at-startup "Telegram"` is a startup line switched off by hand, and
+// `// focus-follows-mouse` the same for a setting. Only a comment that has its
+// line to itself counts, and only when what follows the slashes reads as a
+// node: a comment in words parses as a node too, so the caller names the
+// nodes it is after.
+
+function commentedNodes(text) {
+    const out = [];
+    for (const token of tokenize(text, true)) {
+        if (token.type !== "comment")
+            continue;
+        let s = token.start;
+        while (s > 0 && (text[s - 1] === " " || text[s - 1] === "\t")) s--;
+        if (s > 0 && text[s - 1] !== "\n")
+            continue;
+
+        const from = token.start + 2;
+        const body = text.slice(from, token.end);
+        const nodes = parseNodes(tokenize(body), 0, false).nodes;
+        if (nodes.length !== 1 || nodes[0].dropped || !/^[a-z][a-z-]*$/.test(nodes[0].name))
+            continue;
+
+        out.push({
+            "start": token.start,
+            "end": token.end,
+            "bodyStart": from + nodes[0].start,
+            "node": shifted(nodes[0], from)
+        });
+    }
+    return out;
+}
+
+// A node parsed from a slice, with its offsets moved to the whole text's.
+function shifted(node, by) {
+    const out = Object.assign({}, node);
+    out.start += by;
+    out.end += by;
+    out.nameStart += by;
+    out.nameEnd += by;
+    out.args = node.args.map(arg => Object.assign({}, arg, { "start": arg.start + by, "end": arg.end + by }));
+    return out;
+}
+
+// ---- Startup ------------------------------------------------------------------------
+
+function isSpawn(name) {
+    return name === "spawn-at-startup" || name === "spawn-sh-at-startup";
+}
+
+// `mark` is where the line is switched off, when it is: the comment or the
+// slashdash, and where the node itself begins after it.
+function spawnOf(node, mark) {
+    return {
+        "kind": "spawn",
+        "sh": node.name === "spawn-sh-at-startup",
+        "args": node.args.map(arg => arg.value),
+        "on": mark === null,
+        "start": mark ? mark.start : node.start,
+        "end": mark ? mark.end : node.end,
+        "bodyStart": mark ? mark.bodyStart : node.start
+    };
+}
+
+function spawnLine(command, sh) {
+    if (sh)
+        return "spawn-sh-at-startup " + quote(command);
+    return "spawn-at-startup " + command.map(quote).join(" ");
+}
+
+// ---- Workspaces -----------------------------------------------------------------------
+
+function workspaceOf(node) {
+    const children = node.children ? node.children.nodes.filter(child => !child.dropped) : [];
+    const output = children.filter(child => child.name === "open-on-output").pop() || null;
+    return {
+        "kind": "workspace",
+        "name": node.args[0].value,
+        "nameStart": node.args[0].start,
+        "nameEnd": node.args[0].end,
+        "start": node.start,
+        "end": node.end,
+        "open": node.children ? node.children.open : -1,
+        "close": node.children ? node.children.close : -1,
+        "children": children,
+        "output": output && output.args.length > 0 ? output.args[0].value : "",
+        "outputNode": output
+    };
+}
+
+// ---- Window rules ----------------------------------------------------------------------
+//
+// What the settings page edits of a rule: its opacity, the width its windows
+// open at and the workspace they open on — the last of each, which is the one
+// niri goes by. Everything else in it is counted and left where it is.
+
+const ruleEdits = ["opacity", "default-column-width", "open-on-workspace"];
+
+function ruleOf(node) {
+    const children = node.children.nodes.filter(child => !child.dropped);
+    const last = name => children.filter(child => child.name === name).pop() || null;
+    const vrr = last("variable-refresh-rate");
+    const opacity = last("opacity");
+    const width = last("default-column-width");
+    const workspace = last("open-on-workspace");
+
+    return {
+        "kind": "rule",
+        "start": node.start,
+        "end": node.end,
+        "open": node.children.open,
+        "close": node.children.close,
+        "children": children,
+        "matches": children.filter(child => child.name === "match").map(child => child.props),
+        "excludes": children.filter(child => child.name === "exclude").length,
+        "others": children.filter(child => child.name !== "match" && child.name !== "exclude"
+                                           && !ruleEdits.includes(child.name)).length,
+        // Whether a window rule asks for variable refresh: what an output set
+        // to `on-demand` waits for.
+        "vrr": vrr !== null && (vrr.args.length === 0 || truthy(vrr.args[0].value)),
+        "opacity": opacity && opacity.args.length > 0 ? Number(opacity.args[0].value) : null,
+        "width": widthOf(width),
+        "workspace": workspace && workspace.args.length > 0 ? workspace.args[0].value : null
+    };
+}
+
+// `{ proportion 0.5; }`, `{ fixed 800; }`, or `{}` — the window chooses.
+function widthOf(node) {
+    if (!node)
+        return null;
+    const inner = node.children ? node.children.nodes.filter(child => !child.dropped) : [];
+    const size = inner.filter(child => child.name === "proportion" || child.name === "fixed").pop();
+    if (!size || size.args.length === 0)
+        return { "kind": "window" };
+    return { "kind": size.name, "value": Number(size.args[0].value) };
+}
+
+function ruleBlock(appId) {
+    return "window-rule {\n    match app-id=" + quote(appId) + "\n}";
+}
+
+// A number as niri reads it back: no float noise, and always with a point —
+// niri takes `opacity 1.0` and refuses `opacity 1`, an integer where it
+// wants a float.
+function figure(value) {
+    const text = String(Math.round(value * 1000) / 1000);
+    return text.indexOf(".") >= 0 ? text : text + ".0";
+}
+
+// ---- Editing ------------------------------------------------------------------------------
+
+// Several edits to one text, each `{ start, end, text }` against the text as
+// it was read: applied from the last, so none moves another.
+function spliced(text, edits) {
+    const sorted = edits.slice().sort((a, b) => b.start - a.start);
+    let out = text;
+    for (const edit of sorted)
+        out = out.slice(0, edit.start) + edit.text + out.slice(edit.end);
+    return out;
+}
+
+// A node replaced by a new line, keeping the semicolon that ended it: in
+// `opacity 0.9; open-floating true` the next node needs it.
+function replacing(text, node, entry) {
+    const semi = text[node.end - 1] === ";" && !entry.endsWith(";");
+    return { "start": node.start, "end": node.end, "text": entry + (semi ? ";" : "") };
+}
+
+// Whether a node has its line to itself, a comment after it aside.
+function ownsLine(text, node) {
+    let s = node.start;
+    while (s > 0 && (text[s - 1] === " " || text[s - 1] === "\t")) s--;
+    if (s > 0 && text[s - 1] !== "\n")
+        return false;
+    const rest = text.slice(node.end, (text.indexOf("\n", node.end) + 1 || text.length + 1) - 1).trim();
+    return rest.length === 0 || rest.startsWith("//");
+}
+
+// Switched off by commenting out the line, when it is the node's own, and by
+// slashdash otherwise — a comment would take its neighbours with it.
+function switchingOff(text, node) {
+    const multiline = text.slice(node.start, node.end).indexOf("\n") >= 0;
+    const mark = ownsLine(text, node) && !multiline ? "//" : "/-";
+    return { "start": node.start, "end": node.start, "text": mark };
+}
+
+// The mark taken away, and the space between it and the node with it.
+function switchingOn(item) {
+    return { "start": item.start, "end": item.bodyStart, "text": "" };
+}
+
+// A node removed with its line, without the comment above it: around the
+// startup lines, that comment is often another line switched off.
+function removing(text, node) {
+    let from = node.start;
+    let to = node.end;
+
+    let lineStart = from;
+    while (lineStart > 0 && (text[lineStart - 1] === " " || text[lineStart - 1] === "\t")) lineStart--;
+    let lineEnd = to;
+    while (lineEnd < text.length && (text[lineEnd] === " " || text[lineEnd] === "\t")) lineEnd++;
+
+    if ((lineStart === 0 || text[lineStart - 1] === "\n") && (lineEnd >= text.length || text[lineEnd] === "\n")) {
+        from = lineStart;
+        to = Math.min(text.length, lineEnd + 1);
+        // Set apart by blank lines on both sides, it leaves one of them; last
+        // in the file, it takes the blank line before it.
+        const blankBefore = from >= 2 && text[from - 1] === "\n" && text[from - 2] === "\n";
+        if (blankBefore && text[to] === "\n")
+            to++;
+        else if (blankBefore && to >= text.length)
+            from--;
+    }
+    return { "start": from, "end": to, "text": "" };
+}
+
+// A new top-level entry on the line after a node like it, indented as that
+// node is — after a blank line when it is a block, as blocks are written.
+function after(text, node, entry, apart) {
+    let s = node.start;
+    while (s > 0 && text[s - 1] !== "\n") s--;
+    const indent = /^[ \t]*/.exec(text.slice(s, node.start))[0];
+    let at = text.indexOf("\n", node.end);
+    if (at < 0)
+        at = text.length;
+    const lines = entry.split("\n").map((line, i) => i === 0 ? line : indent + line).join("\n");
+    // Apart from what follows too, when that is not already a blank line.
+    const below = apart && at < text.length - 1 && text[at + 1] !== "\n" ? "\n" : "";
+    return { "start": at, "end": at, "text": "\n" + (apart ? "\n" : "") + indent + lines + below };
+}
+
+// A new top-level entry at the end of a file.
+function appending(text, entry) {
+    const tail = text.length === 0 || text.endsWith("\n") ? "" : "\n";
+    return { "start": text.length, "end": text.length, "text": tail + "\n" + entry + "\n" };
+}
+
+// A file as niri would read it on its own, its includes left out: what is
+// validated before it is written. An include names a path relative to the
+// file, and the copy handed to `niri validate` is not where the file is.
+function standalone(text) {
+    const edits = [];
+    for (const node of parseNodes(tokenize(text), 0, false).nodes)
+        if (node.name === "include" && !node.dropped)
+            edits.push({ "start": node.start, "end": node.end, "text": "" });
+    return spliced(text, edits);
+}
+
+// The quoted strings in a span that say `value`: a workspace's name where a
+// bind or a rule names it.
+function naming(text, from, to, value) {
+    const out = [];
+    for (const token of tokenize(text.slice(from, to)))
+        if (token.type === "string" && token.value === value)
+            out.push({ "start": from + token.start, "end": from + token.end });
+    return out;
 }
