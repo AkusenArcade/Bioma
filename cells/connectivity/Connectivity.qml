@@ -16,6 +16,9 @@ import qs.services
 // With none it does not shrink to an empty pill: it goes. A struck-through
 // icon would claim something is broken, and being offline is a condition, not
 // a fault — the application that needs the network will say so itself.
+// Kept on the membrane by an `always` visibility, it shows the cell's own mark
+// instead, dim, as a paired device that is not connected is drawn in the
+// panel: present, idle (Akusen, 2026-10-23 — the pill stood there empty).
 //
 // See docs/design/CELLS.md §11, PRD §9.11.
 Cell {
@@ -108,6 +111,7 @@ Cell {
         Glyph {
             anchors.fill: parent
             name: root.leadGlyph
+            idle: root.glyphs.length === 0
         }
     }
 
@@ -122,6 +126,7 @@ Cell {
         id: glyph
 
         required property string name
+        property bool idle: false
 
         readonly property bool wifi: glyph.name === "wifi"
 
@@ -135,7 +140,8 @@ Cell {
         Icon {
             anchors.fill: parent
             name: glyph.wifi && root.wifiArcs < 3 ? `wifi-signal-${root.wifiArcs}` : glyph.name
-            gradient: true
+            colour: Theme.line
+            gradient: !glyph.idle
         }
     }
 
@@ -193,6 +199,14 @@ Cell {
                 width: root.glyphSize
                 height: width
             }
+        }
+
+        Glyph {
+            visible: root.glyphs.length === 0
+            name: root.leadGlyph
+            idle: true
+            width: root.glyphSize
+            height: width
         }
     }
 }

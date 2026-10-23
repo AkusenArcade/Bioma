@@ -648,6 +648,10 @@ tissue closes on its neighbours — a struck-through icon would say something is
 **Expanded** — one well per family, each with its own switch. Names in Spectral, state in
 Orbitron, strength in bars that are never state-coloured.
 
+**Always visible, nothing connected** — the cell's own mark, the wireless glyph, alone and dim
+in the line colour, as an idle device is drawn in the panel. Never an empty pill, never struck
+through (Akusen, 2026-10-23).
+
 **Password** — the network row opens into a field: primary outline and caret say the keyboard
 has been borrowed here, and that it will be given back.
 
