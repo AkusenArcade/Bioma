@@ -334,8 +334,12 @@ Singleton {
         const wanted = String(name).trim();
         if (wanted.length === 0)
             return "A workspace needs a name.";
-        // niri compares names without case.
-        if (root.workspaces.some(ws => ws !== except && ws.name.toLowerCase() === wanted.toLowerCase()))
+        // niri compares names without case. The one being renamed is told by
+        // its place in its file, not by identity: a Repeater's modelData is a
+        // copy, never the object in `workspaces`, so every name collided with
+        // itself.
+        const self = ws => except && ws.file === except.file && ws.start === except.start;
+        if (root.workspaces.some(ws => !self(ws) && ws.name.toLowerCase() === wanted.toLowerCase()))
             return "Another workspace already has this name.";
         return "";
     }
