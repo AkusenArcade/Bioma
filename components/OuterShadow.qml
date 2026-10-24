@@ -16,6 +16,9 @@ import qs.core
 // The item is the shape's own rectangle, so it can fill it and the parent's
 // childrenRect does not grow; what is drawn reaches past it by the blur and
 // the offset.
+//
+// Not drawn at all in performance mode with its blur lever on: two layers and
+// a mask for every shadow (core/Performance.qml).
 Item {
     id: root
 
@@ -36,61 +39,68 @@ Item {
 
     readonly property real reach: Math.ceil(root.blur + root.spread + Math.abs(root.offsetY)) + 2
 
-    // The shadow as RectangularShadow draws it, on a canvas large enough to
-    // hold its whole reach.
+    // Everything drawn sits in here, so the flat mode hides it whole: hidden,
+    // the two layers are not rendered and the mask is not run.
     Item {
-        id: canvas
+        anchors.fill: parent
+        visible: !Performance.flat
 
-        x: -root.reach
-        y: -root.reach
-        width: root.width + root.reach * 2
-        height: root.height + root.reach * 2
-        opacity: 0
-        layer.enabled: true
+        // The shadow as RectangularShadow draws it, on a canvas large enough to
+        // hold its whole reach.
+        Item {
+            id: canvas
 
-        RectangularShadow {
-            x: root.reach
-            y: root.reach
-            width: root.width
-            height: root.height
-            radius: root.radius
-            blur: root.blur
-            spread: root.spread
-            offset.y: root.offsetY
-            color: root.color
+            x: -root.reach
+            y: -root.reach
+            width: root.width + root.reach * 2
+            height: root.height + root.reach * 2
+            opacity: 0
+            layer.enabled: true
+
+            RectangularShadow {
+                x: root.reach
+                y: root.reach
+                width: root.width
+                height: root.height
+                radius: root.radius
+                blur: root.blur
+                spread: root.spread
+                offset.y: root.offsetY
+                color: root.color
+            }
         }
-    }
 
-    // The shape, on the same canvas, to be taken out.
-    Item {
-        id: shape
+        // The shape, on the same canvas, to be taken out.
+        Item {
+            id: shape
 
-        x: -root.reach
-        y: -root.reach
-        width: canvas.width
-        height: canvas.height
-        opacity: 0
-        layer.enabled: true
+            x: -root.reach
+            y: -root.reach
+            width: canvas.width
+            height: canvas.height
+            opacity: 0
+            layer.enabled: true
 
-        Rectangle {
-            x: root.reach + root.inset
-            y: root.reach + root.inset
-            width: Math.max(0, root.width - root.inset * 2)
-            height: Math.max(0, root.height - root.inset * 2)
-            radius: Metrics.innerRadius(root.radius, root.inset)
-            antialiasing: true
-            color: "white"
+            Rectangle {
+                x: root.reach + root.inset
+                y: root.reach + root.inset
+                width: Math.max(0, root.width - root.inset * 2)
+                height: Math.max(0, root.height - root.inset * 2)
+                radius: Metrics.innerRadius(root.radius, root.inset)
+                antialiasing: true
+                color: "white"
+            }
         }
-    }
 
-    MultiEffect {
-        x: -root.reach
-        y: -root.reach
-        width: canvas.width
-        height: canvas.height
-        source: canvas
-        maskEnabled: true
-        maskInverted: true
-        maskSource: shape
+        MultiEffect {
+            x: -root.reach
+            y: -root.reach
+            width: canvas.width
+            height: canvas.height
+            source: canvas
+            maskEnabled: true
+            maskInverted: true
+            maskSource: shape
+        }
     }
 }

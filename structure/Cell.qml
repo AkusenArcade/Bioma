@@ -196,7 +196,11 @@ Item {
                                      : busy || visibility.type === "conditional" ? 1 : 0
 
     property real cellOpacity: Config.get("cell.opacity", 0.72)
-    property bool blur: Config.get("cell.blur", true)
+    // Off in performance mode with its blur lever on (core/Performance.qml).
+    // The surface reads it when it builds its blur region, so a change is a
+    // change of shape.
+    property bool blur: Config.get("cell.blur", true) && !Performance.flat
+    onBlurChanged: root.shapesSettling()
 
     // Set by the tissue, so corners stay concentric with it at every radius.
     property real radius: Metrics.radiusFor(metrics.cellHeight, metrics)
@@ -945,7 +949,9 @@ Item {
                 target: root
                 property: "threadProgress"
                 to: 0
-                duration: Timing.close - Timing.stagger * 2
+                // Never below nothing: when transitions turn instant, `close`
+                // can arrive before `stagger` does.
+                duration: Math.max(0, Timing.close - Timing.stagger * 2)
                 easing.type: Easing.Bezier
                 easing.bezierCurve: Timing.easeClose
             }

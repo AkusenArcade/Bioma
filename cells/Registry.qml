@@ -36,7 +36,8 @@ Singleton {
         "drives": "drives/DrivesCell.qml",
         "polkit": "polkit/PolkitCell.qml",
         "emoji": "emoji/EmojiCell.qml",
-        "actions": "actions/ActionsCell.qml"
+        "actions": "actions/ActionsCell.qml",
+        "performance": "performance/PerformanceCell.qml"
     })
 
     // What a cell is called when it is spoken about rather than drawn — the
@@ -64,7 +65,8 @@ Singleton {
         "download": "Downloads",
         "drives": "Drives",
         "emoji": "Emoji",
-        "actions": "Quick actions"
+        "actions": "Quick actions",
+        "performance": "Performance"
     })
 
     // When each cell is there by itself, said the way the settings cell's
@@ -94,7 +96,8 @@ Singleton {
         "download": "While a browser is downloading into the downloads folder, and until a minute after it stalls.",
         "drives": "While a removable drive is attached — a stick, a card, a disk on a cable.",
         "emoji": "Never by itself: it comes when its keybind asks for it.",
-        "actions": "Never by itself: it comes to the pointer when its keybind asks for it."
+        "actions": "Never by itself: it comes to the pointer when its keybind asks for it.",
+        "performance": "While performance mode is on: turned on by its key, or by a game or an application on its list."
     })
 
     function conditionOf(type) {
@@ -202,7 +205,8 @@ Singleton {
         "drives": ["conditional"],
         "polkit": ["invoked"],
         "emoji": ["always", "invoked"],
-        "actions": ["invoked"]
+        "actions": ["invoked"],
+        "performance": ["conditional", "always"]
     })
 
     // A cell whose form changes when it floats, and whose visibility changes
@@ -255,7 +259,8 @@ Singleton {
         "download": 90,
         "drives": 40,
         "emoji": 40,
-        "actions": 40
+        "actions": 40,
+        "performance": 40
     })
 
     function minimumOf(type) {
@@ -348,7 +353,9 @@ Singleton {
         "download": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 3000 },
         // Gone as soon as the drive is: it was pulled out or powered off, and
         // either way there is nothing left on it to open.
-        "drives": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 0 }
+        "drives": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 0 },
+        // Gone with the mode: the on-screen display says it went.
+        "performance": { "enter": 1, "exit": 1, "confirm": 0, "dwell": 0 }
     })
 
     // Boolean, appearing promptly and leaving slowly, for a domain with

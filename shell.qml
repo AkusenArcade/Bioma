@@ -77,19 +77,31 @@ ShellRoot {
             }
 
             // The same picture, blurred, behind the workspaces in niri's
-            // overview.
-            WallpaperSurface {
-                screen: perScreen.modelData
-                backdrop: true
+            // overview. Put away in performance mode with its wallpaper lever
+            // on: a second decoded copy of the picture per screen, for a view
+            // a game does not open (core/Performance.qml).
+            LazyLoader {
+                active: !Performance.leanWallpaper
+
+                WallpaperSurface {
+                    screen: perScreen.modelData
+                    backdrop: true
+                }
             }
 
             // Above the wallpaper and under every window: the organisms placed
             // on this screen. docs/design/ORGANISMS.md.
             //
             // While they are being placed, they read the list being edited.
-            OrganismSurface {
-                screenItem: perScreen.modelData
-                all: Arranging.active ? Arranging.working : root.organismConfig
+            // Put away in performance mode with its organisms lever on, unless
+            // they are being placed: arranging is asking to see them.
+            LazyLoader {
+                active: !Performance.withoutOrganisms || Arranging.active
+
+                OrganismSurface {
+                    screenItem: perScreen.modelData
+                    all: Arranging.active ? Arranging.working : root.organismConfig
+                }
             }
 
             // Over everything, and only while a cell is open: the surface that
@@ -445,6 +457,36 @@ ShellRoot {
             return "stopped";
         }
     }
+
+    // Performance mode (core/Performance.qml): `on`, `off`, `toggle`, and
+    // `status`, which says whether it is on and why.
+    IpcHandler {
+        id: performance
+        target: "performance"
+
+        function on(): string {
+            Performance.on();
+            return performance.status();
+        }
+
+        function off(): string {
+            Performance.off();
+            return performance.status();
+        }
+
+        function toggle(): string {
+            Performance.toggle();
+            return performance.status();
+        }
+
+        function status(): string {
+            return Performance.active ? `on, ${Performance.reason}` : "off";
+        }
+    }
+
+    // What turns performance mode on by itself, watched from the start: the
+    // service is made by the first binding that reads it.
+    readonly property var workload: Workload.triggers
 
     // Bioma's sound effects, heard on request whatever the switches say:
     // `play login`, `play notification`, `play open`, `play close`,

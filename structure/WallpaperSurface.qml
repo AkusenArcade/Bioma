@@ -72,6 +72,26 @@ PanelWindow {
 
     function reveal(layer) {
         root.showingSecond = (layer === second);
+        if (root.lean)
+            release.restart();
+    }
+
+    // In performance mode with its wallpaper lever on, the layer that is not
+    // showing lets its picture go once the crossfade is over: stepping back
+    // to it costs a decode, and holding it costs a screen's worth of memory
+    // the rest of the time (core/Performance.qml).
+    readonly property bool lean: Performance.leanWallpaper
+    onLeanChanged: if (root.lean) release.restart()
+
+    Timer {
+        id: release
+        interval: Timing.wallpaper + 100
+        onTriggered: {
+            // One still decoding the picture asked for is on its way in.
+            const hidden = root.showingSecond ? first : second;
+            if (hidden.source !== root.source)
+                hidden.source = "";
+        }
     }
 
     component Layer: Item {

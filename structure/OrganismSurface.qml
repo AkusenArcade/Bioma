@@ -352,7 +352,7 @@ PanelWindow {
     property var blurRegion: null
     BackgroundEffect.blurRegion: blurRegion
 
-    readonly property bool blurs: Config.get("cell.blur", true)
+    readonly property bool blurs: Config.get("cell.blur", true) && !Performance.flat
 
     function refreshRegions() {
         const shapes = [];

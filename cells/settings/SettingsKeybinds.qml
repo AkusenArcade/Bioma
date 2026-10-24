@@ -773,6 +773,20 @@ Item {
                 }
             });
 
+        // Performance mode on or off, the same way.
+        if (keep("Performance mode: on or off"))
+            out.push({
+                "group": "CELLS",
+                "label": "Performance mode: on or off",
+                "cell": "",
+                "title": "Bioma: performance mode",
+                "action": {
+                    "name": "spawn",
+                    "args": ["qs", "-p", Quickshell.shellPath("shell.qml"),
+                             "ipc", "call", "performance", "toggle"]
+                }
+            });
+
         for (const name of Keybinds.actions) {
             const label = Keybinds.humanize(name);
             if (!keep(label))

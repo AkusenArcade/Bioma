@@ -797,6 +797,14 @@ Keybinds write — never into a file of Bioma's, because niri cannot undo a flag
 except the focus ring's width, which Bioma's niri template already draws. Each well's line says
 which file it is written in.
 
+**Removing a row** — on every Settings page whose rows are things written by hand (a workspace, a
+window rule, a startup line, a quick action's step, an app on the performance list) the last
+control is a **trash** in the text colour, 14 px in a 22 px stop, never a cross: a cross at that
+size, in a row, read as switched off (Akusen, 2026-10-24). It asks once, in its own place: the
+first press grows it toward the row, alert, saying `REMOVE?`; the second press answers; leaving
+it withdraws the question (`components/RemoveTool.qml`). Chips — a cell in a tissue, a preset in
+the list — keep their cross: taking a chip out is the layout, not something lost.
+
 **Session** — when the screen locks and the machine sleeps by itself, in four wells: **lock
 after** idle (Never, 5, 10, 15, 30 min), **sleep after** idle (Never — the default —, 15, 30
 min, 1, 2 h; Akusen, 2026-10-15, asked for by the people watching the demo), **before sleep**
@@ -1195,8 +1203,10 @@ Settings on the ACTIONS page.
 **The ACTIONS page** — four wells: the macros as the capsules the ring shows and a dashed NEW; the
 one chosen — its place in the ring with arrows to move it, RUN and DELETE (asks once), its name
 (unique, never empty; the error under the field) and its icon from the twelve; its steps, one row
-each read as a sentence, a press opening the row on what the step holds, the arrows and the cross
-beside it under the pointer; and one dashed chip per kind of step. Kinds and what they hold are in
+each read as a sentence, a press opening the row on what the step holds, the arrows and the trash
+beside it under the pointer; and one dashed chip per kind of step. NEW goes once there are eight:
+the page makes no more than the ring holds, and a ring is one gesture, not pages of them (Akusen,
+2026-10-24). Kinds and what they hold are in
 `docs/configuration.md` (`actions`); among them a **settings** step keeps the Appearance or the
 Sounds page as they are at CAPTURE NOW, to be put back later. No step places a window on a
 workspace (niri's window rules do), and no step switches every monitor off: one monitor at a time,
@@ -1209,4 +1219,58 @@ never the last one on.
 | circle | 172 px radius | from the pill's centre to the capsules' |
 | threads | 1.3 px, nodes 2.5 px | from the pill's outline to the capsule's |
 | page | 600 px | wells of the Sounds page; step rows 34 px |
+
+---
+
+## 21 · Performance
+
+*Conditional on performance mode · a dial with its needle over · says what it quietened.*
+
+*Built 2026-10-24, from "Nuove idee" ("Forse: modalità leggera").* Performance mode is the shell
+stepping back so the machine is the program's — a game, a render, a build. The mode is one state
+(`core/Performance.qml`) and every lever reads it; the cell is only where it is said. Contracted
+it is the `performance` glyph and nothing else, in the primary gradient. Kept on a membrane by an
+`always` visibility while the mode is off, the glyph is dim in the line colour, as the
+connectivity cell's mark is with nothing connected. No figure at rest.
+
+**Turned on** — by a hand: `qs ipc call performance on|off|toggle` (Mod+Alt+G as shipped, and
+*Performance mode: on or off* on the Keybinds page), the cell's switch, the Settings page. That
+choice is kept in the override (`performance.manual`), so a machine that wants to be lean all
+the time stays lean across a restart. And by a trigger (`services/Workload.qml`, nothing polled):
+a game registered with GameMode — `gdbus monitor` on its object, `ClientCount` read again on
+each signal with auto-start off — or a window whose app-id matches the list (`*` for anything;
+Steam's games are `steam_app_*` under XWayland, `steam_proton` under Proton's Wayland driver).
+A trigger's mode goes when the last trigger does. Turned off by hand while a trigger holds it, it
+stays off until every trigger has gone.
+
+**The levers** (`performance.suspend`, all on, each a switch on the PERFORMANCE page):
+
+| Lever | What it quietens |
+|---|---|
+| `motion` | The vitals take their resting pose — the dot at rest, the memory a flat level, the satellite parked at twelve — and keep colour and level (frozen where the last frame left them, they read as hung); the clock's second hand ticks once a second on the second; the media band's process stops and the band is still; the download threads stop. The alarms — the wave past the threshold, full memory's pulse — still sound. |
+| `organisms` | The organism surface is put away, and built again when the mode goes. Arranging brings it back for as long as it lasts. |
+| `wallpaper` | The overview's blurred backdrop is put away; the wallpaper lets its previous picture go once the crossfade is over. |
+| `blur` | No `ext-background-effect` region on any surface, no shadow under any shape. |
+| `transitions` | Every movement in the timing set is one frame (`Timing.moved`), `stagger` none. Dwells, waits and the loader keep their length. |
+| `polling` | The vitals are sampled every `performance.vitals_interval` (10 s). |
+
+Measured on 2026-10-24 with a Proton game registered (two monitors, the shell at rest): 9.4 % of
+one core and 618 MB PSS with the mode off, 4.1 % and 582 MB with it on. The memory comes back
+only in part — Quickshell's jemalloc keeps much of what is freed.
+
+**Expanded** — PERFORMANCE in the header, and in a well: PERFORMANCE MODE with its switch, a
+line in Spectral saying who holds it ("On while a game runs. It goes off by itself when that
+ends."), one row a lever that is on in Orbitron 11 muted (`LIVE INDICATORS STILL`,
+`ORGANISMS PUT AWAY`, `ONE PICTURE KEPT`, `NO BLUR, NO SHADOWS`, `INSTANT TRANSITIONS`,
+`VITALS EVERY 10 S`), and where to choose them.
+
+**On-screen display** — every change, on and off, is said by the OSD wherever a performance cell
+is: the glyph, `ON` or `OFF`, and "Performance mode" with who holds it. The cell goes with the
+mode and could not say the going itself.
+
+| Measure | Value | Note |
+|---|---|---|
+| glyph | 20 px | primary gradient on, line colour off |
+| panel | 340 px | a well, inset 14 |
+| dwell | 0 | gone with the mode; the OSD says so |
 

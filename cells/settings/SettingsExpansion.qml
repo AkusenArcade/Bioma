@@ -65,6 +65,8 @@ Item {
           "hint": "locking, power profile", "width": 540 },
         { "key": "sounds", "label": "SOUNDS", "glyph": "sounds",
           "hint": "events, volume", "width": 540 },
+        { "key": "performance", "label": "PERFORMANCE", "glyph": "performance",
+          "hint": "lean mode, its triggers", "width": 560 },
         { "key": "actions", "label": "ACTIONS", "glyph": "actions",
           "hint": "the ring at the pointer", "width": 600 }
     ]
@@ -389,6 +391,8 @@ Item {
                         return Qt.resolvedUrl("SettingsSession.qml");
                     if (root.chosen === "sounds")
                         return Qt.resolvedUrl("SettingsSounds.qml");
+                    if (root.chosen === "performance")
+                        return Qt.resolvedUrl("SettingsPerformance.qml");
                     if (root.chosen === "actions")
                         return Qt.resolvedUrl("SettingsActions.qml");
                     return "";

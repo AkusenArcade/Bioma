@@ -99,6 +99,8 @@ Item {
     }
 
     function addMacro() {
+        if (root.macros.length >= Actions.ringSize)
+            return;
         const icon = Actions.icons[root.macros.length % Actions.icons.length].name;
         root.change(list => list.push({ "name": root.freeName("Action"), "icon": icon, "steps": [] }));
         root.selected = root.macros.length - 1;
@@ -422,7 +424,7 @@ Item {
         }
     }
 
-    // A small press on a row: move, remove.
+    // A small press on a row: move. Removing is `RemoveTool`, which asks.
     component Tool: Item {
         id: tool
 
@@ -923,6 +925,7 @@ Item {
         "wallpaper": wallpaperEditor,
         "quiet": switchEditor,
         "profile": profileEditor,
+        "performance": switchEditor,
         "timer": timerEditor,
         "wait": waitEditor,
         "command": commandEditor
@@ -971,6 +974,7 @@ Item {
                     }
 
                     Offer {
+                        visible: root.macros.length < Actions.ringSize
                         y: (root.capsule - height) / 2
                         label: "NEW"
                         onPressed: root.addMacro()
@@ -982,6 +986,8 @@ Item {
                           ? "None yet. A quick action is a list of steps run one after the other, from a ring that comes to the pointer on Mod+Alt+Space."
                           : root.macros.length > Actions.ringSize
                           ? `The first ${Actions.ringSize} are in the ring, in this order; the rest run from a key of their own.`
+                          : root.macros.length === Actions.ringSize
+                          ? `The ring is full: ${Actions.ringSize}, clockwise from the top. Delete one to write another.`
                           : "In the ring in this order, clockwise from the top. Each also runs from a key of its own: qs ipc call actions run and its name."
                 }
             }
@@ -1152,9 +1158,9 @@ Item {
                                     onPressed: root.moveStep(stepRow.index, 1)
                                 }
 
-                                Tool {
-                                    icon: "close"
-                                    onPressed: root.removeStep(stepRow.index)
+                                RemoveTool {
+                                    factor: root.factor
+                                    onConfirmed: root.removeStep(stepRow.index)
                                 }
                             }
 

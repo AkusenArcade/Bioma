@@ -163,6 +163,22 @@
     "on_mains": "keep"
   },
 
+  "performance": {
+    "$comment": "Performance mode: the shell stepping back so the machine is the program's (core/Performance.qml). manual is the hand's switch (the key, the cell, Settings) and is kept across a restart. It also comes on by itself while GameMode has a game registered (gamemode) or a window of an application in apps is open — app-ids, * for anything: Steam's games are steam_app_* under XWayland, steam_proton under Proton's Wayland driver — and goes when they do. suspend says what it quietens: motion (live indicators still), organisms (put away), wallpaper (the overview's backdrop put away, one picture decoded), blur (no blur, no shadows), transitions (instant), polling (vitals read every vitals_interval ms).",
+    "manual": false,
+    "gamemode": true,
+    "apps": [],
+    "suspend": {
+      "motion": true,
+      "organisms": true,
+      "wallpaper": true,
+      "blur": true,
+      "transitions": true,
+      "polling": true
+    },
+    "vitals_interval": 10000
+  },
+
   "vitals": {
     "interval": 2000,
     "clock_average": 5,
@@ -236,6 +252,11 @@
             },
             {
               "type": "drives",
+              "enabled": true,
+              "visibility": { "type": "conditional" }
+            },
+            {
+              "type": "performance",
               "enabled": true,
               "visibility": { "type": "conditional" }
             }

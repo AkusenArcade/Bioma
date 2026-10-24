@@ -72,7 +72,10 @@ PanelWindow {
     readonly property real side: 23 * factor
     readonly property real glyphSize: 28 * factor
 
-    readonly property bool layout: root.kind === "layout"
+    // The layout and performance mode have no travel, so no dial: a glyph, a
+    // code and a name.
+    readonly property bool layout: root.kind === "layout" || root.kind === "performance"
+    readonly property bool performance: root.kind === "performance"
     readonly property real capsuleWidth: root.layout
         ? root.side * 2 + root.glyphSize + root.gap + layoutCode.implicitWidth
           + root.gap + layoutName.implicitWidth
@@ -178,8 +181,10 @@ PanelWindow {
                 anchors.verticalCenter: parent.verticalCenter
                 width: root.glyphSize
                 height: width
-                name: "keyboard"
-                gradient: true
+                name: root.performance ? "performance" : "keyboard"
+                // Muted once the mode is off: an icon that is inactive.
+                colour: Theme.textMuted
+                gradient: !root.performance || Performance.active
             }
 
             Text {
@@ -187,7 +192,7 @@ PanelWindow {
                 anchors.left: layoutGlyph.right
                 anchors.leftMargin: root.gap
                 anchors.verticalCenter: parent.verticalCenter
-                text: Keyboard.currentCode
+                text: root.performance ? (Performance.active ? "ON" : "OFF") : Keyboard.currentCode
                 color: Theme.text
                 font: Qt.font({
                     "family": Typography.technical,
@@ -202,7 +207,10 @@ PanelWindow {
                 anchors.left: layoutCode.right
                 anchors.leftMargin: root.gap
                 anchors.verticalCenter: parent.verticalCenter
-                text: Keyboard.current
+                text: root.performance
+                      ? "Performance mode" + (Performance.active && Performance.reason !== "by hand"
+                                              ? ", " + Performance.reason : "")
+                      : Keyboard.current
                 color: Theme.textMuted
                 font: Qt.font({
                     "family": Typography.expressive,
@@ -222,10 +230,14 @@ PanelWindow {
     BackgroundEffect.blurRegion: blurRegion
 
     function refreshBlur() {
-        root.blurRegion = Regions.rebind(root, root.blurRegion,
-                                         [{ "item": capsule, "radius": capsule.radius }]);
+        root.blurRegion = Regions.rebind(root, root.blurRegion, Performance.flat ? []
+                                         : [{ "item": capsule, "radius": capsule.radius }]);
     }
 
     onGrowthChanged: root.refreshBlur()
+    Connections {
+        target: Performance
+        function onFlatChanged() { root.refreshBlur(); }
+    }
     Component.onCompleted: root.refreshBlur()
 }

@@ -8,7 +8,8 @@ import qs.core
 // The download cell's measure. The light moves because bytes arrive, and at
 // a speed that says how many — logarithmically, since a download goes from a
 // few kilobytes a second to a hundred megabytes — and it is still when they
-// stop. Nothing about it moves at a rate of its own.
+// stop. Nothing about it moves at a rate of its own. In performance mode it is
+// still throughout (core/Performance.qml).
 Item {
     id: root
 
@@ -28,7 +29,7 @@ Item {
     height: implicitHeight
 
     FrameAnimation {
-        running: root.running && root.visible && root.speed > 0
+        running: root.running && root.visible && root.speed > 0 && !Performance.still
         onTriggered: root.offset = (root.offset + root.speed * Math.min(frameTime, 0.05)) % (12 * root.factor)
     }
 

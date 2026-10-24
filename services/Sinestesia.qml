@@ -29,8 +29,11 @@ Singleton {
     // it, and the process is shut by closing it: it exits when its stdout
     // does. A list rather than a switch: with one switch, two holders — two
     // membranes' cells, or a cell and an organism — turned each other off.
+    // In performance mode the band holds still and the process does not run:
+    // a band redrawn sixty times a second is the shell's most expensive
+    // moving thing (core/Performance.qml).
     property var holders: []
-    readonly property bool active: root.holders.length > 0
+    readonly property bool active: root.holders.length > 0 && !Performance.still
 
     function hold(owner, wanted) {
         const held = root.holders.indexOf(owner) >= 0;

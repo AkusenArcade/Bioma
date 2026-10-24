@@ -292,7 +292,7 @@ PanelWindow {
         // that reaches past the band never stays on screen after the band has
         // gone.
         Repeater {
-            model: root.overWindows && root.haloOpacity > 0 ? root.tissues : []
+            model: root.overWindows && root.haloOpacity > 0 && !Performance.flat ? root.tissues : []
 
             delegate: RectangularShadow {
                 required property Item modelData

@@ -34,8 +34,10 @@ Singleton {
     // two figures — a load rising as a clock falls — impossible to trust,
     // because they were not read at the same moment.
 
-    // A floor: a hand-written 0 would be a timer firing on every frame.
-    readonly property int interval: Math.max(250, Config.get("vitals.interval", 2000))
+    // A floor: a hand-written 0 would be a timer firing on every frame. In
+    // performance mode with its polling lever on, a longer one.
+    readonly property int interval: Math.max(250, Config.get("vitals.interval", 2000),
+                                             Performance.sparse ? Performance.vitalsInterval : 0)
 
     Timer {
         interval: root.interval

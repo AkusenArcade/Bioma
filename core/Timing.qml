@@ -20,6 +20,15 @@ Singleton {
         return Math.round(base * root.speed);
     }
 
+    // A shape's movement, as opposed to a dwell: in performance mode with
+    // its transitions lever on (core/Performance.qml) it is over in one
+    // frame. One millisecond rather than none, because the cascade divides by
+    // `grow`. Dwells, the loader and the waits keep `scaled`: a notification
+    // does not stay a shorter time because the shell was asked to move less.
+    function moved(base) {
+        return Performance.instant ? 1 : root.scaled(base);
+    }
+
     // A shadow's opacity for a shape at `growth` (0 gone, 1 whole). The shadow
     // leaves before the shape and arrives after it: it is gone by the time the
     // shape is half retracted, and comes in over the second half of the
@@ -30,19 +39,21 @@ Singleton {
         return Math.max(0, Math.min(1, (growth - 0.5) * 2));
     }
 
-    readonly property int open: scaled(Config.get("timing.open", 250))
-    readonly property int close: scaled(Config.get("timing.close", 150))
+    readonly property int open: moved(Config.get("timing.open", 250))
+    readonly property int close: moved(Config.get("timing.close", 150))
 
     // One shape's own growth inside the opening cascade.
-    readonly property int grow: scaled(Config.get("timing.grow", 100))
+    readonly property int grow: moved(Config.get("timing.grow", 100))
 
     // Delay between consecutive capsules in a staggered entrance.
-    readonly property int stagger: scaled(Config.get("timing.stagger", 16))
+    // None at all when transitions are instant: a delay is not a movement,
+    // and the closing thread runs for `close` less two of these.
+    readonly property int stagger: Performance.instant ? 0 : scaled(Config.get("timing.stagger", 16))
 
     // A state change with no live value behind it: the workspace bars shifting
     // one step, a segmented control's pill sliding to the chosen option. It is
     // an event, not an indicator, and it is still the rest of the time.
-    readonly property int transition: scaled(Config.get("timing.transition", 180))
+    readonly property int transition: moved(Config.get("timing.transition", 180))
 
     // Titles rewrite on every browser tab; a reflow triggered by one character
     // of width is motion with nothing behind it. Both wait this long.
@@ -50,11 +61,11 @@ Singleton {
 
     // A cell appearing or disappearing reflows its tissue. This is a design
     // moment, not an incidental animation.
-    readonly property int reflow: scaled(Config.get("timing.reflow", 220))
+    readonly property int reflow: moved(Config.get("timing.reflow", 220))
 
     // Palette changes are animated, never instantaneous, and every surface
     // crosses together.
-    readonly property int theme: scaled(Config.get("timing.theme", 250))
+    readonly property int theme: moved(Config.get("timing.theme", 250))
 
     // How long after the pointer leaves before an auto-hiding membrane slides out.
     readonly property int autoHide: scaled(Config.get("timing.auto_hide", 500))
@@ -63,7 +74,7 @@ Singleton {
     readonly property int notification: scaled(Config.get("timing.notification", 5000))
 
     // Content enters only once its shape has reached its size.
-    readonly property int contentFade: scaled(Config.get("timing.content_fade", 120))
+    readonly property int contentFade: moved(Config.get("timing.content_fade", 120))
 
     // The loader's round trip: 600 ms out, 600 ms back. The one motion in the
     // shell that runs while nothing is being measured — because the movement
@@ -129,14 +140,14 @@ Singleton {
     // happens once per session, not a response to a hand. Each line opens over
     // `welcomeOpen`, the next starting `welcomeStagger` after it, and the
     // screen darkens over `welcomeFade` (Akusen, 2026-09-27: "softer").
-    readonly property int welcomeOpen: scaled(Config.get("timing.welcome_open", 450))
-    readonly property int welcomeStagger: scaled(Config.get("timing.welcome_stagger", 100))
-    readonly property int welcomeFade: scaled(Config.get("timing.welcome_fade", 1000))
+    readonly property int welcomeOpen: moved(Config.get("timing.welcome_open", 450))
+    readonly property int welcomeStagger: moved(Config.get("timing.welcome_stagger", 100))
+    readonly property int welcomeFade: moved(Config.get("timing.welcome_fade", 1000))
 
     // Wallpaper crossfade. Slower than a palette change: the picture is the
     // whole screen, and anything quick here reads as a flicker rather than a
     // change of scene.
-    readonly property int wallpaper: scaled(Config.get("timing.wallpaper", 600))
+    readonly property int wallpaper: moved(Config.get("timing.wallpaper", 600))
 
     // ---- The cascade -----------------------------------------------------
     //

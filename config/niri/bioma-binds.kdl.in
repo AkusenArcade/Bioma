@@ -173,6 +173,13 @@ binds {
         spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "cell" "toggle" "emoji"
     }
 
+    // Performance mode, on or off: the shell steps back for a game or a heavy
+    // job. It also comes on by itself while GameMode has a game, or a listed
+    // application is open — Settings, under Performance.
+    Mod+Alt+G repeat=false hotkey-overlay-title="Bioma: performance mode" {
+        spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "performance" "toggle"
+    }
+
     // Not a cell either: the lock screen, which is a process of its own.
     // The script is called directly rather than through the shell, so the
     // key locks even when the shell is down; it also stands guard, and puts

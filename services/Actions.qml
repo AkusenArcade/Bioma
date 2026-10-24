@@ -30,8 +30,9 @@ Singleton {
         return Array.isArray(list) ? list.filter(macro => macro && typeof macro.name === "string") : [];
     }
 
-    // As many as the ring holds. The rest are kept, listed on the page, and
-    // reached by their own key.
+    // As many as the ring holds, and as many as the page makes: one ring, not
+    // pages of them (Akusen, 2026-10-24: "eight are enough"). A longer list
+    // written by hand is kept and listed, and the rest run from their key.
     readonly property int ringSize: 8
     readonly property var ring: root.macros.slice(0, root.ringSize)
 
@@ -221,6 +222,20 @@ Singleton {
                 Power.set(step.profile || "balanced");
             }
         },
+        // The shell's own, not the machine's: the same mode the key and the
+        // cell turn on (core/Performance.qml). Off by a step, it stays off
+        // while a game holds it, as off by hand does.
+        "performance": {
+            "label": "PERFORMANCE MODE",
+            "fresh": () => ({ "type": "performance", "on": true }),
+            "describe": step => step.on ? "On" : "Off",
+            "run": step => {
+                if (step.on === true)
+                    Performance.on();
+                else
+                    Performance.off();
+            }
+        },
         "timer": {
             "label": "TIMER",
             "fresh": () => ({ "type": "timer", "minutes": 25 }),
@@ -258,7 +273,8 @@ Singleton {
 
     // In the order the page offers them.
     readonly property var order: ["launch", "open", "volume", "brightness", "settings", "monitor",
-                                  "preset", "wallpaper", "quiet", "profile", "timer", "wait",
+                                  "preset", "wallpaper", "quiet", "profile", "performance", "timer",
+                                  "wait",
                                   "command"]
 
     function kindOf(step) {

@@ -14,6 +14,14 @@ import qs.core
 //
 // Every movement carries a live value in its rate. An indicator with nothing to
 // report is still — never a fixed rhythm chosen to look alive.
+//
+// In performance mode (`Performance.still`) the rates stop and each form
+// takes its resting pose: the dot at rest, the liquid at its level with a
+// flat surface, the satellite parked at twelve, no drops. Frozen where the
+// last frame left them, the crest and the satellite read as a shell that had
+// hung (Akusen, 2026-10-24). Colour still says the load, and the
+// alarms — the wave past the threshold, full memory's pulse — still sound:
+// an alarm is the one thing the mode does not quieten.
 Item {
     id: root
 
@@ -147,8 +155,9 @@ Item {
         }
 
         SequentialAnimation {
-            running: heart.visible
+            running: heart.visible && !Performance.still
             loops: Animation.Infinite
+            onRunningChanged: if (!running) heart.pulse = 1
 
             NumberAnimation { target: heart; property: "pulse"; to: 1.45; duration: Math.round(root.beatInterval * 0.09); easing.type: Easing.OutQuad }
             NumberAnimation { target: heart; property: "pulse"; to: 1.0; duration: Math.round(root.beatInterval * 0.15); easing.type: Easing.InQuad }
@@ -195,6 +204,9 @@ Item {
         readonly property real vessel: (root.ringRadius - root.ringStroke) * 2
         readonly property real surface: root.centre - vessel / 2 + (1 - root.level) * vessel
         readonly property real period: 46 * root.unit
+        // Held still, the surface is flat: a level, not a wave stopped
+        // halfway through a crest, which read as a frame that froze.
+        readonly property real swell: Performance.still ? 0 : 6 * root.unit
 
         Shape {
             id: wave
@@ -204,7 +216,7 @@ Item {
             preferredRendererType: Shape.CurveRenderer
 
             NumberAnimation on x {
-                running: root.ramMoving
+                running: root.ramMoving && !Performance.still
                 loops: Animation.Infinite
                 from: -liquid.period
                 to: 0
@@ -225,11 +237,11 @@ Item {
                 // The path runs past the circle by more than one translation on
                 // both sides: stop it at the edge and the end of a cycle leaves
                 // an empty margin and the movement appears to halt.
-                PathQuad { x: 23 * root.unit; y: liquid.surface; controlX: 11.5 * root.unit; controlY: liquid.surface - 6 * root.unit }
-                PathQuad { x: 46 * root.unit; y: liquid.surface; controlX: 34.5 * root.unit; controlY: liquid.surface + 6 * root.unit }
-                PathQuad { x: 69 * root.unit; y: liquid.surface; controlX: 57.5 * root.unit; controlY: liquid.surface - 6 * root.unit }
-                PathQuad { x: 92 * root.unit; y: liquid.surface; controlX: 80.5 * root.unit; controlY: liquid.surface + 6 * root.unit }
-                PathQuad { x: 115 * root.unit; y: liquid.surface; controlX: 103.5 * root.unit; controlY: liquid.surface - 6 * root.unit }
+                PathQuad { x: 23 * root.unit; y: liquid.surface; controlX: 11.5 * root.unit; controlY: liquid.surface - liquid.swell }
+                PathQuad { x: 46 * root.unit; y: liquid.surface; controlX: 34.5 * root.unit; controlY: liquid.surface + liquid.swell }
+                PathQuad { x: 69 * root.unit; y: liquid.surface; controlX: 57.5 * root.unit; controlY: liquid.surface - liquid.swell }
+                PathQuad { x: 92 * root.unit; y: liquid.surface; controlX: 80.5 * root.unit; controlY: liquid.surface + liquid.swell }
+                PathQuad { x: 115 * root.unit; y: liquid.surface; controlX: 103.5 * root.unit; controlY: liquid.surface - liquid.swell }
                 PathLine { x: 115 * root.unit; y: 64 * root.unit }
                 PathLine { x: 0; y: 64 * root.unit }
             }
@@ -293,7 +305,7 @@ Item {
         readonly property real period: 6000 - root.rate * 4800
 
         FrameAnimation {
-            running: orbit.visible
+            running: orbit.visible && !Performance.still
             onTriggered: orbit.angle = (orbit.angle + 360 * frameTime * 1000 / orbit.period) % 360
         }
 
@@ -301,8 +313,11 @@ Item {
             base: root.base
             width: 12 * root.unit
             height: width
-            x: root.centre + Math.cos((orbit.angle - 45) * Math.PI / 180) * root.ringRadius - width / 2
-            y: root.centre + Math.sin((orbit.angle - 45) * Math.PI / 180) * root.ringRadius - height / 2
+            // Held still it is parked at twelve, its resting place, rather
+            // than wherever the last frame left it.
+            readonly property real angle: Performance.still ? 315 : orbit.angle
+            x: root.centre + Math.cos((angle - 45) * Math.PI / 180) * root.ringRadius - width / 2
+            y: root.centre + Math.sin((angle - 45) * Math.PI / 180) * root.ringRadius - height / 2
         }
     }
 
@@ -400,7 +415,7 @@ Item {
         "absorb": 0.25      // seconds a drop takes to be taken in
     })
 
-    readonly property real dropRate: kind === "battery" && inflow > 0.5
+    readonly property real dropRate: kind === "battery" && inflow > 0.5 && !Performance.still
         ? Math.max(physics.fewest, Math.min(physics.most, inflow * physics.dropsPerWatt)) : 0
     readonly property real dropRadius: ringRadius * physics.drop
 

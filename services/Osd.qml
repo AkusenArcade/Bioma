@@ -20,7 +20,8 @@ import qs.core
 Singleton {
     id: root
 
-    // "volume" | "brightness" | "layout" | "" when nothing is being said.
+    // "volume" | "brightness" | "layout" | "performance" | "" when nothing is
+    // being said.
     property string kind: ""
     property string output: ""
 
@@ -39,6 +40,14 @@ Singleton {
     property real heardBrightness: -1
 
     onBrightnessChanged: root.heard()
+
+    // Performance mode going on or off is said both ways, wherever a
+    // performance cell is: the cell is there only while the mode is on, so
+    // the going off would otherwise be said by nothing (Akusen, 2026-10-24).
+    Connections {
+        target: Performance
+        function onActiveChanged() { root.say("performance"); }
+    }
 
     // Keyboard reports a switch only after its first reading, so starting up
     // says nothing.
