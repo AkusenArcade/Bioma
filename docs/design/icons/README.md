@@ -1,6 +1,6 @@
 # Bioma icons
 
-82 glyphs, 24 × 24, `currentColor`, no width/height assumptions beyond the viewBox.
+84 glyphs, 24 × 24, `currentColor`, no width/height assumptions beyond the viewBox.
 
 Icons are the one graphic alphabet in Bioma that is not an indicator: they say **what**
 something is, never **how hard** it is working.
@@ -10,7 +10,7 @@ something is, never **how hard** it is working.
 - **Grid 24, live area 20** — two pixels of margin per side, so glyphs of different bulk weigh
   the same in a row.
 - **Stroke 1.5**, round caps and joins. Exceptions only where a glyph must read darker at small
-  size: `workspaces` 1.4, `bell` / `app-fallback` / chevrons / `plus` / `close` 1.6,
+  size: `workspaces` 1.4, `bell` / `app-fallback` / chevrons / `plus` / `close` / `trash` 1.6,
   `search` / `edit` / `sound-*` 1.7, `error` 2.0, `pause` 2.6.
 - **Corner radius 3** on rectangles: below it disappears at 16 px, above it turns into a pill
   and changes meaning.
@@ -60,13 +60,15 @@ something is, never **how hard** it is working.
 | `sound-on.svg` `sound-off.svg` | per-application mute; `sound-off` is also the muted volume dial |
 | `stop.svg` | stops a recording |
 | `chevron-down.svg` `chevron-right.svg` | dropdowns, rows that open something else |
-| `plus.svg` `close.svg` `edit.svg` | add, remove, edit |
+| `plus.svg` `close.svg` `edit.svg` | add, close or take out, edit |
+| `trash.svg` | removes a setting's row for good — a workspace, a rule, a startup line, a step: the lid, the handle and the body with two slats. Asks once (`components/RemoveTool.qml`) |
 | `error.svg` | beside the reason, in the alert colour, under the field that refused the input |
 | `clock.svg` | ring plus minute pie |
 | `weather-clear.svg` `weather-clear-night.svg` `weather-partly.svg` `weather-cloudy.svg` `weather-fog.svg` `weather-rain.svg` `weather-snow.svg` `weather-storm.svg` | the weather organism: now, and each of the next hours. The snow's flakes are nodes, the one fill |
 | `clipboard.svg` | the clipboard cell: what was copied, kept |
 | `keyboard.svg` | the keyboard cell's header: the layout, and switching it |
 | `brightness.svg` | the sun in the middle of the brightness display's dial |
+| `performance.svg` | performance mode: a dial with its needle all the way over — the cell, its OSD and its Settings category |
 | `actions.svg` | quick actions: a pill with six threads to six nodes — the ring itself, and its Settings category |
 | `action-work.svg` `action-game.svg` `action-stream.svg` `action-music.svg` `action-relax.svg` `action-focus.svg` `action-night.svg` `action-call.svg` `action-code.svg` `action-design.svg` `action-home.svg` `action-travel.svg` | what a quick action is *for*, chosen on the ACTIONS page: a briefcase, a pad, a broadcast, a note, a cup, a target, the moon with a star, a handset, brackets, a nib, a house, a pin |
 

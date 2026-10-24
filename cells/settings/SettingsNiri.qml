@@ -361,7 +361,7 @@ Item {
         }
     }
 
-    // A small press on a row: move, remove.
+    // A small press on a row: move. Removing is `RemoveTool`, which asks.
     component Tool: Item {
         id: tool
 
@@ -843,10 +843,10 @@ Item {
                                     }
                                 }
 
-                                Tool {
-                                    icon: "close"
+                                RemoveTool {
+                                    factor: root.factor
                                     dimmed: root.busy
-                                    onPressed: {
+                                    onConfirmed: {
                                         NiriSettings.removeWorkspace(wsRow.modelData);
                                         root.openWorkspace = -1;
                                     }
@@ -943,12 +943,12 @@ Item {
                         Row {
                             spacing: 8 * root.factor
 
-                            Tool {
+                            RemoveTool {
                                 anchors.verticalCenter: parent.verticalCenter
-                                icon: "close"
-                                opacity: spawnRow.hovered ? 1 : 0
+                                factor: root.factor
+                                opacity: spawnRow.hovered || asking ? 1 : 0
                                 dimmed: root.busy
-                                onPressed: NiriSettings.removeStartup(spawnRow.modelData)
+                                onConfirmed: NiriSettings.removeStartup(spawnRow.modelData)
                             }
 
                             Switch {
@@ -1062,11 +1062,11 @@ Item {
                             open: ruleRow.open
                             onPressed: root.openRule = ruleRow.open ? -1 : ruleRow.index
 
-                            Tool {
-                                icon: "close"
-                                opacity: (ruleHead.hovered || ruleRow.open) && NiriSettings.removable(ruleRow.modelData) ? 1 : 0
+                            RemoveTool {
+                                factor: root.factor
+                                opacity: (ruleHead.hovered || ruleRow.open || asking) && NiriSettings.removable(ruleRow.modelData) ? 1 : 0
                                 dimmed: root.busy || !NiriSettings.removable(ruleRow.modelData)
-                                onPressed: {
+                                onConfirmed: {
                                     NiriSettings.removeRule(ruleRow.modelData);
                                     root.openRule = -1;
                                 }

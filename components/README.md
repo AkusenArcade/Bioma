@@ -31,3 +31,6 @@ Expected early residents:
   primary or alert. The confirmations of vitals, system and utility and a
   notification's actions all use it; two of them had drifted into Spectral
   while each was written by hand.
+- **RemoveTool** — the trash at the end of a Settings row that removes
+  something written by hand. Asks once: the first press grows it into an
+  alert `REMOVE?`, the second answers, leaving withdraws. CELLS §12, Removing a row.
