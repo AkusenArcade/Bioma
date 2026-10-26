@@ -316,10 +316,7 @@ it again.
   <img src="docs/media/settings-niri.webp" width="400" alt="Settings, Niri: gaps, the focus ring, focus following the pointer, the named workspaces and what starts with the session">
 </p>
 
-Every change applies as it is made. Here the radius goes from round to square,
-and every cell follows:
-
-https://github.com/user-attachments/assets/b6040d46-5f7f-4733-bbe6-13055976d951
+Every change applies as it is made, and every cell follows it at once.
 
 ## Requirements
 
