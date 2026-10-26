@@ -49,8 +49,8 @@ expanding this cell would add nothing the window does not already say.
 | max width | 28% of screen | then ellipsis |
 | title change | 180 ms debounce | then cross-fade |
 
-**Open** — the fallback glyph. The one in the design is a neutral placeholder; the real one
-will be drawn with the icon series, from the mark's parameters.
+**Decided** — the fallback glyph is `app-fallback.svg`, drawn with the icon series from the
+mark's parameters; the neutral placeholder in the design is gone.
 
 ---
 
@@ -250,8 +250,9 @@ line through the middle (Akusen preferred the vesicles without it).
 
 **Open** — the band's behaviour is **not decided here**: it is defined against the Sinestesia
 code, which has already done that work against real audio. This spec fixes the form, not the
-behaviour. Still to settle: band count and frequency split, and what to do on a narrow screen —
-drop bars from the sides or pack them closer.
+behaviour. The band count is settled there: the tool emits `sinestesia.bands` a frame and the
+cell folds them to the fourteen it draws contracted and the thirty-four it draws open. Still to
+settle: what to do on a narrow screen — drop bars from the sides or pack them closer.
 
 ---
 
@@ -305,10 +306,11 @@ state that suspends it, which is why muted has an extra sign.
 | per-app mute | 22 px | empty ring when audible, cut ring in primary when muted |
 | over 100% arc | r 30 px | 0.7× stroke, same gradient |
 
-**Open** — with visibility set to invoked, turning the wheel gives no feedback because the cell
-is not there. A system-wide OSD would fill this, but it concerns brightness and others too: it
-is a system decision, not a property of this cell, and stays deferred. Prisma's OSD components
-exist and port when decided.
+**Closed** — with visibility set to invoked, turning the wheel gave no feedback because the cell
+is not there. The system-wide on-screen display answers it (`services/Osd.qml`,
+`structure/OsdSurface.qml`): a decision of the system, not of this cell, it says the volume, the
+brightness, the keyboard layout and performance mode on a monitor where no cell is there to say
+it.
 
 ---
 

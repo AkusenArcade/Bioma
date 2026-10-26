@@ -452,6 +452,7 @@ What `conditional` means is the cell's own, from `cells/Registry.qml`:
 | `timer` | while a timer runs, or waits, paused, to be resumed |
 | `download` | while a browser's partial file in the downloads folder is growing, until a minute after it stalls |
 | `drives` | while a removable drive is attached |
+| `performance` | while performance mode is on — by its key, or by a game or an application on its list |
 
 The five seconds are the dwell, so a block may set its own (`visibility.dwell`),
 and the pointer on the cell holds it. Nothing that happens in the first

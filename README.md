@@ -116,6 +116,8 @@ does.
 | Drives | while a stick or a disk is plugged in | each drive, OPEN and EJECT, and whether it is safe to unplug yet |
 | Polkit | — | when something asks for permission: who is asking and why, and a password field in the lock screen's style. Bioma is the session's authentication agent |
 | Emoji | — | a search by name, the skin tones, recent picks first; the one chosen is pasted into the window that had the focus |
+| Quick actions | — | a ring of up to eight macros at the pointer — see [below](#quick-actions) |
+| Performance | while performance mode is on: its glyph | the switch, who is holding the mode on, and what it has quietened — see [below](#performance-mode) |
 | Launcher | — | applications, from the third letter files in the home found by name, and a calculator: an expression or a conversion answers as the first row, Enter copies it |
 | Settings | — | see [below](#settings-in-the-shell) |
 
@@ -134,6 +136,50 @@ monitor is there to say it, a small on-screen display says it instead.
   <img src="docs/media/privacy.webp" width="300" alt="Privacy: the microphone in use, and who is taking it">
 </p>
 
+### Quick actions
+
+`Mod+Alt+Space`, or `Mod+Alt` and the middle button, brings a ring to the
+pointer, on whichever monitor it is on: up to eight macros around a pill, the
+one nearest the pointer's angle lit and named. A press, a digit from 1 to 8,
+or the arrows and Enter run it.
+
+A macro is a list of steps run in order: launch an application or open a file,
+set the volume or the brightness, put back Appearance or Sounds settings
+captured earlier, switch a monitor on or off, apply a saved layout, wear a
+favourite wallpaper, do not disturb, the power profile, performance mode, a
+timer, a wait, a command. A step that cannot run stops the macro and says why.
+Macros are made on the settings cell's Actions page, which an empty ring opens.
+`qs -p /path/to/Bioma/shell.qml ipc call actions run Work` runs the one called
+*Work* from anywhere.
+
+<p align="center">
+  <img src="docs/media/actions.webp" width="360" alt="Quick actions: eight macros on a ring around the pointer, the nearest one lit and named">
+</p>
+
+### Performance mode
+
+For a game or a heavy job the shell steps back: the live indicators hold
+still, the organisms and the overview's backdrop are put away, there is no
+blur and no shadow, shapes jump to size, and the vitals are sampled every ten
+seconds. Each of these is a switch on the settings cell's Performance page.
+
+It comes on with `Mod+Alt+G` or from the performance cell, and by itself while
+a game is registered with GameMode or a window whose app-id is on the page's
+list is open; it goes when they do. An on-screen display says every change.
+With a Proton game running, Bioma went from 9.4% of a core to 4.1%.
+
+<p align="center">
+  <img src="docs/media/performance.webp" width="320" alt="The performance cell, opened: the switch and what the mode quietens">
+</p>
+
+### Sounds
+
+Bioma has a few sounds of its own, synthesised for it: a chord when the
+desktop first appears, droplets for a notification (unless the sender brings
+its own sound or asks for none), a bubble when a cell opens on request, and a
+low note when a reading turns red. The Sounds page sets one volume and a
+switch for each.
+
 ### One palette, the whole desktop
 
 A palette has four roles (background, text, primary, secondary), and every
@@ -141,6 +187,16 @@ surface derives from them. It is either one of Bioma's own palettes or computed
 from the wallpaper by matugen. The theme cell switches it live. Colour is an
 animated value rather than a constant copied into each cell, so the whole shell
 changes colour at once.
+
+Palettes of your own are made on the settings cell's Appearance page: NEW
+starts one from the colours on screen, matugen's included, and each role is set
+by its hex, by an eyedropper on the screen, or by hue, saturation and value,
+the desktop retinting as the hand moves. A palette is one file in
+`~/.config/bioma/palettes/`, so a theme is shared by copying it.
+
+<p align="center">
+  <img src="docs/media/settings-appearance.webp" width="480" alt="Settings, Appearance: opacity, radius, spacing, blur, scale, timing, and the palettes, Bioma's own and the user's">
+</p>
 
 <p align="center">
   <img src="docs/media/theme.webp" width="560" alt="The theme cell: the wallpaper carousel, the palette source, and the palette">
@@ -173,7 +229,9 @@ never taken back.
 
 The wallpaper is chosen in a carousel or in a grid of every image at once, from
 a folder picked in a file chooser. A star marks a favourite, and favourites come
-first. Bioma ships three wallpapers of its own, a misty forest and a leaf tissue
+first. Each wallpaper remembers the theme it was last worn with, a palette or
+the way matugen read it, and going back to the picture brings that theme back.
+Bioma ships three wallpapers of its own, a misty forest and a leaf tissue
 in the dark palette and in Paper, so a first session never opens on a black
 screen.
 
@@ -226,9 +284,9 @@ from a key.
 ### Settings, in the shell
 
 The layout is edited from the shell itself, with no config file to write by
-hand. The settings cell has seven pages: Structure (which cell goes where, on
+hand. The settings cell has eleven pages: Structure (which cell goes where, on
 each monitor), Cells (always or conditional), Organisms, Appearance, Monitors,
-Keybinds and Session.
+Keybinds, Niri, Session, Sounds, Performance and Actions.
 Adding a cell costs one block of configuration, and the Structure page writes
 that block for you: the cells not yet on the monitor appear as a row of chips,
 and one that would not fit says NO ROOM before it is added. A tissue can be
@@ -238,11 +296,14 @@ the tissue would be there. The page also keeps whole layouts as presets
 between or to start again from an empty desktop.
 
 Appearance sets the blur's strength as well as whether there is one, for every
-surface niri blurs. Monitors arranges the screens by dragging them, picks the
-primary, switches one off, and sets its variable refresh — off, on demand with
-a switch for games, or always. Session sets the idle lock, the idle sleep
-(never, unless chosen) and, on a laptop, the power profile to follow the plug:
-one on battery, another on mains.
+surface niri blurs, and makes palettes of your own. Monitors arranges the
+screens by dragging them, picks the primary, switches one off, and sets its
+variable refresh — off, on demand with a switch for games, or always. Niri sets niri's own gaps, the focus ring's
+width, focus following the pointer, the named workspaces, what starts with the
+session and the window rules that match an application, written into niri's
+files in place, beside what is already there. Session sets the idle lock, the
+idle sleep (never, unless chosen) and, on a laptop, the power profile to follow
+the plug: one on battery, another on mains.
 
 The first start walks through a setup in the same panel: a starting layout,
 the look, Bioma's keys and autostart in niri's configuration, the login
@@ -251,8 +312,8 @@ files changes until a step is answered, and SETUP on the Structure page runs
 it again.
 
 <p align="center">
-  <img src="docs/media/settings-structure.webp" width="440" alt="Settings, Structure: the tissues on each membrane and the floating ones, per monitor">
-  <img src="docs/media/settings-appearance.webp" width="330" alt="Settings, Appearance: opacity, radius, spacing, blur, scale and timing">
+  <img src="docs/media/settings-structure.webp" width="400" alt="Settings, Structure: the saved layouts, the tissues on each membrane and the floating ones, and the cells of the tissue picked">
+  <img src="docs/media/settings-niri.webp" width="400" alt="Settings, Niri: gaps, the focus ring, focus following the pointer, the named workspaces and what starts with the session">
 </p>
 
 Every change applies as it is made. Here the radius goes from round to square,
@@ -303,6 +364,8 @@ the whole shell. Only the second table is left to you.
 | Optional | Package | For |
 |---|---|---|
 | whisper.cpp, its model, python-evdev | `whisper-cpp`, `ggml-vulkan`, AUR `whisper.cpp-model-large-v3-turbo-q5_0`, `python-evdev` | dictation — see [Dictation](#dictation). The model alone is 547 MB. `python-evdev` alone is what lets the emoji cell paste; without it the emoji is left on the clipboard |
+| GNOME Online Accounts | `gnome-online-accounts`, `gnome-online-accounts-gtk` | the clock's calendars from Google, Microsoft, Nextcloud and WebDAV accounts; the second adds an account outside GNOME Settings. iCalendar feeds need neither |
+| GameMode | `gamemode` | performance mode coming on by itself while a game runs |
 | Business Network Wizard | AUR `business-network-wizard` | a company network — NTLM proxy, VPN, 802.1X Wi-Fi, shares, printers. When it is installed the connectivity cell's proxy well offers COMPANY NETWORK, which opens it |
 
 ## Install
@@ -384,6 +447,8 @@ Then start it with `scripts/shell bioma`, or log in again. After an update,
 | `Shift+Print` | stop a recording, wherever the utility cell is |
 | `Mod+Alt+C` | pick a colour from the screen; its hex goes to the clipboard |
 | `Mod+Alt+D` | dictation: press to speak, press again to type it into the focused window |
+| `Mod+Alt+Space`, `Mod+Alt` + middle button | quick actions, at the pointer |
+| `Mod+Alt+G` | performance mode, on or off |
 | `Mod+Alt+L` | lock the session |
 | `Mod+Alt+B` | switch between Bioma and the other shell |
 
@@ -633,8 +698,8 @@ cells/<name>/      one directory per cell
 organisms/<name>/  one directory per organism
 config/            default.json, palettes/, niri/ (the keys and layer rules)
 scripts/           the installer, the shell switch, the lock, and helpers
-assets/            the 66 glyphs, wallpapers, cursor and icon-theme drawings,
-                   the emoji set
+assets/            the 84 glyphs, the sounds, wallpapers, cursor and
+                   icon-theme drawings, the emoji set
 packaging/aur/     the AUR package
 docs/              bioma-prd.md — the specification
 docs/design/       the visual specification: style guide, cells, tokens, mockups
@@ -666,8 +731,8 @@ qs -p "$PWD/shell.qml"
 - `docs/bioma-prd.md` — the product requirements, and the source of truth
 - `docs/configuration.md` — every key of the configuration
 - `docs/design/` — the visual specification: `STYLE_GUIDE.md`, `CELLS.md`,
-  `ORGANISMS.md`, `CURSORS.md`, `ICON_THEME.md`, `IMPLEMENTATION.md`,
-  `tokens.css`, the icon set and 68 mockups
+  `ORGANISMS.md`, `SETUP.md`, `CURSORS.md`, `ICON_THEME.md`,
+  `IMPLEMENTATION.md`, `tokens.css`, the icon set and 68 mockups
 - `PROGRESS.md` — where the work stands, and what is not done
 - `services/INVENTORY.md` — the Prisma inventory and every decision taken since
 - `CLAUDE.md` — architecture rules for anyone (or anything) writing code here

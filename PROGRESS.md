@@ -3,39 +3,47 @@
 Where the work stands. `services/INVENTORY.md` holds the detail and the
 reasoning; this is the short version and the list of what is *not* done.
 
-Last worked: 2026-09-24.
+Last updated: 2026-10-26, at 1.0.0-beta.56.
 
-## Where to pick up
+## Where things stand
 
-Phases 0 to 4 are done and phase 6 with them: the engine, ten services, and
-fifteen cells — the last of them notifications, with the bus taken off Noctalia,
-and the launcher in both its forms. Phase 5 is done: all five settings pages.
+Bioma is in public beta, on the AUR as `bioma-shell` (1.0.0-beta.56,
+2026-10-24). Every phase of the build order is done, and so is what came after
+it from Akusen's lists: twenty-five cells, sixteen organisms, eleven settings
+pages, the first-run setup, the lock screen and the greeter, Bioma's own icon
+and cursor themes, sound effects, custom palettes, quick actions and
+performance mode. The README describes all of it as a user meets it.
 
-Akusen has been driving the whole shell by hand since 2026-09-22, and most of
-what is written below the fold came out of that: the settings cell, the
-structure page, and a run of engine defects that only a pointer could find.
+This file was kept day by day until 2026-09-27, the lock screen and the
+greeter. From the beta on, each change is recorded in its commit message and,
+for anything drawn, in its section of `docs/design/CELLS.md`; the log below is
+not continued, and stays for the decisions in it, which still hold.
 
-What is left, in the order it is worth taking:
+### Still open
 
-Nothing in the build order is left, and the first list of features after it
-is done too (2026-09-23): the on-screen display, the opened clock, Bluetooth
-search and pairing, VPN profiles set up from the panel, a proxy that follows
-the networks, the session cell become System with the machine's description,
-and the clipboard cell. Since then the palette reaches niri and the
-applications (the palette, outside the shell). Each has its section below.
+- **Media on a narrow screen, and under reduced motion** — CELLS §04; waiting by
+  Akusen's call (2026-09-23).
+- **Zoom in the utility cell** — waiting for niri to ship a compositor zoom; a
+  lens drawn by the shell crashed Qt when it was hidden and was taken out.
 
-What those left unverified, because nothing here could drive it: pairing a real
-Bluetooth device, a VPN that actually connects, a proxy switched through by a
-real Wi-Fi network, and the conditions of the tray and connectivity cells.
+### Not yet confirmed on real hardware
 
-What CELLS left open in the cells already drawn is closed, except Sinestesia
-on a narrow screen and under reduced motion, which wait by Akusen's call
-(2026-09-23), and the system-wide OSD, which is one of the features that come
-after. A long window title was never open: §01 says ellipsis, never scrolling —
-scrolling on hover is the track title's, in Sinestesia.
+- **The greeter set up by the package** (`post_install`, since beta.19): tested
+  in a sandbox with stubs, never under a real pacman as root.
+- **The battery paths** — the plug switching the power profile, the vitals with
+  a battery, the nucleus organism's drops — wait for a laptop.
+- **Performance mode's own surfaces**: the mode itself was measured with a real
+  game, and its on-screen display seen over it; the cell's panel and the
+  Settings page were seen on screen on 2026-10-26, and the organisms lever put
+  the organisms away and back, but no switch on them has been pressed.
+- From before the beta: pairing a real Bluetooth device, a VPN that actually
+  connects, and a proxy switched by a real Wi-Fi network.
 
-The PRD's open question — whether there is a tray cell at all — was answered
-yes on 2026-09-22, and it is built; see below.
+## The log, to 2026-09-27
+
+What follows was written while the shell was being built. Its "still waiting"
+list dates from before the shell was in daily use by hand, and is kept as it
+was written.
 
 ### Confirmed by a real hand, at last
 

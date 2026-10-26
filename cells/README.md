@@ -32,10 +32,16 @@ Phase 3 — identity: `media` (was `sinestesia`), `theme`, `utility`.
 Phase 4 — replacement: `audio` — the cell PRD §9.5 and CELLS §05 call volume,
 named for its domain because it holds the devices and the per-application
 volumes too — then `connectivity`, `session`, `dock`, and `notifications` last.
-Phase 5 — `settings`, which is five pages and is built page by page:
-**Appearance**, **Cells** and **Structure** are in; Monitors and Keybinds are
-not, and those two write niri's own configuration rather than Bioma's.
+Phase 5 — `settings`, built page by page. The five of the first version are
+in — Structure, Cells, Appearance, Monitors and Keybinds — and since then
+Organisms, Niri, Session, Sounds, Performance and Actions. Monitors, Keybinds
+and Niri write niri's own configuration rather than Bioma's.
 Phase 6 — `launcher`, alone.
+
+After the phases, each from a list of ideas rather than the build order:
+`clipboard`, `keyboard`, `privacy`, `timer`, `download`, `drives`, `emoji`,
+`polkit`, `actions` (the quick-actions ring) and `performance`. Most have a
+section of their own in `docs/design/CELLS.md`, from §14 on.
 
 Outside the phases: `tray`, which the PRD left as an open question and Akusen
 answered on 2026-09-22. It is the one cell whose content belongs to somebody

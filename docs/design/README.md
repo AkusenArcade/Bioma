@@ -25,12 +25,12 @@ This package is English throughout.
 | File | What it is |
 |---|---|
 | `STYLE_GUIDE.md` | the rules that apply to every component: principles, type, colour, form, motion, controls |
-| `CELLS.md` | the thirteen cells, one section each: states, behaviour, measurements, decisions |
-| `ORGANISMS.md` | read-only surfaces on the desktop, under the windows — approved, being built |
-| `SETUP.md` | the first run: the settings cell as a walk-through, and the three shipped presets — draft |
+| `CELLS.md` | the cells, twenty-one sections: states, behaviour, measurements, decisions |
+| `ORGANISMS.md` | read-only surfaces on the desktop, under the windows — approved and built |
+| `SETUP.md` | the first run: the settings cell as a walk-through, and the three shipped presets — built |
 | `IMPLEMENTATION.md` | the traps — things that look like design detail and are technical constraints |
 | `tokens.css` | the design tokens as custom properties, ready to translate into QML singletons |
-| `icons/` | 33 SVG glyphs, 24×24, `currentColor`, plus their own README |
+| `icons/` | 84 SVG glyphs, 24×24, `currentColor`, plus their own README |
 | `CURSORS.md` | the cursor theme: drawings on the icon grid, two colourings from the palette, how it is rebuilt |
 | `ICON_THEME.md` | the icon theme: folders and files in the palette, over a base theme for everything else |
 | `mockups/` | 68 renders at 2×: every state of every cell, indexed in its own README |
@@ -65,14 +65,15 @@ under rather than inventing a new rule.
 
 ## Status
 
-Every measurement here has been drawn and checked at real size. Three things are
-deliberately **not** decided, and are marked as open in the relevant section:
+Every measurement here has been drawn and checked at real size. Three things were left open
+when the handoff was written; two have since been closed, and each section says how:
 
-- the fallback glyph for applications whose desktop file resolves no icon (cell 01);
-- the band count and frequency split of the audio visualiser, which is decided against the
-  existing Sinestesia code and against real audio, not against a mockup (cell 04);
-- a system-wide OSD, deferred on purpose because it concerns brightness and others too and is
-  not a property of the volume cell (cell 05).
+- the fallback glyph for applications whose desktop file resolves no icon (cell 01) — drawn,
+  `app-fallback.svg`;
+- the audio visualiser's band (cell 04), decided against the Sinestesia code and real audio, not
+  against a mockup — its count is settled, what it does on a narrow screen is still open;
+- a system-wide OSD (cell 05) — built, as a surface of the system rather than a property of the
+  volume cell.
 
 Everything else is decided. Where a decision went against what the PRD suggested, the section
 says so, so that a later reading does not mistake it for an oversight.

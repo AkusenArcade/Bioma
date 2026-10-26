@@ -96,8 +96,9 @@ optdepends=(
     'whisper.cpp-model-large-v3-turbo-q5_0: dictation, the model (AUR)'
     'python-evdev: dictation and the emoji cell, pasting into the window'
     'business-network-wizard: company network setup (NTLM proxy, VPN, 802.1X, shares), opened from the connectivity cell'
-    'gnome-online-accounts: the calendars of Google, Nextcloud and WebDAV accounts in the clock'
+    'gnome-online-accounts: the calendars of Google, Microsoft, Nextcloud and WebDAV accounts in the clock'
     'gnome-online-accounts-gtk: adding those accounts outside GNOME Settings'
+    'gamemode: performance mode, on by itself while a game runs'
 )
 # libspa builds a small C shim that makepkg's LTO turns into bitcode, which
 # Rust's linker cannot resolve (undefined spa_format_parse_libspa_rs).
