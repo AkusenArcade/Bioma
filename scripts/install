@@ -112,7 +112,7 @@ if $niri_only; then exec 3>&1 1>/dev/null; fi
 
 $report || echo "Required:"
 need niri       niri            "the compositor, 26.04 or later"
-need qs         quickshell      "the shell runtime, 0.3.1"
+need qs         quickshell      "the shell runtime, 0.3.1 or later"
 need python3    python          "the helper scripts"
 need gsettings  glib2           "desktop settings: theme, icons, cursor, proxy"
 need wl-paste   wl-clipboard    "the clipboard cell"

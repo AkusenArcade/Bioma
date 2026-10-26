@@ -320,8 +320,8 @@ Every change applies as it is made, and every cell follows it at once.
 
 ## Requirements
 
-Bioma is written for **niri** and **Quickshell 0.3.1**, and it is tested on Arch
-Linux (CachyOS). Package names below are Arch's.
+Bioma is written for **niri** and **Quickshell 0.3.1 or later** (0.3.2 in daily
+use), and it is tested on Arch Linux (CachyOS). Package names below are Arch's.
 
 The AUR package depends on all of the first table, so installing it installs
 the whole shell. Only the second table is left to you.
@@ -329,7 +329,7 @@ the whole shell. Only the second table is left to you.
 | Required | Package | For |
 |---|---|---|
 | niri 26.04 or later | `niri` | the compositor; 26.04 is the first with `ext-background-effect` blur |
-| Quickshell 0.3.1 | `quickshell` | the shell runtime |
+| Quickshell 0.3.1 or later | `quickshell` | the shell runtime |
 | Qt 5 Compat | `qt6-5compat` | the masks the wallpaper tiles and faces are drawn through (`Qt5Compat.GraphicalEffects`), which Quickshell does not bring |
 | Python 3, dateutil | `python`, `python-dateutil` | the helper scripts in `scripts/`; the calendars' recurring events |
 | libsecret | `libsecret` | the calendars' passwords and tokens, kept in the keyring |
