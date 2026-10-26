@@ -195,7 +195,7 @@ the desktop retinting as the hand moves. A palette is one file in
 `~/.config/bioma/palettes/`, so a theme is shared by copying it.
 
 <p align="center">
-  <img src="docs/media/settings-appearance.webp" width="480" alt="Settings, Appearance: opacity, radius, spacing, blur, scale, timing, and the palettes, Bioma's own and the user's">
+  <img src="docs/media/settings-appearance-palette.webp" width="480" alt="Settings, Appearance: opacity, radius, spacing, blur, scale, timing, and the palettes, Bioma's own and the user's">
 </p>
 
 <p align="center">
@@ -312,7 +312,7 @@ files changes until a step is answered, and SETUP on the Structure page runs
 it again.
 
 <p align="center">
-  <img src="docs/media/settings-structure.webp" width="400" alt="Settings, Structure: the saved layouts, the tissues on each membrane and the floating ones, and the cells of the tissue picked">
+  <img src="docs/media/settings-structure-tissue.webp" width="400" alt="Settings, Structure: the saved layouts, the tissues on each membrane and the floating ones, and the cells of the tissue picked">
   <img src="docs/media/settings-niri.webp" width="400" alt="Settings, Niri: gaps, the focus ring, focus following the pointer, the named workspaces and what starts with the session">
 </p>
 
