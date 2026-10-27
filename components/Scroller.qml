@@ -31,7 +31,8 @@ Rectangle {
     antialiasing: true
 
     visible: root.longer
-    opacity: root.flick && (root.flick.moving || root.flick.flicking || root.flick.dragging)
+    opacity: root.flick && (root.flick.moving || root.flick.flicking || root.flick.dragging
+                            || glide.following)
              ? 1 : 0
 
     // As long as the visible share of the list, and never so short that it
@@ -49,4 +50,11 @@ Rectangle {
           : 0)
 
     Behavior on opacity { NumberAnimation { duration: Timing.contentFade } }
+
+    // The list keeps the hand's speed when the fingers lift. It lives on the
+    // list, not here: Glide takes the list as its parent.
+    Glide {
+        id: glide
+        flick: root.flick
+    }
 }

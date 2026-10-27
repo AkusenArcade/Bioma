@@ -132,6 +132,13 @@ Singleton {
     // and it is not a copy the clipboard cell should announce. Not scaled.
     readonly property int hush: Config.get("timing.hush", 1000)
 
+    // How far back a touchpad stroke is read for the speed the list keeps
+    // when the fingers lift (components/Glide.qml). Long enough to hold a few
+    // of libinput's frames, short enough that fingers which stopped before
+    // lifting leave nothing to carry on. A measurement of the hand, not an
+    // animation, so not scaled.
+    readonly property int fling: Config.get("timing.fling", 80)
+
     // How long the greeter's welcome stays before the screen goes dark: long
     // enough to be read once. A dwell too, so the speed setting leaves it alone.
     readonly property int welcome: Config.get("timing.welcome", 900)

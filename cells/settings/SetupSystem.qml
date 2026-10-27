@@ -35,6 +35,8 @@ Item {
     Component.onCompleted: Setup.note("system", root.outcome)
 
     Flickable {
+        id: page
+
         anchors.fill: parent
         contentHeight: content.height
         clip: true
@@ -204,5 +206,9 @@ Item {
                 }
             }
         }
+    }
+
+    Glide {
+        flick: page
     }
 }

@@ -393,6 +393,10 @@ Item {
                         }
                     }
                 }
+
+                Glide {
+                    flick: past
+                }
             }
         }
     }
