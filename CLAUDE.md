@@ -125,10 +125,23 @@ components/        Shared primitives (capsules, threads, indicators)
 services/          One singleton per system domain (ported from Prisma)
 cells/<name>/      One directory per cell: contracted, expanded, logic
 organisms/<name>/  One directory per organism: read-only desktop surfaces
+genoma/            Bioma on Genoma, the port in progress (genoma/PORT.md)
 config/            default.json (base layer) + palettes/
 assets/            icons, fonts
 docs/              PRD and design material
 ```
+
+## Bioma on Genoma
+
+`genoma/` is Bioma written on Genoma, the Rust + Luau toolkit meant to
+replace Quickshell (`~/Documents/Development/Genoma`, its `docs/m6-plan.md`).
+It shares `docs/`, `config/`, `assets/` and `scripts/` with the Quickshell
+version, which stays feature complete and keeps being refined. The port goes
+surface by surface: a block marked `"runtime": "genoma"` is drawn by
+`scripts/genoma` and skipped by the Quickshell shell. A change to a cell
+already ported must be carried to its Luau version: `genoma/PORT.md` records
+the commit each was ported from. The AUR package leaves `genoma/` out until
+it ships.
 
 ## Configuration
 

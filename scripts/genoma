@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+#
+# Bioma on Genoma (genoma/PORT.md), started beside the Quickshell shell
+# while the port goes surface by surface: it draws the configuration's
+# blocks marked `"runtime": "genoma"`, and `scripts/bioma` leaves them out.
+#
+# Genoma's runtime is `$GENOMA_BIN`, else `genoma` on the PATH. Until Genoma
+# is packaged, GENOMA_BIN points at its build.
+set -eu
+here="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
+bin="${GENOMA_BIN:-$(command -v genoma || true)}"
+if [ -z "$bin" ] || [ ! -x "$bin" ]; then
+    echo "genoma: no runtime; set GENOMA_BIN to Genoma's build (…/Genoma/target/release/genoma)" >&2
+    exit 1
+fi
+exec "$bin" "$here/genoma" "$@"

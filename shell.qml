@@ -59,8 +59,12 @@ ShellRoot {
     // Which monitor a membrane belongs to. `primary` is the one niri focuses
     // at startup — `focus-at-startup`, its only notion of a primary output —
     // and `all` puts the same membrane on every one of them.
+    //
+    // A block marked `"runtime": "genoma"` is drawn by Bioma on Genoma
+    // (genoma/PORT.md) and not here: the two run side by side while the port
+    // goes surface by surface.
     function membraneMatches(entry, screen) {
-        return Strips.belongs(entry, screen);
+        return entry.runtime !== "genoma" && Strips.belongs(entry, screen);
     }
 
     Variants {
