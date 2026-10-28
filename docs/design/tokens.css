@@ -4,18 +4,23 @@
    or a blue wallpaper would turn all three into three blues.
    Derived roles — elevated surface, muted text, borders, shadows — are computed
    from the background, never asked of the user. Light or dark is deduced from the
-   background luminance, not configured. */
+   background luminance, not configured.
+   The derived values below are the ones core/Theme.qml computes from the four
+   roles of the shipped palette, to the byte (checked against Qt, 2026-10-28):
+   the surfaces, the outline family, the gradients' two ends (Theme.gradientTop
+   and gradientBottom), the glass (the cell at cell.opacity), the well
+   (components/Well.qml, a step darker than the background) and the tissue. */
 
 :root {
   /* --- interface --- */
   --bg:             #12160f;   /* fill of tissues and cells */
-  --bg-elevated:    #1b2117;
-  --cell-bg:        #232a1e;
+  --bg-elevated:    #1d2418;
+  --cell-bg:        #252d1f;
   --text:           #eaf1e6;
   --text-muted:     rgba(234, 241, 230, 0.56);
-  --line:           #4f6340;   /* outlines and threads */
-  --node:           #6b8457;
-  --rim:            #8ba86e;   /* light on the top edge */
+  --line:           #4f643f;   /* outlines and threads */
+  --node:           #6a8755;
+  --rim:            #88a772;   /* light on the top edge */
   --primary:        #b9de6b;
   --secondary:      #3fbfa0;
 
@@ -24,18 +29,18 @@
   --active:         #f2c14e;   /* 30–80%  */
   --alert:          #ff6b5d;   /* >= 80%  */
 
-  /* --- gradients: 165deg, ~22% luminance delta --- */
-  --grad-primary:   linear-gradient(165deg, #ddf5a4, #8cbb43);
-  --grad-secondary: linear-gradient(165deg, #7fe3c9, #23937b);
-  --grad-calm:      linear-gradient(165deg, #b0f7d0, #36bf7e);
-  --grad-active:    linear-gradient(165deg, #ffe08f, #dd8f26);
-  --grad-alert:     linear-gradient(165deg, #ffa88c, #da3947);
+  /* --- gradients: 165deg, Theme.gradientTop to Theme.gradientBottom --- */
+  --grad-primary:   linear-gradient(165deg, #dbf4a7, #94bc41);
+  --grad-secondary: linear-gradient(165deg, #70e0c5, #397869);
+  --grad-calm:      linear-gradient(165deg, #aef9d1, #3fca7f);
+  --grad-active:    linear-gradient(165deg, #ffdf93, #d19d23);
+  --grad-alert:     linear-gradient(165deg, #ffb6af, #ed3422);
 
   /* --- surfaces --- */
-  --glass:          rgba(35, 42, 30, 0.72);
+  --glass:          rgba(37, 45, 31, 0.72);
   --glass-blur:     20px;
-  --well:           rgba(24, 30, 20, 0.80);
-  --tissue:         rgba(27, 33, 23, 0.50);
+  --well:           rgba(16, 19, 13, 0.80);
+  --tissue:         rgba(29, 36, 24, 0.50);
   --shadow:         0 14px 28px rgba(0, 0, 0, 0.45);
   --shadow-float:   0 24px 52px rgba(0, 0, 0, 0.60);
 

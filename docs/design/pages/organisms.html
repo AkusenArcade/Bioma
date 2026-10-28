@@ -13,20 +13,20 @@
     --text-muted: rgba(234, 241, 230, 0.56);
     --text-faint: rgba(234, 241, 230, 0.38);
     --border: rgba(255, 255, 255, 0.09);
-    --line: #4f6340;
-    --node: #6b8457;
-    --rim: #8ba86e;
+    --line: #4f643f;
+    --node: #6a8755;
+    --rim: #88a772;
     --primary: #b9de6b;
     --calm: #6ee7a6;
     --active: #f2c14e;
     --alert: #ff6b5d;
-    --grad-primary: linear-gradient(165deg, #ddf5a4, #8cbb43);
-    --grad-calm: linear-gradient(165deg, #b0f7d0, #36bf7e);
-    --grad-active: linear-gradient(165deg, #ffe08f, #dd8f26);
-    --grad-alert: linear-gradient(165deg, #ffa88c, #da3947);
-    --glass: rgba(35, 42, 30, 0.72);
-    --well: rgba(24, 30, 20, 0.80);
-    --tissue: rgba(27, 33, 23, 0.50);
+    --grad-primary: linear-gradient(165deg, #dbf4a7, #94bc41);
+    --grad-calm: linear-gradient(165deg, #aef9d1, #3fca7f);
+    --grad-active: linear-gradient(165deg, #ffdf93, #d19d23);
+    --grad-alert: linear-gradient(165deg, #ffb6af, #ed3422);
+    --glass: rgba(37, 45, 31, 0.72);
+    --well: rgba(16, 19, 13, 0.80);
+    --tissue: rgba(29, 36, 24, 0.50);
     --wallpaper:
       radial-gradient(ellipse 60% 70% at 30% 70%, rgba(214, 206, 166, 0.30), transparent 60%),
       radial-gradient(ellipse 50% 60% at 78% 25%, rgba(46, 150, 118, 0.45), transparent 65%),
@@ -235,7 +235,7 @@
   .c::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; background: linear-gradient(180deg, var(--rim) 0%, var(--line) 45%, var(--line) 100%); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); }
   .win {
     position: absolute; left: 1060px; top: 72px; width: 844px; height: 936px; border-radius: 14px;
-    background: #1a1e1b; border: 2px solid #8cbb43; z-index: 5;
+    background: #1a1e1b; border: 2px solid #94bc41; z-index: 5;
     display: flex; flex-direction: column; overflow: hidden;
   }
   .win .bar { height: 44px; background: #222723; display: flex; align-items: center; padding: 0 18px; font-family: var(--human); font-size: 15px; color: var(--text-muted); }
@@ -296,10 +296,10 @@
 <body>
 <svg width="0" height="0" style="position:absolute">
   <defs>
-    <linearGradient id="gp" x1="0" y1="0" x2="0.27" y2="1"><stop offset="0" stop-color="#ddf5a4"/><stop offset="1" stop-color="#8cbb43"/></linearGradient>
-    <linearGradient id="gc" x1="0" y1="0" x2="0.27" y2="1"><stop offset="0" stop-color="#b0f7d0"/><stop offset="1" stop-color="#36bf7e"/></linearGradient>
-    <linearGradient id="ga" x1="0" y1="0" x2="0.27" y2="1"><stop offset="0" stop-color="#ffe08f"/><stop offset="1" stop-color="#dd8f26"/></linearGradient>
-    <linearGradient id="gl" x1="0" y1="0" x2="0.27" y2="1"><stop offset="0" stop-color="#ffa88c"/><stop offset="1" stop-color="#da3947"/></linearGradient>
+    <linearGradient id="gp" x1="0" y1="0" x2="0.27" y2="1"><stop offset="0" stop-color="#dbf4a7"/><stop offset="1" stop-color="#94bc41"/></linearGradient>
+    <linearGradient id="gc" x1="0" y1="0" x2="0.27" y2="1"><stop offset="0" stop-color="#aef9d1"/><stop offset="1" stop-color="#3fca7f"/></linearGradient>
+    <linearGradient id="ga" x1="0" y1="0" x2="0.27" y2="1"><stop offset="0" stop-color="#ffdf93"/><stop offset="1" stop-color="#d19d23"/></linearGradient>
+    <linearGradient id="gl" x1="0" y1="0" x2="0.27" y2="1"><stop offset="0" stop-color="#ffb6af"/><stop offset="1" stop-color="#ed3422"/></linearGradient>
   </defs>
 </svg>
 
@@ -353,7 +353,7 @@
         <div class="mem bottom"><div class="tis"><div class="c" style="width:360px"></div></div></div>
         <div class="win"><div class="bar">Zen Browser</div><div class="body"><i style="width:70%"></i><i style="width:90%"></i><i style="width:55%"></i><i style="width:82%"></i></div></div>
         <div class="scrim"></div>
-        <div class="free" id="free"><svg><rect x="1" y="1" rx="20" fill="none" stroke="#4f6340" stroke-width="2" stroke-dasharray="10 8" id="freerect"/></svg></div>
+        <div class="free" id="free"><svg><rect x="1" y="1" rx="20" fill="none" stroke="#4f643f" stroke-width="2" stroke-dasharray="10 8" id="freerect"/></svg></div>
         <div class="guide v" id="gv"></div>
         <div class="guide h" id="gh"></div>
         <button class="done" type="button" id="done">Done</button>

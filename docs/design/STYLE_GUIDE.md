@@ -74,14 +74,14 @@ it is what matugen generates and what thin line icons use.
 | Role | Value | Use |
 |---|---|---|
 | `background` | `#12160f` | fill of tissues and cells |
-| `elevated` | `#1b2117` | raised surface |
-| `cell` | `#232a1e` | cell fill before glass |
+| `elevated` | `#1d2418` | raised surface |
+| `cell` | `#252d1f` | cell fill before glass |
 | `text` | `#eaf1e6` | content, titles, the names and values of settings, every enabled control |
 | `text-muted` | `rgba(234,241,230,.56)` | secondary labels nobody presses, and options not chosen |
 | `border` | `rgba(255,255,255,.09)` | documentation borders, not shell surfaces |
-| `line` | `#4f6340` | outlines and threads |
-| `node` | `#6b8457` | thread ends, running marks |
-| `rim` | `#8ba86e` | light on the top edge |
+| `line` | `#4f643f` | outlines and threads |
+| `node` | `#6a8755` | thread ends, running marks |
+| `rim` | `#88a772` | light on the top edge |
 | `primary` | `#b9de6b` | icons, controls, selections, stateless indicators |
 | `secondary` | `#3fbfa0` | supporting accents |
 
@@ -132,16 +132,16 @@ the shell.
 - Fixed direction **165°**, from above and slightly from the left.
 - Two tones of the **same hue**, luminance delta **~22%**: lighter at the top, more saturated
   and darker at the bottom.
-- The rim is the only light allowed on surfaces: 1 px (never under 2 physical px) running from `#8ba86e` at the top to
-  `#4f6340` at mid-height. It concerns the line only, never the fill.
+- The rim is the only light allowed on surfaces: 1 px (never under 2 physical px) running from `#88a772` at the top to
+  `#4f643f` at mid-height. It concerns the line only, never the fill.
 
 | Token | Stops |
 |---|---|
-| `grad-primary` | `#ddf5a4 → #8cbb43` |
-| `grad-secondary` | `#7fe3c9 → #23937b` |
-| `grad-calm` | `#b0f7d0 → #36bf7e` |
-| `grad-active` | `#ffe08f → #dd8f26` |
-| `grad-alert` | `#ffa88c → #da3947` |
+| `grad-primary` | `#dbf4a7 → #94bc41` |
+| `grad-secondary` | `#70e0c5 → #397869` |
+| `grad-calm` | `#aef9d1 → #3fca7f` |
+| `grad-active` | `#ffdf93 → #d19d23` |
+| `grad-alert` | `#ffb6af → #ed3422` |
 
 **Yes:** rings, beat, liquid, satellite; value digits; header icons; selected controls.
 **No:** pill, panel, well and tissue fills; threads and nodes; thin line icons; reflections,
@@ -164,9 +164,9 @@ Defaults. These are user settings: the design must hold at their extremes.
 | panel width | set by content | a panel is as wide as its job; symmetry is not a reason to narrow one |
 | gap between shapes | 24 px | header–panel, capsule–capsule, capsule–panel |
 | list rows | 30 px | icon 20 px, name in Spectral, value on the right |
-| glass | blur 20 px | flat fill `rgba(35,42,30,.72)` |
+| glass | blur 20 px | flat fill `rgba(37,45,31,.72)` |
 | shadow | `0 14 28 / 45%` | only on invoked or expanded cells |
-| threads | 1.3 px | `#4f6340`, nodes `#6b8457` at 2.5 px |
+| threads | 1.3 px | `#4f643f`, nodes `#6a8755` at 2.5 px |
 
 **The pill ceiling.** Up to 110 px the cap is narrow enough to stay a border, and the pill
 applies to cells, pods and control capsules. Above 110 px the cap reaches sixty or eighty
@@ -241,7 +241,7 @@ top.
 A **capsule** is a pill-shaped surface in an expanded cell: pods of 236 × 108, the visualiser
 capsule at 372 × 88, category capsules at 240 × 64. A **panel** is a rectangular surface, radius
 20, for lists and anything with rectangular content. Inside a panel, **wells** hold rows: radius
-10 (concentric), flat darker fill `rgba(24,30,20,.8)`.
+10 (concentric), flat darker fill `rgba(16,19,13,.8)`.
 
 ### Vertical capsules
 

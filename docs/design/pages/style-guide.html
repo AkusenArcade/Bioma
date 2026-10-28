@@ -4,25 +4,25 @@
   :root {
     --bg: #0a0d08;
     --bg-panel: #12160f;
-    --bg-elevated: #1b2117;
-    --cell-bg: #232a1e;
+    --bg-elevated: #1d2418;
+    --cell-bg: #252d1f;
     --text: #eaf1e6;
     --text-muted: rgba(234, 241, 230, 0.56);
     --text-dim: rgba(234, 241, 230, 0.38);
     --border: rgba(255, 255, 255, 0.09);
-    --line: #4f6340;
-    --node: #6b8457;
-    --rim: #8ba86e;
+    --line: #4f643f;
+    --node: #6a8755;
+    --rim: #88a772;
     --primary: #b9de6b;
     --secondary: #3fbfa0;
     --calm: #6ee7a6;
     --active: #f2c14e;
     --alert: #ff6b5d;
-    --grad-primary: linear-gradient(165deg, #ddf5a4, #8cbb43);
-    --grad-secondary: linear-gradient(165deg, #7fe3c9, #23937b);
-    --grad-calm: linear-gradient(165deg, #b0f7d0, #36bf7e);
-    --grad-active: linear-gradient(165deg, #ffe08f, #dd8f26);
-    --grad-alert: linear-gradient(165deg, #ffa88c, #da3947);
+    --grad-primary: linear-gradient(165deg, #dbf4a7, #94bc41);
+    --grad-secondary: linear-gradient(165deg, #70e0c5, #397869);
+    --grad-calm: linear-gradient(165deg, #aef9d1, #3fca7f);
+    --grad-active: linear-gradient(165deg, #ffdf93, #d19d23);
+    --grad-alert: linear-gradient(165deg, #ffb6af, #ed3422);
     --wallpaper:
       radial-gradient(ellipse 60% 70% at 30% 70%, rgba(214, 206, 166, 0.30), transparent 60%),
       radial-gradient(ellipse 50% 60% at 78% 25%, rgba(46, 150, 118, 0.45), transparent 65%),
@@ -272,7 +272,7 @@
     padding: 2px;
     box-sizing: border-box;
     border-radius: 22px;
-    background: rgba(27, 33, 23, 0.5);
+    background: rgba(29, 36, 24, 0.5);
   }
   .cell {
     position: relative;
@@ -283,7 +283,7 @@
     gap: 9px;
     padding: 0 16px;
     border-radius: 20px;
-    background: rgba(35, 42, 30, 0.72);
+    background: rgba(37, 45, 31, 0.72);
     border: 1px solid transparent;
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
@@ -318,7 +318,7 @@
     gap: 18px;
     padding: 16px 22px;
     border-radius: 60px;
-    background: rgba(35, 42, 30, 0.72);
+    background: rgba(37, 45, 31, 0.72);
     border: 1px solid transparent;
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
@@ -331,7 +331,7 @@
     box-sizing: border-box;
     border-radius: 20px;
     padding: 10px;
-    background: rgba(35, 42, 30, 0.72);
+    background: rgba(37, 45, 31, 0.72);
     border: 1px solid transparent;
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
@@ -339,7 +339,7 @@
   }
   .well {
     border-radius: 10px;
-    background: rgba(24, 30, 20, 0.8);
+    background: rgba(16, 19, 13, 0.8);
     padding: 6px 10px;
   }
   .row {
@@ -383,7 +383,7 @@
     padding: 3px;
     border-radius: 16px;
     border: 1px solid var(--line);
-    background: rgba(24, 30, 20, 0.8);
+    background: rgba(16, 19, 13, 0.8);
   }
   .seg button {
     height: 26px;
@@ -451,7 +451,7 @@
     align-items: center;
     padding: 22px 0 20px;
     border-radius: 60px;
-    background: rgba(35, 42, 30, 0.72);
+    background: rgba(37, 45, 31, 0.72);
     border: 1px solid transparent;
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
@@ -462,7 +462,7 @@
     position: relative;
     width: 42px; height: 24px;
     border-radius: 12px;
-    background: rgba(24, 30, 20, 0.9);
+    background: rgba(16, 19, 13, 0.9);
     border: 1px solid var(--line);
     display: block;
   }
@@ -701,13 +701,13 @@
       <div class="swatch">
         <div class="chip" style="background: var(--grad-primary);"></div>
         <div class="name">primario</div>
-        <div class="hex">#b9de6b · #ddf5a4→#8cbb43</div>
+        <div class="hex">#b9de6b · #dbf4a7→#94bc41</div>
         <div class="use">icone, controlli, selezioni, indicatori senza stato</div>
       </div>
       <div class="swatch">
         <div class="chip" style="background: var(--grad-secondary);"></div>
         <div class="name">secondario</div>
-        <div class="hex">#3fbfa0 · #7fe3c9→#23937b</div>
+        <div class="hex">#3fbfa0 · #70e0c5→#397869</div>
         <div class="use">accenti di supporto, link</div>
       </div>
     </div>
@@ -717,26 +717,26 @@
       <div class="swatch">
         <div class="chip" style="background: var(--grad-calm);"></div>
         <div class="name">calma</div>
-        <div class="hex">#6ee7a6 · #b0f7d0→#36bf7e</div>
+        <div class="hex">#6ee7a6 · #aef9d1→#3fca7f</div>
         <div class="use">carico basso, riposo</div>
       </div>
       <div class="swatch">
         <div class="chip" style="background: var(--grad-active);"></div>
         <div class="name">attivo</div>
-        <div class="hex">#f2c14e · #ffe08f→#dd8f26</div>
+        <div class="hex">#f2c14e · #ffdf93→#d19d23</div>
         <div class="use">sotto sforzo, attività in corso</div>
       </div>
       <div class="swatch">
         <div class="chip" style="background: var(--grad-alert);"></div>
         <div class="name">critico</div>
-        <div class="hex">#ff6b5d · #ffa88c→#da3947</div>
+        <div class="hex">#ff6b5d · #ffb6af→#ed3422</div>
         <div class="use">oltre soglia</div>
       </div>
       <div class="swatch">
         <div class="chip" style="background: linear-gradient(180deg, var(--rim), var(--line) 45%, var(--line));"></div>
         <div class="name">contorno</div>
-        <div class="hex">#8ba86e → #4f6340</div>
-        <div class="use">luce sul bordo alto delle superfici; fili a #4f6340, nodi #6b8457</div>
+        <div class="hex">#88a772 → #4f643f</div>
+        <div class="use">luce sul bordo alto delle superfici; fili a #4f643f, nodi #6a8755</div>
       </div>
     </div>
 
@@ -759,7 +759,7 @@
         <ul>
           <li>Direzione fissa <strong>165°</strong>, dall'alto e appena da sinistra.</li>
           <li>Due toni della <strong>stessa tinta</strong>, scarto di luminosità <strong>~22%</strong>: più chiaro in alto, più saturo e scuro in basso.</li>
-          <li>Il contorno è l'unica luce concessa alle superfici: 1 px che va da <span class="machine" style="font-size: 12px;">#8ba86e</span> in alto a <span class="machine" style="font-size: 12px;">#4f6340</span> a metà altezza. Riguarda solo la linea, mai il riempimento.</li>
+          <li>Il contorno è l'unica luce concessa alle superfici: 1 px che va da <span class="machine" style="font-size: 12px;">#88a772</span> in alto a <span class="machine" style="font-size: 12px;">#4f643f</span> a metà altezza. Riguarda solo la linea, mai il riempimento.</li>
         </ul>
       </div>
       <div class="panel do-dont" style="gap: 20px;">
@@ -800,9 +800,9 @@
         <tr><td class="k">Raggi interni</td><td class="v">esterno − margine</td><td>concentrici: fondo lista a 10 px dal bordo → raggio 10</td></tr>
         <tr><td class="k">Passo fra le forme</td><td class="v">24 px</td><td>intestazione–pannello, capsula–capsula, capsula–pannello</td></tr>
         <tr><td class="k">Righe di lista</td><td class="v">30 px</td><td>icona 20 px, nome in Spectral, valore a destra</td></tr>
-        <tr><td class="k">Vetro</td><td class="v">blur 20 px</td><td>fondo piatto rgba(35,42,30,.72)</td></tr>
+        <tr><td class="k">Vetro</td><td class="v">blur 20 px</td><td>fondo piatto rgba(37,45,31,.72)</td></tr>
         <tr><td class="k">Ombra</td><td class="v">0 14 28 / 45%</td><td>solo su cellule invocate o espanse</td></tr>
-        <tr><td class="k">Fili</td><td class="v">1.3 px</td><td>#4f6340, nodi #6b8457 da 2.5 px</td></tr>
+        <tr><td class="k">Fili</td><td class="v">1.3 px</td><td>#4f643f, nodi #6a8755 da 2.5 px</td></tr>
       </table>
     </div>
   </section>
@@ -870,11 +870,11 @@
         </div>
         <div class="spacer"></div>
         <div class="tissue">
-          <div class="cell rim" style="background: rgba(24,30,20,0.8); padding: 0 18px 0 5px; gap: 10px;">
+          <div class="cell rim" style="background: rgba(16,19,13,0.8); padding: 0 18px 0 5px; gap: 10px;">
             <span style="width: 29px; height: 29px; border-radius: 50%; background: #10140e; border: 1px solid rgba(234,241,230,0.55); flex: none;"></span>
             <span class="machine" style="font-size: 13.5px; font-weight: 700;">OBS Studio — Recording</span>
           </div>
-          <div class="cell rim" style="background: rgba(24,30,20,0.8); padding: 0 12px 0 16px; gap: 8px;">
+          <div class="cell rim" style="background: rgba(16,19,13,0.8); padding: 0 12px 0 16px; gap: 8px;">
             <span class="s-clock" style="font-size: 19px;">23:12</span>
             <svg viewBox="0 0 20 20" width="17" height="17" fill="none" style="flex: none;">
               <circle cx="10" cy="10" r="8" stroke="url(#gp)" stroke-width="1.3"></circle>
@@ -1090,14 +1090,14 @@
     <p class="section-note">I nomi da usare nel template di matugen e nei componenti QML. Lo stato attivo non ha un ruolo Material You diretto: va derivato o fissato nel template.</p>
     <pre><span class="c">/* interfaccia */</span>
 --bg:            #12160f;   <span class="c">/* fondo di tessuti e cellule */</span>
---bg-elevated:   #1b2117;
---cell-bg:       #232a1e;
+--bg-elevated:   #1d2418;
+--cell-bg:       #252d1f;
 --text:          #eaf1e6;
 --text-muted:    rgba(234, 241, 230, 0.56);
 --border:        rgba(255, 255, 255, 0.09);
---line:          #4f6340;   <span class="c">/* contorni e fili */</span>
---node:          #6b8457;
---rim:           #8ba86e;   <span class="c">/* luce sul bordo alto */</span>
+--line:          #4f643f;   <span class="c">/* contorni e fili */</span>
+--node:          #6a8755;
+--rim:           #88a772;   <span class="c">/* luce sul bordo alto */</span>
 --primary:       #b9de6b;
 --secondary:     #3fbfa0;
 
@@ -1107,14 +1107,14 @@
 --alert:         #ff6b5d;   <span class="c">/* ≥ 80%            */</span>
 
 <span class="c">/* gradienti — 165°, scarto ~22% */</span>
---grad-primary:  #ddf5a4 → #8cbb43;
---grad-secondary:#7fe3c9 → #23937b;
---grad-calm:     #b0f7d0 → #36bf7e;
---grad-active:   #ffe08f → #dd8f26;
---grad-alert:    #ffa88c → #da3947;
+--grad-primary:  #dbf4a7 → #94bc41;
+--grad-secondary:#70e0c5 → #397869;
+--grad-calm:     #aef9d1 → #3fca7f;
+--grad-active:   #ffdf93 → #d19d23;
+--grad-alert:    #ffb6af → #ed3422;
 
 <span class="c">/* superfici */</span>
---glass:         rgba(35, 42, 30, 0.72) + blur(20px);
+--glass:         rgba(37, 45, 31, 0.72) + blur(20px);
 --shadow:        0 14px 28px rgba(0, 0, 0, 0.45);
 --radius-panel:  20px;
 --gap-shape:     24px;
@@ -1260,10 +1260,10 @@
 
   <svg width="0" height="0" style="position: absolute;" aria-hidden="true">
     <defs>
-      <linearGradient id="gp" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="#ddf5a4"></stop><stop offset="1" stop-color="#8cbb43"></stop></linearGradient>
-      <linearGradient id="gc" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="#b0f7d0"></stop><stop offset="1" stop-color="#36bf7e"></stop></linearGradient>
-      <linearGradient id="gw" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="#ffe08f"></stop><stop offset="1" stop-color="#dd8f26"></stop></linearGradient>
-      <linearGradient id="ga" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="#ffa88c"></stop><stop offset="1" stop-color="#da3947"></stop></linearGradient>
+      <linearGradient id="gp" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="#dbf4a7"></stop><stop offset="1" stop-color="#94bc41"></stop></linearGradient>
+      <linearGradient id="gc" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="#aef9d1"></stop><stop offset="1" stop-color="#3fca7f"></stop></linearGradient>
+      <linearGradient id="gw" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="#ffdf93"></stop><stop offset="1" stop-color="#d19d23"></stop></linearGradient>
+      <linearGradient id="ga" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="#ffb6af"></stop><stop offset="1" stop-color="#ed3422"></stop></linearGradient>
     </defs>
   </svg>
 
