@@ -1,0 +1,83 @@
+--!strict
+-- The single named timing set (core/Timing.qml). No duration is written
+-- anywhere else: a transition names an entry, and an entry's duration comes
+-- from `timing.*` in the configuration, multiplied by `timing.speed`.
+--
+-- Opening is slower than closing on purpose. Reach the opening figure by
+-- tightening the cascade, never by shortening an individual growth.
+local g = require("@genoma")
+local config = require("core/config")
+
+local M = {}
+
+-- In the form Genoma takes: the two control points of a cubic Bézier.
+-- Small capsules may overshoot; large panels may not; closing never does.
+M.curves = {
+    -- The loader's own, and nothing else's: symmetric, it reads as breathing.
+    sweep = { 0.45, 0, 0.55, 1 },
+    open = { 0.2, 0.9, 0.3, 1.15 },
+    open_flat = { 0.2, 0.9, 0.3, 1.0 },
+    close = { 0.5, 0.0, 0.9, 0.5 },
+    -- Qt's Easing.InOutQuad, for the theme and the wallpaper's crossfade.
+    in_out_quad = { 0.455, 0.03, 0.515, 0.955 },
+}
+
+-- Seconds, after the speed setting: what timers and the cascade read.
+-- Updated, with the set, whenever the configuration moves.
+M.seconds = {} :: { [string]: number }
+
+-- A shape's movements (scaled, and instant in performance mode, which comes
+-- with the services), and the dwells (scaled), and the waits that are not
+-- animations (never scaled: the disk does not answer slower because the
+-- shell was asked to move slower).
+local moved = {
+    open = 250, close = 150, grow = 100, transition = 180, reflow = 220, theme = 250,
+    content_fade = 120, wallpaper = 600, welcome_open = 450, welcome_stagger = 100, welcome_fade = 1000,
+}
+local scaled = { stagger = 16, debounce = 180, auto_hide = 500, notification = 5000, loader = 1200, welcome = 900 }
+local fixed = {
+    locate = 120, pair = 2000, search = 150, pulse = 120, settle = 3000, overview_settle = 800,
+    blur_settle = 400, osd = 1500, hush = 1000, fling = 80,
+}
+
+g.effect(function()
+    local speed = config.get("timing.speed", 1.0)
+    for name, ms in moved do M.seconds[name] = config.get("timing." .. name, ms) * speed / 1000 end
+    for name, ms in scaled do M.seconds[name] = config.get("timing." .. name, ms) * speed / 1000 end
+    for name, ms in fixed do M.seconds[name] = config.get("timing." .. name, ms) / 1000 end
+    local s, c = M.seconds, M.curves
+    g.timing {
+        open = { duration = s.open, curve = c.open },
+        open_flat = { duration = s.open, curve = c.open_flat },
+        close = { duration = s.close, curve = c.close },
+        grow = { duration = s.grow, curve = c.open_flat },
+        transition = { duration = s.transition, curve = c.open_flat },
+        reflow = { duration = s.reflow, curve = c.open_flat },
+        theme = { duration = s.theme, curve = c.in_out_quad },
+        content_fade = { duration = s.content_fade },
+        wallpaper = { duration = s.wallpaper, curve = c.in_out_quad },
+        loader = { duration = s.loader, curve = c.sweep },
+        welcome_open = { duration = s.welcome_open, curve = c.open_flat },
+        welcome_fade = { duration = s.welcome_fade, curve = c.in_out_quad },
+        instant = { duration = 0 },
+    }
+end)
+
+-- A staggered entrance as a fraction per shape: `cascade` runs 0 to 1 over
+-- the whole opening, each shape starts one stagger after the one before,
+-- and each grows over `grow`. The span holds every phase, so it depends on
+-- how many shapes there are.
+function M.stage(cascade: number, index: number, count: number): number
+    local grow, stagger = M.seconds.grow, M.seconds.stagger
+    local span = grow + stagger * math.max(0, count - 1)
+    local started = cascade * span - index * stagger
+    return math.clamp(started / math.max(grow, 1e-6), 0, 1)
+end
+
+-- A shadow's opacity for a shape at `growth`: it leaves before the shape and
+-- arrives after it (Akusen, 2026-09-27).
+function M.shadow_for(growth: number): number
+    return math.clamp((growth - 0.5) * 2, 0, 1)
+end
+
+return M

@@ -59,10 +59,28 @@ The order is the PRD's build order (§10).
 
 ### Foundations
 
-- [ ] Config: `config/default.json`, then `override.json`, watched, written
-      back atomically.
-- [ ] Theme (roles, sources, palettes, matugen) as animated signals.
-- [ ] Timing, Metrics, Typography from `docs/design/tokens.css`.
+- [x] Config: `config/default.json`, then `override.json`, watched, written
+      back atomically. (`genoma/core/config.luau`, from `core/Config.qml` at
+      5e5ff60.)
+- [x] Theme (roles, sources, palettes, matugen) as animated signals.
+      (`core/theme.luau`, `core/colour.luau`; the list of palettes on offer
+      comes with the theme cell.)
+- [x] Timing, Metrics, Typography from `docs/design/tokens.css`.
+      (`core/timing.luau`, `core/metrics.luau`, `core/typography.luau`;
+      performance mode's instant transitions come with its service.)
+
+Checked 2026-10-28 (`BIOMA_GENOMA_CHECK=1 scripts/genoma`):
+- With the shipped palette the derived colours are Qt's to the byte
+  (elevated `#1d2418`, cell `#252d1f`, line `#4f643f`, node `#6a8755`, rim
+  `#88a772`, the gradient's `#dbf4a7` and `#94bc41`), computed by Qt with
+  Theme.qml's functions. `docs/design/tokens.css` writes them a little
+  differently (`#1b2117`, `#232a1e`, `#4f6340`, `#6b8457`, `#8ba86e`): the
+  token file is the rounder one, and it is the design's to correct.
+- A palette changed in the override crossed in 32 steps of 8 ms, the four
+  roles together, from the default to `paper`.
+- `config.set_many` changed `appearance.gap` and added one key, and left
+  the other 1,282 lines of the override as they were.
+- At rest, 20 s: no thread woke.
 - [ ] Structure: membrane, tissue, cell, the registry, visibility types,
       expansion by budding (Akusen, 2026-10-28), the input surface.
 
