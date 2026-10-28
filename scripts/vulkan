@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+# Whether Qt Quick can draw this machine's surfaces through Vulkan.
+#
+#     vulkan        exit 0 when it can, 1 when it cannot; prints nothing
+#
+# Asked by `scripts/bioma` and `scripts/lock` before they choose Qt's graphics
+# backend. Qt does not fall back by itself: with QSG_RHI_BACKEND=vulkan and no
+# Vulkan instance, the shell exits at its first window, and a fresh install is
+# left on a bare niri. So this asks the loader the two things Qt will need — an
+# instance, and a device — and says no when either is missing.
+#
+# A device that is only the CPU (lavapipe) is a no as well: Mesa's OpenGL does
+# the same software drawing without asking Qt to change anything.
+import ctypes
+import sys
+
+VK_SUCCESS = 0
+VK_PHYSICAL_DEVICE_TYPE_CPU = 4
+
+
+def usable():
+    try:
+        vk = ctypes.CDLL("libvulkan.so.1")
+    except OSError:
+        return False
+
+    # VkInstanceCreateInfo with nothing asked for: sType 1, the rest zero.
+    class InstanceCreateInfo(ctypes.Structure):
+        _fields_ = [
+            ("sType", ctypes.c_int),
+            ("pNext", ctypes.c_void_p),
+            ("flags", ctypes.c_uint32),
+            ("pApplicationInfo", ctypes.c_void_p),
+            ("enabledLayerCount", ctypes.c_uint32),
+            ("ppEnabledLayerNames", ctypes.c_void_p),
+            ("enabledExtensionCount", ctypes.c_uint32),
+            ("ppEnabledExtensionNames", ctypes.c_void_p),
+        ]
+
+    info = InstanceCreateInfo(sType=1)
+    instance = ctypes.c_void_p()
+    if vk.vkCreateInstance(ctypes.byref(info), None, ctypes.byref(instance)) != VK_SUCCESS:
+        return False
+    try:
+        count = ctypes.c_uint32(0)
+        if vk.vkEnumeratePhysicalDevices(instance, ctypes.byref(count), None) != VK_SUCCESS:
+            return False
+        devices = (ctypes.c_void_p * count.value)()
+        if vk.vkEnumeratePhysicalDevices(instance, ctypes.byref(count), devices) != VK_SUCCESS:
+            return False
+        # VkPhysicalDeviceProperties opens with four uint32 and then the
+        # device type; the buffer is larger than the whole structure.
+        properties = (ctypes.c_uint32 * 512)()
+        for device in devices[:count.value]:
+            vk.vkGetPhysicalDeviceProperties(ctypes.c_void_p(device), properties)
+            if properties[4] != VK_PHYSICAL_DEVICE_TYPE_CPU:
+                return True
+        return False
+    finally:
+        vk.vkDestroyInstance(instance, None)
+
+
+sys.exit(0 if usable() else 1)

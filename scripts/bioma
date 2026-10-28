@@ -32,4 +32,20 @@ if [ -z "${QS_ICON_THEME:-}" ] && command -v gsettings >/dev/null 2>&1; then
     export QS_ICON_THEME
 fi
 
+# And the graphics backend. Qt Quick draws through OpenGL unless told
+# otherwise, and through Vulkan the same desktop cost a third less CPU and
+# 70 MB less memory (10.1% of a core and 579 MB against 6.5% and 511 MB, at
+# rest, 2026-10-28): most of what OpenGL spent was in the driver, once per
+# window. Qt does not fall back if Vulkan fails, so `scripts/vulkan` asks
+# first, and a machine without a Vulkan driver keeps OpenGL. What the session
+# had is kept beside it, as with the platform theme.
+export BIOMA_SESSION_RHI_BACKEND="${QSG_RHI_BACKEND-}"
+if [ -n "${BIOMA_RHI_BACKEND:-}" ]; then
+    export QSG_RHI_BACKEND="$BIOMA_RHI_BACKEND"
+elif "$here/scripts/vulkan" 2>/dev/null; then
+    export QSG_RHI_BACKEND=vulkan
+else
+    export QSG_RHI_BACKEND=opengl
+fi
+
 exec qs -p "$here/shell.qml" "$@"

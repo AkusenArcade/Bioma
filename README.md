@@ -602,7 +602,7 @@ ln -s "$PWD" ~/.config/quickshell/bioma
 quickshell -c bioma
 ```
 
-The script sets two things for this process. The first is `QT_QPA_PLATFORMTHEME`,
+The script sets three things for this process. The first is `QT_QPA_PLATFORMTHEME`,
 set to `xdgdesktopportal`. Bioma draws every pixel it shows, so a
 platform theme has nothing to style here — except the file picker the system
 cell opens, which is Qt's own `FileDialog`. Qt asks the platform theme for a
@@ -617,6 +617,14 @@ the icon theme on, and without it Qt looks only in hicolor. An application's
 own icon is still found there, but a themed icon, such as a folder or a
 device, is not. Quickshell reads the variable once, at start: an icon theme
 chosen in the theme cell reaches the shell's own icons at its next start.
+
+The third is `QSG_RHI_BACKEND`, set to `vulkan`. Qt Quick draws through
+OpenGL by default, and through Vulkan the same desktop at rest costs about a
+third less CPU and 70 MB less memory. Qt does not fall back by itself when
+Vulkan fails, so `scripts/vulkan` first asks the Vulkan loader for an instance
+and a hardware device. A machine without a Vulkan driver keeps OpenGL. The
+lock screen chooses the same way. Applications started from the shell get the
+session's value back. Set `BIOMA_RHI_BACKEND=opengl` to override it.
 
 ## Two shells, one session
 

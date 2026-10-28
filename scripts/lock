@@ -59,6 +59,18 @@ set_hint() {
 # flag has to mean this lock, or the check below would pass on its own.
 set_hint false
 
+# The shell's graphics backend, chosen the same way (see `scripts/bioma`). A
+# lock started from the shell would inherit it and one started by niri's key
+# would not; this makes both the same. If Vulkan fails here anyway, the
+# fallback below still answers.
+if [ -n "${BIOMA_RHI_BACKEND:-}" ]; then
+    export QSG_RHI_BACKEND="$BIOMA_RHI_BACKEND"
+elif "$here/scripts/vulkan" 2>/dev/null; then
+    export QSG_RHI_BACKEND=vulkan
+else
+    export QSG_RHI_BACKEND=opengl
+fi
+
 qs -p "$here/lock.qml" >/dev/null 2>&1 &
 pid=$!
 

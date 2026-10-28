@@ -16,6 +16,9 @@ depends=(
     'niri'
     'quickshell'
     'qt6-5compat'
+    # Qt Quick draws the shell through Vulkan when a driver answers
+    # (scripts/vulkan), and through OpenGL when none does.
+    'vulkan-icd-loader'
     'python'
     # The calendar's recurrences, and the feed addresses it keeps in the
     # keyring (scripts/calendar, secret-tool).
@@ -99,6 +102,7 @@ optdepends=(
     'gnome-online-accounts: the calendars of Google, Microsoft, Nextcloud and WebDAV accounts in the clock'
     'gnome-online-accounts-gtk: adding those accounts outside GNOME Settings'
     'gamemode: performance mode, on by itself while a game runs'
+    'vulkan-driver: the shell drawn through Vulkan, a third lighter than OpenGL (vulkan-radeon, vulkan-intel, nvidia-utils)'
 )
 # libspa builds a small C shim that makepkg's LTO turns into bitcode, which
 # Rust's linker cannot resolve (undefined spa_format_parse_libspa_rs).

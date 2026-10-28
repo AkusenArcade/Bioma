@@ -42,6 +42,15 @@ if [ -n "${BIOMA_SESSION_PLATFORMTHEME+set}" ]; then
     fi
     unset BIOMA_SESSION_PLATFORMTHEME
 fi
+# So is its graphics backend: Vulkan is chosen for the shell's own windows.
+if [ -n "${BIOMA_SESSION_RHI_BACKEND+set}" ]; then
+    if [ -n "$BIOMA_SESSION_RHI_BACKEND" ]; then
+        export QSG_RHI_BACKEND="$BIOMA_SESSION_RHI_BACKEND"
+    else
+        unset QSG_RHI_BACKEND
+    fi
+    unset BIOMA_SESSION_RHI_BACKEND
+fi
 
 if ! command -v systemd-run >/dev/null 2>&1 \
         || [ ! -S "${XDG_RUNTIME_DIR:-/nonexistent}/systemd/private" ]; then
