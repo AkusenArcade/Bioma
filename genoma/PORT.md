@@ -73,9 +73,8 @@ Checked 2026-10-28 (`BIOMA_GENOMA_CHECK=1 scripts/genoma`):
 - With the shipped palette the derived colours are Qt's to the byte
   (elevated `#1d2418`, cell `#252d1f`, line `#4f643f`, node `#6a8755`, rim
   `#88a772`, the gradient's `#dbf4a7` and `#94bc41`), computed by Qt with
-  Theme.qml's functions. `docs/design/tokens.css` writes them a little
-  differently (`#1b2117`, `#232a1e`, `#4f6340`, `#6b8457`, `#8ba86e`): the
-  token file is the rounder one, and it is the design's to correct.
+  Theme.qml's functions. The token set wrote them rounder; at Akusen's word
+  it now has Qt's values (c969d89).
 - A palette changed in the override crossed in 32 steps of 8 ms, the four
   roles together, from the default to `paper`.
 - `config.set_many` changed `appearance.gap` and added one key, and left
@@ -83,6 +82,24 @@ Checked 2026-10-28 (`BIOMA_GENOMA_CHECK=1 scripts/genoma`):
 - At rest, 20 s: no thread woke.
 - [ ] Structure: membrane, tissue, cell, the registry, visibility types,
       expansion by budding (Akusen, 2026-10-28), the input surface.
+      Membrane, tissue, cell and visibility are in `genoma/structure/`
+      (from `structure/*.qml` at 5e5ff60); budding, focus, floating
+      tissues and invocation are not yet.
+
+Checked 2026-10-28, a probe membrane on HDMI-A-1 (`cells/probe.luau`,
+three tissues at 25/30/25 %, the geometry logged from Luau):
+- The end tissue ends 10 from the edge (the margin, measured to the cell),
+  the centre one is centred on the output, and an elastic cell asking for
+  more than its `max_percent: 10` is granted 192 of 1920 and ends in an
+  ellipsis.
+- Pressing the centre probe three times lengthened it 74 → 120 → 166 →
+  212, the tissue growing about its centre with every step animated.
+- The centre tissue's ceiling changed in the override, live: at 20 % the
+  elastic cell gave way (192 → 159), at 12 % it no longer fitted and was
+  not placed, at 30 % it came back.
+- A conditional probe whose condition lasts 5 s on and 5 s off left 2 s
+  after the condition ended (the default dwell) and came back with it,
+  the start tissue reflowing each time.
 
 ### Cells
 

@@ -1,8 +1,7 @@
 --!strict
--- Bioma on Genoma (genoma/PORT.md). Steps 0 and 1 of the port: the core
--- (configuration, theme, timing, metrics, typography) is loaded, and the
--- blocks marked `"runtime": "genoma"` are found; nothing is drawn yet.
--- Drawing them is the layout engine's, step 2.
+-- Bioma on Genoma (genoma/PORT.md): the core, and a surface for every
+-- membrane block marked `"runtime": "genoma"`, laid out by the structure
+-- engine (genoma/structure/).
 local g = require("@genoma")
 local config = require("core/config")
 local theme = require("core/theme")
@@ -10,16 +9,50 @@ local timing = require("core/timing")
 local metrics = require("core/metrics")
 local typography = require("core/typography")
 
-local owned = 0
-for _, kind in { "membranes", "floating" } do
-    for i, block in config.get(kind, {}) do
-        if block.runtime == "genoma" then
-            owned += 1
-            print(string.format("genoma owns %s %d: %s on %s", kind, i, block.edge or block.anchor or "?", block.monitor or "primary"))
+local membrane = require("structure/membrane")
+
+-- Which outputs a block belongs to: a name, `all`, or `primary` (the output
+-- niri focuses at start; until the Monitors service is ported, $BIOMA_PRIMARY
+-- or the first block's own).
+local function outputs_of(block: { [string]: any }): any
+    local monitor = block.monitor or "primary"
+    if monitor == "all" or monitor == "*" then return "all" end
+    if monitor == "primary" then return { g.env("BIOMA_PRIMARY") or "DP-1" } end
+    return { monitor }
+end
+
+-- One surface per membrane block marked as Genoma's, on each output it
+-- belongs to.
+local surfaces = {}
+for i, entry in config.get("membranes", {}) do
+    if entry.runtime == "genoma" then
+        local index = i
+        local function block() return config.get("membranes", {})[index] or entry end
+        local edge = entry.edge or "top"
+        local horizontal = edge == "top" or edge == "bottom"
+        local strip = metrics.step(entry.scale or "normal")
+        local reserving = entry.reserve_space == true and horizontal and entry.auto_hide ~= true
+        local anchor = {}
+        for _, side in { "top", "bottom", "left", "right" } do
+            local opposite = ({ top = "bottom", bottom = "top", left = "right", right = "left" })[edge]
+            if side ~= opposite then table.insert(anchor, side) end
         end
+        table.insert(surfaces, g.surface {
+            full = true,
+            anchor = anchor,
+            outputs = outputs_of(entry),
+            reserve = if reserving then math.floor(strip.margin_edge + strip.cell_height + strip.tissue_padding * 2 + 0.5) else false,
+            -- Bioma's own name for the edge: niri's rule for it turns blur
+            -- xray off (config/niri/bioma.kdl).
+            namespace = "bioma-membrane-" .. edge,
+            function(output: string, size: any)
+                local s = size or { width = 1920, height = 1080 }
+                return membrane.new(block, output, s).tree
+            end,
+        })
     end
 end
-print(string.format("Bioma on Genoma: %d blocks to draw (none drawn yet)", owned))
+print(string.format("Bioma on Genoma: %d membranes", #surfaces))
 
 -- BIOMA_GENOMA_CHECK=1: the core's values, to set beside the QML's and the
 -- token set's, and the theme's transit as it happens.
@@ -49,9 +82,8 @@ if g.env("BIOMA_GENOMA_CHECK") then
     end
 end
 
--- No output yet: an empty list of outputs makes no surface.
-return g.surface {
-    outputs = {},
-    namespace = "bioma-genoma",
-    function(_output: string) return g.box {} end,
-}
+-- Nothing marked as Genoma's: one surface on no output, which makes none.
+if #surfaces == 0 then
+    return g.surface { outputs = {}, namespace = "bioma-genoma", function() return g.box {} end }
+end
+return surfaces

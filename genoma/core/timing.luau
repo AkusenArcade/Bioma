@@ -54,6 +54,10 @@ g.effect(function()
         transition = { duration = s.transition, curve = c.open_flat },
         reflow = { duration = s.reflow, curve = c.open_flat },
         theme = { duration = s.theme, curve = c.in_out_quad },
+        -- A cell's appearing and leaving (Cell.qml's opacity Behavior), and a
+        -- colour lifting under the pointer (its ColorAnimations, linear).
+        fade = { duration = s.reflow, curve = c.in_out_quad },
+        colour = { duration = s.transition },
         content_fade = { duration = s.content_fade },
         wallpaper = { duration = s.wallpaper, curve = c.in_out_quad },
         loader = { duration = s.loader, curve = c.sweep },
