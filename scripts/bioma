@@ -48,4 +48,16 @@ else
     export QSG_RHI_BACKEND=opengl
 fi
 
+# Through Vulkan, a frame is presented without waiting for the display's
+# turn. Waiting froze the shell when a monitor went away (2026-10-28): the
+# render thread waited inside the driver's present for a frame callback the
+# compositor never sends to a gone output's surface, while the main thread,
+# closing that surface, waited for the render thread. OpenGL never waited, and
+# the animations are timed by Qt's own timer either way, so nothing on screen
+# moves differently; at rest the cost was the same (5.7% of a core).
+export BIOMA_SESSION_NO_VSYNC="${QSG_NO_VSYNC-}"
+if [ "$QSG_RHI_BACKEND" = vulkan ]; then
+    export QSG_NO_VSYNC=1
+fi
+
 exec qs -p "$here/shell.qml" "$@"

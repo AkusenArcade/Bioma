@@ -51,6 +51,15 @@ if [ -n "${BIOMA_SESSION_RHI_BACKEND+set}" ]; then
     fi
     unset BIOMA_SESSION_RHI_BACKEND
 fi
+# And the shell's present without vsync is the shell's alone.
+if [ -n "${BIOMA_SESSION_NO_VSYNC+set}" ]; then
+    if [ -n "$BIOMA_SESSION_NO_VSYNC" ]; then
+        export QSG_NO_VSYNC="$BIOMA_SESSION_NO_VSYNC"
+    else
+        unset QSG_NO_VSYNC
+    fi
+    unset BIOMA_SESSION_NO_VSYNC
+fi
 
 if ! command -v systemd-run >/dev/null 2>&1 \
         || [ ! -S "${XDG_RUNTIME_DIR:-/nonexistent}/systemd/private" ]; then

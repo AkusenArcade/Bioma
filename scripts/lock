@@ -70,6 +70,11 @@ elif "$here/scripts/vulkan" 2>/dev/null; then
 else
     export QSG_RHI_BACKEND=opengl
 fi
+# And presented without waiting for the display, as the shell is: a monitor
+# unplugged under a waiting lock froze it (see `scripts/bioma`).
+if [ "$QSG_RHI_BACKEND" = vulkan ]; then
+    export QSG_NO_VSYNC=1
+fi
 
 qs -p "$here/lock.qml" >/dev/null 2>&1 &
 pid=$!
