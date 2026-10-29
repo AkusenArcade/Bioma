@@ -327,7 +327,7 @@ function M.new(cell: any): any
             attach = "corner",
             width = strip_width,
             height = tile_height,
-            items = places,
+            items = function() return if cell.expanded() then places() else {} end end,
             key = function(p: any) return p.key end,
             row = function(place: () -> any)
                 local function k(): number return place().k end
@@ -484,7 +484,9 @@ function M.new(cell: any): any
             overlay = true,
             attach = "corner",
             width = grid_inner,
-            items = wallpaper.entries,
+            -- Only while the cell is out: closed, eighty pictures' nodes were
+            -- laid out on every frame the clock's hand moved.
+            items = function() return if cell.expanded() then wallpaper.entries() else {} end end,
             key = function(p: string) return p end,
             row = grid_tile,
         },
