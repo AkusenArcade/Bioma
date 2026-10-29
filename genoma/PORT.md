@@ -171,7 +171,7 @@ host, driven only by `scripts/genoma ipc`:
 | tray | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | actions | *beyond the PRD* | 4 | | |
 | clipboard | *beyond the PRD* | 4 | | |
-| download | *beyond the PRD* | 4 | | |
+| download | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | drives | *beyond the PRD* | 4 | | |
 | emoji | *beyond the PRD* | 4 | | |
 | keyboard | *beyond the PRD* | 4 | | |
@@ -421,6 +421,13 @@ declares), and a `rotate_y` on an absent icon mirrored the text beside
 it (the back chevron is now `chevron-left`, drawn in the icon set; the
 Genoma bug is still to find).
 
+download, checked 2026-10-29 on HDMI-A-1 (`cells/download.luau`,
+`components/rate_thread.luau` and its `.wgsl`, service `downloads`): a
+partial file grown in ~/Downloads at 6 MB a second raised the cell, its
+thread running (a shader whose clock stops with the bytes); opened, the
+row with the name, its own thread and the figures. Not pressed: the row
+(it opens the file manager).
+
 ### Surfaces that are not cells
 
 | Surface | PRD | State |
@@ -558,3 +565,5 @@ configuration with nothing of Genoma's in it:
 - [x] Tray (`tray.luau`): the items, ranked as Tray.qml ranks them, their
       icons by name, activation, scroll and the DBusMenu menus, on
       Genoma's host beside Quickshell's watcher.
+- [x] Downloads (`downloads.luau`): `scripts/downloads` while a cell holds
+      it; reveal through FileManager1, else the folder.
