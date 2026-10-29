@@ -433,7 +433,7 @@ function M.new(kind: any, ctx: { [string]: any })
             -- itself and what it opened closes it, and so does Escape.
             catch = function() return c.open.value or focus.is(c) end,
             on_outside = function() focus.dismiss() end,
-            on_key = function(name: string) focus.key(name) end,
+            on_key = function(name: string, text: string?, mods: any) focus.key(name, text, mods) end,
             on_click = function()
                 if spec.on_click then
                     spec.on_click()

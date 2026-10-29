@@ -166,14 +166,14 @@ function M.domains(): { string }
     return out
 end
 
--- Escape closes; the rest is the open cell's, if it wants them.
-function M.key(name: string)
-    if name == "Escape" then
-        M.dismiss()
-        return
-    end
+-- The open cell hears every key first, with the text it types and the
+-- modifiers held; one it does not take, Escape closes: a field that is
+-- being typed into lets go of the keys on Escape, and only the next Escape
+-- closes the cell.
+function M.key(name: string, text: string?, mods: { [string]: boolean }?)
     local c = cells[current()]
-    if c and c.spec.on_key then c.spec.on_key(name) end
+    local taken = c ~= nil and c.spec.on_key ~= nil and c.spec.on_key(name, text, mods or {}) == true
+    if name == "Escape" and not taken then M.dismiss() end
 end
 
 return M

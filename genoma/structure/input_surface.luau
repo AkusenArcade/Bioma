@@ -29,7 +29,7 @@ function M.node(output: string, size: { width: number, height: number }): any
             -- The press is the moment the attention moved: the cell closes
             -- then, not on release.
             on_press = function() focus.dismiss() end,
-            on_key = function(name: string) focus.key(name) end,
+            on_key = function(name: string, text: string?, mods: any) focus.key(name, text, mods) end,
         },
     }
 end
