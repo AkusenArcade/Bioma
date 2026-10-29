@@ -69,6 +69,12 @@ local function local_time(fields: { [string]: number }): number
     return wall - offset_at(guess)
 end
 
+-- Local midnight of a date, in milliseconds: the month's grid is built
+-- from these.
+function M.midnight(year: number, month: number, day: number): number
+    return local_time({ year = year, month = month, day = day, hour = 0, min = 0, sec = 0 }) * 1000
+end
+
 -- Midnight of the day `ms` falls in, moved by `offset` days. Days, not
 -- 24-hour steps: a day with a change of summer time is 23 or 25 hours.
 function M.day_start(ms: number, offset: number?): number

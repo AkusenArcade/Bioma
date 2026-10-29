@@ -5,15 +5,15 @@
 -- again empty (what is left of a timer, while one runs), and round its rim
 -- the second hand.
 --
--- Not yet: the expansion (ClockExpansion.qml: the month, other places, the
--- timer and the alarm, the day's appointments), whose fields wait for
--- Genoma's text field. Until it comes the cell opens nothing.
+-- Opened, it keeps the time rather than becoming a header that says CLOCK:
+-- the time is its own title. What it opens is cells/clock_expansion.luau.
 local g = require("@genoma")
 local clock = require("@genoma/clock")
 local theme = require("core/theme")
 local typography = require("core/typography")
 local time = require("services/time")
 local dial = require("components/dial")
+local expansion = require("cells/clock_expansion")
 
 return {
     new = function(cell: any)
@@ -35,7 +35,10 @@ return {
                 weight = typography.weight_value, tabular = true }
         end
 
+        local opened = expansion.new(cell, twenty_four)
         return {
+            panel = opened.panel,
+            on_key = opened.on_key,
             -- The dial is round and sits against the trailing cap.
             padding_leading = 16,
             padding_trailing = 12,

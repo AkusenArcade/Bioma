@@ -354,7 +354,7 @@ function M.new(kind: any, ctx: { [string]: any })
             return if held.value > 0 and named() then math.max(0, (room() - header_width()) / 2) else 0
         end
         local f = header_font
-        return g.box {
+        local header: { [any]: any } = {
             overlay = true,
             attach = "corner",
             width = place.width,
@@ -362,7 +362,8 @@ function M.new(kind: any, ctx: { [string]: any })
             present = c.shows_header,
             opacity = function() return if c.shows_header() then 1 else 0 end,
             transition = { opacity = "header" },
-            if spec.header_mark then g.box {
+        }
+        if spec.header_mark then table.insert(header, g.box {
                 overlay = true,
                 attach = "corner",
                 width = mark_size,
@@ -375,8 +376,9 @@ function M.new(kind: any, ctx: { [string]: any })
                 end,
                 offset_y = function() return (c.contracted_height() - mark_size()) / 2 end,
                 spec.header_mark(mark_size),
-            } else nil,
-            g.box {
+            })
+        end
+        table.insert(header, g.box {
                 overlay = true,
                 attach = "corner",
                 present = named,
@@ -391,8 +393,8 @@ function M.new(kind: any, ctx: { [string]: any })
                     tracking = function() return f().tracking end,
                     text = header_title,
                 },
-            },
-        }
+        })
+        return g.box(header)
     end
 
     -- Built by the tissue, which knows where the cell goes: `place` has
@@ -415,7 +417,7 @@ function M.new(kind: any, ctx: { [string]: any })
             end
         end)
 
-        return g.capsule {
+        local node: { [any]: any } = {
             name = c.domain,
             role = if interactive then "button" else "group",
             overlay = true,
@@ -474,10 +476,14 @@ function M.new(kind: any, ctx: { [string]: any })
                 transition = { opacity = "content_fade" },
                 spec.contracted(),
             },
-            if has_header then header_node(place) else nil,
+        }
+        -- Appended rather than listed: a child that is nil in the middle of
+        -- the list would end it, and every child after it with it.
+        if has_header then table.insert(node, header_node(place)) end
+        if c.has_panel then
             -- The thread to what it opened, from the middle of the cell's
             -- edge, where the bud left it.
-            if c.has_panel then thread.new {
+            table.insert(node, thread.new {
                 vertical = true,
                 overlay = true,
                 attach = if c.edge ~= "bottom" then "below-center" else "above-center",
@@ -486,9 +492,10 @@ function M.new(kind: any, ctx: { [string]: any })
                 reversed = c.edge == "bottom",
                 shown = function() return c.open.value end,
                 timing = function() return "thread" end,
-            } else nil,
-            if c.has_panel then panel_node(place) else nil,
-        }
+            })
+            table.insert(node, panel_node(place))
+        end
+        return g.capsule(node)
     end
 
     return c
