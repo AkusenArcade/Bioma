@@ -255,6 +255,60 @@ function M.looks()
     end)
 end
 
+function M.audio()
+    local audio = require("services/audio")
+    local pipewire = require("@genoma/audio")
+    local function list(nodes: { any }, describe: (any) -> string): string
+        local parts = {}
+        for _, n in nodes do
+            table.insert(parts, string.format("%s[%d %d%%%s %s]", describe(n), n.id, math.floor(n.volume * 100 + 0.5),
+                if n.muted then " muted" else "", audio.connection(n)))
+        end
+        return table.concat(parts, ", ")
+    end
+    g.effect(function()
+        print(string.format("check audio sink %q %d%%%s, source %q %d%%%s",
+            audio.describe(audio.sink()), audio.volume_percent(), if audio.muted() then " muted" else "",
+            audio.describe(audio.source()), math.floor(audio.input_volume() * 100 + 0.5),
+            if audio.input_muted() then " muted" else ""))
+    end)
+    g.effect(function() print("check audio outputs " .. list(audio.outputs(), audio.describe)) end)
+    g.effect(function() print("check audio inputs " .. list(audio.inputs(), audio.describe)) end)
+    g.effect(function()
+        print(string.format("check audio streams %d: %s; recording %s", audio.stream_count(),
+            list(audio.streams(), audio.describe_stream), tostring(audio.anyone_recording())))
+    end)
+    -- BIOMA_CHECK_SINK=<node.name>: that sink's volume and mute written and
+    -- put back, never the default's.
+    local target = g.env("BIOMA_CHECK_SINK")
+    if target then
+        local function node(): any
+            for _, n in audio.outputs() do if n.name == target then return n end end
+            return nil
+        end
+        local before: any = nil
+        g.after(2, function()
+            before = g.untracked(node)
+            if not before then print("check audio: no sink " .. target) return end
+            print(string.format("check audio writing %s from %d%%", target, math.floor(before.volume * 100 + 0.5)))
+            audio.set_stream_volume(before, 0.37)
+        end)
+        g.after(3, function() local n = g.untracked(node) if n then audio.toggle_stream_mute(n) end end)
+        g.after(4, function()
+            local n = g.untracked(node)
+            if n then print(string.format("check audio wrote %d%%%s", math.floor(n.volume * 100 + 0.5), if n.muted then " muted" else "")) end
+            if before then
+                pipewire:set_volume(before.id, before.volume)
+                pipewire:set_mute(before.id, before.muted)
+            end
+        end)
+        g.after(5, function()
+            local n = g.untracked(node)
+            if n then print(string.format("check audio restored %d%%%s", math.floor(n.volume * 100 + 0.5), if n.muted then " muted" else "")) end
+        end)
+    end
+end
+
 -- A still of one output, its text, three seconds of it recorded and
 -- discarded: what can be checked with nobody picking or speaking. The
 -- output is $BIOMA_CHECK_OUTPUT (HDMI-A-1 by default).

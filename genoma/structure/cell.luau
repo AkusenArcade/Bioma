@@ -15,6 +15,12 @@
 --                      whose shape changes them), least_width, body_height
 --   interactive        whether it answers a press (default: it has a panel)
 --   on_click()         what a press does, if not opening
+--   on_middle()        what the middle button does (the audio's mute)
+--   radius()           the cell's own radius, for a cell that is not a pill
+--                      of the strip's height (the summoned audio capsule)
+--   replaces_content   false (or a function) for a cell that keeps its
+--                      content when it opens, rather than turning into the
+--                      header of what it opened
 --   leaves_on_close    false (or a function saying so) for an invoked cell
 --                      that only folds its panel away when closed, the
 --                      press outside sending it off (Cell.leavesOnClose)
@@ -57,6 +63,8 @@ function M.new(kind: any, ctx: { [string]: any })
     c.metrics = ctx.metrics
     c.output = ctx.output
     c.edge = ctx.edge
+    -- In a tissue with no membrane.
+    c.floating = ctx.floating == true
 
     function c.option(key: string, fallback: any): any
         local options = c.block().options
@@ -167,7 +175,12 @@ function M.new(kind: any, ctx: { [string]: any })
         return t or ""
     end
     local has_header = spec.header_mark ~= nil or spec.header_title ~= nil
-    function c.shows_header(): boolean return has_header and c.expanded() end
+    local function replaces(): boolean
+        local r = spec.replaces_content
+        if type(r) == "function" then return r() end
+        return r ~= false
+    end
+    function c.shows_header(): boolean return has_header and replaces() and c.expanded() end
     local function mark_size(): number
         return if spec.header_mark_size then spec.header_mark_size() else 20 * c.metrics().factor
     end
@@ -464,7 +477,7 @@ function M.new(kind: any, ctx: { [string]: any })
             offset_y = place.y,
             width = place.width,
             height = function() return c.contracted_height() end,
-            radius = place.radius,
+            radius = function() return if spec.radius then spec.radius() else place.radius() end,
             present = function() return present.value end,
             opacity = function() return if place.placed() then 1 else 0 end,
             blur = function() return config.get("cell.blur", true) end,
@@ -481,7 +494,14 @@ function M.new(kind: any, ctx: { [string]: any })
             catch = function() return c.open.value or focus.is(c) end,
             on_outside = function() focus.dismiss() end,
             on_key = function(name: string, text: string?, mods: any) focus.key(name, text, mods) end,
-            on_click = function()
+            -- The left button presses; the middle one is the cell's to give a
+            -- meaning to, and the right one has none yet.
+            on_click = function(button: number)
+                if button == 274 then
+                    if spec.on_middle then spec.on_middle() end
+                    return
+                end
+                if button ~= 272 then return end
                 if spec.on_click then
                     spec.on_click()
                 elseif c.has_panel then

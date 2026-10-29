@@ -164,7 +164,7 @@ host, driven only by `scripts/genoma ipc`:
 | media | §9.4 (sinestesia) | 3 | 60ca560 | checked 2026-10-29, awaiting Akusen and the cost |
 | theme | §9.7 | 3 | 60ca560 | checked 2026-10-29, awaiting Akusen and the cost |
 | utility | §9.6 | 3 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
-| audio | §9.5 | 4 | | |
+| audio | §9.5 | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | connectivity | §9.11 | 4 | | |
 | system | §9.8 (session menu) | 4 | | |
 | dock | §9.9 | 4 | | |
@@ -341,6 +341,26 @@ the structure: an invoked cell that closed itself (the utility, closing for
 its capture) stayed asked for, so the next call to it closed a cell already
 shut; it now stops being asked for when it closes, as Cell.qml does.
 
+audio, checked 2026-10-29 on HDMI-A-1 (`cells/audio.luau`,
+`cells/audio_expansion.luau`, `cells/audio_capsule.luau`,
+`components/gauge.luau`, `components/slider.luau`): the dial at rest, set
+beside Quickshell's on the same monitor's bottom edge (the node at the
+head is a shade smaller: Quickshell's merges with the stroke's round cap).
+Opened, the capsule (dial, figure, slider) buds from the cell and the
+three wells from the capsule on their own thread, with the machine's real
+devices, their buses and the default marked. A silent stream played into
+a null sink (`pw-play --target genoma_test`) came and went in
+APPLICATIONS; its slider pressed and dragged to 75 % and its mute pressed,
+read back from `pactl`. Summoned with no cell placed on the output, it is
+the capsule in the middle of the screen with the wells hanging from it,
+and a second call sends it off and lets the keyboard go. Not tried,
+because they move Akusen's own sound: the wheel and the middle button on
+the cell, the capsule's slider, choosing another device. Not yet: the
+keyboard's travel through the rows. Found on the way: a cell's middle
+button opened it (only the left one does now, the middle one is the
+cell's: `on_middle`), and adding or removing a cell in the configuration
+takes a reload, where Quickshell follows it live — settings will need it.
+
 ### Surfaces that are not cells
 
 | Surface | PRD | State |
@@ -435,10 +455,13 @@ configuration with nothing of Genoma's in it:
 - [x] Sinestesia (`sinestesia.luau`): `tools/sinestesia-bands`, run while
       something holds it: 64 bands a side at 60 frames a second, folded by
       peak. Performance mode's still band comes with its service.
-- [~] Audio, the signal only (`audio.luau`): the default sink's peak, ten
-      readings a second, from `sinestesia-bands --peak` (Audio.qml's way on
-      an AUX interface, here always). Sinks, sources and streams come with
-      the audio cell.
+- [x] Audio (`audio.luau`, from 11bb81e): the default sink and source,
+      the outputs, inputs and streams by node kind, volumes and mutes and
+      the default written through Genoma's audio domain; and the default
+      sink's peak, ten readings a second, from `sinestesia-bands --peak`
+      (Audio.qml's way on an AUX interface, here always). Checked
+      2026-10-29 (`BIOMA_GENOMA_CHECK=audio`, `BIOMA_CHECK_SINK=genoma_test`
+      writing a null sink's volume and mute and putting them back).
 - [x] Capture (`capture.luau`, from 11bb81e): stills of a region, an
       output or a window (niri's, through the clipboard, waited for by
       checksum), text by tesseract over an upscaled crop, niri's colour

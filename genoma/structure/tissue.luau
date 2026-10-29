@@ -42,6 +42,7 @@ function M.new(ctx: { [string]: any })
                     metrics = ctx.metrics,
                     output = ctx.output,
                     edge = ctx.edge,
+                    floating = ctx.floating,
                     output_width = ctx.output_width,
                 })
                 table.insert(t.cells, c)
