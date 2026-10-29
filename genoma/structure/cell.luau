@@ -11,9 +11,13 @@
 --   contracted()       the content at rest, a node
 --   content_width()    what that content asks for, logical units (unclamped)
 --   condition()        the measurement its visibility watches, if any
---   padding_leading, padding_trailing, least_width, body_height
+--   padding_leading, padding_trailing (a number, or a function for a cell
+--                      whose shape changes them), least_width, body_height
 --   interactive        whether it answers a press (default: it has a panel)
 --   on_click()         what a press does, if not opening
+--   leaves_on_close    false (or a function saying so) for an invoked cell
+--                      that only folds its panel away when closed, the
+--                      press outside sending it off (Cell.leavesOnClose)
 --   panel              what it opens, if anything: { width(), height(),
 --                      content(), satellites(), radius(), beyond() }, the
 --                      size the panel's own, padding included; satellites
@@ -128,8 +132,12 @@ function M.new(kind: any, ctx: { [string]: any })
         return -1
     end
 
-    local function leading(): number return spec.padding_leading or 16 end
-    local function trailing(): number return spec.padding_trailing or 16 end
+    local function side(p: any): number
+        if type(p) == "function" then return p() end
+        return p or 16
+    end
+    local function leading(): number return side(spec.padding_leading) end
+    local function trailing(): number return side(spec.padding_trailing) end
 
     -- ---- The header ---------------------------------------------------------
     --
@@ -241,7 +249,20 @@ function M.new(kind: any, ctx: { [string]: any })
     -- One cell open at a time: opening this one closes whatever was open.
     c.focus_id = focus.offer(c)
     g.watch(function() return c.open.value end, function(open: boolean)
-        if open then focus.opened(c) else focus.released(c) end
+        if open then
+            focus.opened(c)
+            return
+        end
+        focus.released(c)
+        -- A cell there only while it is asked for goes when it is closed,
+        -- however it was closed: the press that shut it, or the capture it
+        -- set off, is also the answer to "do you still want this?". Left
+        -- asked for, the next call to it closed a cell already shut.
+        local leaves = spec.leaves_on_close
+        if type(leaves) == "function" then leaves = g.untracked(leaves) end
+        if g.untracked(c.visibility.invoked) and leaves ~= false then
+            c.visibility.set_invoked(false)
+        end
     end)
 
     -- A cell that goes while it is open closes on the way out, and one that
@@ -483,8 +504,8 @@ function M.new(kind: any, ctx: { [string]: any })
                 attach = "corner",
                 width = place.width,
                 height = function() return c.contracted_height() end,
-                padding_left = leading(),
-                padding_right = trailing(),
+                padding_left = leading,
+                padding_right = trailing,
                 direction = "row",
                 align = "center",
                 justify = "start",

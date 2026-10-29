@@ -13,6 +13,7 @@ local membrane = require("structure/membrane")
 local float = require("structure/float")
 local focus = require("structure/focus")
 local input_surface = require("structure/input_surface")
+local selection = require("structure/selection")
 local registry = require("cells/registry")
 
 local monitors = require("services/monitors")
@@ -108,6 +109,21 @@ if #surfaces > 0 then
         namespace = "bioma-input",
         function(output: string, size: any)
             return input_surface.node(output, size or { width = 1920, height = 1080 })
+        end,
+    })
+
+    -- Bioma's own selection rectangle, over everything, another shell's
+    -- surfaces included, while the capture service asks for a region.
+    table.insert(surfaces, g.surface {
+        full = true,
+        anchor = { "top", "bottom", "left", "right" },
+        outputs = "all",
+        reserve = false,
+        above_zones = true,
+        layer = "overlay",
+        namespace = "bioma-selection",
+        function(output: string, size: any)
+            return selection.node(output, size or { width = 1920, height = 1080 })
         end,
     })
 end

@@ -163,7 +163,7 @@ host, driven only by `scripts/genoma ipc`:
 | clock | *beyond the PRD* | 2, with the membrane | 7e62c5c | checked 2026-10-29, awaiting Akusen and the cost |
 | media | §9.4 (sinestesia) | 3 | 60ca560 | checked 2026-10-29, awaiting Akusen and the cost |
 | theme | §9.7 | 3 | 60ca560 | checked 2026-10-29, awaiting Akusen and the cost |
-| utility | §9.6 | 3 | | |
+| utility | §9.6 | 3 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | audio | §9.5 | 4 | | |
 | connectivity | §9.11 | 4 | | |
 | system | §9.8 (session menu) | 4 | | |
@@ -317,6 +317,30 @@ crashed the engine in taffy (now patched, Genoma's vendor/taffy), and the
 palette's targets were not reactive (the chips, and the cell's pulse on a
 change of palette, never heard of one).
 
+utility, checked 2026-10-29 on HDMI-A-1 (`cells/utility.luau`,
+`cells/utility_expansion.luau`, `structure/selection.luau`,
+`components/veil.wgsl`; services `capture`, `dictation`): the icon at rest;
+opened, the kinds over the three places, the pair last used chosen and
+WINDOW drawn unavailable under Video. A region chosen on the selection
+surface: the veil with the selection cut out at the rim's radius, the lit
+border, the readout (400 × 220), and grim's file 400 × 220; a right press
+cancels, twice in a row. A recording of the screen from the panel: the beat,
+the count, the stop, then the question, and Discard leaving nothing in the
+temporary directory. Headless (`BIOMA_GENOMA_CHECK=capture`): a still of an
+output, its text (tesseract), three seconds recorded and closed by SIGINT
+into a file ffprobe reads, the encode resolution kept even (101×51 at 1.5 is
+152×76); dictation's probe, the microphone's level while listening, and a
+cancel that leaves no recorder behind (`BIOMA_CHECK_LISTEN=1`). Not tried,
+because they need Akusen: Escape (never sent synthetically), the crosshair
+cursor (grim does not show it), the colour picker, a window's capture
+(niri's goes through the clipboard), a whole take of dictation (it pastes
+into the focused window), a saved recording's notification. Not yet: the
+clipboard cell kept quiet through dictation's paste (with the clipboard
+service), the keyboard's travel through the sources. Found on the way, in
+the structure: an invoked cell that closed itself (the utility, closing for
+its capture) stayed asked for, so the next call to it closed a cell already
+shut; it now stops being asked for when it closes, as Cell.qml does.
+
 ### Surfaces that are not cells
 
 | Surface | PRD | State |
@@ -324,7 +348,7 @@ change of palette, never heard of one).
 | Wallpaper, and its blurred backdrop for niri's overview | §9.7 | |
 | Floating tissues, and the host float for invoked cells | §4 | |
 | OSD (volume, brightness, keyboard layout) | §11, an open question then, adopted since | |
-| Selection surface (Bioma's own region picker) | §9.6 | |
+| Selection surface (Bioma's own region picker) | §9.6 | checked 2026-10-29 with the utility (`structure/selection.luau`) |
 | Organisms, and their arrange mode | *beyond the PRD* | |
 | Lock screen (`lock.qml`, its guard, hyprlock as the fallback) | *beyond the PRD* | |
 | Greeter (`greeter.qml`, agreety as the fallback) | *beyond the PRD* | |
@@ -415,3 +439,12 @@ configuration with nothing of Genoma's in it:
       readings a second, from `sinestesia-bands --peak` (Audio.qml's way on
       an AUX interface, here always). Sinks, sources and streams come with
       the audio cell.
+- [x] Capture (`capture.luau`, from 11bb81e): stills of a region, an
+      output or a window (niri's, through the clipboard, waited for by
+      checksum), text by tesseract over an upscaled crop, niri's colour
+      picker and the colours kept, video by wl-screenrec into the runtime
+      directory until saved, stopped by SIGINT (`p:signal`); every capture
+      waits for the shell to have gone from the screen first.
+- [x] Dictation (`dictation.luau`): `scripts/listen`, `whisper-cli`,
+      `scripts/paste`, one take at a time, each process dying with the
+      shell; the level from the recorder's own peaks.
