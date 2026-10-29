@@ -92,7 +92,8 @@ end
 function M.set_mode(m: string) config.set("proxy.mode", m) end
 
 function M.save(profile: any)
-    local list = table.clone(g.untracked(profiles))
+    local list = g.array()
+    for _, p in g.untracked(profiles) do table.insert(list, p) end
     local at = 0
     for i, p in list do
         if p.id == profile.id then at = i end
@@ -102,7 +103,7 @@ function M.save(profile: any)
 end
 
 function M.remove(id: string)
-    local list = {}
+    local list = g.array()
     for _, p in g.untracked(profiles) do
         if p.id ~= id then table.insert(list, p) end
     end

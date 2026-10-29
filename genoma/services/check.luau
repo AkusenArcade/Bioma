@@ -346,6 +346,19 @@ function M.connectivity()
     end)
 end
 
+-- The portal's chooser opened on a VPN profile's filter and, unless
+-- BIOMA_CHECK_PICK is set (a person then chooses), closed from here.
+function M.picker()
+    local picker = require("services/picker")
+    picker.choose {
+        title = "Choose a VPN profile",
+        filters = { { "OpenVPN profiles (*.ovpn *.conf)", { "*.ovpn", "*.conf" } } },
+        on_chosen = function(path: string?) print("check picker chose " .. tostring(path)) end,
+    }
+    g.after(1, function() print("check picker busy " .. tostring(picker.busy())) end)
+    if not g.env("BIOMA_CHECK_PICK") then g.after(4, picker.cancel) end
+end
+
 -- A still of one output, its text, three seconds of it recorded and
 -- discarded: what can be checked with nobody picking or speaking. The
 -- output is $BIOMA_CHECK_OUTPUT (HDMI-A-1 by default).

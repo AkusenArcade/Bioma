@@ -165,7 +165,7 @@ host, driven only by `scripts/genoma ipc`:
 | theme | §9.7 | 3 | 60ca560 | checked 2026-10-29, awaiting Akusen and the cost |
 | utility | §9.6 | 3 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | audio | §9.5 | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
-| connectivity | §9.11 | 4 | 11bb81e | in progress: at rest, Ethernet, Wi-Fi, Bluetooth; VPN, proxy, printers to come |
+| connectivity | §9.11 | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | system | §9.8 (session menu) | 4 | | |
 | dock | §9.9 | 4 | | |
 | tray | *beyond the PRD* | 4 | | |
@@ -370,10 +370,18 @@ it is on (the radio switched on and back off, it is off by Akusen's
 choice), BLUETOOTH with SEARCH, its loader and what it found. The password
 field is `components/field.luau` with `secret`. Not tried: joining a
 network, pairing a device (the desktop has none to pair and no saved
-Wi-Fi profile). Found on the way: Genoma names a device's call in flight
-as a string, and an empty string is true in Luau, so every device read as
-pairing. Still to port: the VPN well (its import needs a file chooser
-Genoma does not have), the proxy well and its editor, the printers well.
+Wi-Fi profile). Then the VPN well, its form with the file chosen through
+the desktop's portal (`services/picker.luau`: GTK's chooser here, as
+zenity's; the portal opened and closed from a check, a choice by hand
+still to see), the proxy well and its editor (a profile typed, Tab from
+field to field, the port taking figures only, a trigger, saved, edited,
+removed, all in the test configuration), the printers well (CUPS's queue
+and its default). Found on the way: Genoma names a device's call in
+flight as a string, and an empty string is true in Luau, so every device
+read as pairing; and an emptied list was written to `override.json` as
+`{}`, which Quickshell reads as no list (Genoma's `g.json_set` now keeps
+the shape the document had, `g.array` marks a new one, and lists parsed
+from JSON no longer carry a metatable table.clone refuses).
 
 ### Surfaces that are not cells
 
@@ -499,3 +507,6 @@ configuration with nothing of Genoma's in it:
 - [x] Printers (`printers.luau`): CUPS's queues, default and jobs through
       `scripts/printers`, followed by its D-Bus notifications; search, add,
       remove, default. Making the only queue the default stays Quickshell's.
+- [x] Picker (`picker.luau`): a file or folder chosen through
+      org.freedesktop.portal.FileChooser, for the VPN profile now and for
+      everything Quickshell asks zenity for as it comes over.
