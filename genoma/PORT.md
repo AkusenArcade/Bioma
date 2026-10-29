@@ -146,7 +146,7 @@ host, driven only by `scripts/genoma ipc`:
 | Cell | PRD | Phase | Ported from | State |
 |---|---|---|---|---|
 | window_title | §9.1 | 2 | 670c660 | checked 2026-10-29, awaiting Akusen and the cost |
-| workspaces | §9.3 | 2 | | |
+| workspaces | §9.3 | 2 | 7ea52ac | checked 2026-10-29, awaiting Akusen and the cost |
 | vitals | §9.2 | 2 | | |
 | clock | *beyond the PRD* | 2, with the membrane | | |
 | media | §9.4 (sinestesia) | 3 | | |
@@ -182,6 +182,20 @@ in; a spinner in the title becomes the loader, late in and at once out.
 Not yet: the glyph of a cell holding the keyboard (no ported cell takes
 it). A press centres the window: not pressed in the check, it would have
 moved Akusen's.
+
+workspaces, checked 2026-10-29 (`genoma/cells/workspaces.luau`,
+`components/workspace_bars.luau`) beside Bioma on Quickshell's on the same
+monitor (its bottom membrane on HDMI-A-1): the cell the same to the pixel
+but for the glass; open, the same WORKSPACES header and a panel of the
+same 236 × 152 with its well 10 inside, budding downward where Quickshell's
+hangs from a thread upward. The first arrow marks the active row, Enter
+jumps, Escape closes; the wheel goes to the previous and next workspace,
+the mark stepping in that direction (seen at `timing.speed` 15). The cell
+framework gained with it: the header while open, the width held while
+open, `pulse()` for a condition that is an event, the wheel. The text
+tracking had been passed in logical units where Genoma takes em: the
+headers are now as wide as Quickshell's. Not yet: the shell-wide keyboard
+travel (the list answers its keys itself), the panel's shadow.
 
 ### Surfaces that are not cells
 

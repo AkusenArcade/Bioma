@@ -124,7 +124,7 @@ return {
                 font = font(),
                 size = size(),
                 weight = if technical.value then typography.weight_label else 400,
-                tracking = if technical.value then typography.tracking(size(), typography.label_tracking) else 0,
+                tracking = if technical.value then typography.label_tracking else 0,
             }
         end
 
@@ -185,7 +185,7 @@ return {
                         size = size,
                         weight = function() return if technical.value then typography.weight_label else 400 end,
                         tracking = function()
-                            return if technical.value then typography.tracking(size(), typography.label_tracking) else 0
+                            return if technical.value then typography.label_tracking else 0
                         end,
                         text = function() return shown.value end,
                         -- The ellipsis goes on the text, never on the cell:

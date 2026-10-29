@@ -60,6 +60,13 @@ function M.alpha(hex: string, a: number): string
 end
 
 -- Rec. 709 relative luminance, good enough to pick a side.
+-- Between two colours, `t` of the way from `a` to `b`, alpha included.
+function M.mix(a: string, b: string, t: number): string
+    local x, y = M.parse(a), M.parse(b)
+    local function lerp(p: number, q: number): number return p + (q - p) * t end
+    return M.format({ r = lerp(x.r, y.r), g = lerp(x.g, y.g), b = lerp(x.b, y.b), a = lerp(x.a, y.a) })
+end
+
 function M.luminance(hex: string): number
     local c = M.parse(hex)
     return 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b

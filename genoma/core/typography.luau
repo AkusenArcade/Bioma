@@ -18,6 +18,8 @@ M.weight_title = 700
 -- Labels are uppercase and tracked out, in em.
 M.label_tracking = 0.06
 
+-- In logical units, as Qt's letterSpacing takes it. Genoma's text takes
+-- tracking in em: pass `label_tracking` itself there, not this.
 function M.tracking(pixel_size: number, em: number): number
     return pixel_size * em
 end

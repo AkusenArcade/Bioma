@@ -17,6 +17,11 @@
 --   panel              what it opens, if anything: { width(), height(),
 --                      content() }, the size the panel's own, padding included
 --   on_key(name)       a key while it is open, Escape aside
+--   on_wheel(dx, dy)   the wheel over the cell
+--   header_title, header_mark(size), header_mark_size()
+--                      what it shows while open: the domain's glyph and its
+--                      name in the technical voice, the title of what hangs
+--                      under it
 -- and the cell gives back room(), the width its content may draw in, once
 -- the tissue has placed it.
 -- Everything the engine needs from a cell arrives in its block; adding a
@@ -28,6 +33,8 @@ local colour = require("core/colour")
 local registry = require("cells/registry")
 local visibility = require("structure/visibility")
 local focus = require("structure/focus")
+local timing = require("core/timing")
+local typography = require("core/typography")
 
 local M = {}
 
@@ -52,6 +59,25 @@ function M.new(kind: any, ctx: { [string]: any })
     -- In the middle of something (a recording to save): it keeps its place.
     c.busy = g.signal(false)
 
+    -- ---- Events ---------------------------------------------------------
+    --
+    -- Most conditions are a state; some are an event (the workspace changed,
+    -- a device connected). A cell whose condition is an event calls
+    -- `pulse()` when it happens: the condition is true for a moment, and the
+    -- grammar's dwell is how long the cell stays. What happens while the
+    -- shell is still starting is not an event.
+    local pulsing = g.signal(false)
+    local settled = false
+    g.after(timing.seconds.settle, function() settled = true end)
+    local pulse_timer: any = nil
+    function c.pulse()
+        if not settled then return end
+        pulsing.value = true
+        if pulse_timer then pulse_timer:stop() end
+        pulse_timer = g.after(timing.seconds.pulse, function() pulsing.value = false end)
+    end
+    function c.pulsing(): boolean return pulsing.value end
+
     local spec = kind.new(c)
     c.spec = spec
 
@@ -75,6 +101,7 @@ function M.new(kind: any, ctx: { [string]: any })
     -- Below its minimum a cell prefers not to appear rather than appear
     -- illegible. At the normal step, so it takes the step.
     function c.min_width(): number
+        if spec and spec.min_width then return spec.min_width() end
         local m = c.block().min_width
         return ((m and m.value) or 24) * c.metrics().factor
     end
@@ -95,8 +122,81 @@ function M.new(kind: any, ctx: { [string]: any })
     local function leading(): number return spec.padding_leading or 16 end
     local function trailing(): number return spec.padding_trailing or 16 end
 
-    function c.contracted_width(): number
+    -- ---- The header ---------------------------------------------------------
+    --
+    -- While it is expanded (open, or its panel still on its way back) a cell
+    -- with an expansion becomes the title of it: the contracted content goes
+    -- and the domain's glyph arrives with the cell's name. Every cell wears
+    -- the same face, and the rule for too little room is the same: below the
+    -- name's width the glyph alone, centred in what was given.
+    c.has_panel = spec.panel ~= nil
+    local panel_out = g.signal(false)
+    if c.has_panel then
+        g.watch(function() return c.open.value end, function(open: boolean)
+            if open then
+                panel_out.value = true
+            else
+                g.after(timing.seconds.close, function()
+                    if not g.untracked(function() return c.open.value end) then panel_out.value = false end
+                end)
+            end
+        end)
+    end
+    function c.expanded(): boolean return c.open.value or panel_out.value end
+
+    local function header_title(): string
+        local t = spec.header_title
+        if type(t) == "function" then return t() end
+        return t or ""
+    end
+    local has_header = spec.header_mark ~= nil or spec.header_title ~= nil
+    function c.shows_header(): boolean return has_header and c.expanded() end
+    local function mark_size(): number
+        return if spec.header_mark_size then spec.header_mark_size() else 20 * c.metrics().factor
+    end
+    local function header_gap(): number return 12 * c.metrics().factor end
+    local function header_font(): { [string]: any }
+        local size = c.metrics().font_label
+        return {
+            font = typography.technical(),
+            size = size,
+            weight = typography.weight_label,
+            tracking = typography.label_tracking,
+        }
+    end
+    local function mark_room(): number return if spec.header_mark then mark_size() + header_gap() else 0 end
+    local function header_width(): number
+        local f = header_font()
+        return mark_room() + g.text_width { text = header_title(), font = f.font, size = f.size, weight = f.weight, tracking = f.tracking }
+    end
+    -- A header keeps its own margins: the leading one follows the mark, so
+    -- the glyph is concentric with the cap, and the name keeps the full one.
+    local function leading_inset(): number
+        return if c.shows_header() then (c.metrics().cell_height - mark_size()) / 2 else leading()
+    end
+    local function trailing_inset(): number
+        return if c.shows_header() then 16 * c.metrics().factor else trailing()
+    end
+
+    -- An open cell does not narrow: it keeps the width it had when it opened
+    -- for as long as the header shows, the header in the middle of it. A
+    -- cell narrower than its header still grows to it.
+    local held = g.signal(0)
+    local function rest_width(): number
         local natural = math.max(c.min_width(), spec.content_width() + leading() + trailing())
+        local max = c.max_width()
+        return if max > 0 then math.min(natural, max) else natural
+    end
+    g.watch(function() return c.open.value end, function(open: boolean)
+        if open and g.untracked(function() return held.value end) == 0 then held.value = g.untracked(rest_width) end
+    end)
+    g.watch(c.shows_header, function(showing: boolean)
+        if not showing then held.value = 0 end
+    end)
+
+    function c.contracted_width(): number
+        if not c.shows_header() then return rest_width() end
+        local natural = math.max(c.min_width(), header_width() + leading_inset() + trailing_inset(), held.value)
         local max = c.max_width()
         return if max > 0 then math.min(natural, max) else natural
     end
@@ -153,8 +253,6 @@ function M.new(kind: any, ctx: { [string]: any })
 
     -- ---- Surfaces -----------------------------------------------------------
 
-    c.has_panel = spec.panel ~= nil
-
     -- How far what it opened reaches past it on the side it opens, while
     -- it is out: a floating tissue is centred on all of it.
     function c.reach(): number return 0 end
@@ -184,24 +282,14 @@ function M.new(kind: any, ctx: { [string]: any })
         local function curve(): string return if c.open.value then "bud" else "close" end
 
         -- Still drawn while it is taken back.
-        local out = g.signal(false)
-        function c.reach(): number return if out.value then place.gap() + p.height() else 0 end
-        g.watch(function() return c.open.value end, function(open: boolean)
-            if open then
-                out.value = true
-            else
-                g.after(require("core/timing").seconds.close, function()
-                    if not g.untracked(function() return c.open.value end) then out.value = false end
-                end)
-            end
-        end)
+        function c.reach(): number return if panel_out.value then place.gap() + p.height() else 0 end
 
         return g.capsule {
             name = c.domain .. " panel",
             role = "group",
             overlay = true,
             attach = if down then "below" else "above",
-            present = function() return out.value end,
+            present = function() return panel_out.value end,
             width = p.width,
             height = p.height,
             offset_x = function()
@@ -250,6 +338,56 @@ function M.new(kind: any, ctx: { [string]: any })
         }
     end
 
+    -- The header, staggered after the content leaves rather than crossed
+    -- through it: two strings dissolving through each other read as overlap.
+    local function header_node(place: { [string]: any }): any
+        local function room(): number return place.width() - leading_inset() - trailing_inset() end
+        local function named(): boolean return room() >= header_width() - 0.5 end
+        local function slack(): number
+            return if held.value > 0 and named() then math.max(0, (room() - header_width()) / 2) else 0
+        end
+        local f = header_font
+        return g.box {
+            overlay = true,
+            attach = "corner",
+            width = place.width,
+            height = function() return c.contracted_height() end,
+            present = c.shows_header,
+            opacity = function() return if c.shows_header() then 1 else 0 end,
+            transition = { opacity = "header" },
+            if spec.header_mark then g.box {
+                overlay = true,
+                attach = "corner",
+                width = mark_size,
+                height = mark_size,
+                -- Against the leading cap when the name is beside it, in the
+                -- middle of the cell when it is alone.
+                offset_x = function()
+                    if named() then return leading_inset() + slack() end
+                    return math.max(0, (place.width() - mark_size()) / 2)
+                end,
+                offset_y = function() return (c.contracted_height() - mark_size()) / 2 end,
+                spec.header_mark(mark_size),
+            } else nil,
+            g.box {
+                overlay = true,
+                attach = "corner",
+                present = named,
+                offset_x = function() return leading_inset() + slack() + mark_room() end,
+                height = function() return c.contracted_height() end,
+                align = "center",
+                g.text {
+                    color = theme.text,
+                    font = function() return f().font end,
+                    size = function() return f().size end,
+                    weight = function() return f().weight end,
+                    tracking = function() return f().tracking end,
+                    text = header_title,
+                },
+            },
+        }
+    end
+
     -- Built by the tissue, which knows where the cell goes: `place` has
     -- x(), y(), width() (granted), placed(), radius(), origin() (the side
     -- the cell was born from) and gap() (how far its panel hangs).
@@ -290,6 +428,7 @@ function M.new(kind: any, ctx: { [string]: any })
             rim_top = function() return if lit() then theme.lift(theme.rim(), 0.10) else theme.rim() end,
             rim_bottom = function() return if lit() then theme.lift(theme.line(), 0.06) else theme.line() end,
             on_hover = function(on: boolean) c.hovered.value = on end,
+            on_wheel = spec.on_wheel,
             -- While it is open it has the attention: a press on anything but
             -- itself and what it opened closes it, and so does Escape.
             catch = function() return c.open.value or focus.is(c) end,
@@ -324,8 +463,11 @@ function M.new(kind: any, ctx: { [string]: any })
                 direction = "row",
                 align = "center",
                 justify = "start",
+                opacity = function() return if c.open.value and c.shows_header() then 0 else 1 end,
+                transition = { opacity = "content_fade" },
                 spec.contracted(),
             },
+            if has_header then header_node(place) else nil,
             if c.has_panel then panel_node(place) else nil,
         }
     end

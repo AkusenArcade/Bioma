@@ -64,6 +64,10 @@ g.effect(function()
         -- content enters once the shape is at size, and leaves first.
         bud = { duration = s.grow + s.stagger * 2, curve = c.open_flat },
         content_enter = { duration = s.content_fade, delay = s.grow + s.stagger * 2 },
+        -- A mark stepping once (WorkspaceBars), small, so it may overshoot.
+        shift = { duration = s.transition, curve = c.open },
+        -- An open cell's header, two staggers after the content has gone.
+        header = { duration = s.content_fade, delay = s.stagger * 2 },
         wallpaper = { duration = s.wallpaper, curve = c.in_out_quad },
         loader = { duration = s.loader, curve = c.sweep },
         welcome_open = { duration = s.welcome_open, curve = c.open_flat },
