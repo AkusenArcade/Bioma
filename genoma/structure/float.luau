@@ -19,6 +19,7 @@ local timing = require("core/timing")
 local registry = require("cells/registry")
 local tissue_mod = require("structure/tissue")
 local focus = require("structure/focus")
+local niri = require("services/niri")
 
 local M = {}
 
@@ -35,13 +36,14 @@ local function build(block: () -> { [string]: any }, output: string, size: { wid
 
     -- A margin the block writes is measured from the screen's edge and is
     -- obeyed. Otherwise a tissue anchored to an edge sits on the line the
-    -- windows begin on, past the strip a membrane there would take (niri's
-    -- gaps and struts come with the niri service).
+    -- windows begin on, past the strip a membrane there would take.
     local function margin(side: string): number
         local m = (block().margins or {})[side]
         local s = metrics()
         if m ~= nil then return m * s.factor end
-        if side == "top" or side == "bottom" then return s.margin_edge + s.cell_height + s.tissue_padding * 2 end
+        if side == "top" or side == "bottom" then
+            return s.margin_edge + s.cell_height + s.tissue_padding * 2 + niri.window_gap() + niri.strut_for(side)
+        end
         return s.margin_edge
     end
 

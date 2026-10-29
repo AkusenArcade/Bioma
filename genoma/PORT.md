@@ -89,8 +89,6 @@ Checked 2026-10-28 (`BIOMA_GENOMA_CHECK=1 scripts/genoma`):
       `scripts/genoma ipc cell toggle <domain> [output]` (`close`, `list`),
       on the output the keyboard is on unless it names one.
       Still to come, each with what it needs:
-      - the panel hangs from the strip's edge until niri's `gaps` and
-        struts arrive with the niri service (step 3);
       - no shadow, on panels or floating tissues, until Genoma has a soft
         shadow; a panel's content fades but does not grow from its centre;
         a summoned cell fades in rather than growing into place;
@@ -210,3 +208,33 @@ Monitors, Network, Niri, NiriConfig, NiriSettings, Notifications, Osd,
 Palettes, Polkit, Power, Printers, Privacy, Proxy, Recent, Session, Setup,
 Sinestesia, Sounds, Storage, SystemMonitor, Templates, Time, Tray, Vpn,
 Wallpaper, Weather, Workload.
+
+Ported, in `genoma/services/`, each checked with
+`BIOMA_GENOMA_CHECK=<name> scripts/genoma` (`services/check.luau`) on a
+configuration with nothing of Genoma's in it:
+
+- [x] Niri (`niri.luau`, from 5e5ff60): its own event stream on `g.socket`,
+      actions through `niri msg`. Checked 2026-10-29: workspaces per
+      output with the active and focused ones, the focused window and its
+      size (942×1000, as `niri msg focused-window`), the keyboard layout,
+      `gaps` 12. `gaps` and `struts` are read from every file of the
+      configuration, a later `layout` winning: Niri.qml reads the main file
+      alone and would miss them in an included `layout.kdl`. The membranes
+      and floating tissues now hang from the window line.
+- [x] NiriConfig, reading (`niri_config.luau`, `niri_kdl.luau` from
+      `niri-config.js`): every included file followed; includes and
+      `output` sections scanned. Binds, rules, workspaces, startup lines
+      and writing through `niri validate` come with the services that use
+      them.
+- [x] Monitors, reading (`monitors.luau`): niri's outputs and the sections
+      naming them; the primary from `focus-at-startup`, decided at the load
+      against the outputs the compositor describes (`g.outputs()`), so a
+      block on `primary` lands on DP-1 here. Switching, moving, variable
+      refresh and the games rule come with settings.
+- [x] SystemMonitor (`system_monitor.luau`): load, clock (32 cores, range
+      417–5763 MHz), memory and swap, the discrete card (card1, not the
+      integrated card0), its clock from `pp_dpm_sclk`, VRAM, the k10temp
+      package temperature, traffic on physical links, the battery through
+      Genoma's power domain (now with UPower's `EnergyRate`), and `ps` only
+      while a list is asked for. One binding run per sample (`g.batch`).
+      Performance mode's longer interval comes with its service.

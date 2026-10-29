@@ -11,6 +11,7 @@ local g = require("@genoma")
 local config = require("core/config")
 local metrics_mod = require("core/metrics")
 local tissue_mod = require("structure/tissue")
+local niri = require("services/niri")
 
 local M = {}
 
@@ -53,9 +54,8 @@ function M.new(block: () -> { [string]: any }, output: string, size: { width: nu
     end
 
     -- Where the compositor starts drawing windows: past the strip by niri's
-    -- `gaps` and the edge's strut, which come with the niri service (step
-    -- 3). Until then the line is the strip's own edge.
-    local function window_inset(): number return 0 end
+    -- `gaps` and the edge's strut.
+    local function window_inset(): number return niri.window_gap() + niri.strut_for(edge) end
     local function window_line(): number
         if edge == "top" or edge == "left" then return m.strip() + window_inset() end
         return (if horizontal then size.height else size.width) - m.strip() - window_inset()

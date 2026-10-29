@@ -15,13 +15,17 @@ local focus = require("structure/focus")
 local input_surface = require("structure/input_surface")
 local registry = require("cells/registry")
 
--- Which outputs a block belongs to: a name, `all`, or `primary` (the output
--- niri focuses at start; until the Monitors service is ported, $BIOMA_PRIMARY
--- or the first block's own).
+local monitors = require("services/monitors")
+
+-- Which outputs a block belongs to: a name, `all`, or `primary` (the one
+-- niri focuses at startup, else the first screen).
 local function outputs_of(block: { [string]: any }): any
     local monitor = block.monitor or "primary"
     if monitor == "all" or monitor == "*" then return "all" end
-    if monitor == "primary" then return { g.env("BIOMA_PRIMARY") or "DP-1" } end
+    if monitor == "primary" then
+        local primary = monitors.primary()
+        return if primary ~= "" then { primary } else {}
+    end
     return { monitor }
 end
 
@@ -107,10 +111,11 @@ end
 -- Being asked for: `scripts/genoma ipc cell toggle <domain> [output]`. The
 -- output the keyboard is on is the one meant, unless the call names one. An
 -- old name still reaches the cell it became.
-local niri = require("@genoma/niri")
+local niri = require("services/niri")
 local function meant(output: string?): string?
     if output and output ~= "" then return output end
-    return niri.focused_output
+    local focused = g.untracked(niri.focused_output)
+    return if focused ~= "" then focused else nil
 end
 g.ipc("cell", {
     toggle = function(domain: string, output: string?): string
@@ -127,6 +132,14 @@ g.ipc("cell", {
     -- against rather than guessed at.
     list = function(): string return table.concat(focus.domains(), "\n") end,
 })
+
+-- BIOMA_GENOMA_CHECK=<service>: that service's state as it changes, with
+-- no interface (services/check.luau), the way each was verified on Quickshell.
+local check = g.env("BIOMA_GENOMA_CHECK")
+if check and check ~= "1" and check ~= "write" then
+    local checks = require("services/check")
+    if checks[check] then checks[check]() else print("check: no service " .. check) end
+end
 
 -- BIOMA_GENOMA_CHECK=1: the core's values, to set beside the QML's and the
 -- token set's, and the theme's transit as it happens.
