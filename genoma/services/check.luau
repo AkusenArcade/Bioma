@@ -161,4 +161,49 @@ function M.apps()
     if entry then print("check apps command " .. table.concat(apps.command_of(entry), " | ")) end
 end
 
+function M.media()
+    local media = require("services/media")
+    local audio = require("services/audio")
+    local sinestesia = require("services/sinestesia")
+    g.effect(function()
+        local names = {}
+        for _, p in media.players() do table.insert(names, p.identity .. "/" .. p.status) end
+        print(string.format("check media players [%s] chosen %s: %q by %q, playing %s, length %s, art %s",
+            table.concat(names, ", "), media.identity(), media.title(), media.artist(), tostring(media.playing()),
+            media.format_time(media.length()), tostring(media.has_art())))
+    end)
+    g.effect(function()
+        print(string.format("check media position %s (%.2f)", media.format_time(media.position()), media.progress()))
+    end)
+    local seen = 0
+    g.effect(function()
+        local p = audio.peak()
+        if p > 0 and seen < 3 then
+            seen += 1
+            print(string.format("check audio peak %.3f", p))
+        end
+    end)
+    local frames = 0
+    g.effect(function()
+        local l = sinestesia.left()
+        if #l > 0 then
+            frames += 1
+            if frames % 60 == 1 then
+                print(string.format("check sinestesia frame %d: %d bands a side, level %.3f, folded to 7: %s", frames, #l,
+                    sinestesia.level(), table.concat((function()
+                        local out = {}
+                        for _, v in sinestesia.fold(l, 7) do table.insert(out, string.format("%.2f", v)) end
+                        return out
+                    end)(), " ")))
+            end
+        end
+    end)
+    local owner = {}
+    g.after(1, function() sinestesia.hold(owner, true) end)
+    g.after(4, function()
+        sinestesia.hold(owner, false)
+        print("check sinestesia frames in 3 s: " .. frames)
+    end)
+end
+
 return M

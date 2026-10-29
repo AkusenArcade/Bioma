@@ -347,3 +347,15 @@ configuration with nothing of Genoma's in it:
       nothing, as Apps.qml rules), its icon through the theme, and `run`
       through `scripts/launch`. Genoma reads the desktop entries
       (`g.desktop_entries()`, `g.icon_path()`); they are read at the load.
+- [x] Media (`media.luau`), on Genoma's MPRIS domain: the player chosen,
+      else the one playing, else the first; the length kept for the track
+      when Firefox or Zen stop sending it; the position read each second
+      while playing. Checked 2026-10-29 with Akusen's Zen playing and
+      `scripts/mpris-dummy.py`: Zen chosen, its title, artist and art.
+- [x] Sinestesia (`sinestesia.luau`): `tools/sinestesia-bands`, run while
+      something holds it: 64 bands a side at 60 frames a second, folded by
+      peak. Performance mode's still band comes with its service.
+- [~] Audio, the signal only (`audio.luau`): the default sink's peak, ten
+      readings a second, from `sinestesia-bands --peak` (Audio.qml's way on
+      an AUX interface, here always). Sinks, sources and streams come with
+      the audio cell.
