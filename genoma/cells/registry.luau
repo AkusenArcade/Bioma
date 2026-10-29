@@ -16,7 +16,7 @@ end
 
 -- The cells written on Genoma so far, every one of which answers to its
 -- name; and those that are the engine's own, never offered to a keybind.
-M.ported = { "window_title", "workspaces", "vitals", "clock", "media", "theme", "utility", "audio", "connectivity" } :: { string }
+M.ported = { "window_title", "workspaces", "vitals", "clock", "media", "theme", "utility", "audio", "connectivity", "system" } :: { string }
 M.internal = { probe = true }
 
 -- Each key a block leaves out is the domain's (Registry.widthOf).

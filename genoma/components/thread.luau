@@ -14,7 +14,8 @@ local metrics_mod = require("core/metrics")
 local M = {}
 
 -- `t`: vertical (bool), length(), shown() (drawn out while true),
--- reversed (the origin at the far end: the bottom, or the right),
+-- reversed (the origin at the far end: the bottom, or the right; a
+-- function for a thread whose side follows its cell's),
 -- timing() (the name to draw out with), closing() (the name to take it
 -- back with; thread_close when omitted), plus any placing props (overlay,
 -- attach, offset_x, offset_y, present) passed through.
@@ -38,16 +39,21 @@ function M.new(t: { [string]: any }): any
         },
     }
     local function far(): number return t.length() end
+    local function rev(): boolean
+        local r = t.reversed
+        if type(r) == "function" then return r() end
+        return r == true
+    end
     if t.vertical then
         node.from_x = d / 2
         node.to_x = d / 2
-        node.from_y = function() return if t.reversed then far() else 0 end
-        node.to_y = function() return if t.reversed then 0 else far() end
+        node.from_y = function() return if rev() then far() else 0 end
+        node.to_y = function() return if rev() then 0 else far() end
     else
         node.from_y = d / 2
         node.to_y = d / 2
-        node.from_x = function() return if t.reversed then far() else 0 end
-        node.to_x = function() return if t.reversed then 0 else far() end
+        node.from_x = function() return if rev() then far() else 0 end
+        node.to_x = function() return if rev() then 0 else far() end
     end
     for _, key in { "overlay", "attach", "offset_x", "offset_y", "present" } do
         if t[key] ~= nil then node[key] = t[key] end

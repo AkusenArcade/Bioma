@@ -359,6 +359,28 @@ function M.picker()
     if not g.env("BIOMA_CHECK_PICK") then g.after(4, picker.cancel) end
 end
 
+-- Who, the machine, the power profile: read only, no action run.
+function M.system()
+    local session = require("services/session")
+    local machine = require("services/machine")
+    local power = require("services/power")
+    machine.ask()
+    g.effect(function()
+        print(string.format("check session %s %q uid %d avatar %q restart due %s, pending %q, lock %s",
+            session.login(), session.full_name(), session.uid(), session.avatar(), tostring(session.restart_due()),
+            session.pending(), tostring(session.available("lock"))))
+    end)
+    g.effect(function()
+        local parts = {}
+        for _, r in machine.rows() do table.insert(parts, r.label .. "=" .. r.value) end
+        print("check machine " .. table.concat(parts, " | "))
+    end)
+    g.effect(function()
+        print(string.format("check power present %s %s performance %s held %q", tostring(power.present()),
+            power.profile(), tostring(power.performance_available()), power.held_back()))
+    end)
+end
+
 -- A still of one output, its text, three seconds of it recorded and
 -- discarded: what can be checked with nobody picking or speaking. The
 -- output is $BIOMA_CHECK_OUTPUT (HDMI-A-1 by default).

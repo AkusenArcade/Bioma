@@ -455,6 +455,9 @@ function M.new(kind: any, ctx: { [string]: any })
         -- What the content may occupy: the granted width inside the cell's
         -- own padding. An elastic content ends in an ellipsis there.
         function c.room(): number return math.max(0, place.width() - leading() - trailing()) end
+        -- The side it was born from ("start", "centre", "end"): what it opens
+        -- leans away from the edge it stands against.
+        function c.origin(): string return place.origin() end
 
         -- Still drawn while it fades out: present until the fade is over.
         local present = g.signal(true)

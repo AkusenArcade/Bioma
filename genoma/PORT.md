@@ -166,7 +166,7 @@ host, driven only by `scripts/genoma ipc`:
 | utility | §9.6 | 3 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | audio | §9.5 | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | connectivity | §9.11 | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
-| system | §9.8 (session menu) | 4 | | |
+| system | §9.8 (session menu) | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | dock | §9.9 | 4 | | |
 | tray | *beyond the PRD* | 4 | | |
 | actions | *beyond the PRD* | 4 | | |
@@ -383,6 +383,19 @@ read as pairing; and an emptied list was written to `override.json` as
 the shape the document had, `g.array` marks a new one, and lists parsed
 from JSON no longer carry a metatable table.clone refuses).
 
+system, checked 2026-10-29 on HDMI-A-1 (`cells/system.luau`,
+`cells/system_expansion.luau`, `components/portrait.luau`; services
+`session`, `machine`, `power`): the picture at rest (AccountsService's);
+opened, the identity capsule, the five actions under it with their keys,
+the machine beside them (on the left, the cell standing at the end of
+its strip) and the power profile above the machine. RESTART pressed and
+the key 4 typed: the row became its question, and Cancel took it back.
+Not pressed, for what they would do: any action itself, the power
+profile, a new picture (through the portal, the cell stepping aside).
+Session actions run through `setsid -f`: a lock screen that died with
+the shell's next reload would unlock the session. Genoma's power domain
+gained `degraded`, the reason performance is held back.
+
 ### Surfaces that are not cells
 
 | Surface | PRD | State |
@@ -510,3 +523,10 @@ configuration with nothing of Genoma's in it:
 - [x] Picker (`picker.luau`): a file or folder chosen through
       org.freedesktop.portal.FileChooser, for the VPN profile now and for
       everything Quickshell asks zenity for as it comes over.
+- [x] Session (`session.luau`): who, the picture and its change through
+      AccountsService, the five actions and their question, the restart
+      due. Suspending after idle stays Quickshell's until the switch.
+- [x] Machine (`machine.luau`): the facts, read once; the uptime while
+      looked at.
+- [x] Power, the profile (`power.luau`): Bioma's three names, held back
+      by the daemon's reason. Following the mains stays Quickshell's.
