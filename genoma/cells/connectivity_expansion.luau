@@ -26,6 +26,7 @@ local vpn = require("services/vpn")
 local proxy = require("services/proxy")
 local printers = require("services/printers")
 local picker = require("services/picker")
+local focus = require("structure/focus")
 local segmented = require("components/segmented")
 local field = require("components/field")
 local scroller_mod = require("components/scroller")
@@ -771,10 +772,16 @@ function M.new(cell: any): { [string]: any }
 
     local function choose_file()
         if picker.busy() then return end
+        -- The chooser is the desktop's window: the cell gives it the
+        -- pointer and the keys until it answers.
+        focus.yield(true)
         picker.choose {
             title = "Choose a VPN profile",
             filters = { { "OpenVPN profiles (*.ovpn *.conf)", { "*.ovpn", "*.conf" } } },
-            on_chosen = function(path: string?) if path then chosen_file.value = path end end,
+            on_chosen = function(path: string?)
+                focus.yield(false)
+                if path then chosen_file.value = path end
+            end,
         }
     end
     local function import()

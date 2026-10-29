@@ -491,7 +491,7 @@ function M.new(kind: any, ctx: { [string]: any })
             on_wheel = spec.on_wheel,
             -- While it is open it has the attention: a press on anything but
             -- itself and what it opened closes it, and so does Escape.
-            catch = function() return c.open.value or focus.is(c) end,
+            catch = function() return (c.open.value or focus.is(c)) and not focus.yielding() end,
             on_outside = function() focus.dismiss() end,
             on_key = function(name: string, text: string?, mods: any) focus.key(name, text, mods) end,
             -- The left button presses; the middle one is the cell's to give a

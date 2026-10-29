@@ -14,7 +14,7 @@ local M = {}
 
 function M.node(output: string, size: { width: number, height: number }): any
     local function catching(): boolean
-        return focus.any_open() and focus.output() ~= output
+        return focus.any_open() and focus.output() ~= output and not focus.yielding()
     end
     return g.box {
         width = size.width,
