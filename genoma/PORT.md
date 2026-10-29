@@ -161,7 +161,7 @@ host, driven only by `scripts/genoma ipc`:
 | workspaces | §9.3 | 2 | 7ea52ac | checked 2026-10-29, awaiting Akusen and the cost |
 | vitals | §9.2 | 2 | 30c6cc7 | checked 2026-10-29, awaiting Akusen and the cost |
 | clock | *beyond the PRD* | 2, with the membrane | 7e62c5c | checked 2026-10-29, awaiting Akusen and the cost |
-| media | §9.4 (sinestesia) | 3 | | |
+| media | §9.4 (sinestesia) | 3 | 60ca560 | contracted checked 2026-10-29; the expansion to come |
 | theme | §9.7 | 3 | | |
 | utility | §9.6 | 3 | | |
 | audio | §9.5 | 4 | | |
@@ -272,6 +272,17 @@ with what is added and what is not. Not yet: the shell-wide keyboard travel,
 the lists' scroll bars; adding a place or an address was not tried, nor
 forgetting a calendar, since they write Akusen's configuration and keyring
 (the test configuration is a copy, but the keyring is his).
+
+media, contracted, checked 2026-10-29 on HDMI-A-1 (`genoma/cells/media.luau`,
+`components/band.luau`, `components/fluid.luau` and `fluid.wgsl`, the first
+Genoma shader node): the cell rises on the signal and the band follows the
+sound in all four effects, eardrum the default. Tested on a PipeWire null
+sink (`pactl load-module module-null-sink sink_name=genoma_test`, the engine
+started with `PIPEWIRE_NODE=genoma_test`, a synthetic loop played into it
+with `pw-play --target`), so nothing was heard. Playing, the engine takes
+about 2.5 % of a core at 120 Hz once the hidden bars and the colours stopped
+being recomputed sixty times a second (9.9 % before). The name beside the
+band waits for a player with metadata on that sink.
 
 ### Surfaces that are not cells
 

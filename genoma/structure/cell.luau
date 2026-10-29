@@ -25,7 +25,7 @@
 --                      name in the technical voice, the title of what hangs
 --                      under it
 -- and the cell gives back room(), the width its content may draw in, once
--- the tissue has placed it.
+-- the tissue has placed it, and placed, whether it is on screen.
 -- Everything the engine needs from a cell arrives in its block; adding a
 -- cell costs one config block.
 local g = require("@genoma")
@@ -61,6 +61,9 @@ function M.new(kind: any, ctx: { [string]: any })
     c.hovered = g.signal(false)
     -- In the middle of something (a recording to save): it keeps its place.
     c.busy = g.signal(false)
+    -- On screen: the tissue placed it. What costs to keep running (the
+    -- media cell's bands) runs only while this is true.
+    c.placed = g.signal(false)
 
     -- ---- Events ---------------------------------------------------------
     --
@@ -413,6 +416,7 @@ function M.new(kind: any, ctx: { [string]: any })
         -- Still drawn while it fades out: present until the fade is over.
         local present = g.signal(true)
         g.watch(function() return place.placed() end, function(placed: boolean)
+            c.placed.value = placed
             if placed then
                 present.value = true
             else
@@ -470,7 +474,6 @@ function M.new(kind: any, ctx: { [string]: any })
                 overlay = true,
                 attach = "corner",
                 width = place.width,
-                transition = { width = "reflow" },
                 height = function() return c.contracted_height() end,
                 padding_left = leading(),
                 padding_right = trailing(),
@@ -478,7 +481,8 @@ function M.new(kind: any, ctx: { [string]: any })
                 align = "center",
                 justify = "start",
                 opacity = function() return if c.open.value and c.shows_header() then 0 else 1 end,
-                transition = { opacity = "content_fade" },
+                -- One table: a second `transition` key would replace the first.
+                transition = { width = "reflow", opacity = "content_fade" },
                 spec.contracted(),
             },
         }

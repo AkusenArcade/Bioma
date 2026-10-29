@@ -64,6 +64,8 @@ g.effect(function()
         fade = { duration = s.reflow, curve = c.in_out_quad },
         colour = { duration = s.transition },
         content_fade = { duration = s.content_fade },
+        -- The audio band's bars following the sound (Band.qml's Behavior).
+        band = { duration = s.content_fade, curve = c.out_quad },
         -- A panel budding out of its cell takes what Cell.qml's thread and
         -- panel took together, the thread's two staggers and the growth; its
         -- content enters once the shape is at size, and leaves first.
