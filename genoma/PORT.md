@@ -173,7 +173,7 @@ host, driven only by `scripts/genoma ipc`:
 | clipboard | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | download | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | drives | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
-| emoji | *beyond the PRD* | 4 | | |
+| emoji | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | keyboard | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | performance | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | polkit | *beyond the PRD* | 4 | | |
@@ -481,6 +481,18 @@ previous copy back on the clipboard and closed the cell. Not pressed:
 CLEAR. Found on the way: an if-expression closed with `end` (a Luau
 syntax error the registry reports as the cell failing to load).
 
+emoji, checked 2026-10-29 on HDMI-A-1 (`cells/emoji.luau`, service
+`emoji`): summoned into the middle of the monitor, the recent ones, then
+the groups under their names, the chosen one large with its name below;
+"fire" typed found the fire and the fire engine, Right moved the choice.
+Only the rows in view (and two either side) are built. The glyphs name
+Noto Color Emoji: left to the fallback, fontconfig gave half of them in
+DejaVu's outlines. Not pressed: sending one (it pastes into the window
+that has the keyboard). Seen: summoned by name on a monitor that does not
+have niri's focus, the keys went elsewhere (niri gives the keyboard to an
+exclusive layer on the focused monitor); from a keybind the cell comes on
+the focused monitor and the keys reach it.
+
 ### Surfaces that are not cells
 
 | Surface | PRD | State |
@@ -634,3 +646,6 @@ configuration with nothing of Genoma's in it:
       levers read where they act.
 - [x] Clipboard (`clipboard.luau`): history.json read; restore by
       wl-copy; drop and clear asked of Quickshell, which keeps the history.
+- [x] Emoji (`emoji.luau`): the set read once wanted, search scored as
+      Emoji.qml scores it, tones, recent ones, sending through
+      `scripts/paste`.

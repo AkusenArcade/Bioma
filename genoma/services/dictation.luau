@@ -106,7 +106,7 @@ local function clean(lines: { string }): string
     return string.match(text, "^%s*(.-)%s*$") or ""
 end
 
-local function is_terminal(app_id: string): boolean
+function M.is_terminal(app_id: string): boolean
     local id = string.lower(app_id or "")
     for _, t in config.get("capture.dictation.terminals", {}) do
         if string.lower(tostring(t)) == id then return true end
@@ -130,7 +130,7 @@ local function deliver(text: string)
     local window = g.untracked(niri.focused_window)
     paster:write(g.to_json({
         text = text,
-        terminal = is_terminal(g.untracked(niri.focused_app_id)),
+        terminal = M.is_terminal(g.untracked(niri.focused_app_id)),
         copyOnly = window == nil or not can_paste,
     }) .. "\n")
 end
