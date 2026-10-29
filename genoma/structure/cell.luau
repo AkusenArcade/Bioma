@@ -15,7 +15,9 @@
 --   interactive        whether it answers a press (default: it has a panel)
 --   on_click()         what a press does, if not opening
 --   panel              what it opens, if anything: { width(), height(),
---                      content() }, the size the panel's own, padding included
+--                      content(), satellites() }, the size the panel's own,
+--                      padding included; satellites are shapes that bud out of
+--                      the panel itself (the vitals' pods)
 --   on_key(name)       a key while it is open, Escape aside
 --   on_wheel(dx, dy)   the wheel over the cell
 --   header_title, header_mark(size), header_mark_size()
@@ -284,7 +286,7 @@ function M.new(kind: any, ctx: { [string]: any })
         -- Still drawn while it is taken back.
         function c.reach(): number return if panel_out.value then place.gap() + p.height() else 0 end
 
-        return g.capsule {
+        local panel: { [any]: any } = {
             name = c.domain .. " panel",
             role = "group",
             overlay = true,
@@ -336,6 +338,10 @@ function M.new(kind: any, ctx: { [string]: any })
                 p.content(),
             },
         }
+        if p.satellites then
+            for _, satellite in p.satellites() do table.insert(panel, satellite) end
+        end
+        return g.capsule(panel)
     end
 
     -- The header, staggered after the content leaves rather than crossed

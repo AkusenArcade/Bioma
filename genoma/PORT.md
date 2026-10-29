@@ -147,7 +147,7 @@ host, driven only by `scripts/genoma ipc`:
 |---|---|---|---|---|
 | window_title | §9.1 | 2 | 670c660 | checked 2026-10-29, awaiting Akusen and the cost |
 | workspaces | §9.3 | 2 | 7ea52ac | checked 2026-10-29, awaiting Akusen and the cost |
-| vitals | §9.2 | 2 | 30c6cc7 | contracted checked 2026-10-29; expansion to come |
+| vitals | §9.2 | 2 | 30c6cc7 | checked 2026-10-29, awaiting Akusen and the cost |
 | clock | *beyond the PRD* | 2, with the membrane | 7e62c5c | contracted checked 2026-10-29; expansion to come |
 | media | §9.4 (sinestesia) | 3 | | |
 | theme | §9.7 | 3 | | |
@@ -212,6 +212,19 @@ empty and kept an alarm running, found in the check. Not yet: the
 expansion (the pods, the process list and its sort, its filter, which
 waits for Genoma's text field), the battery's drops and bolt (on the
 laptop), performance mode's resting poses.
+
+The vitals' expansion, checked 2026-10-29 on HDMI-A-1 (an empty workspace,
+`cells/vitals_expansion.luau`, `components/choice.luau`): the list's panel
+buds out of the cell and the pods out of the panel's edge, a stagger
+apart, their content once each is at size (seen at `timing.speed` 15);
+CPU, RAM and GPU with their figures and the sort's dot; typing filters the
+list ("nir": niri alone), Down marks a row, Enter asks "Close niri?" with
+Cancel marked, Escape answers Cancel and the next closes the cell; a press
+on the CPU pod sorts by CPU. Closed, it starts again empty, as Quickshell's
+does, whose expansion is unloaded. Not yet: the shell-wide keyboard travel
+(the pods and the choices are reached by the pointer only), the matrix's
+outer pods budding out of the inner ones, the scroll bar, the window title
+naming the cell while its field has the keys.
 
 clock, contracted, checked 2026-10-29 (`genoma/cells/clock.luau`,
 `components/dial.luau`) beside Bioma on Quickshell's on DP-1, the same

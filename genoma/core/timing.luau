@@ -74,6 +74,17 @@ g.effect(function()
         full_pulse = { duration = 0.45, curve = c.in_out_quad },
         -- A mark stepping once (WorkspaceBars), small, so it may overshoot.
         shift = { duration = s.transition, curve = c.open },
+        -- Shapes budding out of a panel once it has grown, a stagger apart
+        -- (the vitals' pods, VitalsExpansion's cascade).
+        pod_1 = { duration = s.grow, delay = s.grow + s.stagger * 2, curve = c.open_flat },
+        pod_2 = { duration = s.grow, delay = s.grow + s.stagger * 3, curve = c.open_flat },
+        pod_3 = { duration = s.grow, delay = s.grow + s.stagger * 4, curve = c.open_flat },
+        pod_4 = { duration = s.grow, delay = s.grow + s.stagger * 5, curve = c.open_flat },
+        -- And each pod's content once that pod is at size.
+        pod_content_1 = { duration = s.content_fade, delay = s.grow * 2 + s.stagger * 2 },
+        pod_content_2 = { duration = s.content_fade, delay = s.grow * 2 + s.stagger * 3 },
+        pod_content_3 = { duration = s.content_fade, delay = s.grow * 2 + s.stagger * 4 },
+        pod_content_4 = { duration = s.content_fade, delay = s.grow * 2 + s.stagger * 5 },
         -- An open cell's header, two staggers after the content has gone.
         header = { duration = s.content_fade, delay = s.stagger * 2 },
         wallpaper = { duration = s.wallpaper, curve = c.in_out_quad },

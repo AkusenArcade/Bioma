@@ -7,13 +7,12 @@
 -- desktop, four where there is a battery. Conditional, it watches the worst
 -- of the vitals: the cell appears because one of them is critical.
 --
--- Not yet: the expansion (VitalsExpansion.qml: the pods on their threads,
--- the process list sorted by a domain, and its filter, which waits for
--- Genoma's text field). Until it comes the cell opens nothing, and so it
--- does not light under the pointer.
+-- Pressed, it opens its expansion (cells/vitals_expansion.luau): the pods
+-- and the machine's processes.
 local g = require("@genoma")
 local system = require("services/system_monitor")
 local vital = require("components/vital")
+local expansion = require("cells/vitals_expansion")
 
 return {
     new = function(cell: any)
@@ -32,7 +31,10 @@ return {
         local function gpu(): number return system.gpu_percent() / 100 end
         local function battery(): number return system.battery_level() end
 
+        local opened = expansion.new(cell)
         return {
+            panel = opened.panel,
+            on_key = opened.on_key,
             padding_leading = 14,
             padding_trailing = 14,
             -- The battery's load is how empty it is.
