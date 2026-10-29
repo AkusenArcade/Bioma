@@ -37,6 +37,7 @@ local visibility = require("structure/visibility")
 local focus = require("structure/focus")
 local timing = require("core/timing")
 local typography = require("core/typography")
+local thread = require("components/thread")
 
 local M = {}
 
@@ -474,6 +475,18 @@ function M.new(kind: any, ctx: { [string]: any })
                 spec.contracted(),
             },
             if has_header then header_node(place) else nil,
+            -- The thread to what it opened, from the middle of the cell's
+            -- edge, where the bud left it.
+            if c.has_panel then thread.new {
+                vertical = true,
+                overlay = true,
+                attach = if c.edge ~= "bottom" then "below-center" else "above-center",
+                present = function() return panel_out.value end,
+                length = function() return place.gap() end,
+                reversed = c.edge == "bottom",
+                shown = function() return c.open.value end,
+                timing = function() return "thread" end,
+            } else nil,
             if c.has_panel then panel_node(place) else nil,
         }
     end

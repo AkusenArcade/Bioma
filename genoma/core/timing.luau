@@ -80,6 +80,14 @@ g.effect(function()
         pod_2 = { duration = s.grow, delay = s.grow + s.stagger * 3, curve = c.open_flat },
         pod_3 = { duration = s.grow, delay = s.grow + s.stagger * 4, curve = c.open_flat },
         pod_4 = { duration = s.grow, delay = s.grow + s.stagger * 5, curve = c.open_flat },
+        -- The thread that stays once a bud has parted: drawn out as the neck
+        -- thins, and taken back first, before the shape it ties.
+        thread = { duration = s.grow, delay = s.grow, curve = c.open_flat },
+        thread_close = { duration = s.stagger * 2, curve = c.close },
+        pod_thread_1 = { duration = s.grow, delay = s.grow * 2 + s.stagger * 2, curve = c.open_flat },
+        pod_thread_2 = { duration = s.grow, delay = s.grow * 2 + s.stagger * 3, curve = c.open_flat },
+        pod_thread_3 = { duration = s.grow, delay = s.grow * 2 + s.stagger * 4, curve = c.open_flat },
+        pod_thread_4 = { duration = s.grow, delay = s.grow * 2 + s.stagger * 5, curve = c.open_flat },
         -- And each pod's content once that pod is at size.
         pod_content_1 = { duration = s.content_fade, delay = s.grow * 2 + s.stagger * 2 },
         pod_content_2 = { duration = s.content_fade, delay = s.grow * 2 + s.stagger * 3 },

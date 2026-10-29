@@ -221,7 +221,10 @@ CPU, RAM and GPU with their figures and the sort's dot; typing filters the
 list ("nir": niri alone), Down marks a row, Enter asks "Close niri?" with
 Cancel marked, Escape answers Cancel and the next closes the cell; a press
 on the CPU pod sorts by CPU. Closed, it starts again empty, as Quickshell's
-does, whose expansion is unloaded. Not yet: the shell-wide keyboard travel
+does, whose expansion is unloaded. The threads stay once the buds have
+parted (Akusen, 2026-10-29): from the cell to its panel (every cell with
+one, the workspaces' too) and from each pod to the panel's edge, a node on
+each rim. Not yet: the shell-wide keyboard travel
 (the pods and the choices are reached by the pointer only), the matrix's
 outer pods budding out of the inner ones, the scroll bar, the window title
 naming the cell while its field has the keys.

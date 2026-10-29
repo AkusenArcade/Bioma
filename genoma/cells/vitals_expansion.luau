@@ -28,6 +28,7 @@ local system = require("services/system_monitor")
 local vital = require("components/vital")
 local field = require("components/field")
 local choice = require("components/choice")
+local thread = require("components/thread")
 
 local M = {}
 
@@ -282,6 +283,17 @@ function M.new(cell: any)
             -- The indicators double as the sort control.
             on_click = function() sort.value = key end,
             transition = { growth = curve, bud = curve, offset_x = curve },
+            -- The thread to the shape it hangs off, drawn out of that shape:
+            -- the panel, or in the matrix's outer column the inner pod.
+            thread.new {
+                vertical = false,
+                overlay = true,
+                attach = "right",
+                length = gap,
+                reversed = true,
+                shown = function() return cell.open.value end,
+                timing = function() return "pod_thread_" .. math.clamp(order(), 1, 4) end,
+            },
             -- The matrix reads top to bottom: the indicator above its
             -- figures, the name at the foot.
             g.box {
