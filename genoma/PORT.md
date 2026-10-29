@@ -167,7 +167,7 @@ host, driven only by `scripts/genoma ipc`:
 | audio | §9.5 | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | connectivity | §9.11 | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | system | §9.8 (session menu) | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
-| dock | §9.9 | 4 | | |
+| dock | §9.9 | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | tray | *beyond the PRD* | 4 | | |
 | actions | *beyond the PRD* | 4 | | |
 | clipboard | *beyond the PRD* | 4 | | |
@@ -395,6 +395,15 @@ profile, a new picture (through the portal, the cell stepping aside).
 Session actions run through `setsid -f`: a lock screen that died with
 the shell's next reload would unlock the session. Genoma's power domain
 gained `degraded`, the reason performance is held back.
+
+dock, checked 2026-10-29 on HDMI-A-1 (`cells/dock.luau`): set above
+Quickshell's on the same monitor, the same kept icons in his order, the
+rings on what runs, the hairline before what is open and not kept. The
+name came under the icon the pointer was on; zen dragged two places
+along the row (growing while held, the others making room) was written
+in its new place and dragged back. Not pressed, for moving his windows:
+a press (focus, the next window), the middle button (another one), the
+right one (keep, let go). Not yet: a long press on a touch screen.
 
 ### Surfaces that are not cells
 
