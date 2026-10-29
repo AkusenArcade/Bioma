@@ -13,4 +13,11 @@ if [ -z "$bin" ] || [ ! -x "$bin" ]; then
     echo "genoma: no runtime; set GENOMA_BIN to Genoma's build (…/Genoma/target/release/genoma)" >&2
     exit 1
 fi
+# Calls reach it on its own socket, not on another Genoma interface's:
+#   scripts/genoma ipc cell toggle <domain> [output]
+export GENOMA_IPC="${GENOMA_IPC:-bioma}"
+if [ "${1:-}" = ipc ]; then
+    shift
+    exec "$bin" ipc "$@"
+fi
 exec "$bin" "$here/genoma" "$@"

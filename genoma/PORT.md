@@ -80,17 +80,27 @@ Checked 2026-10-28 (`BIOMA_GENOMA_CHECK=1 scripts/genoma`):
 - `config.set_many` changed `appearance.gap` and added one key, and left
   the other 1,282 lines of the override as they were.
 - At rest, 20 s: no thread woke.
-- [ ] Structure: membrane, tissue, cell, the registry, visibility types,
-      expansion by budding (Akusen, 2026-10-28), the input surface.
-      Membrane, tissue, cell, visibility, focus, the input surface and the
-      expansion by budding are in `genoma/structure/` (from
-      `structure/*.qml` and `core/Focus.qml` at 5e5ff60); floating tissues,
-      invocation and keyboard travel inside an open cell are not yet.
-      Still to come with other steps: the panel hangs from the strip's edge
-      until niri's `gaps` and struts arrive with the niri service (step 3);
-      it casts no shadow until Genoma has a soft shadow; its content fades
-      but does not grow from its centre; the input surface stays mapped
-      for the whole session, transparent.
+- [x] Structure: membrane, tissue, cell, the registry, visibility types,
+      expansion by budding (Akusen, 2026-10-28), the input surface,
+      floating tissues, the host, and invocation by name.
+      (`genoma/structure/`, from `structure/*.qml` and `core/Focus.qml` at
+      5e5ff60.) A floating block takes `"runtime": "genoma"` as a membrane
+      does; a keybind reaches a cell with
+      `scripts/genoma ipc cell toggle <domain> [output]` (`close`, `list`),
+      on the output the keyboard is on unless it names one.
+      Still to come, each with what it needs:
+      - the panel hangs from the strip's edge until niri's `gaps` and
+        struts arrive with the niri service (step 3);
+      - no shadow, on panels or floating tissues, until Genoma has a soft
+        shadow; a panel's content fades but does not grow from its centre;
+        a summoned cell fades in rather than growing into place;
+      - `"anchor": "pointer"` and cells that come to the pointer, which need
+        the pointer's position; a floating tissue holding its place while
+        the pointer is on what it opened;
+      - keyboard travel inside an open cell (arrows, Tab, Enter), with the
+        first cell that has something to travel through;
+      - the input surface and the hosts stay mapped for the whole session,
+        transparent: Genoma cannot yet unmap a surface with nothing in it.
 
 Checked 2026-10-28, a probe membrane on HDMI-A-1 (`cells/probe.luau`,
 three tissues at 25/30/25 %, the geometry logged from Luau):
@@ -118,6 +128,20 @@ Checked 2026-10-29, probes with a panel on the same membrane:
   cell and both let the keyboard go.
 - A conditional cell appearing fades in at its place; it used to slide
   there from the tissue's start.
+
+Checked 2026-10-29, a floating block (bottom-right, vertical) and the
+host, driven only by `scripts/genoma ipc`:
+- The floating tissue sat above the bottom strip at the right margin; a
+  cell in it with `"visibility": { "type": "invoked" }` appeared on
+  `cell toggle probe HDMI-A-1`, holding the keyboard, and left on the
+  second call, letting it go.
+- A domain placed nowhere was summoned into the middle of HDMI-A-1 by its
+  host and left on the second call; once gone it was no longer in the
+  register.
+- Escape, from an empty workspace, sent off both the summoned cell and
+  the invoked one.
+- An unknown target or domain is answered, not ignored (`no target`,
+  `no invocable cell`); a save in `structure/` reloads the interface.
 
 ### Cells
 

@@ -135,9 +135,12 @@ function M.new(kind: any, ctx: { [string]: any })
         if open then focus.opened(c) else focus.released(c) end
     end)
 
-    -- A cell that goes while it is open closes on the way out.
+    -- A cell that goes while it is open closes on the way out, and one that
+    -- held the attention gives it back.
     g.watch(function() return c.shown() end, function(shown: boolean)
-        if not shown and c.open.value then c.open.value = false end
+        if shown then return end
+        if c.open.value then c.open.value = false end
+        focus.released(c)
     end)
 
     -- Who keeps their place when the tissue runs short: an open cell, then
@@ -151,6 +154,10 @@ function M.new(kind: any, ctx: { [string]: any })
     -- ---- Surfaces -----------------------------------------------------------
 
     c.has_panel = spec.panel ~= nil
+
+    -- How far what it opened reaches past it on the side it opens, while
+    -- it is out: a floating tissue is centred on all of it.
+    function c.reach(): number return 0 end
     local interactive = if spec.interactive ~= nil then spec.interactive else c.has_panel
 
     -- A cell that answers the pointer says so before it is pressed, in the
@@ -178,6 +185,7 @@ function M.new(kind: any, ctx: { [string]: any })
 
         -- Still drawn while it is taken back.
         local out = g.signal(false)
+        function c.reach(): number return if out.value then place.gap() + p.height() else 0 end
         g.watch(function() return c.open.value end, function(open: boolean)
             if open then
                 out.value = true
@@ -284,7 +292,7 @@ function M.new(kind: any, ctx: { [string]: any })
             on_hover = function(on: boolean) c.hovered.value = on end,
             -- While it is open it has the attention: a press on anything but
             -- itself and what it opened closes it, and so does Escape.
-            catch = function() return c.open.value end,
+            catch = function() return c.open.value or focus.is(c) end,
             on_outside = function() focus.dismiss() end,
             on_key = function(name: string) focus.key(name) end,
             on_click = function()

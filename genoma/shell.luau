@@ -10,7 +10,10 @@ local metrics = require("core/metrics")
 local typography = require("core/typography")
 
 local membrane = require("structure/membrane")
+local float = require("structure/float")
+local focus = require("structure/focus")
 local input_surface = require("structure/input_surface")
+local registry = require("cells/registry")
 
 -- Which outputs a block belongs to: a name, `all`, or `primary` (the output
 -- niri focuses at start; until the Monitors service is ported, $BIOMA_PRIMARY
@@ -53,10 +56,42 @@ for i, entry in config.get("membranes", {}) do
         })
     end
 end
-print(string.format("Bioma on Genoma: %d membranes", #surfaces))
+local membranes = #surfaces
 
--- While a cell is open, a press on any other monitor closes it.
+-- The tissues with no edge, declared in `floating` the same way.
+for i, entry in config.get("floating", {}) do
+    if entry.runtime == "genoma" then
+        local index = i
+        local function block() return config.get("floating", {})[index] or entry end
+        table.insert(surfaces, g.surface {
+            full = true,
+            anchor = { "top", "bottom", "left", "right" },
+            outputs = outputs_of(entry),
+            reserve = false,
+            namespace = "bioma-float",
+            function(output: string, size: any)
+                return float.new(block, output, size or { width = 1920, height = 1080 })
+            end,
+        })
+    end
+end
+print(string.format("Bioma on Genoma: %d membranes, %d floating", membranes, #surfaces - membranes))
+
 if #surfaces > 0 then
+    -- Where a cell with no place of its own appears when it is asked for:
+    -- the middle of each monitor, empty until then.
+    table.insert(surfaces, g.surface {
+        full = true,
+        anchor = { "top", "bottom", "left", "right" },
+        outputs = "all",
+        reserve = false,
+        namespace = "bioma-float",
+        function(output: string, size: any)
+            return float.host(output, size or { width = 1920, height = 1080 })
+        end,
+    })
+
+    -- While a cell is open, a press on any other monitor closes it.
     table.insert(surfaces, g.surface {
         full = true,
         anchor = { "top", "bottom", "left", "right" },
@@ -68,6 +103,30 @@ if #surfaces > 0 then
         end,
     })
 end
+
+-- Being asked for: `scripts/genoma ipc cell toggle <domain> [output]`. The
+-- output the keyboard is on is the one meant, unless the call names one. An
+-- old name still reaches the cell it became.
+local niri = require("@genoma/niri")
+local function meant(output: string?): string?
+    if output and output ~= "" then return output end
+    return niri.focused_output
+end
+g.ipc("cell", {
+    toggle = function(domain: string, output: string?): string
+        domain = registry.canonical(domain or "")
+        return if focus.invoke(domain, meant(output)) then "toggled " .. domain
+            else 'no invocable cell "' .. domain .. '"'
+    end,
+    close = function(domain: string, output: string?): string
+        domain = registry.canonical(domain or "")
+        return if focus.retire(domain, meant(output)) then "closed " .. domain
+            else 'no invocable cell "' .. domain .. '"'
+    end,
+    -- Everything that answers to a name, for a keybind file to be written
+    -- against rather than guessed at.
+    list = function(): string return table.concat(focus.domains(), "\n") end,
+})
 
 -- BIOMA_GENOMA_CHECK=1: the core's values, to set beside the QML's and the
 -- token set's, and the theme's transit as it happens.

@@ -20,7 +20,8 @@ local M = {}
 local HUGE = math.huge
 
 -- `ctx`: block(), metrics(), output, edge, output_width(), anchor_side(),
--- slot_length(), padding(), fill_opacity(), horizontal(), window_line().
+-- slot_length(), padding(), fill_opacity(), horizontal(), window_line(),
+-- and `floating` for a tissue with no membrane.
 function M.new(ctx: { [string]: any })
     local t: { [string]: any } = {}
     t.anchor_side = ctx.anchor_side
@@ -150,6 +151,13 @@ function M.new(ctx: { [string]: any })
     function t.width(): number return if ctx.horizontal() then t.length() else t.thickness() end
     function t.height(): number return if ctx.horizontal() then t.thickness() else t.length() end
 
+    -- How far its open cells reach past it.
+    function t.reach(): number
+        local out = 0
+        for _, c in t.cells do out = math.max(out, c.reach()) end
+        return out
+    end
+
     -- A tissue with nothing to show is not an empty tray.
     function t.visible(): boolean return t.content_length() > 0 end
 
@@ -175,6 +183,9 @@ function M.new(ctx: { [string]: any })
     -- that same line whatever its cell's height.
     local opens_away = ctx.edge == "top" or ctx.edge == "left"
     local function origin_gap(position: { [string]: any }): number
+        -- A floating tissue hangs from nothing: the gap between the shapes
+        -- of one open cell.
+        if ctx.floating then return ctx.metrics().gap end
         local y = position.y()
         local outer = if opens_away then y + ctx.padding() + ctx.metrics().cell_height else y + ctx.padding()
         return math.max(0, if opens_away then ctx.window_line() - outer else outer - ctx.window_line())

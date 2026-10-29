@@ -14,6 +14,11 @@ function M.canonical(kind: string): string
     return M.aliases[kind] or kind
 end
 
+-- The cells written on Genoma so far, every one of which answers to its
+-- name; and those that are the engine's own, never offered to a keybind.
+M.ported = {} :: { string }
+M.internal = { probe = true }
+
 -- Each key a block leaves out is the domain's (Registry.widthOf).
 M.widths = {
     window_title = { elastic = true, max_percent = 28 },
