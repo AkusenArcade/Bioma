@@ -21,6 +21,7 @@
 local g = require("@genoma")
 local clock = require("@genoma/clock")
 local theme = require("core/theme")
+local performance = require("core/performance")
 local colour = require("core/colour")
 local typography = require("core/typography")
 local metrics_mod = require("core/metrics")
@@ -1049,7 +1050,7 @@ function M.new(cell: any, twenty_four: () -> boolean)
             end,
             growth = function() return if cell.open.value then 1 else 0 end,
             bud = function() return if cell.open.value then 0 else m().cell_height end,
-            blur = true,
+            blur = performance.blurred,
             fill = function() return colour.alpha(theme.cell(), 0.72) end,
             rim_top = theme.rim,
             rim_bottom = theme.line,
@@ -1086,7 +1087,7 @@ function M.new(cell: any, twenty_four: () -> boolean)
             end,
             growth = function() return if shown() then 1 else 0 end,
             bud = function() return if shown() then 0 else m().cell_height end,
-            blur = true,
+            blur = performance.blurred,
             fill = function() return colour.alpha(theme.cell(), 0.72) end,
             rim_top = theme.rim,
             rim_bottom = theme.line,

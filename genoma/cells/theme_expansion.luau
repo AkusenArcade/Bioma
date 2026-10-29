@@ -19,6 +19,7 @@
 -- niri refused.
 local g = require("@genoma")
 local colour = require("core/colour")
+local performance = require("core/performance")
 local config = require("core/config")
 local metrics_mod = require("core/metrics")
 local theme = require("core/theme")
@@ -548,7 +549,7 @@ function M.new(cell: any): any
         node.overlay = true
         node.growth = function() return if shown() then 1 else 0 end
         node.bud = function() return if shown() then 0 else m().cell_height end
-        node.blur = true
+        node.blur = performance.blurred
         node.fill = function() return colour.alpha(theme.cell(), config.get("cell.opacity", 0.72)) end
         node.rim_top = theme.rim
         node.rim_bottom = theme.line
@@ -953,7 +954,7 @@ function M.new(cell: any): any
         radius = function() return m().radius_well end,
         growth = function() return if list_growing() then 1 else 0 end,
         transition = { growth = function() return if list_growing() then "grow" else "close" end },
-        blur = true,
+        blur = performance.blurred,
         fill = function() return colour.alpha(theme.cell(), config.get("cell.opacity", 0.72)) end,
         rim_top = theme.rim,
         rim_bottom = theme.line,
