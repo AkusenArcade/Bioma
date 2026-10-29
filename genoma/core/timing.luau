@@ -40,6 +40,9 @@ local scaled = { stagger = 16, debounce = 180, auto_hide = 500, notification = 5
 local fixed = {
     locate = 120, pair = 2000, search = 150, pulse = 120, settle = 3000, overview_settle = 800,
     blur_settle = 400, osd = 1500, hush = 1000, fling = 80,
+    -- A particle's travel along a thread: its rate is the value, this only
+    -- how long one takes to cross.
+    flow = 600,
 }
 
 g.effect(function()

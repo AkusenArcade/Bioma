@@ -224,7 +224,11 @@ on the CPU pod sorts by CPU. Closed, it starts again empty, as Quickshell's
 does, whose expansion is unloaded. The threads stay once the buds have
 parted (Akusen, 2026-10-29): from the cell to its panel (every cell with
 one, the workspaces' too) and from each pod to the panel's edge, a node on
-each rim. Not yet: the shell-wide keyboard travel
+each rim. Along the thread of the domain the list is sorted by, particles
+flow out of the pod into the list, as many a second as that domain's load
+(eight at full load; the battery's from the watts going in, as Vital.qml's
+drops), in its state colour, and none at zero (Akusen's idea, 2026-10-29,
+beyond Quickshell's). Not yet: the shell-wide keyboard travel
 (the pods and the choices are reached by the pointer only), the matrix's
 outer pods budding out of the inner ones, the scroll bar, the window title
 naming the cell while its field has the keys.

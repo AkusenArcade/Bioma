@@ -88,6 +88,19 @@ function M.new(cell: any)
     end
     -- The figure the domain is measured by, and under it the one that says
     -- why: a clock, a quantity of memory, a time.
+    -- What flows along the sorted domain's thread, particles a second: the
+    -- list draws its order from that domain, and the flow says how hard it
+    -- is working (Akusen, 2026-10-29). At idle it is sparse, and at zero
+    -- still: nothing moves without a value. The battery's is the watts
+    -- going in, as Vital.qml's drops are.
+    local function flow_of(key: string): number
+        if key == "battery" then
+            local w = system.battery_inflow()
+            return if w > 0.5 then math.clamp(w / 20, 0.3, 2.5) else 0
+        end
+        return load_of(key) * 8
+    end
+
     local function reading_of(key: string): string
         if key == "battery" then return string.format("%d%%", math.round(system.battery_level() * 100)) end
         return string.format("%d%%", math.round(load_of(key) * 100))
@@ -293,6 +306,28 @@ function M.new(cell: any)
                 reversed = true,
                 shown = function() return cell.open.value end,
                 timing = function() return "pod_thread_" .. math.clamp(order(), 1, 4) end,
+            },
+            -- Out of the pod and into the list, while the list is sorted by
+            -- this domain.
+            g.emitter {
+                overlay = true,
+                attach = "right",
+                width = gap,
+                height = function() return metrics_mod.node_size * 2 end,
+                from_x = 0,
+                from_y = metrics_mod.node_size,
+                to_x = gap,
+                to_y = metrics_mod.node_size,
+                bend_x = function() return gap() / 2 end,
+                bend_y = metrics_mod.node_size,
+                rate = function()
+                    if not cell.open.value or sort.value ~= key then return 0 end
+                    return flow_of(key)
+                end,
+                lifetime = function() return require("core/timing").seconds.flow end,
+                spread = 0,
+                particle_size = function() return metrics_mod.node_size * 1.2 end,
+                fill = function() return theme.state_for(load_of(key)) end,
             },
             -- The matrix reads top to bottom: the indicator above its
             -- figures, the name at the foot.
