@@ -174,7 +174,7 @@ host, driven only by `scripts/genoma ipc`:
 | download | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | drives | *beyond the PRD* | 4 | | |
 | emoji | *beyond the PRD* | 4 | | |
-| keyboard | *beyond the PRD* | 4 | | |
+| keyboard | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | performance | *beyond the PRD* | 4 | | |
 | polkit | *beyond the PRD* | 4 | | |
 | privacy | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
@@ -444,6 +444,12 @@ the way, in the structure: a click on the empty part of an open panel
 cell; panels and their satellites now take the click as they took the
 press.
 
+keyboard, checked 2026-10-29 on HDMI-A-1 (`cells/keyboard.luau`, service
+`keyboard`): called up, the one layout niri has loaded, marked; "ital"
+typed turned the list into the catalogue (Italian first, then the names
+that start with it) and Down chose the next. Not done, for they rewrite
+his niri configuration: adding, removing, switching.
+
 ### Surfaces that are not cells
 
 | Surface | PRD | State |
@@ -586,3 +592,6 @@ configuration with nothing of Genoma's in it:
 - [x] Privacy (`privacy.luau`): captures from PipeWire's links (Genoma's
       audio domain, video nodes included), cameras by `scripts/cameras`
       believed after a moment, screens from niri's casts.
+- [x] Keyboard (`keyboard.luau`): the layouts niri loaded and the one on,
+      the catalogue by `scripts/xkb`, the list written as a niri include
+      by `scripts/niri-include` when changed here.

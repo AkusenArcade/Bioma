@@ -23,6 +23,8 @@ local focused_id = g.signal(-1)
 local overview = g.signal(false)
 local keyboard_layout = g.signal("")
 local layout_names: { string } = {}
+-- The same names, for who follows them (the keyboard cell's list).
+local layout_list = g.signal({})
 -- The screen being captured: niri's screencasts by stream id, as it reports
 -- them (`target`, `is_active`, the consumer's `pid` or `pw_node_id`).
 local casts = g.signal({})
@@ -173,6 +175,7 @@ local handlers: { [string]: (any) -> () } = {
     KeyboardLayoutsChanged = function(data)
         local layouts_info = data.keyboard_layouts or {}
         layout_names = layouts_info.names or {}
+        layout_list.value = layout_names
         keyboard_layout.value = layout_names[(layouts_info.current_idx or 0) + 1] or ""
     end,
     KeyboardLayoutSwitched = function(data)
@@ -310,6 +313,7 @@ end
 function M.layout_for(id: number): any return layouts.value[id] end
 function M.overview_open(): boolean return overview.value end
 function M.keyboard_layout(): string return keyboard_layout.value end
+function M.layout_names(): { string } return layout_list.value end
 function M.casts(): { [any]: any } return casts.value end
 
 -- A screenshot niri took itself, with the path it was saved to, if it was.
@@ -389,6 +393,7 @@ local function action(...: string)
 end
 
 function M.focus_window(id: number) action("focus-window", "--id", tostring(id)) end
+function M.switch_layout(target: string) action("switch-layout", target) end
 function M.close_window() action("close-window") end
 function M.focus_workspace(reference: any) action("focus-workspace", tostring(reference)) end
 function M.move_window_to_workspace(reference: any) action("move-column-to-workspace", tostring(reference)) end
