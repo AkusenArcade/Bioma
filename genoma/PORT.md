@@ -148,7 +148,7 @@ host, driven only by `scripts/genoma ipc`:
 | window_title | §9.1 | 2 | 670c660 | checked 2026-10-29, awaiting Akusen and the cost |
 | workspaces | §9.3 | 2 | 7ea52ac | checked 2026-10-29, awaiting Akusen and the cost |
 | vitals | §9.2 | 2 | 30c6cc7 | contracted checked 2026-10-29; expansion to come |
-| clock | *beyond the PRD* | 2, with the membrane | | |
+| clock | *beyond the PRD* | 2, with the membrane | 7e62c5c | contracted checked 2026-10-29; expansion to come |
 | media | §9.4 (sinestesia) | 3 | | |
 | theme | §9.7 | 3 | | |
 | utility | §9.6 | 3 | | |
@@ -212,6 +212,14 @@ empty and kept an alarm running, found in the check. Not yet: the
 expansion (the pods, the process list and its sort, its filter, which
 waits for Genoma's text field), the battery's drops and bolt (on the
 laptop), performance mode's resting poses.
+
+clock, contracted, checked 2026-10-29 (`genoma/cells/clock.luau`,
+`components/dial.luau`) beside Bioma on Quickshell's on DP-1, the same
+block: the cell the same to the pixel but for the text's antialiasing (Qt's
+against cosmic-text's, as in M2) and the second hand's place between the
+two captures. Not yet: the expansion (the month, other places, the timer
+and the alarm, the day's appointments), whose fields wait for Genoma's
+text field.
 
 ### Surfaces that are not cells
 
