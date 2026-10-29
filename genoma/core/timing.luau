@@ -101,6 +101,8 @@ g.effect(function()
         -- shape that holds something): the content leaves in half its
         -- entering time, so the whole still closes quickly.
         content_leave = { duration = s.content_fade / 2 },
+        -- A cell's content back at rest once its header has left.
+        content_return = { duration = s.content_fade, delay = s.content_fade / 2 },
         retract = { duration = s.close, delay = s.content_fade / 2, curve = c.close },
         thread_close = { duration = s.stagger * 2, delay = s.content_fade / 2, curve = c.close },
         -- And the shapes go in the order opposite to the one they came in

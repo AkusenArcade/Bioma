@@ -635,9 +635,19 @@ Item {
         // What the content asks for, so the cell can be as wide as its job.
         implicitWidth: childrenRect.width
         // Never clipped, or the rim goes with it: long text ellipsises itself.
-        opacity: root.open && (root.replacesContent || root.showsHeader) ? 0 : 1
+        // Away for as long as the header is there, closing included: the
+        // header waits for the composition to go, and content back before
+        // it went crossed it (Akusen, 2026-10-29). It returns once the
+        // header has left.
+        readonly property bool away: (root.open && root.replacesContent) || root.showsHeader
+        opacity: contractedSlot.away ? 0 : 1
 
-        Behavior on opacity { NumberAnimation { duration: Timing.contentFade } }
+        Behavior on opacity {
+            SequentialAnimation {
+                PauseAnimation { duration: contractedSlot.away ? 0 : Timing.contentFade / 2 }
+                NumberAnimation { duration: Timing.contentFade }
+            }
+        }
     }
 
     // The outgoing and the incoming are staggered rather than crossfaded: two
@@ -649,10 +659,12 @@ Item {
         opacity: root.showsHeader ? 1 : 0
         visible: opacity > 0
 
+        // In after the content has left; out at once, before the content
+        // comes back.
         Behavior on opacity {
             SequentialAnimation {
-                PauseAnimation { duration: Timing.stagger * 2 }
-                NumberAnimation { duration: Timing.contentFade }
+                PauseAnimation { duration: root.showsHeader ? Timing.stagger * 2 : 0 }
+                NumberAnimation { duration: root.showsHeader ? Timing.contentFade : Timing.contentFade / 2 }
             }
         }
 

@@ -375,7 +375,9 @@ function M.new(kind: any, ctx: { [string]: any })
             height = function() return c.contracted_height() end,
             present = c.shows_header,
             opacity = function() return if c.shows_header() then 1 else 0 end,
-            transition = { opacity = "header" },
+            -- In after the content has left; out at once, before the content
+            -- comes back, so the two never cross (Akusen, 2026-10-29).
+            transition = { opacity = function() return if c.shows_header() then "header" else "content_leave" end },
         }
         if spec.header_mark then table.insert(header, g.box {
                 overlay = true,
@@ -486,9 +488,15 @@ function M.new(kind: any, ctx: { [string]: any })
                 direction = "row",
                 align = "center",
                 justify = "start",
-                opacity = function() return if c.open.value and c.shows_header() then 0 else 1 end,
+                -- Away for as long as the header is there, closing included:
+                -- the header waits for the composition to go, and content
+                -- back before it went crossed it.
+                opacity = function() return if c.shows_header() then 0 else 1 end,
                 -- One table: a second `transition` key would replace the first.
-                transition = { width = "reflow", opacity = "content_fade" },
+                transition = {
+                    width = "reflow",
+                    opacity = function() return if c.shows_header() then "content_fade" else "content_return" end,
+                },
                 spec.contracted(),
             },
         }
