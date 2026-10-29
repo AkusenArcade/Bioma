@@ -255,4 +255,48 @@ function M.looks()
     end)
 end
 
+-- A still of one output, its text, three seconds of it recorded and
+-- discarded: what can be checked with nobody picking or speaking. The
+-- output is $BIOMA_CHECK_OUTPUT (HDMI-A-1 by default).
+function M.capture()
+    local capture = require("services/capture")
+    local dictation = require("services/dictation")
+    local output = g.env("BIOMA_CHECK_OUTPUT") or "HDMI-A-1"
+    print("check capture folder " .. capture.folder() .. ", videos " .. capture.video_folder())
+    print("check capture encode 101x51 at 1.5: " .. capture.encode_resolution("0,0 101x51", 1.5)
+        .. ", at 1: " .. capture.encode_resolution("0,0 101x51", 1))
+    g.effect(function()
+        print(string.format("check capture busy %s recording %s elapsed %d pending %q error %q",
+            tostring(capture.busy()), tostring(capture.recording()), capture.elapsed(), capture.pending_video(),
+            capture.last_error()))
+    end)
+    g.effect(function()
+        print(string.format("check dictation %s available %s level %.2f elapsed %d",
+            dictation.state(), tostring(dictation.available()), dictation.level(), dictation.elapsed()))
+    end)
+    capture.on("captured", function(path) print("check capture captured " .. path) end)
+    capture.on("recognised", function(text) print(string.format("check capture recognised %d chars: %q", #text, string.sub(text, 1, 60))) end)
+    capture.on("second", function(n) print("check capture second " .. n) end)
+    capture.on("failed", function(reason) print("check capture failed " .. reason) end)
+    g.after(2, function()
+        print("check capture region of " .. output .. ": " .. capture.output_region(output))
+        capture.capture_output(output)
+    end)
+    g.after(4, function() capture.recognise_region(capture.output_region(output)) end)
+    g.after(8, function() capture.record_output(output) end)
+    g.after(11.5, function() capture.stop_recording() end)
+    g.after(13, function()
+        local file = capture.pending_video()
+        g.process {
+            command = { "sh", "-c", 'ffprobe -v error -show_entries format=duration -of csv=p=0 "$1" 2>&1', "probe", file },
+            on_line = function(line) print("check capture recorded " .. file .. " lasts " .. line) end,
+            on_exit = function() capture.discard_recording() end,
+        }
+    end)
+    if g.env("BIOMA_CHECK_LISTEN") then
+        g.after(15, function() dictation.start() end)
+        g.after(18, function() dictation.cancel() end)
+    end
+end
+
 return M
