@@ -86,7 +86,13 @@ g.effect(function()
         -- The thread that stays once a bud has parted: drawn out as the neck
         -- thins, and taken back first, before the shape it ties.
         thread = { duration = s.grow, delay = s.grow, curve = c.open_flat },
-        thread_close = { duration = s.stagger * 2, curve = c.close },
+        -- Closing, the content goes first and the shape only once it has
+        -- gone (STYLE_GUIDE §6; Akusen, 2026-10-29, as a rule for every
+        -- shape that holds something): the content leaves in half its
+        -- entering time, so the whole still closes quickly.
+        content_leave = { duration = s.content_fade / 2 },
+        retract = { duration = s.close, delay = s.content_fade / 2, curve = c.close },
+        thread_close = { duration = s.stagger * 2, delay = s.content_fade / 2, curve = c.close },
         pod_thread_1 = { duration = s.grow, delay = s.grow * 2 + s.stagger * 2, curve = c.open_flat },
         pod_thread_2 = { duration = s.grow, delay = s.grow * 2 + s.stagger * 3, curve = c.open_flat },
         pod_thread_3 = { duration = s.grow, delay = s.grow * 2 + s.stagger * 4, curve = c.open_flat },
@@ -105,6 +111,9 @@ g.effect(function()
         instant = { duration = 0 },
     }
 end)
+
+-- How long a shape with content takes to be gone once it starts closing.
+function M.retracted(): number return M.seconds.content_fade / 2 + M.seconds.close end
 
 -- When the thread of the i-th shape budding out of a panel is drawn whole:
 -- its pod_thread_i entry's delay and duration. What travels along a thread

@@ -1035,7 +1035,7 @@ function M.new(cell: any, twenty_four: () -> boolean)
 
     local function side(attach: string, content: () -> any): any
         local left = attach == "left"
-        local function curve(): string return if cell.open.value then "pod_1" else "close" end
+        local function curve(): string return if cell.open.value then "pod_1" else "retract" end
         return g.capsule {
             overlay = true,
             attach = attach,
@@ -1059,7 +1059,7 @@ function M.new(cell: any, twenty_four: () -> boolean)
             transition = { growth = curve, bud = curve, offset_x = curve },
             g.box {
                 opacity = function() return if cell.open.value then 1 else 0 end,
-                transition = { opacity = function() return if cell.open.value then "pod_content_1" else "content_fade" end },
+                transition = { opacity = function() return if cell.open.value then "pod_content_1" else "content_leave" end },
                 content(),
             },
         }
@@ -1071,7 +1071,7 @@ function M.new(cell: any, twenty_four: () -> boolean)
     local function below(content: () -> any): any
         local down = cell.edge ~= "bottom"
         local function shown(): boolean return cell.open.value and agenda_shown() end
-        local function curve(): string return if shown() then "pod_1" else "close" end
+        local function curve(): string return if shown() then "pod_1" else "retract" end
         return g.capsule {
             overlay = true,
             attach = if down then "below-center" else "above-center",
@@ -1095,7 +1095,7 @@ function M.new(cell: any, twenty_four: () -> boolean)
             transition = { growth = curve, bud = curve, offset_y = curve },
             g.box {
                 opacity = function() return if shown() then 1 else 0 end,
-                transition = { opacity = function() return if shown() then "pod_content_1" else "content_fade" end },
+                transition = { opacity = function() return if shown() then "pod_content_1" else "content_leave" end },
                 content(),
             },
         }

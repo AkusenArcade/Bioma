@@ -127,18 +127,28 @@ function M.new(cell: any)
 
     -- The process list is the one sample that costs something: taken only
     -- while it is looked at, and everything let go when the cell closes.
+    -- What it shows stays until the shape that holds it is gone: the content
+    -- fades with it rather than emptying under it.
+    local letting_go: any = nil
     g.watch(function() return cell.open.value end, function(open: boolean)
-        system.set_list_processes(open)
-        -- Closed, it starts again empty, as Quickshell's, whose expansion
-        -- is unloaded.
-        if not open then
+        if letting_go then letting_go:stop() end
+        letting_go = nil
+        if open then
+            system.set_list_processes(true)
+            return
+        end
+        letting_go = g.after(require("core/timing").retracted(), function()
+            letting_go = nil
+            system.set_list_processes(false)
+            -- Closed, it starts again empty, as Quickshell's, whose expansion
+            -- is unloaded.
             g.batch(function()
                 pending.value = -1
                 marked.value = 0
                 scroll.value = 0
                 if filter_field then filter_field.set("") end
             end)
-        end
+        end)
     end)
 
     -- Sorted here rather than by running `ps` again: a change of order is a
@@ -242,7 +252,7 @@ function M.new(cell: any)
         local function column(): number return column_of(key) end
         local function row(): number return row_of(key) end
         local function curve(): string
-            return if cell.open.value then "pod_" .. math.clamp(order(), 1, 4) else "close"
+            return if cell.open.value then "pod_" .. math.clamp(order(), 1, 4) else "retract"
         end
         local horizontal = {
             present = function() return not matrix() end,
@@ -313,7 +323,7 @@ function M.new(cell: any)
                 opacity = function() return if cell.open.value then 1 else 0 end,
                 transition = {
                     opacity = function()
-                        return if cell.open.value then "pod_content_" .. math.clamp(order(), 1, 4) else "content_fade"
+                        return if cell.open.value then "pod_content_" .. math.clamp(order(), 1, 4) else "content_leave"
                     end,
                 },
                 g.box(horizontal) :: any,

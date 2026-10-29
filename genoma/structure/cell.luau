@@ -139,7 +139,7 @@ function M.new(kind: any, ctx: { [string]: any })
             if open then
                 panel_out.value = true
             else
-                g.after(timing.seconds.close, function()
+                g.after(timing.retracted(), function()
                     if not g.untracked(function() return c.open.value end) then panel_out.value = false end
                 end)
             end
@@ -282,7 +282,7 @@ function M.new(kind: any, ctx: { [string]: any })
         local p = spec.panel
         local down = c.edge ~= "bottom"
         local function pad(): number return 10 * c.metrics().factor end
-        local function curve(): string return if c.open.value then "bud" else "close" end
+        local function curve(): string return if c.open.value then "bud" else "retract" end
 
         -- Still drawn while it is taken back.
         function c.reach(): number return if panel_out.value then place.gap() + p.height() else 0 end
@@ -334,7 +334,7 @@ function M.new(kind: any, ctx: { [string]: any })
                 justify = "center",
                 opacity = function() return if c.open.value then 1 else 0 end,
                 transition = {
-                    opacity = function() return if c.open.value then "content_enter" else "content_fade" end,
+                    opacity = function() return if c.open.value then "content_enter" else "content_leave" end,
                 },
                 p.content(),
             },
