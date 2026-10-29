@@ -106,6 +106,14 @@ g.effect(function()
     }
 end)
 
+-- When the thread of the i-th shape budding out of a panel is drawn whole:
+-- its pod_thread_i entry's delay and duration. What travels along a thread
+-- starts then, on a connection that is there.
+function M.thread_done(i: number): number
+    local s = M.seconds
+    return s.grow * 2 + s.stagger * (1 + math.clamp(i, 1, 4)) + s.grow
+end
+
 -- A staggered entrance as a fraction per shape: `cascade` runs 0 to 1 over
 -- the whole opening, each shape starts one stagger after the one before,
 -- and each grows over `grow`. The span holds every phase, so it depends on

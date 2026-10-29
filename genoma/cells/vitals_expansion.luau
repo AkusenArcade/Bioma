@@ -218,18 +218,29 @@ function M.new(cell: any)
         }
     end
 
+    -- Where a domain's pod goes, and in what order it buds.
+    local function order_of(key: string): number
+        local i = index_of(key)
+        if not matrix() then return i end
+        -- The inner column first: the outer pods sit beyond it.
+        local column = (i - 1) % 2
+        local row = (i - 1) // 2
+        return (1 - column) * 2 + row + 1
+    end
+    local function column_of(key: string): number return if matrix() then (index_of(key) - 1) % 2 else 0 end
+    local function row_of(key: string): number
+        return if matrix() then (index_of(key) - 1) // 2 else index_of(key) - 1
+    end
+    -- The pod's centre against the panel's, down the panel's edge.
+    local function rise_of(key: string): number
+        return row_of(key) * (pod_height() + gap()) + pod_height() / 2 - panel_height() / 2
+    end
+
     local function pod(kind: any): any
         local key = kind.key
-        local function order(): number
-            local i = index_of(key)
-            if not matrix() then return i end
-            -- The inner column first: the outer pods sit beyond it.
-            local column = (i - 1) % 2
-            local row = (i - 1) // 2
-            return (1 - column) * 2 + row + 1
-        end
-        local function column(): number return if matrix() then (index_of(key) - 1) % 2 else 0 end
-        local function row(): number return if matrix() then (index_of(key) - 1) // 2 else index_of(key) - 1 end
+        local function order(): number return order_of(key) end
+        local function column(): number return column_of(key) end
+        local function row(): number return row_of(key) end
         local function curve(): string
             return if cell.open.value then "pod_" .. math.clamp(order(), 1, 4) else "close"
         end
@@ -296,42 +307,6 @@ function M.new(cell: any)
             -- The indicators double as the sort control.
             on_click = function() sort.value = key end,
             transition = { growth = curve, bud = curve, offset_x = curve },
-            -- The thread to the shape it hangs off, drawn out of that shape:
-            -- the panel, or in the matrix's outer column the inner pod.
-            thread.new {
-                vertical = false,
-                overlay = true,
-                attach = "right",
-                length = gap,
-                reversed = true,
-                shown = function() return cell.open.value end,
-                timing = function() return "pod_thread_" .. math.clamp(order(), 1, 4) end,
-            },
-            -- Out of the pod and into the list, while the list is sorted by
-            -- this domain.
-            g.emitter {
-                overlay = true,
-                attach = "right",
-                width = gap,
-                height = function() return metrics_mod.node_size * 2 end,
-                from_x = 0,
-                from_y = metrics_mod.node_size,
-                to_x = gap,
-                to_y = metrics_mod.node_size,
-                bend_x = function() return gap() / 2 end,
-                bend_y = metrics_mod.node_size,
-                rate = function()
-                    if not cell.open.value or sort.value ~= key then return 0 end
-                    return flow_of(key)
-                end,
-                lifetime = function() return require("core/timing").seconds.flow end,
-                spread = 0,
-                particle_size = function() return metrics_mod.node_size * 1.2 end,
-                -- The primary, as the sort's dot is: the particles say which
-                -- thread orders the list, their rate how hard it works
-                -- (Akusen, 2026-10-29).
-                fill = theme.primary,
-            },
             -- The matrix reads top to bottom: the indicator above its
             -- figures, the name at the foot.
             g.box {
@@ -344,6 +319,74 @@ function M.new(cell: any)
                 g.box(horizontal) :: any,
                 g.box(vertical) :: any,
             },
+        }
+    end
+
+    -- The thread from the shape a pod hangs off (the panel, or in the
+    -- matrix's outer column the inner pod), and the flow along it. Both
+    -- belong to that shape: they are drawn out of it, in the place they
+    -- keep, while the pod buds out to meet them.
+    local function link(kind: any): { any }
+        local key = kind.key
+        -- The flow starts once its thread is drawn whole, and stops at once
+        -- when the cell closes.
+        local linked = g.signal(false)
+        local waiting: any = nil
+        g.watch(function() return cell.open.value end, function(open: boolean)
+            if waiting then waiting:stop() end
+            waiting = nil
+            if open then
+                waiting = g.after(require("core/timing").thread_done(g.untracked(function() return order_of(key) end)),
+                    function() linked.value = true end)
+            else
+                linked.value = false
+            end
+        end)
+        local function beyond(): number
+            return if matrix() and column_of(key) == 0 then -(gap() + pod_width()) else 0
+        end
+        local place = {
+            overlay = true,
+            attach = "left",
+            present = function() return present(key) end,
+            offset_x = beyond,
+            offset_y = function() return rise_of(key) end,
+        }
+        local function placed(t: { [any]: any }): { [any]: any }
+            for k, v in place do t[k] = v end
+            return t
+        end
+        return {
+            thread.new(placed {
+                vertical = false,
+                length = gap,
+                reversed = true,
+                shown = function() return cell.open.value end,
+                timing = function() return "pod_thread_" .. math.clamp(order_of(key), 1, 4) end,
+            }),
+            -- Out of the pod and into the list, while the list is sorted by
+            -- this domain.
+            g.emitter(placed {
+                width = gap,
+                height = function() return metrics_mod.node_size * 2 end,
+                from_x = 0,
+                from_y = metrics_mod.node_size,
+                to_x = gap,
+                to_y = metrics_mod.node_size,
+                bend_x = function() return gap() / 2 end,
+                bend_y = metrics_mod.node_size,
+                rate = function()
+                    if not linked.value or sort.value ~= key then return 0 end
+                    return flow_of(key)
+                end,
+                lifetime = function() return require("core/timing").seconds.flow end,
+                spread = 0,
+                particle_size = function() return metrics_mod.node_size * 1.2 end,
+                -- The primary, as the sort's dot is: the particles say which
+                -- thread orders the list, their rate how hard it works
+                -- (Akusen, 2026-10-29).
+                fill = theme.primary,
+            }),
         }
     end
 
@@ -559,7 +602,10 @@ function M.new(cell: any)
         content = content,
         satellites = function()
             local out = {}
-            for _, kind in KINDS do table.insert(out, pod(kind)) end
+            for _, kind in KINDS do
+                table.insert(out, pod(kind))
+                for _, node in link(kind) do table.insert(out, node) end
+            end
             return out
         end,
     }

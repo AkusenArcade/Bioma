@@ -224,7 +224,9 @@ on the CPU pod sorts by CPU. Closed, it starts again empty, as Quickshell's
 does, whose expansion is unloaded. The threads stay once the buds have
 parted (Akusen, 2026-10-29): from the cell to its panel (every cell with
 one, the workspaces' too) and from each pod to the panel's edge, a node on
-each rim. Along the thread of the domain the list is sorted by, particles
+each rim. A thread belongs to the shape it comes out of: it is drawn out of
+that shape, already where it stays, and the shape that buds meets it (seen
+at `timing.speed` 15); what flows along it starts once it is whole. Along the thread of the domain the list is sorted by, particles
 flow out of the pod into the list, as many a second as that domain's load
 (eight at full load; the battery's from the watts going in, as Vital.qml's
 drops), in the primary as the sort's dot is, and none at zero (Akusen's idea, 2026-10-29,

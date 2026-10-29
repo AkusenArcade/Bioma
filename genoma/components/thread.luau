@@ -27,8 +27,9 @@ function M.new(t: { [string]: any }): any
         node = d,
         fill = theme.line,
         color = theme.node,
-        reach = function() return if t.shown() then 1 else 0 end,
-        transition = { reach = function() return if t.shown() then t.timing() else "thread_close" end },
+        -- How much of it is drawn, from its origin out to the tip.
+        growth = function() return if t.shown() then 1 else 0 end,
+        transition = { growth = function() return if t.shown() then t.timing() else "thread_close" end },
     }
     local function far(): number return t.length() end
     if t.vertical then

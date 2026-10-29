@@ -1057,15 +1057,6 @@ function M.new(cell: any, twenty_four: () -> boolean)
             align = "start",
             on_press = function() end,
             transition = { growth = curve, bud = curve, offset_x = curve },
-            thread.new {
-                vertical = false,
-                overlay = true,
-                attach = if left then "right" else "left",
-                length = gap,
-                reversed = left,
-                shown = function() return cell.open.value end,
-                timing = function() return "pod_thread_1" end,
-            },
             g.box {
                 opacity = function() return if cell.open.value then 1 else 0 end,
                 transition = { opacity = function() return if cell.open.value then "pod_content_1" else "content_fade" end },
@@ -1102,15 +1093,6 @@ function M.new(cell: any, twenty_four: () -> boolean)
             align = "start",
             on_press = function() end,
             transition = { growth = curve, bud = curve, offset_y = curve },
-            thread.new {
-                vertical = true,
-                overlay = true,
-                attach = if down then "above-center" else "below-center",
-                length = gap,
-                reversed = not down,
-                shown = shown,
-                timing = function() return "pod_thread_1" end,
-            },
             g.box {
                 opacity = function() return if shown() then 1 else 0 end,
                 transition = { opacity = function() return if shown() then "pod_content_1" else "content_fade" end },
@@ -1126,7 +1108,42 @@ function M.new(cell: any, twenty_four: () -> boolean)
         height = panel_height,
         content = month,
         satellites = function()
-            return { side("left", places), side("right", timers), below(agenda) }
+            local down = cell.edge ~= "bottom"
+            local function agenda_out(): boolean return cell.open.value and agenda_shown() end
+            return {
+                side("left", places),
+                side("right", timers),
+                below(agenda),
+                -- The threads belong to the month: drawn out of its edges, in
+                -- the place they keep, while the panels bud out to meet them.
+                thread.new {
+                    vertical = false,
+                    overlay = true,
+                    attach = "left",
+                    length = gap,
+                    reversed = true,
+                    shown = function() return cell.open.value end,
+                    timing = function() return "pod_thread_1" end,
+                },
+                thread.new {
+                    vertical = false,
+                    overlay = true,
+                    attach = "right",
+                    length = gap,
+                    shown = function() return cell.open.value end,
+                    timing = function() return "pod_thread_1" end,
+                },
+                thread.new {
+                    vertical = true,
+                    overlay = true,
+                    attach = if down then "below-center" else "above-center",
+                    present = agenda_shown,
+                    length = gap,
+                    reversed = not down,
+                    shown = agenda_out,
+                    timing = function() return "pod_thread_1" end,
+                },
+            }
         end,
     }
 
