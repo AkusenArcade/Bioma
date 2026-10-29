@@ -10,6 +10,7 @@ local metrics = require("core/metrics")
 local typography = require("core/typography")
 
 local membrane = require("structure/membrane")
+local input_surface = require("structure/input_surface")
 
 -- Which outputs a block belongs to: a name, `all`, or `primary` (the output
 -- niri focuses at start; until the Monitors service is ported, $BIOMA_PRIMARY
@@ -53,6 +54,20 @@ for i, entry in config.get("membranes", {}) do
     end
 end
 print(string.format("Bioma on Genoma: %d membranes", #surfaces))
+
+-- While a cell is open, a press on any other monitor closes it.
+if #surfaces > 0 then
+    table.insert(surfaces, g.surface {
+        full = true,
+        anchor = { "top", "bottom", "left", "right" },
+        outputs = "all",
+        reserve = false,
+        namespace = "bioma-input",
+        function(output: string, size: any)
+            return input_surface.node(output, size or { width = 1920, height = 1080 })
+        end,
+    })
+end
 
 -- BIOMA_GENOMA_CHECK=1: the core's values, to set beside the QML's and the
 -- token set's, and the theme's transit as it happens.

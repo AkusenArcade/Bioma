@@ -82,9 +82,15 @@ Checked 2026-10-28 (`BIOMA_GENOMA_CHECK=1 scripts/genoma`):
 - At rest, 20 s: no thread woke.
 - [ ] Structure: membrane, tissue, cell, the registry, visibility types,
       expansion by budding (Akusen, 2026-10-28), the input surface.
-      Membrane, tissue, cell and visibility are in `genoma/structure/`
-      (from `structure/*.qml` at 5e5ff60); budding, focus, floating
-      tissues and invocation are not yet.
+      Membrane, tissue, cell, visibility, focus, the input surface and the
+      expansion by budding are in `genoma/structure/` (from
+      `structure/*.qml` and `core/Focus.qml` at 5e5ff60); floating tissues,
+      invocation and keyboard travel inside an open cell are not yet.
+      Still to come with other steps: the panel hangs from the strip's edge
+      until niri's `gaps` and struts arrive with the niri service (step 3);
+      it casts no shadow until Genoma has a soft shadow; its content fades
+      but does not grow from its centre; the input surface stays mapped
+      for the whole session, transparent.
 
 Checked 2026-10-28, a probe membrane on HDMI-A-1 (`cells/probe.luau`,
 three tissues at 25/30/25 %, the geometry logged from Luau):
@@ -100,6 +106,18 @@ three tissues at 25/30/25 %, the geometry logged from Luau):
 - A conditional probe whose condition lasts 5 s on and 5 s off left 2 s
   after the condition ended (the default dwell) and came back with it,
   the start tissue reflowing each time.
+
+Checked 2026-10-29, probes with a panel on the same membrane:
+- Pressed, the start probe's panel budded from the middle of its bottom
+  edge, the neck narrowing and parting, without crossing the cell beside
+  it (seen at `timing.speed` 15); a press on the desktop took it back.
+- With the start probe open, a press on the centre probe closed the one
+  and opened the other.
+- While a cell was open its membrane on HDMI-A-1 and the input surface on
+  DP-1 held the keyboard (`niri msg layers`: exclusive); Escape closed the
+  cell and both let the keyboard go.
+- A conditional cell appearing fades in at its place; it used to slide
+  there from the tissue's start.
 
 ### Cells
 

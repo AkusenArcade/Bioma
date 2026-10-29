@@ -14,6 +14,9 @@
 --   padding_leading, padding_trailing, least_width, body_height
 --   interactive        whether it answers a press (default: it has a panel)
 --   on_click()         what a press does, if not opening
+--   panel              what it opens, if anything: { width(), height(),
+--                      content() }, the size the panel's own, padding included
+--   on_key(name)       a key while it is open, Escape aside
 -- and the cell gives back room(), the width its content may draw in, once
 -- the tissue has placed it.
 -- Everything the engine needs from a cell arrives in its block; adding a
@@ -24,6 +27,7 @@ local config = require("core/config")
 local colour = require("core/colour")
 local registry = require("cells/registry")
 local visibility = require("structure/visibility")
+local focus = require("structure/focus")
 
 local M = {}
 
@@ -125,6 +129,12 @@ function M.new(kind: any, ctx: { [string]: any })
         c.visibility.set_interacting(c.hovered.value or c.open.value)
     end)
 
+    -- One cell open at a time: opening this one closes whatever was open.
+    c.focus_id = focus.offer(c)
+    g.watch(function() return c.open.value end, function(open: boolean)
+        if open then focus.opened(c) else focus.released(c) end
+    end)
+
     -- A cell that goes while it is open closes on the way out.
     g.watch(function() return c.shown() end, function(shown: boolean)
         if not shown and c.open.value then c.open.value = false end
@@ -151,8 +161,90 @@ function M.new(kind: any, ctx: { [string]: any })
 
     local function opacity(): number return config.get("cell.opacity", 0.72) end
 
+    -- ---- Expansion ----------------------------------------------------------
+    --
+    -- The panel buds out of the cell (Akusen, 2026-10-28; Genoma PRD §8.2):
+    -- it leaves from the middle of the cell's edge that faces away from the
+    -- screen, joined to it by a neck that narrows and parts, and settles a
+    -- gap away, on the line the windows begin on. A corner cell keeps its
+    -- edge and the panel opens inward; a centred one opens from both sides.
+    -- Closing takes it back the same way, quicker. Its content enters once
+    -- the shape is at size and leaves before it.
+    local function panel_node(place: { [string]: any }): any
+        local p = spec.panel
+        local down = c.edge ~= "bottom"
+        local function pad(): number return 10 * c.metrics().factor end
+        local function curve(): string return if c.open.value then "bud" else "close" end
+
+        -- Still drawn while it is taken back.
+        local out = g.signal(false)
+        g.watch(function() return c.open.value end, function(open: boolean)
+            if open then
+                out.value = true
+            else
+                g.after(require("core/timing").seconds.close, function()
+                    if not g.untracked(function() return c.open.value end) then out.value = false end
+                end)
+            end
+        end)
+
+        return g.capsule {
+            name = c.domain .. " panel",
+            role = "group",
+            overlay = true,
+            attach = if down then "below" else "above",
+            present = function() return out.value end,
+            width = p.width,
+            height = p.height,
+            offset_x = function()
+                local origin = place.origin()
+                if origin == "end" then return place.width() - p.width() end
+                if origin == "centre" then return (place.width() - p.width()) / 2 end
+                return 0
+            end,
+            -- On the cell's edge while shut: it leaves from there, so as it
+            -- grows it never crosses the cells beside it in the row.
+            offset_y = function()
+                if not c.open.value then return 0 end
+                return if down then place.gap() else -place.gap()
+            end,
+            radius = function() return c.metrics().radius_panel end,
+            growth = function() return if c.open.value then 1 else 0 end,
+            -- The neck: soft and wide as it leaves, gone once it is out.
+            bud = function() return if c.open.value then 0 else c.metrics().cell_height end,
+            blur = function() return config.get("cell.blur", true) end,
+            fill = function() return colour.alpha(theme.cell(), opacity()) end,
+            rim_top = theme.rim,
+            rim_bottom = theme.line,
+            -- Nothing under the shape hears the pointer: a press on the panel
+            -- is not a press on the cell it came from.
+            on_press = function() end,
+            transition = {
+                offset_y = curve,
+                growth = curve,
+                bud = curve,
+                offset_x = "reflow",
+                width = "reflow",
+                height = "reflow",
+            },
+            g.box {
+                overlay = true,
+                width = function() return math.max(0, p.width() - pad() * 2) end,
+                height = function() return math.max(0, p.height() - pad() * 2) end,
+                align = "center",
+                justify = "center",
+                opacity = function() return if c.open.value then 1 else 0 end,
+                transition = {
+                    opacity = function() return if c.open.value then "content_enter" else "content_fade" end,
+                },
+                p.content(),
+            },
+        }
+    end
+
     -- Built by the tissue, which knows where the cell goes: `place` has
-    -- x(), y(), width() (granted), placed() and radius().
+    -- x(), y(), width() (granted), placed(), radius(), origin() (the side
+    -- the cell was born from) and gap() (how far its panel hangs).
     function c.node(place: { [string]: any }): any
         -- What the content may occupy: the granted width inside the cell's
         -- own padding. An elastic content ends in an ellipsis there.
@@ -190,6 +282,11 @@ function M.new(kind: any, ctx: { [string]: any })
             rim_top = function() return if lit() then theme.lift(theme.rim(), 0.10) else theme.rim() end,
             rim_bottom = function() return if lit() then theme.lift(theme.line(), 0.06) else theme.line() end,
             on_hover = function(on: boolean) c.hovered.value = on end,
+            -- While it is open it has the attention: a press on anything but
+            -- itself and what it opened closes it, and so does Escape.
+            catch = function() return c.open.value end,
+            on_outside = function() focus.dismiss() end,
+            on_key = function(name: string) focus.key(name) end,
             on_click = function()
                 if spec.on_click then
                     spec.on_click()
@@ -221,6 +318,7 @@ function M.new(kind: any, ctx: { [string]: any })
                 justify = "start",
                 spec.contracted(),
             },
+            if c.has_panel then panel_node(place) else nil,
         }
     end
 

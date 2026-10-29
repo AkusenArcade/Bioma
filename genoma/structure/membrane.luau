@@ -52,6 +52,15 @@ function M.new(block: () -> { [string]: any }, output: string, size: { width: nu
         return b.reserve_space == true and horizontal and b.auto_hide ~= true
     end
 
+    -- Where the compositor starts drawing windows: past the strip by niri's
+    -- `gaps` and the edge's strut, which come with the niri service (step
+    -- 3). Until then the line is the strip's own edge.
+    local function window_inset(): number return 0 end
+    local function window_line(): number
+        if edge == "top" or edge == "left" then return m.strip() + window_inset() end
+        return (if horizontal then size.height else size.width) - m.strip() - window_inset()
+    end
+
     local membrane_length = if horizontal then size.width else size.height
     local function usable(): number return math.max(0, membrane_length - metrics().margin_edge * 2) end
 
@@ -79,6 +88,7 @@ function M.new(block: () -> { [string]: any }, output: string, size: { width: nu
                 local o = tblock().opacity
                 return if o ~= nil then o else config.get("tissue.opacity", 0.5)
             end,
+            window_line = window_line,
             horizontal = function()
                 local o = tblock().orientation
                 if o then return o == "horizontal" end

@@ -20,7 +20,7 @@ local M = {}
 local HUGE = math.huge
 
 -- `ctx`: block(), metrics(), output, edge, output_width(), anchor_side(),
--- slot_length(), padding(), fill_opacity(), horizontal().
+-- slot_length(), padding(), fill_opacity(), horizontal(), window_line().
 function M.new(ctx: { [string]: any })
     local t: { [string]: any } = {}
     t.anchor_side = ctx.anchor_side
@@ -158,19 +158,29 @@ function M.new(ctx: { [string]: any })
     function t.cell_radius(): number return metrics_mod.inner_radius(t.radius(), ctx.padding()) end
 
     -- Fixed order, variable position: where each placed cell begins along
-    -- the tissue.
+    -- the tissue. One that is not placed waits where it would enter, taking
+    -- no room, so it fades in at its place instead of sliding there from
+    -- the tissue's start.
     local offsets = g.computed(function(): { [any]: number }
         local out, offset = {}, ctx.padding()
         for _, c in t.cells do
-            if placement.value.cells[c] then
-                out[c] = offset
-                offset += axis_for(c) + gap()
-            end
+            out[c] = offset
+            if placement.value.cells[c] then offset += axis_for(c) + gap() end
         end
         return out
     end)
 
-    local function place_of(c: any): { [string]: any }
+    -- How far an open cell's panel hangs: from the cell's outer edge to the
+    -- line the windows begin on, so every panel on the membrane hangs from
+    -- that same line whatever its cell's height.
+    local opens_away = ctx.edge == "top" or ctx.edge == "left"
+    local function origin_gap(position: { [string]: any }): number
+        local y = position.y()
+        local outer = if opens_away then y + ctx.padding() + ctx.metrics().cell_height else y + ctx.padding()
+        return math.max(0, if opens_away then ctx.window_line() - outer else outer - ctx.window_line())
+    end
+
+    local function place_of(c: any, position: { [string]: any }): { [string]: any }
         return {
             x = function(): number
                 local along = offsets.value[c] or ctx.padding()
@@ -186,6 +196,8 @@ function M.new(ctx: { [string]: any })
             width = function(): number return t.grant_for(c) end,
             placed = function(): boolean return t.placed(c) end,
             radius = t.cell_radius,
+            origin = ctx.anchor_side,
+            gap = function(): number return origin_gap(position) end,
         }
     end
 
@@ -206,7 +218,7 @@ function M.new(ctx: { [string]: any })
             transition = { offset_x = "reflow", offset_y = "reflow", width = "reflow", height = "reflow" },
         }
         for _, c in t.cells do
-            table.insert(band, c.node(place_of(c)))
+            table.insert(band, c.node(place_of(c, position)))
         end
         return g.capsule(band)
     end

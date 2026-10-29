@@ -59,6 +59,11 @@ g.effect(function()
         fade = { duration = s.reflow, curve = c.in_out_quad },
         colour = { duration = s.transition },
         content_fade = { duration = s.content_fade },
+        -- A panel budding out of its cell takes what Cell.qml's thread and
+        -- panel took together, the thread's two staggers and the growth; its
+        -- content enters once the shape is at size, and leaves first.
+        bud = { duration = s.grow + s.stagger * 2, curve = c.open_flat },
+        content_enter = { duration = s.content_fade, delay = s.grow + s.stagger * 2 },
         wallpaper = { duration = s.wallpaper, curve = c.in_out_quad },
         loader = { duration = s.loader, curve = c.sweep },
         welcome_open = { duration = s.welcome_open, curve = c.open_flat },
