@@ -273,7 +273,8 @@ function M.new(kind: any, ctx: { [string]: any })
         -- asked for, the next call to it closed a cell already shut.
         local leaves = spec.leaves_on_close
         if type(leaves) == "function" then leaves = g.untracked(leaves) end
-        if g.untracked(c.visibility.invoked) and leaves ~= false then
+        -- Stepping aside for a dialog is not leaving.
+        if g.untracked(c.visibility.invoked) and leaves ~= false and not c.aside then
             c.visibility.set_invoked(false)
         end
     end)
@@ -491,7 +492,7 @@ function M.new(kind: any, ctx: { [string]: any })
             on_wheel = spec.on_wheel,
             -- While it is open it has the attention: a press on anything but
             -- itself and what it opened closes it, and so does Escape.
-            catch = function() return (c.open.value or focus.is(c)) and not focus.yielding() end,
+            catch = function() return c.open.value or focus.is(c) end,
             on_outside = function() focus.dismiss() end,
             on_key = function(name: string, text: string?, mods: any) focus.key(name, text, mods) end,
             -- The left button presses; the middle one is the cell's to give a

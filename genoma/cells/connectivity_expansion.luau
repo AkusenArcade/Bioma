@@ -57,7 +57,7 @@ function M.new(cell: any): { [string]: any }
     -- hand, and ends with the panel all the same.
     g.watch(function() return cell.open.value end, function(open: boolean)
         network.set_scanning(open)
-        if not open then bluetooth.set_discovering(false) end
+        if not open and not cell.aside then bluetooth.set_discovering(false) end
     end)
 
     -- ---- Asking for a password ------------------------------------------------
@@ -108,7 +108,9 @@ function M.new(cell: any): { [string]: any }
     end
     -- A network that came up is a question answered.
     g.watch(network.wifi_connected, function(on: boolean) if on then stop_asking() end end)
-    g.watch(function() return cell.open.value end, function(open: boolean) if not open then stop_asking() end end)
+    g.watch(function() return cell.open.value end, function(open: boolean)
+        if not open and not cell.aside then stop_asking() end
+    end)
     local function asked_extra(): number
         return if asking() then field_height() + 8 * f() + (if failed() then error_height() else 0) else 0
     end
@@ -147,7 +149,8 @@ function M.new(cell: any): { [string]: any }
     local proxy_exceptions = g.signal("")
     local removing_printer = g.signal("")
     g.watch(function() return cell.open.value end, function(open: boolean)
-        if open then return end
+        -- Aside for a dialog, it keeps what it was doing.
+        if open or cell.aside then return end
         typing.value = ""
         adding.value = false
         editing.value = nil
@@ -772,17 +775,18 @@ function M.new(cell: any): { [string]: any }
 
     local function choose_file()
         if picker.busy() then return end
-        -- The chooser is the desktop's window: the cell gives it the
-        -- pointer and the keys until it answers.
-        focus.yield(true)
-        picker.choose {
-            title = "Choose a VPN profile",
-            filters = { { "OpenVPN profiles (*.ovpn *.conf)", { "*.ovpn", "*.conf" } } },
-            on_chosen = function(path: string?)
-                focus.yield(false)
-                if path then chosen_file.value = path end
-            end,
-        }
+        -- The chooser is the desktop's window: the cell steps aside for it,
+        -- the form kept, and comes back with the file.
+        focus.aside(cell, function(done: () -> ())
+            picker.choose {
+                title = "Choose a VPN profile",
+                filters = { { "OpenVPN profiles (*.ovpn *.conf)", { "*.ovpn", "*.conf" } } },
+                on_chosen = function(path: string?)
+                    if path then chosen_file.value = path end
+                    done()
+                end,
+            }
+        end)
     end
     local function import()
         local file = g.untracked(function() return chosen_file.value end)

@@ -48,15 +48,20 @@ function M.holds_keyboard(): boolean
     return c ~= nil and c.spec.wants_keyboard == true
 end
 
--- While a dialog of the desktop's is up for the open cell (the file
--- chooser), the cell stays open but lets go of the pointer and the keys:
--- a press on the dialog is not a press outside, and its field is typed
--- into. The cell takes them back when the dialog answers.
-local yielding = g.signal(0)
-function M.yielding(): boolean return yielding.value > 0 end
-function M.yield(on: boolean)
-    local now = g.untracked(function() return yielding.value end)
-    yielding.value = math.max(0, now + (if on then 1 else -1))
+-- A dialog of the desktop's that a cell asks for (the file chooser) is a
+-- window of its own, under the cell. So the cell steps aside: it closes
+-- while the dialog is up, keeping what it was doing, and opens again once
+-- the dialog has answered, chosen or cancelled (Akusen, 2026-10-29: open
+-- over the chooser, it covered it). `show(done)` opens the dialog and calls
+-- `done` when it answers. While aside, `c.aside` is true, so the cell's
+-- expansion keeps its state through the close.
+function M.aside(c: any, show: (done: () -> ()) -> ())
+    c.aside = true
+    c.open.value = false
+    show(function()
+        c.aside = false
+        c.open.value = true
+    end)
 end
 
 -- Whether `c` holds the attention: open, or summoned with no panel to open.
