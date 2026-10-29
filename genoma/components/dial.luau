@@ -15,7 +15,9 @@ local colour = require("core/colour")
 local M = {}
 
 -- `t`: size(), fraction() (0…1), orbit() (0…1, the minute as a fraction of
--- its turn, continuous between the seconds it is set at).
+-- its turn, continuous between the seconds it is set at), and still for a
+-- face whose disc is set rather than running (the timer's ring, which the
+-- cell drains itself).
 function M.new(t: { [string]: any }): any
     local function unit(): number return t.size() / 64 end
     local function stroke(): number return math.max(1, 1.5 * unit()) end
@@ -46,7 +48,7 @@ function M.new(t: { [string]: any }): any
             rim_top = top,
             rim_bottom = bottom,
             arc = t.orbit,
-            arc_rate = 1 / 60,
+            arc_rate = if t.still then 0 else 1 / 60,
         },
         -- Inside the rim with a clear gap past the disc, so the two never
         -- read as one shape. A second moves it by 1/3600 of a turn: the
@@ -67,7 +69,7 @@ function M.new(t: { [string]: any }): any
             height = function() return 12 * unit() end,
             fill = top,
             fill_bottom = bottom,
-            orbit = 1 / 60,
+            orbit = if t.still then 0 else 1 / 60,
             orbit_radius = function() return 24 * unit() end,
             angle = t.orbit,
         },

@@ -21,7 +21,7 @@ function M.new(t: { [string]: any }): any
     local function height(): number return 26 * f() end
     return g.capsule {
         role = "button",
-        name = t.label,
+        name = if type(t.label) == "string" then t.label else "Choice",
         height = height,
         padding_x = function() return 12 * f() end,
         radius = function() return metrics_mod.radius_for(height(), t.metrics()) end,

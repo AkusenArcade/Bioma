@@ -553,6 +553,7 @@ function M.new(cell: any): any
         node.rim_top = theme.rim
         node.rim_bottom = theme.line
         node.on_press = function() end
+        node.on_click = function() end
         node.transition = { growth = curve, bud = curve, offset_x = curve, offset_y = curve, height = "reflow" }
         return g.capsule(node)
     end
@@ -957,6 +958,7 @@ function M.new(cell: any): any
         rim_top = theme.rim,
         rim_bottom = theme.line,
         on_press = function() end,
+        on_click = function() end,
         g.box {
             overlay = true,
             attach = "corner",

@@ -94,6 +94,7 @@ function M.new(cell: any): { [string]: any }
             rim_top = theme.rim,
             rim_bottom = theme.line,
             on_press = function() end,
+            on_click = function() end,
             transition = {
                 growth = function() return opening(i) end,
                 bud = function() return opening(i) end,

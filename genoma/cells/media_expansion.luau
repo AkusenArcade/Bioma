@@ -326,6 +326,7 @@ function M.new(cell: any): any
         rim_top = theme.rim,
         rim_bottom = theme.line,
         on_press = function() end,
+        on_click = function() end,
         transition = { growth = curve, bud = curve, offset_y = curve },
         g.box {
             overlay = true,

@@ -155,6 +155,9 @@ g.effect(function()
 end)
 
 function M.length(): number return length.value end
+-- The wall-clock second it ends at, while it runs: what drains a ring
+-- continuously rather than by its counted seconds.
+function M.ends_at(): number return ends_at end
 function M.left(): number return left.value end
 function M.running(): boolean return running.value end
 function M.paused(): boolean

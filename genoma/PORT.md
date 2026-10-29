@@ -178,7 +178,7 @@ host, driven only by `scripts/genoma ipc`:
 | performance | *beyond the PRD* | 4 | | |
 | polkit | *beyond the PRD* | 4 | | |
 | privacy | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
-| timer | *beyond the PRD* | 4 | | |
+| timer | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | notifications | §9.10 | 4, last | | |
 | settings (with setup, §9.14) | §9.12 | 5 | | |
 | launcher | §9.13 | 6 | | |
@@ -433,6 +433,16 @@ privacy, checked 2026-10-29 on HDMI-A-1 (`cells/privacy.luau`, service
 microphone raised both, the same glyph in the active colour and the same
 name, and opened, the row said MICROPHONE · REVELATOR IO 24 PRO. Not
 tried: a camera (none is used here) and a screen cast.
+
+timer, checked 2026-10-29 on HDMI-A-1 (`cells/timer.luau`, the clock's
+timer in `services/time.luau`, `components/dial.luau` with `still`):
+called up, the length, its presets and START; 5 M then START ran it
+(04:59, PAUSE and STOP, the presets gone), the dial at rest full and
+draining; STOP put it back to 05:00 and, closed, the cell left. Found on
+the way, in the structure: a click on the empty part of an open panel
+(or of a shape budded from it) reached the cell under it and closed the
+cell; panels and their satellites now take the click as they took the
+press.
 
 ### Surfaces that are not cells
 

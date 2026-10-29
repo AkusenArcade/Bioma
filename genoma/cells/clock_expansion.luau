@@ -1057,6 +1057,7 @@ function M.new(cell: any, twenty_four: () -> boolean)
             justify = "start",
             align = "start",
             on_press = function() end,
+            on_click = function() end,
             transition = { growth = curve, bud = curve, offset_x = curve },
             g.box {
                 opacity = function() return if cell.open.value then 1 else 0 end,
@@ -1093,6 +1094,7 @@ function M.new(cell: any, twenty_four: () -> boolean)
             justify = "start",
             align = "start",
             on_press = function() end,
+            on_click = function() end,
             transition = { growth = curve, bud = curve, offset_y = curve },
             g.box {
                 opacity = function() return if shown() then 1 else 0 end,

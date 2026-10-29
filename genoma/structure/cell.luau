@@ -365,8 +365,10 @@ function M.new(kind: any, ctx: { [string]: any })
             rim_top = theme.rim,
             rim_bottom = theme.line,
             -- Nothing under the shape hears the pointer: a press on the panel
-            -- is not a press on the cell it came from.
+            -- is not a press on the cell it came from, nor is a click, which
+            -- would otherwise reach the cell and close it.
             on_press = function() end,
+            on_click = function() end,
             transition = {
                 offset_y = curve,
                 growth = curve,
