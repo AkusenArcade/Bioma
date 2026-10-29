@@ -148,7 +148,7 @@ host, driven only by `scripts/genoma ipc`:
 | window_title | §9.1 | 2 | 670c660 | checked 2026-10-29, awaiting Akusen and the cost |
 | workspaces | §9.3 | 2 | 7ea52ac | checked 2026-10-29, awaiting Akusen and the cost |
 | vitals | §9.2 | 2 | 30c6cc7 | checked 2026-10-29, awaiting Akusen and the cost |
-| clock | *beyond the PRD* | 2, with the membrane | 7e62c5c | contracted checked 2026-10-29; expansion to come |
+| clock | *beyond the PRD* | 2, with the membrane | 7e62c5c | checked 2026-10-29, awaiting Akusen and the cost |
 | media | §9.4 (sinestesia) | 3 | | |
 | theme | §9.7 | 3 | | |
 | utility | §9.6 | 3 | | |
@@ -237,9 +237,20 @@ clock, contracted, checked 2026-10-29 (`genoma/cells/clock.luau`,
 `components/dial.luau`) beside Bioma on Quickshell's on DP-1, the same
 block: the cell the same to the pixel but for the text's antialiasing (Qt's
 against cosmic-text's, as in M2) and the second hand's place between the
-two captures. Not yet: the expansion (the month, other places, the timer
-and the alarm, the day's appointments), whose fields wait for Genoma's
-text field.
+two captures.
+
+The clock's expansion, checked 2026-10-29 on HDMI-A-1 (an empty workspace,
+`cells/clock_expansion.luau`, `components/switch.luau`): the month buds out
+of the clock with today in the disc and a point under the days something is
+on; other places (with their offsets, as `date` gives them) and the timer
+with the alarm bud out of its sides, and the day's appointments out of its
+foot, each on its thread. A press on a day shows its appointments (Akusen's
+calendars, read through `scripts/calendar`); the calendars read are chips
+cut at the panel's edge; "+ Calendar" lists the accounts in Online Accounts
+with what is added and what is not. Not yet: the shell-wide keyboard travel,
+the lists' scroll bars; adding a place or an address was not tried, nor
+forgetting a calendar, since they write Akusen's configuration and keyring
+(the test configuration is a copy, but the keyring is his).
 
 ### Surfaces that are not cells
 

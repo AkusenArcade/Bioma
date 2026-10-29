@@ -9,11 +9,15 @@
 -- days, the offsets, the timer's figure, in Orbitron with tabular figures,
 -- so nothing dances as it changes).
 --
+-- Once there is a calendar, the day's appointments bud out of the month on
+-- the side away from the cell: the day chosen in the month, today until
+-- another is. A calendar is added from the accounts in GNOME Online
+-- Accounts, or by pasting an iCalendar address.
+--
 -- The keys: Left and Right turn the month and Enter brings today back;
--- while a place is being added, typing goes to its field, Enter takes the
--- first match and Escape gives up. Not yet: the day's appointments under
--- the month and the ways to add a calendar (the next step), the shell-wide
--- keyboard travel.
+-- while a place or a calendar is being added, typing goes to its field,
+-- Enter takes the first match (or reads the address) and Escape gives up.
+-- Not yet: the shell-wide keyboard travel, the lists' scroll bars.
 local g = require("@genoma")
 local clock = require("@genoma/clock")
 local theme = require("core/theme")
@@ -132,6 +136,12 @@ function M.new(cell: any, twenty_four: () -> boolean)
         }
     end
 
+    -- ---- The day's appointments: their state, which the month reads ----------------
+
+    local adding_calendar = g.signal(false)
+    local chosen_day = g.signal(calendar.today_start())
+    local function agenda_shown(): boolean return calendar.active() or adding_calendar.value end
+
     -- ---- The month ------------------------------------------------------------
 
     local view_year = g.signal(0)
@@ -141,6 +151,7 @@ function M.new(cell: any, twenty_four: () -> boolean)
         g.batch(function()
             view_year.value = t.year
             view_month.value = t.month
+            chosen_day.value = calendar.today_start()
         end)
     end
     today()
@@ -198,11 +209,29 @@ function M.new(cell: any, twenty_four: () -> boolean)
 
     local function day_cell(i: number): any
         local function d(): any return days.value[i] end
+        -- The day whose appointments hang below.
+        local function chosen(): boolean
+            return agenda_shown() and not adding_calendar.value and d().start == chosen_day.value
+        end
         return g.box {
             width = cell_width,
             height = function() return 32 * f() end,
             justify = "center",
             align = "center",
+            on_click = function()
+                if g.untracked(agenda_shown) and not g.untracked(function() return adding_calendar.value end) then
+                    chosen_day.value = g.untracked(d).start
+                end
+            end,
+            -- When it is not today: the rim alone, in the primary.
+            g.capsule {
+                overlay = true,
+                present = function() return chosen() and not d().today end,
+                width = function() return 26 * f() end,
+                height = function() return 26 * f() end,
+                rim_top = theme.primary,
+                rim_bottom = theme.primary,
+            },
             -- Today is lit as a chosen control is: the disc with the light,
             -- the figure dark on it.
             g.capsule {
@@ -285,6 +314,15 @@ function M.new(cell: any, twenty_four: () -> boolean)
         local grid_column: { [any]: any } = { direction = "column", g.box(weekdays) }
         for _, r in rows do table.insert(grid_column, r) end
         table.insert(column, g.box(grid_column))
+        -- With no calendar yet, the way to one: it opens the agenda below,
+        -- asking for an address.
+        table.insert(column, g.box {
+            width = inner(calendar_width),
+            justify = "center",
+            present = function() return not agenda_shown() end,
+            add_chip(function() return "+ Calendar" end, function() return false end,
+                function() adding_calendar.value = true end),
+        })
         return g.box(column)
     end
 
@@ -633,6 +671,366 @@ function M.new(cell: any, twenty_four: () -> boolean)
         }
     end
 
+    -- ---- The day's appointments ------------------------------------------------------
+
+    local function agenda_height(): number return 236 * f() end
+    local function event_row(): number return 34 * f() end
+    local calendar_text = g.signal("")
+    local calendar_node, calendar_field = field.new {
+        text = calendar_text,
+        width = function() return inner(calendar_width)() - 28 * f() end,
+        font = typography.expressive,
+        size = function() return m().font_secondary end,
+        placeholder = "Or an iCal address",
+        taking = function() return adding_calendar.value and not calendar.checking() end,
+    }
+    g.watch(function() return adding_calendar.value end, function(on: boolean)
+        if on then
+            adding.value = false
+            calendar_field.set("")
+            calendar.discover()
+        end
+    end)
+    g.watch(function() return adding.value end, function(on: boolean)
+        if on then adding_calendar.value = false end
+    end)
+    calendar.on_added(function()
+        adding_calendar.value = false
+        today()
+    end)
+
+    local WEEKDAY_NAMES = { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" }
+    local function day_title(start: number): string
+        local difference = math.round((start - calendar.today_start()) / 86400000)
+        if difference == 0 then return "Today" end
+        if difference == 1 then return "Tomorrow" end
+        if difference == -1 then return "Yesterday" end
+        local t = os.date("*t", start // 1000) :: any
+        return WEEKDAY_NAMES[t.wday] .. " " .. t.day .. " " .. MONTHS[t.month]
+    end
+
+    local chosen_events = g.computed(function(): { any }
+        return calendar.between(chosen_day.value, calendar.day_start(chosen_day.value, 1))
+    end)
+
+    local agenda_scroll = g.signal(0)
+    g.watch(function() return chosen_day.value end, function() agenda_scroll.value = 0 end)
+
+    -- The time in the machine's voice, the title in the human one. What is
+    -- over is faint; what is on now carries the primary, the only state an
+    -- appointment has.
+    local function event_line(item: () -> any): any
+        local function e(): any return item() end
+        local function over(): boolean return e()["end"] <= calendar.now() end
+        local function on(): boolean
+            local x = e()
+            return not x.allDay and x.start <= calendar.now() and calendar.now() < x["end"]
+        end
+        return g.box {
+            width = inner(calendar_width),
+            height = event_row,
+            direction = "row",
+            align = "center",
+            g.box {
+                width = function() return 70 * f() end,
+                technical(meta, nil, {
+                    text = function()
+                        local x = e()
+                        if x.allDay then return "ALL DAY" end
+                        if x.start < chosen_day.value then return "…" end
+                        local t = os.date("*t", x.start // 1000) :: any
+                        return hhmm(t.hour, t.min)
+                    end,
+                    color = function()
+                        return if on() then theme.primary() elseif over() then theme.text_faint() else theme.text_muted()
+                    end,
+                }),
+            },
+            g.text {
+                text = function() return e().title or "" end,
+                max_width = function() return inner(calendar_width)() - 70 * f() end,
+                font = typography.expressive,
+                size = function() return m().font_secondary end,
+                color = function() return if over() then theme.text_faint() else theme.text() end,
+            },
+        }
+    end
+
+    -- A calendar read: its name, and a cross. The cross asks first, and the
+    -- second press answers; leaving it withdraws the question.
+    local function source_chip(item: () -> any, index: () -> number): any
+        local asking = g.signal(false)
+        local hovered = g.signal(false)
+        local function trouble(): boolean return calendar.trouble_of(index()) ~= "" end
+        local function alerting(): boolean return asking.value or trouble() end
+        return g.capsule {
+            role = "button",
+            height = function() return 26 * f() end,
+            padding_left = function() return 11 * f() end,
+            padding_right = function() return 10 * f() end,
+            gap = function() return 8 * f() end,
+            radius = function() return metrics_mod.radius_for(26 * f(), m()) end,
+            direction = "row",
+            align = "center",
+            rim_top = function() return if alerting() then theme.alert() elseif hovered.value then theme.text() else theme.line() end,
+            rim_bottom = function() return if alerting() then theme.alert() elseif hovered.value then theme.text() else theme.line() end,
+            on_hover = function(on: boolean)
+                hovered.value = on
+                if not on then asking.value = false end
+            end,
+            on_click = function()
+                if g.untracked(function() return asking.value end) then calendar.forget(g.untracked(index)) else asking.value = true end
+            end,
+            technical(meta, nil, {
+                max_width = function() return 110 * f() end,
+                text = function() return if asking.value then "FORGET?" else string.upper(item().name or "Calendar") end,
+                color = function() return if alerting() then theme.alert() else theme.text() end,
+            }),
+            g.icon {
+                width = function() return 9 * f() end,
+                height = function() return 9 * f() end,
+                icon = "close",
+                color = function() return if asking.value then theme.alert() else theme.text() end,
+            },
+        }
+    end
+
+    local function offered_row(account: any, item: () -> any): any
+        local hovered = g.signal(false)
+        local function taken(): boolean return calendar.holds(account.goa, item().href) end
+        return g.capsule {
+            role = "button",
+            width = inner(calendar_width),
+            height = function() return 30 * f() end,
+            radius = 0,
+            direction = "row",
+            align = "center",
+            justify = "between",
+            padding_x = function() return 8 * f() end,
+            on_hover = function(on: boolean) hovered.value = on end,
+            on_click = function()
+                if not g.untracked(taken) then calendar.add_from_account(account.goa, g.untracked(item)) end
+            end,
+            g.text {
+                text = function() return item().name or "" end,
+                max_width = function() return inner(calendar_width)() - 80 * f() end,
+                font = typography.expressive,
+                size = function() return m().font_secondary end,
+                color = function()
+                    return if taken() then theme.text_muted() elseif hovered.value then theme.primary() else theme.text()
+                end,
+            },
+            technical(meta, nil, {
+                text = function() return if taken() then "ADDED" else "ADD" end,
+                color = function()
+                    return if taken() then theme.text_faint() elseif hovered.value then theme.primary() else theme.text()
+                end,
+            }),
+        }
+    end
+
+    local function account_block(item: () -> any): any
+        local function a(): any return item() end
+        return g.box {
+            direction = "column",
+            align = "start",
+            width = inner(calendar_width),
+            g.box {
+                height = function() return 22 * f() end,
+                align = "center",
+                g.text {
+                    text = function() return (a().provider or "") .. " · " .. (a().identity or "") end,
+                    max_width = inner(calendar_width),
+                    font = typography.expressive,
+                    size = meta,
+                    color = theme.text_faint,
+                },
+            },
+            g.text {
+                present = function() return (a().problem or "") ~= "" end,
+                text = function() return a().problem or "" end,
+                max_width = inner(calendar_width),
+                wrap = true,
+                font = typography.expressive,
+                size = meta,
+                color = theme.alert,
+            },
+            g.each {
+                direction = "column",
+                items = function() return a().calendars or {} end,
+                key = function(c: any) return c.href end,
+                row = function(c: () -> any) return offered_row(g.untracked(a), c) end,
+            },
+        }
+    end
+
+    local function agenda(): any
+        local function list_height(): number
+            return inner(function() return agenda_height() end)() - 26 * f() - 4 * f() - 26 * f() - 8 * f()
+        end
+        return g.box {
+            width = inner(calendar_width),
+            height = function() return agenda_height() - padding() * 2 end,
+            direction = "column",
+            justify = "between",
+            g.box {
+                direction = "column",
+                gap = function() return 4 * f() end,
+                g.box {
+                    width = inner(calendar_width),
+                    height = function() return 26 * f() end,
+                    direction = "row",
+                    align = "center",
+                    justify = "between",
+                    g.text {
+                        text = function() return if adding_calendar.value then "A new calendar" else day_title(chosen_day.value) end,
+                        max_width = function() return inner(calendar_width)() - 100 * f() end,
+                        font = typography.expressive,
+                        size = function() return m().font_secondary end,
+                        weight = typography.weight_title,
+                        color = theme.text,
+                    },
+                    add_chip(function() return if adding_calendar.value then "Done" else "+ Calendar" end,
+                        function() return adding_calendar.value end,
+                        function() adding_calendar.value = not g.untracked(function() return adding_calendar.value end) end),
+                },
+                -- The day.
+                g.capsule {
+                    present = function() return not adding_calendar.value end,
+                    width = inner(calendar_width),
+                    height = list_height,
+                    radius = 0,
+                    clip = true,
+                    direction = "column",
+                    justify = "start",
+                    scroll_y = function() return agenda_scroll.value end,
+                    transition = { scroll_y = "reflow" },
+                    on_wheel = function(_, dy: number)
+                        local rows = #g.untracked(function() return chosen_events.value end)
+                        local most = math.max(0, rows * g.untracked(event_row) - g.untracked(list_height))
+                        local discrete = dy == math.floor(dy) and math.abs(dy) <= 3
+                        local now = g.untracked(function() return agenda_scroll.value end)
+                        agenda_scroll.value = math.clamp(now + (if discrete then dy * g.untracked(event_row) else dy), 0, most)
+                    end,
+                    g.each {
+                        direction = "column",
+                        items = function() return chosen_events.value end,
+                        key = function(e: any) return tostring(e.uid) .. ":" .. tostring(e.start) end,
+                        row = event_line,
+                    },
+                    -- A calendar that could not be read says so, under what
+                    -- was read from the others.
+                    g.text {
+                        present = function() return calendar.problem() ~= "" end,
+                        text = calendar.problem,
+                        max_width = inner(calendar_width),
+                        wrap = true,
+                        font = typography.expressive,
+                        size = meta,
+                        color = theme.alert,
+                    },
+                    g.box {
+                        present = function() return #chosen_events.value == 0 and calendar.problem() == "" end,
+                        width = inner(calendar_width),
+                        height = list_height,
+                        justify = "center",
+                        align = "center",
+                        g.text {
+                            text = function()
+                                return if calendar.read_at() > 0 then "Nothing on the calendar" else "Reading the calendar…"
+                            end,
+                            font = typography.expressive,
+                            size = function() return m().font_secondary end,
+                            color = theme.text_faint,
+                        },
+                    },
+                },
+                -- A new one: first the calendars of the accounts in Online
+                -- Accounts, each switched on with a touch; under the rule, an
+                -- address pasted and Enter, read before it is taken.
+                g.capsule {
+                    present = function() return adding_calendar.value end,
+                    width = inner(calendar_width),
+                    height = function() return list_height() + 26 * f() + 8 * f() end,
+                    radius = 0,
+                    clip = true,
+                    direction = "column",
+                    justify = "start",
+                    gap = function() return 6 * f() end,
+                    g.text {
+                        present = function() return #calendar.accounts() == 0 end,
+                        text = function()
+                            return if calendar.discovering() then "Looking in Online Accounts…"
+                                else "The calendars of the accounts in Online Accounts appear here."
+                        end,
+                        max_width = inner(calendar_width),
+                        wrap = true,
+                        font = typography.expressive,
+                        size = meta,
+                        color = theme.text_faint,
+                    },
+                    g.each {
+                        direction = "column",
+                        items = calendar.accounts,
+                        key = function(a: any) return a.goa end,
+                        row = account_block,
+                    },
+                    g.capsule {
+                        width = inner(calendar_width),
+                        height = 1,
+                        crisp = true,
+                        rim_top = function() return colour.alpha(theme.line(), 0.7) end,
+                        rim_bottom = function() return colour.alpha(theme.line(), 0.7) end,
+                        dash = 3,
+                        dash_gap = 3,
+                    },
+                    g.capsule {
+                        width = inner(calendar_width),
+                        height = function() return 34 * f() end,
+                        radius = function() return metrics_mod.radius_for(34 * f(), m()) end,
+                        stroke = 1.5,
+                        rim_top = function()
+                            return if calendar.add_problem() ~= "" then theme.alert() else theme.primary()
+                        end,
+                        rim_bottom = function()
+                            return if calendar.add_problem() ~= "" then theme.alert() else theme.primary()
+                        end,
+                        padding_x = function() return 14 * f() end,
+                        align = "center",
+                        justify = "start",
+                        calendar_node,
+                    },
+                    g.text {
+                        present = function() return calendar.checking() or calendar.add_problem() ~= "" end,
+                        text = function() return if calendar.checking() then "Reading it…" else calendar.add_problem() end,
+                        max_width = inner(calendar_width),
+                        wrap = true,
+                        font = typography.expressive,
+                        size = meta,
+                        color = function() return if calendar.checking() then theme.text_muted() else theme.alert() end,
+                    },
+                },
+            },
+            -- The calendars read, cut at the panel's edge when they run out
+            -- of room.
+            g.capsule {
+                present = function() return not adding_calendar.value end,
+                width = inner(calendar_width),
+                height = function() return 26 * f() end,
+                radius = 0,
+                clip = true,
+                justify = "start",
+                g.each {
+                    direction = "row",
+                    gap = function() return 6 * f() end,
+                    items = calendar.sources,
+                    key = function(s: any) return s.id or s.href or s.url or s.name end,
+                    row = source_chip,
+                },
+            },
+        }
+    end
+
     -- ---- The side panels, budding out of the month ----------------------------------
 
     local function side(attach: string, content: () -> any): any
@@ -676,6 +1074,51 @@ function M.new(cell: any, twenty_four: () -> boolean)
         }
     end
 
+    -- Hung from the month on the side away from the cell, on its own thread:
+    -- the month feeds it the day. There only once a calendar is set, or
+    -- while the first is being added, so the field has somewhere to be.
+    local function below(content: () -> any): any
+        local down = cell.edge ~= "bottom"
+        local function shown(): boolean return cell.open.value and agenda_shown() end
+        local function curve(): string return if shown() then "pod_1" else "close" end
+        return g.capsule {
+            overlay = true,
+            attach = if down then "below-center" else "above-center",
+            width = calendar_width,
+            height = agenda_height,
+            radius = function() return m().radius_panel end,
+            offset_y = function()
+                if not shown() then return 0 end
+                return if down then gap() else -gap()
+            end,
+            growth = function() return if shown() then 1 else 0 end,
+            bud = function() return if shown() then 0 else m().cell_height end,
+            blur = true,
+            fill = function() return colour.alpha(theme.cell(), 0.72) end,
+            rim_top = theme.rim,
+            rim_bottom = theme.line,
+            padding = padding,
+            justify = "start",
+            align = "start",
+            on_press = function() end,
+            transition = { growth = curve, bud = curve, offset_y = curve },
+            thread.new {
+                vertical = true,
+                overlay = true,
+                attach = if down then "above-center" else "below-center",
+                length = gap,
+                reversed = not down,
+                shown = shown,
+                timing = function() return "pod_thread_1" end,
+            },
+            g.box {
+                opacity = function() return if shown() then 1 else 0 end,
+                transition = { opacity = function() return if shown() then "pod_content_1" else "content_fade" end },
+                content(),
+            },
+        }
+    end
+
     local spec = {}
 
     spec.panel = {
@@ -683,16 +1126,35 @@ function M.new(cell: any, twenty_four: () -> boolean)
         height = panel_height,
         content = month,
         satellites = function()
-            return { side("left", places), side("right", timers) }
+            return { side("left", places), side("right", timers), below(agenda) }
         end,
     }
 
     -- Opened, it shows today's month.
     g.watch(function() return cell.open.value end, function(open: boolean)
-        if open then today() else adding.value = false end
+        if open then
+            today()
+        else
+            adding.value = false
+            adding_calendar.value = false
+        end
     end)
 
     function spec.on_key(name: string, typed: string?, mods: { [string]: boolean }): boolean
+        if g.untracked(function() return adding_calendar.value end) then
+            if name == "Escape" then
+                adding_calendar.value = false
+                return true
+            end
+            if name == "Return" or name == "KP_Enter" then
+                calendar.add(g.untracked(function() return calendar_text.value end))
+                return true
+            end
+            local before = g.untracked(function() return calendar_text.value end)
+            local taken = calendar_field.key(name, typed, mods)
+            if g.untracked(function() return calendar_text.value end) ~= before then calendar.clear_add_problem() end
+            return taken
+        end
         if g.untracked(function() return adding.value end) then
             if name == "Escape" then
                 adding.value = false

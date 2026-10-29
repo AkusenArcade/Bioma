@@ -291,6 +291,9 @@ local added_listeners: { (string) -> () } = {}
 function M.checking(): boolean return checking.value end
 -- Why the last address pasted was not taken, in a sentence.
 function M.add_problem(): string return add_problem.value end
+-- The address is being changed: the last refusal no longer applies.
+function M.clear_add_problem() add_problem.value = "" end
+
 -- A calendar was taken, under the name it gave itself.
 function M.on_added(f: (string) -> ()) table.insert(added_listeners, f) end
 
