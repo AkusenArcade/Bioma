@@ -309,6 +309,43 @@ function M.audio()
     end
 end
 
+-- The link, the radios, the tunnels and the proxy: read only.
+function M.connectivity()
+    local network = require("services/network")
+    local bluetooth = require("services/bluetooth")
+    local vpn = require("services/vpn")
+    local proxy = require("services/proxy")
+    g.effect(function()
+        print(string.format("check network wired %s %s %q %d Mb/s link %s; wifi present %s on %s hw %s %q %d%% bars %d; %s online %s",
+            tostring(network.wired_present()), network.wired_interface(), network.wired_name(), network.wired_speed(),
+            tostring(network.wired_has_link()), tostring(network.wifi_present()), tostring(network.wifi_enabled()),
+            tostring(network.wifi_hardware_enabled()), network.ssid(), network.signal_percent(), network.signal_bars(),
+            network.reachability(), tostring(network.online())))
+    end)
+    g.effect(function()
+        print(string.format("check network %d visible networks, error %q", #network.visible_networks(), network.last_error()))
+    end)
+    g.effect(function()
+        local names = {}
+        for _, d in bluetooth.paired_devices() do table.insert(names, bluetooth.describe(d)) end
+        print(string.format("check bluetooth available %s %q on %s settling %s scanning %s, paired [%s], connected %d, found %d",
+            tostring(bluetooth.available()), bluetooth.adapter_name(), tostring(bluetooth.enabled()),
+            tostring(bluetooth.settling()), tostring(bluetooth.scanning()), table.concat(names, ", "),
+            #bluetooth.connected_devices(), #bluetooth.found_devices()))
+    end)
+    g.effect(function()
+        local parts = {}
+        for _, p in vpn.profiles() do table.insert(parts, p.name .. " (" .. p.type .. (if p.state ~= "" then ", " .. p.state else "") .. ")") end
+        print(string.format("check vpn [%s] active %d busy %s error %q", table.concat(parts, "; "), #vpn.active(),
+            tostring(vpn.busy()), vpn.error()))
+    end)
+    g.effect(function()
+        local current = proxy.current()
+        print(string.format("check proxy mode %s, %d profiles, current %s, new id %s", proxy.mode(), #proxy.profiles(),
+            if current then current.id else "none", proxy.new_id()))
+    end)
+end
+
 -- A still of one output, its text, three seconds of it recorded and
 -- discarded: what can be checked with nobody picking or speaking. The
 -- output is $BIOMA_CHECK_OUTPUT (HDMI-A-1 by default).

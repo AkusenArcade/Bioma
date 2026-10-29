@@ -54,7 +54,8 @@ end
 -- `t`: text (a g.signal holding the string), width(), font(), size(),
 -- color() (the text's; muted for the placeholder), placeholder,
 -- taking() (whether the keys are the field's now), on_submit(text),
--- on_release() (Escape: it lets the keys go).
+-- on_release() (Escape: it lets the keys go), secret (a password: drawn
+-- as a dot a character, measured as drawn, never copied out).
 -- Returns the node and a handle: key(name, text, mods) → whether it was the
 -- field's, and set(text).
 function M.new(t: { [string]: any })
@@ -66,7 +67,11 @@ function M.new(t: { [string]: any })
     local function taking(): boolean return if t.taking then t.taking() else true end
 
     local function text(): string return value.value end
-    local function width_of(s: string): number return g.text_width { text = s, font = t.font(), size = t.size() } end
+    -- What is drawn: the text, or for a secret a dot for each character.
+    local function drawn(s: string): string
+        return if t.secret then string.rep("•", length(s)) else s
+    end
+    local function width_of(s: string): number return g.text_width { text = drawn(s), font = t.font(), size = t.size() } end
     local function x_of(i: number): number return width_of(sub(text(), 0, i)) end
 
     local function selection(): (number, number)
@@ -132,6 +137,8 @@ function M.new(t: { [string]: any })
     end
 
     local function copy()
+        -- A password stays where it was typed.
+        if t.secret then return end
         local chosen = selected()
         if chosen == "" then return end
         local p = g.process { command = { "wl-copy" } }
@@ -262,7 +269,7 @@ function M.new(t: { [string]: any })
             text = function()
                 local s = text()
                 if s == "" then return t.placeholder or "" end
-                return s
+                return drawn(s)
             end,
         },
         -- The caret: a hairline, still.

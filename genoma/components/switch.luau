@@ -9,7 +9,8 @@ local metrics_mod = require("core/metrics")
 
 local M = {}
 
--- `t`: on(), factor(), on_toggle(on).
+-- `t`: on(), factor(), on_toggle(on), and settling() for a change on its
+-- way (a radio powering up): faint and deaf until it has arrived.
 function M.new(t: { [string]: any }): any
     local function f(): number return t.factor() end
     local function w(): number return 42 * f() end
@@ -32,8 +33,12 @@ function M.new(t: { [string]: any }): any
         end,
         rim_top = function() return if t.on() then "#00000000" else theme.line() end,
         rim_bottom = function() return if t.on() then "#00000000" else theme.line() end,
-        on_click = function() t.on_toggle(not g.untracked(t.on)) end,
-        transition = { fill = "transition", fill_bottom = "transition", rim_top = "transition", rim_bottom = "transition" },
+        opacity = function() return if t.settling and t.settling() then 0.6 else 1 end,
+        on_click = function()
+            if t.settling and g.untracked(t.settling) then return end
+            t.on_toggle(not g.untracked(t.on))
+        end,
+        transition = { fill = "transition", fill_bottom = "transition", rim_top = "transition", rim_bottom = "transition", opacity = "transition" },
         g.capsule {
             overlay = true,
             attach = "corner",

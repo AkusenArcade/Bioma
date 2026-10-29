@@ -165,7 +165,7 @@ host, driven only by `scripts/genoma ipc`:
 | theme | §9.7 | 3 | 60ca560 | checked 2026-10-29, awaiting Akusen and the cost |
 | utility | §9.6 | 3 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | audio | §9.5 | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
-| connectivity | §9.11 | 4 | | |
+| connectivity | §9.11 | 4 | 11bb81e | in progress: at rest, Ethernet, Wi-Fi, Bluetooth; VPN, proxy, printers to come |
 | system | §9.8 (session menu) | 4 | | |
 | dock | §9.9 | 4 | | |
 | tray | *beyond the PRD* | 4 | | |
@@ -361,6 +361,20 @@ button opened it (only the left one does now, the middle one is the
 cell's: `on_middle`), and adding or removing a cell in the configuration
 takes a reload, where Quickshell follows it live — settings will need it.
 
+connectivity, in progress 2026-10-29 (`cells/connectivity.luau`,
+`cells/connectivity_expansion.luau`; services `network`, `bluetooth`,
+`vpn`, `proxy`, `printers`): one glyph per live connection at rest, the
+Wi-Fi one carrying its signal in its arcs. Opened: ETHERNET with the
+profile and the link's speed, WI-FI with its switch and the networks once
+it is on (the radio switched on and back off, it is off by Akusen's
+choice), BLUETOOTH with SEARCH, its loader and what it found. The password
+field is `components/field.luau` with `secret`. Not tried: joining a
+network, pairing a device (the desktop has none to pair and no saved
+Wi-Fi profile). Found on the way: Genoma names a device's call in flight
+as a string, and an empty string is true in Luau, so every device read as
+pairing. Still to port: the VPN well (its import needs a file chooser
+Genoma does not have), the proxy well and its editor, the printers well.
+
 ### Surfaces that are not cells
 
 | Surface | PRD | State |
@@ -471,3 +485,17 @@ configuration with nothing of Genoma's in it:
 - [x] Dictation (`dictation.luau`): `scripts/listen`, `whisper-cli`,
       `scripts/paste`, one take at a time, each process dying with the
       shell; the level from the recorder's own peaks.
+- [x] Network (`network.luau`, from 11bb81e): the wired link, Wi-Fi, the
+      networks one entry a name, joining and its failure, reachability;
+      on Genoma's NetworkManager domain.
+- [x] Bluetooth (`bluetooth.luau`): adapter, power with its settling,
+      discovery, paired, connected and found devices, pair-trust-connect.
+- [x] Vpn (`vpn.luau`): NetworkManager's VPN and WireGuard profiles by
+      nmcli, followed through `nmcli monitor`; up, down, remove, import with
+      credentials through `scripts/vpn`.
+- [x] Proxy, the choice (`proxy.luau`): profiles, triggers (a VPN, a Wi-Fi
+      network, the cable), the environment, the profiles written. The
+      desktop's gsettings stays Quickshell's until the switch.
+- [x] Printers (`printers.luau`): CUPS's queues, default and jobs through
+      `scripts/printers`, followed by its D-Bus notifications; search, add,
+      remove, default. Making the only queue the default stays Quickshell's.
