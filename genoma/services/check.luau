@@ -104,4 +104,61 @@ function M.system_monitor()
     g.after(9, function() sm.set_list_processes(false) end)
 end
 
+-- The timer is started and stopped well before it would ring: ringing is a
+-- critical notification and a sound on the desktop of whoever is using it.
+function M.time()
+    local time = require("services/time")
+    g.effect(function()
+        local parts = {}
+        for _, zone in time.zones() do
+            local t = time.in_zone(zone)
+            table.insert(parts, string.format("%s (%s) %s", time.city_of(zone), time.utc_label(zone),
+                if t then string.format("%02d:%02d", t.hour, t.min) else "?"))
+        end
+        print("check time zones " .. table.concat(parts, ", ") .. string.format(" — here %s", os.date("%H:%M")))
+    end)
+    g.effect(function()
+        print(string.format("check time timer %d/%d running %s paused %s fraction %.3f", time.left(), time.length(),
+            tostring(time.running()), tostring(time.paused()), time.fraction_left()))
+    end)
+    g.effect(function()
+        local a = time.alarm()
+        print(string.format("check time alarm %02d:%02d %s", a.hour, a.minute, if a.on then "on" else "off"))
+    end)
+    g.after(1, function() time.start() end)
+    g.after(4.2, function() time.pause() end)
+    g.after(5.5, function() time.reset() end)
+    g.after(6, function()
+        time.ask_known()
+    end)
+    g.effect(function()
+        local known = time.known()
+        if #known > 0 then print("check time known zones " .. #known .. ", first " .. known[1]) end
+    end)
+end
+
+-- Counts only: the events are someone's own.
+function M.calendar()
+    local calendar = require("services/calendar")
+    g.effect(function()
+        local nxt = calendar.next()
+        print(string.format("check calendar sources %d, %d events read %s, today %d, ongoing %d, next %s, problems %q",
+            #calendar.sources(), #calendar.events(), if calendar.read_at() > 0 then os.date("%H:%M:%S", calendar.read_at() // 1000) else "never",
+            #calendar.today(), #calendar.ongoing(), if nxt then os.date("%d/%m %H:%M", nxt.start // 1000) else "none", calendar.problem()))
+    end)
+    print(string.format("check calendar today starts %s, ends %s", os.date("%d/%m %H:%M", calendar.today_start() // 1000),
+        os.date("%d/%m %H:%M", calendar.today_end() // 1000)))
+end
+
+function M.apps()
+    local apps = require("core/apps")
+    print("check apps entries " .. #apps.entries())
+    for _, name in { "Alacritty", "xwayland-satell", "steamwebhelp", "zen-bin", "firefox", "nvim", "niri", "x" } do
+        local entry = apps.entry_for(name)
+        print(string.format("check apps %s → %s icon %q", name, if entry then entry.id else "nothing", apps.icon_for(name)))
+    end
+    local entry = apps.entry_for("Alacritty")
+    if entry then print("check apps command " .. table.concat(apps.command_of(entry), " | ")) end
+end
+
 return M

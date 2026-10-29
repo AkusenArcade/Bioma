@@ -238,3 +238,22 @@ configuration with nothing of Genoma's in it:
       Genoma's power domain (now with UPower's `EnergyRate`), and `ps` only
       while a list is asked for. One binding run per sample (`g.batch`).
       Performance mode's longer interval comes with its service.
+- [x] Time (`time.luau`): other places (offsets asked of `date`, the same
+      as `TZ=… date` gives), the timer on the wall clock (counted down and
+      paused in the check), the alarm at each minute's turn. Ringing (a
+      critical notification and a sound) was not set off in the check.
+- [x] Calendar (`calendar.luau`), through `scripts/calendar` with the
+      sources in its environment (`g.process` now takes `env`): read once
+      at the start, again when the sources change and every `minutes`;
+      today's bounds at local midnight (Luau's `os.time` reads a table as
+      UTC, so local times go through the offset). The events of the
+      sources were counted, never printed.
+- [~] Proxy, reading (`proxy.luau`): the profile in force and the
+      environment it gives a program. The triggers wait for the VPN and
+      network services, so `auto` chooses none yet; writing the desktop's
+      proxy (`gsettings`) stays Quickshell's while both run.
+- [x] Apps (`core/apps.luau`): an application from a window's class or a
+      cut executable (`steamwebhelp` → steam, `zen-bin` → zen, `nvim`
+      nothing, as Apps.qml rules), its icon through the theme, and `run`
+      through `scripts/launch`. Genoma reads the desktop entries
+      (`g.desktop_entries()`, `g.icon_path()`); they are read at the load.
