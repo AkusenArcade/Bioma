@@ -175,4 +175,88 @@ g.effect(function()
     g.effect(function() apply(file.text) end)
 end)
 
+-- ---- What the theme cell shows ----------------------------------------------------
+--
+-- The palette at rest: seven roles, of the destination rather than the
+-- transit, so a chip bound to them moves once per change and not on every
+-- frame of the crossing. The state colours are not among them.
+
+function M.target_is_dark(): boolean return colour.luminance(M.target("background")) < 0.5 end
+
+function M.target_roles(): { string }
+    local bg, p = M.target("background"), M.target("primary")
+    local dark = M.target_is_dark()
+    return {
+        bg,
+        M.lift_away(bg, 0.045, dark),
+        M.structural_with(bg, p, if dark then 0.32 else 0.72),
+        M.structural_with(bg, p, if dark then 0.55 else 0.50),
+        p,
+        M.target("secondary"),
+        M.target("text"),
+    }
+end
+
+-- ---- The palettes on offer ----------------------------------------------------------
+--
+-- A manual palette is a data file: dropped into config/palettes/ it is
+-- offered. The name comes from inside the file. The user's own, in
+-- ~/.config/bioma/palettes/, come after Bioma's, and one with a shipped
+-- one's file name takes its place.
+
+function M.source(): string return config.get("theme.source", "manual") end
+function M.manual_palette(): string return config.get("theme.palette", "default") end
+
+local shipped_folder = g.folder { path = M.shipped_palettes }
+local user_folder = g.folder { path = M.user_palettes }
+
+local function json_files(entries: { any }): { any }
+    local out = {}
+    for _, e in entries do
+        local base = string.match(e.name, "^(.*)%.json$")
+        if base and not e.dir then table.insert(out, { file = base, path = e.path }) end
+    end
+    return out
+end
+
+local function parsed(reader: any): { [string]: any }
+    local text = reader.text
+    if not text then return {} end
+    local ok, palette = pcall(g.parse_json, text)
+    return if ok and type(palette) == "table" then palette else {}
+end
+
+-- { { file, name, own, colours } }. One reader per file, made by the effect
+-- that lists them, so a file that goes takes its reader with it.
+local palettes = g.signal({})
+g.effect(function()
+    local own_list = json_files(user_folder.entries)
+    local own = {}
+    for _, f in own_list do own[f.file] = true end
+    local wanted = {}
+    for _, f in json_files(shipped_folder.entries) do
+        if not own[f.file] then table.insert(wanted, { file = f.file, own = false, reader = g.file { path = f.path, watch = false } }) end
+    end
+    for _, f in own_list do
+        table.insert(wanted, { file = f.file, own = true, reader = g.file { path = f.path } })
+    end
+    g.effect(function()
+        local out = {}
+        for _, w in wanted do
+            local data = parsed(w.reader)
+            table.insert(out, { file = w.file, name = data.name or w.file, own = w.own, colours = data })
+        end
+        g.untracked(function() palettes.value = out end)
+    end)
+end)
+function M.palettes(): { any } return palettes.value end
+
+function M.palette_name(): string
+    local chosen = M.manual_palette()
+    for _, p in palettes.value do
+        if p.file == chosen then return p.name end
+    end
+    return chosen
+end
+
 return M

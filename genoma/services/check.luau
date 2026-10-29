@@ -206,4 +206,53 @@ function M.media()
     end)
 end
 
+function M.wallpaper()
+    local wallpaper = require("services/wallpaper")
+    g.effect(function()
+        print(string.format("check wallpaper current %s, mode %s, folder %s", wallpaper.current(), wallpaper.mode(),
+            wallpaper.folder()))
+    end)
+    g.effect(function()
+        local list = wallpaper.entries()
+        local hits = 0
+        for _, p in list do
+            if wallpaper.thumbnail(p) ~= p then hits += 1 end
+        end
+        print(string.format("check wallpaper %d entries, index %d, %d favourites, %d with a thumbnail; first %s",
+            #list, wallpaper.index(), #wallpaper.favourites(), hits, list[1] or "-"))
+        print(string.format("check wallpaper neighbours %s | %s", wallpaper.neighbour(-1), wallpaper.neighbour(1)))
+    end)
+end
+
+function M.palettes()
+    local theme = require("core/theme")
+    g.effect(function()
+        local parts = {}
+        for _, p in theme.palettes() do
+            table.insert(parts, string.format("%s=%q%s %s", p.file, p.name, if p.own then "*" else "", p.colours.primary or "?"))
+        end
+        print("check palettes " .. table.concat(parts, ", "))
+        print(string.format("check palettes source %s, chosen %s (%s)", theme.source(), theme.manual_palette(), theme.palette_name()))
+        print("check palettes roles " .. table.concat(theme.target_roles(), " "))
+    end)
+end
+
+function M.looks()
+    local looks = require("services/looks")
+    local templates = require("services/templates")
+    g.effect(function()
+        print(string.format("check looks icons %s (%s, slotted %s) base %s, cursor %s %d, %d icon themes, %d cursors, sizes %s",
+            looks.icon_theme(), looks.name_of(looks.icons(), looks.icon_theme()),
+            tostring(looks.is_slotted(looks.icons(), looks.icon_theme())), looks.icon_base(), looks.cursor_theme(),
+            looks.cursor_size(), #looks.icons(), #looks.cursors(), table.concat(looks.sizes(), "/")))
+    end)
+    g.effect(function()
+        local parts = {}
+        for _, t in templates.catalogue() do
+            table.insert(parts, t.id .. (if templates.is_on(t.id) then "*" else "") .. (if t.installed then "" else "?"))
+        end
+        print("check templates " .. table.concat(parts, " "))
+    end)
+end
+
 return M
