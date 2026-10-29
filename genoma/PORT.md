@@ -227,7 +227,7 @@ one, the workspaces' too) and from each pod to the panel's edge, a node on
 each rim. Along the thread of the domain the list is sorted by, particles
 flow out of the pod into the list, as many a second as that domain's load
 (eight at full load; the battery's from the watts going in, as Vital.qml's
-drops), in its state colour, and none at zero (Akusen's idea, 2026-10-29,
+drops), in the primary as the sort's dot is, and none at zero (Akusen's idea, 2026-10-29,
 beyond Quickshell's). Not yet: the shell-wide keyboard travel
 (the pods and the choices are reached by the pointer only), the matrix's
 outer pods budding out of the inner ones, the scroll bar, the window title

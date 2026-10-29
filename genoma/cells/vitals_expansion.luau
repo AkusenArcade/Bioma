@@ -327,7 +327,10 @@ function M.new(cell: any)
                 lifetime = function() return require("core/timing").seconds.flow end,
                 spread = 0,
                 particle_size = function() return metrics_mod.node_size * 1.2 end,
-                fill = function() return theme.state_for(load_of(key)) end,
+                -- The primary, as the sort's dot is: the particles say which
+                -- thread orders the list, their rate how hard it works
+                -- (Akusen, 2026-10-29).
+                fill = theme.primary,
             },
             -- The matrix reads top to bottom: the indicator above its
             -- figures, the name at the foot.
