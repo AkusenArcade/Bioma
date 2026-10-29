@@ -172,7 +172,7 @@ host, driven only by `scripts/genoma ipc`:
 | actions | *beyond the PRD* | 4 | | |
 | clipboard | *beyond the PRD* | 4 | | |
 | download | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
-| drives | *beyond the PRD* | 4 | | |
+| drives | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | emoji | *beyond the PRD* | 4 | | |
 | keyboard | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | performance | *beyond the PRD* | 4 | | |
@@ -450,6 +450,15 @@ typed turned the list into the catalogue (Italian first, then the names
 that start with it) and Down chose the next. Not done, for they rewrite
 his niri configuration: adding, removing, switching.
 
+drives, checked 2026-10-29 on HDMI-A-1 (`cells/drives.luau`, service
+`drives`), with no stick in the machine: `BIOMA_CHECK_DRIVES` pointed the
+service at a program printing one mounted stick written to at 12 MB/s
+for twelve seconds in twenty. At rest the stick and its running thread;
+opened, its label, WRITING · 12 MB/S with its thread, then its size, type
+and MOUNTED when the writing stopped; Eject on a device that does not
+exist put udisks' complaint under the row in the alert colour. Not tried
+on a real drive: open, eject, power off.
+
 ### Surfaces that are not cells
 
 | Surface | PRD | State |
@@ -595,3 +604,6 @@ configuration with nothing of Genoma's in it:
 - [x] Keyboard (`keyboard.luau`): the layouts niri loaded and the one on,
       the catalogue by `scripts/xkb`, the list written as a niri include
       by `scripts/niri-include` when changed here.
+- [x] Drives (`drives.luau`): `scripts/drives` while a cell holds it;
+      open (mounting first), eject (unmount, then power off or delete the
+      loop), the reason when refused.
