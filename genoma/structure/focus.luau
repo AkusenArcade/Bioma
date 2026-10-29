@@ -38,6 +38,16 @@ end
 
 function M.any_open(): boolean return open_id.value ~= 0 end
 
+-- The open cell, or nil.
+function M.open_cell(): any return cells[open_id.value] end
+
+-- Whether the shell holds the keyboard: an open cell with a field to type
+-- in makes its surface take it, and then no window has it.
+function M.holds_keyboard(): boolean
+    local c = cells[open_id.value]
+    return c ~= nil and c.spec.wants_keyboard == true
+end
+
 -- Whether `c` holds the attention: open, or summoned with no panel to open.
 function M.is(c: any): boolean return open_id.value == c.focus_id end
 

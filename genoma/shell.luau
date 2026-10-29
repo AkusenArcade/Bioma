@@ -16,6 +16,10 @@ local input_surface = require("structure/input_surface")
 local registry = require("cells/registry")
 
 local monitors = require("services/monitors")
+local paths = require("core/paths")
+
+-- The shell's own glyphs, by name: assets/icons, the runtime copy.
+g.icon_dir(paths.root .. "/assets/icons")
 
 -- Which outputs a block belongs to: a name, `all`, or `primary` (the one
 -- niri focuses at startup, else the first screen).

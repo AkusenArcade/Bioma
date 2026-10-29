@@ -145,7 +145,7 @@ host, driven only by `scripts/genoma ipc`:
 
 | Cell | PRD | Phase | Ported from | State |
 |---|---|---|---|---|
-| window_title | §9.1 | 2 | | |
+| window_title | §9.1 | 2 | 670c660 | checked 2026-10-29, awaiting Akusen and the cost |
 | workspaces | §9.3 | 2 | | |
 | vitals | §9.2 | 2 | | |
 | clock | *beyond the PRD* | 2, with the membrane | | |
@@ -170,6 +170,18 @@ host, driven only by `scripts/genoma ipc`:
 | notifications | §9.10 | 4, last | | |
 | settings (with setup, §9.14) | §9.12 | 5 | | |
 | launcher | §9.13 | 6 | | |
+
+window_title, checked 2026-10-29 (`genoma/cells/window_title.luau`,
+`components/sweep.luau`) beside Bioma on Quickshell's on DP-1, the same
+block and palette: the same height to the pixel (tissue, rim, cell), the
+same width from the disc to the end, the disc, icon, loader and text at the
+same places (a difference of antialiasing, the loader's phase, and the
+glass over a different wallpaper). It leaves with the focus and comes back
+with it; a new title waits out the debounce, fades out and the next fades
+in; a spinner in the title becomes the loader, late in and at once out.
+Not yet: the glyph of a cell holding the keyboard (no ported cell takes
+it). A press centres the window: not pressed in the check, it would have
+moved Akusen's.
 
 ### Surfaces that are not cells
 
