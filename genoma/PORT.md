@@ -168,7 +168,7 @@ host, driven only by `scripts/genoma ipc`:
 | connectivity | §9.11 | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | system | §9.8 (session menu) | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | dock | §9.9 | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
-| tray | *beyond the PRD* | 4 | | |
+| tray | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | actions | *beyond the PRD* | 4 | | |
 | clipboard | *beyond the PRD* | 4 | | |
 | download | *beyond the PRD* | 4 | | |
@@ -405,6 +405,22 @@ in its new place and dragged back. Not pressed, for moving his windows:
 a press (focus, the next window), the middle button (another one), the
 right one (keep, let go). Not yet: a long press on a touch screen.
 
+tray, checked 2026-10-29 on HDMI-A-1 (`cells/tray.luau`, service `tray`):
+Genoma registered as a host with the watcher Quickshell serves, the same
+four items in the same order. Two icons differ, and on purpose until
+Akusen says otherwise: Steam's is the theme's own `steam_tray_mono`
+(Qogir, through bioma-icons' chain) where Quickshell falls back to the
+grey PNG in /usr/share/pixmaps, and Telegram's is its symbolic icon where
+Quickshell draws the pixels the application sends — Qt's lookup searches
+fewer of a theme's directories. The menu of Shelly opened with the right
+button, its separators, a disabled entry, a submenu entered and left;
+nothing in it pressed. Not yet: icons sent only as pixels (the glyph
+instead), a long press on a touch screen. Found on the way: Genoma looked
+icons up in application directories only (now every directory a theme
+declares), and a `rotate_y` on an absent icon mirrored the text beside
+it (the back chevron is now `chevron-left`, drawn in the icon set; the
+Genoma bug is still to find).
+
 ### Surfaces that are not cells
 
 | Surface | PRD | State |
@@ -539,3 +555,6 @@ configuration with nothing of Genoma's in it:
       looked at.
 - [x] Power, the profile (`power.luau`): Bioma's three names, held back
       by the daemon's reason. Following the mains stays Quickshell's.
+- [x] Tray (`tray.luau`): the items, ranked as Tray.qml ranks them, their
+      icons by name, activation, scroll and the DBusMenu menus, on
+      Genoma's host beside Quickshell's watcher.
