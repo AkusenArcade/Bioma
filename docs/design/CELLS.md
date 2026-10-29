@@ -218,7 +218,7 @@ channel on the left, right on the right, the low frequencies meeting at the midd
 built on the bars' measures, so a drop sits where a bar would and silence is the bar's dot.
 Added 2026-10-11 at Akusen's request: the bars read as a stock visualiser beside the organisms.
 
-- **Bars** — the default, as above.
+- **Bars** — as above.
 - **Plasma** — a drop for every band on the middle line, its radius as loud as the band, up to
   0.38 of the band's height; the row is one body whose outline is the spectrum. Neighbours blend
   by the smaller one's radius, so a quiet drop beside a loud one barely touches it and the dots of
@@ -232,7 +232,7 @@ Added 2026-10-11 at Akusen's request: the bars read as a stock visualiser beside
   Where the band is at least six pitches tall (the organism) one vesicle stands for two bands,
   the louder, at twice the pitch: forty-eight were beads on a string, too small to divide.
 
-- **Eardrum** — a membrane stretched along the middle line, held at both ends as the eardrum is
+- **Eardrum** — the default (Akusen, 2026-10-29): a membrane stretched along the middle line, held at both ends as the eardrum is
   by its ring, the umbo (where the hammer holds it) a node at the centre. Each band shakes the
   stretch where its bar would stand, as far as it is loud, its window a Gaussian one pitch wide.
   The low bands at the centre move the membrane as a whole in long slow waves (half the band's

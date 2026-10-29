@@ -55,7 +55,7 @@ Item {
         { "key": "vesicles", "label": "VESICLES" },
         { "key": "eardrum", "label": "EARDRUM" }
     ]
-    readonly property string effect: Config.get("sinestesia.effect", "bars")
+    readonly property string effect: Config.get("sinestesia.effect", "eardrum")
     readonly property string effectLabel: {
         for (const option of root.effects)
             if (option.key === root.effect)

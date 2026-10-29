@@ -40,7 +40,7 @@ function M.band_count(): number return config.get("sinestesia.bands", 64) end
 -- How every band draws the sound: bars, plasma, vesicles or eardrum
 -- (components/Band.qml), a property of the domain: the cell and the organism
 -- show the same sound the same way.
-function M.effect(): string return config.get("sinestesia.effect", "bars") end
+function M.effect(): string return config.get("sinestesia.effect", "eardrum") end
 
 -- One spectrum per channel, `band_count` values 0…1, lowest first; and the
 -- loudest band of the last frame.

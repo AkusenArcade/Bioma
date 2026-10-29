@@ -77,7 +77,8 @@
     "bands": 64,
     "fps": 60,
     "gain": 1.0,
-    "source": "output"
+    "source": "output",
+    "effect": "eardrum"
   },
 
   "brightness": {
