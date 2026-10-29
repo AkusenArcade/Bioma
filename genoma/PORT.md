@@ -36,6 +36,18 @@ not configuration blocks (the wallpaper, the organisms, the OSD) get their
 own when they are ported. Notifications move last: the session's
 notification name has one owner.
 
+## Who acts on the desktop
+
+Until the switch (M6 step 7) the two run side by side, and some services
+act on the desktop rather than only reading it: matugen, the templates
+(GTK, niri), gsettings (icons, cursors, the proxy), the wallpaper's state.
+Run twice, they would write in turn. So (Akusen, 2026-10-29): **Genoma
+chooses, Quickshell acts.** Bioma on Genoma reads everything, and a choice
+made in one of its cells (a wallpaper, a palette) writes only the shared
+configuration and state (`override.json`, `wallpaper.json`); Bioma on
+Quickshell, which follows those files already, is the one that runs the
+effects. At the switch the effects move to Genoma.
+
 ## Parity
 
 A surface is ported when its checklist is ticked from a side-by-side
