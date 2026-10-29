@@ -177,7 +177,7 @@ host, driven only by `scripts/genoma ipc`:
 | keyboard | *beyond the PRD* | 4 | | |
 | performance | *beyond the PRD* | 4 | | |
 | polkit | *beyond the PRD* | 4 | | |
-| privacy | *beyond the PRD* | 4 | | |
+| privacy | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | timer | *beyond the PRD* | 4 | | |
 | notifications | §9.10 | 4, last | | |
 | settings (with setup, §9.14) | §9.12 | 5 | | |
@@ -428,6 +428,12 @@ thread running (a shader whose clock stops with the bytes); opened, the
 row with the name, its own thread and the figures. Not pressed: the row
 (it opens the file manager).
 
+privacy, checked 2026-10-29 on HDMI-A-1 (`cells/privacy.luau`, service
+`privacy`): nothing taken, neither shell showed it; `pw-record` taking the
+microphone raised both, the same glyph in the active colour and the same
+name, and opened, the row said MICROPHONE · REVELATOR IO 24 PRO. Not
+tried: a camera (none is used here) and a screen cast.
+
 ### Surfaces that are not cells
 
 | Surface | PRD | State |
@@ -567,3 +573,6 @@ configuration with nothing of Genoma's in it:
       Genoma's host beside Quickshell's watcher.
 - [x] Downloads (`downloads.luau`): `scripts/downloads` while a cell holds
       it; reveal through FileManager1, else the folder.
+- [x] Privacy (`privacy.luau`): captures from PipeWire's links (Genoma's
+      audio domain, video nodes included), cameras by `scripts/cameras`
+      believed after a moment, screens from niri's casts.

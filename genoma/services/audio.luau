@@ -31,6 +31,17 @@ local function by_name(name: string): any
     return nil
 end
 
+-- Every node by its id, and the links between them: who takes what from
+-- whom (Privacy reads them).
+local by_id = g.computed(function(): { [number]: any }
+    local out = {}
+    for _, n in nodes.value do out[n.id] = n end
+    return out
+end)
+local links = g.computed(function(): { any } return pipewire.links end)
+function M.node(id: number): any return by_id.value[id] end
+function M.links(): { any } return links.value end
+
 local sink = g.computed(function(): any return by_name(pipewire.default_sink) end)
 local source = g.computed(function(): any return by_name(pipewire.default_source) end)
 function M.sink(): any return sink.value end
