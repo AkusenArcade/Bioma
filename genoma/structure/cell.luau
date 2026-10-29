@@ -15,9 +15,12 @@
 --   interactive        whether it answers a press (default: it has a panel)
 --   on_click()         what a press does, if not opening
 --   panel              what it opens, if anything: { width(), height(),
---                      content(), satellites() }, the size the panel's own,
---                      padding included; satellites are shapes that bud out of
---                      the panel itself (the vitals' pods)
+--                      content(), satellites(), radius(), beyond() }, the
+--                      size the panel's own, padding included; satellites
+--                      are shapes that bud out of the panel itself (the
+--                      vitals' pods), beyond how far past it they reach
+--                      (the media's track, hung under its band); radius
+--                      when it is not the panel's
 --   on_key(name)       a key while it is open, Escape aside
 --   on_wheel(dx, dy)   the wheel over the cell
 --   header_title, header_mark(size), header_mark_size()
@@ -293,7 +296,10 @@ function M.new(kind: any, ctx: { [string]: any })
         end
 
         -- Still drawn while it is taken back.
-        function c.reach(): number return if panel_out.value then place.gap() + p.height() else 0 end
+        function c.reach(): number
+            if not panel_out.value then return 0 end
+            return place.gap() + p.height() + (if p.beyond then p.beyond() else 0)
+        end
 
         local panel: { [any]: any } = {
             name = c.domain .. " panel",
@@ -315,7 +321,7 @@ function M.new(kind: any, ctx: { [string]: any })
                 if not c.open.value then return 0 end
                 return if down then place.gap() else -place.gap()
             end,
-            radius = function() return c.metrics().radius_panel end,
+            radius = function() return if p.radius then p.radius() else c.metrics().radius_panel end,
             growth = function() return if c.open.value then 1 else 0 end,
             -- The neck: soft and wide as it leaves, gone once it is out.
             bud = function() return if c.open.value then 0 else c.metrics().cell_height end,

@@ -13,7 +13,9 @@
 -- chosen MPRIS source (services/media.luau). Choosing another player does
 -- not touch the band.
 --
--- Not yet: the expansion, the track panel.
+-- Pressed, it opens its expansion (cells/media_expansion.luau): the band
+-- with room, and the track hung under it. The wheel does nothing on
+-- purpose: volume is another cell.
 local g = require("@genoma")
 local theme = require("core/theme")
 local typography = require("core/typography")
@@ -22,6 +24,7 @@ local audio = require("services/audio")
 local media = require("services/media")
 local sinestesia = require("services/sinestesia")
 local band = require("components/band")
+local expansion = require("cells/media_expansion")
 
 local BARS = 14
 
@@ -87,6 +90,7 @@ return {
         local function shows_name(): boolean return named() and available() >= 60 * f() end
 
         return {
+            panel = expansion.new(cell),
             padding_leading = 16,
             padding_trailing = 16,
             -- The signal and nothing else; the thresholds and the dwell are

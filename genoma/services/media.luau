@@ -58,6 +58,41 @@ function M.identity(): string return field("identity") end
 -- A local file or a remote address; often none.
 function M.art_url(): string return field("art_url") end
 function M.has_art(): boolean return M.art_url() ~= "" end
+
+-- The cover as a file an image node reads: a local one's path, a remote
+-- one once it is downloaded to the cache (Spotify sends https). Empty until
+-- there is a file to show, so the well and its glyph stand meanwhile.
+local cache = (g.env("XDG_CACHE_HOME") or ((g.env("HOME") or "") .. "/.cache")) .. "/bioma/art"
+local function unescape(text: string): string
+    return (string.gsub(text, "%%(%x%x)", function(hex) return string.char(tonumber(hex, 16) :: number) end))
+end
+-- djb2 and the length: a file name per address, not a secret.
+local function key_of(text: string): string
+    local h = 5381
+    for i = 1, #text do h = (h * 33 + string.byte(text, i)) % 4294967296 end
+    return string.format("%08x%x", h, #text)
+end
+local fetched = g.signal({ url = "", path = "" })
+g.watch(M.art_url, function(url: string)
+    if string.sub(url, 1, 8) ~= "https://" and string.sub(url, 1, 7) ~= "http://" then return end
+    if g.untracked(function() return fetched.value end).url == url then return end
+    local path = cache .. "/" .. key_of(url)
+    g.process {
+        command = { "sh", "-c",
+            '[ -s "$1" ] || { curl -sfL --max-time 10 --create-dirs -o "$1.part" "$2" && mv "$1.part" "$1"; }',
+            "sh", path, url },
+        on_exit = function(code: number)
+            if code == 0 then fetched.value = { url = url, path = path } end
+        end,
+    }
+end)
+function M.art_path(): string
+    local url = M.art_url()
+    if string.sub(url, 1, 7) == "file://" then return unescape(string.sub(url, 8)) end
+    if string.sub(url, 1, 1) == "/" then return url end
+    local f = fetched.value
+    return if f.url == url then f.path else ""
+end
 -- Something worth writing beside the band.
 function M.has_metadata(): boolean return M.title() ~= "" or M.artist() ~= "" end
 
