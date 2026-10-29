@@ -8,6 +8,7 @@ local colour = require("core/colour")
 local metrics_mod = require("core/metrics")
 local paths = require("core/paths")
 local theme = require("core/theme")
+local performance = require("core/performance")
 
 local M = {}
 
@@ -20,7 +21,8 @@ function M.new(t: { [string]: any }): any
         if r < 1024 then return 0 end
         return (6 + 40 * math.log10(1 + r / 65536)) * t.factor()
     end
-    local function moving(): boolean return speed() > 0 and (t.running == nil or t.running()) end
+    -- Performance mode's motion lever holds it still.
+    local function moving(): boolean return speed() > 0 and (t.running == nil or t.running()) and not performance.still() end
     local function push(out: { number }, hex: string)
         local c = colour.parse(hex)
         table.insert(out, c.r)

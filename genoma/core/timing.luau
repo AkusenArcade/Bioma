@@ -7,6 +7,7 @@
 -- tightening the cascade, never by shortening an individual growth.
 local g = require("@genoma")
 local config = require("core/config")
+local performance = require("core/performance")
 
 local M = {}
 
@@ -47,8 +48,14 @@ local fixed = {
 
 g.effect(function()
     local speed = config.get("timing.speed", 1.0)
-    for name, ms in moved do M.seconds[name] = config.get("timing." .. name, ms) * speed / 1000 end
+    -- Performance mode's transitions lever: what moves is over in a
+    -- millisecond, and nothing is staggered (Timing.qml).
+    local instant = performance.instant()
+    for name, ms in moved do
+        M.seconds[name] = if instant then 0.001 else config.get("timing." .. name, ms) * speed / 1000
+    end
     for name, ms in scaled do M.seconds[name] = config.get("timing." .. name, ms) * speed / 1000 end
+    if instant then M.seconds.stagger = 0 end
     for name, ms in fixed do M.seconds[name] = config.get("timing." .. name, ms) / 1000 end
     local s, c = M.seconds, M.curves
     g.timing {

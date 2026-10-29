@@ -18,6 +18,7 @@
 -- full on the mains (they wait for a battery to be checked against, on the
 -- laptop); performance mode's resting poses, with its service.
 local g = require("@genoma")
+local performance = require("core/performance")
 local theme = require("core/theme")
 
 local M = {}
@@ -57,7 +58,7 @@ function M.new(t: { [string]: any }): any
             height = function() return 16 * unit() + QT_AA end,
             fill = top,
             fill_bottom = bottom,
-            pulse = function() return 45 + t.rate() * 95 end,
+            pulse = function() return if performance.still() then 0 else 45 + t.rate() * 95 end,
             transition = { fill = "theme", fill_bottom = "theme" },
         })
     elseif kind == "ram" then
@@ -87,7 +88,7 @@ function M.new(t: { [string]: any }): any
             height = function() return 12 * unit() + QT_AA end,
             fill = top,
             fill_bottom = bottom,
-            orbit = function() return 1 / (6 - t.rate() * 4.8) end,
+            orbit = function() return if performance.still() then 0 else 1 / (6 - t.rate() * 4.8) end,
             orbit_radius = radius,
             transition = { fill = "theme", fill_bottom = "theme" },
         })

@@ -10,6 +10,7 @@
 -- Performance mode's still band comes with the performance service.
 local g = require("@genoma")
 local config = require("core/config")
+local performance = require("core/performance")
 local paths = require("core/paths")
 
 local M = {}
@@ -34,7 +35,9 @@ function M.hold(owner: any, wanted: boolean)
         holders.value = next_list
     end
 end
-function M.active(): boolean return #holders.value > 0 end
+-- Held, and not stilled by performance mode's motion lever: a still band
+-- needs no spectrum.
+function M.active(): boolean return #holders.value > 0 and not performance.still() end
 
 function M.band_count(): number return config.get("sinestesia.bands", 64) end
 -- How every band draws the sound: bars, plasma, vesicles or eardrum

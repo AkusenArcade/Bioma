@@ -13,6 +13,7 @@
 local g = require("@genoma")
 local colour = require("core/colour")
 local config = require("core/config")
+local performance = require("core/performance")
 local metrics_mod = require("core/metrics")
 local theme = require("core/theme")
 local typography = require("core/typography")
@@ -70,7 +71,7 @@ function M.new(cell: any): { [string]: any }
         machine.watch(open)
     end)
 
-    local function blurred(): boolean return config.get("cell.blur", true) end
+    local blurred = performance.blurred
     local function glass(): string return colour.alpha(theme.cell(), config.get("cell.opacity", 0.72)) end
 
     -- A shape that buds out of the one holding it, and its content once it

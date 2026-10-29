@@ -11,6 +11,7 @@
 local g = require("@genoma")
 local theme = require("core/theme")
 local colour = require("core/colour")
+local performance = require("core/performance")
 
 local M = {}
 
@@ -48,7 +49,7 @@ function M.new(t: { [string]: any }): any
             rim_top = top,
             rim_bottom = bottom,
             arc = t.orbit,
-            arc_rate = if t.still then 0 else 1 / 60,
+            arc_rate = function() return if t.still or performance.still() then 0 else 1 / 60 end,
         },
         -- Inside the rim with a clear gap past the disc, so the two never
         -- read as one shape. A second moves it by 1/3600 of a turn: the
@@ -69,7 +70,7 @@ function M.new(t: { [string]: any }): any
             height = function() return 12 * unit() end,
             fill = top,
             fill_bottom = bottom,
-            orbit = if t.still then 0 else 1 / 60,
+            orbit = function() return if t.still or performance.still() then 0 else 1 / 60 end,
             orbit_radius = function() return 24 * unit() end,
             angle = t.orbit,
         },

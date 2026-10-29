@@ -18,6 +18,7 @@
 local g = require("@genoma")
 local colour = require("core/colour")
 local config = require("core/config")
+local performance = require("core/performance")
 local metrics_mod = require("core/metrics")
 local theme = require("core/theme")
 local typography = require("core/typography")
@@ -354,7 +355,7 @@ function M.new(cell: any, bare: boolean): any
         radius = function() return m().radius_panel end,
         growth = function() return if shown() then 1 else 0 end,
         bud = function() return if shown() then 0 else m().cell_height end,
-        blur = function() return config.get("cell.blur", true) end,
+        blur = performance.blurred,
         fill = function() return colour.alpha(theme.cell(), config.get("cell.opacity", 0.72)) end,
         rim_top = theme.rim,
         rim_bottom = theme.line,

@@ -48,6 +48,7 @@ local colour = require("core/colour")
 local registry = require("cells/registry")
 local visibility = require("structure/visibility")
 local focus = require("structure/focus")
+local performance = require("core/performance")
 local timing = require("core/timing")
 local typography = require("core/typography")
 local thread = require("components/thread")
@@ -360,7 +361,7 @@ function M.new(kind: any, ctx: { [string]: any })
             growth = function() return if c.open.value then 1 else 0 end,
             -- The neck: soft and wide as it leaves, gone once it is out.
             bud = function() return if c.open.value then 0 else c.metrics().cell_height end,
-            blur = function() return config.get("cell.blur", true) end,
+            blur = performance.blurred,
             fill = function() return colour.alpha(theme.cell(), opacity()) end,
             rim_top = theme.rim,
             rim_bottom = theme.line,
@@ -486,7 +487,7 @@ function M.new(kind: any, ctx: { [string]: any })
             radius = function() return if spec.radius then spec.radius() else place.radius() end,
             present = function() return present.value end,
             opacity = function() return if place.placed() then 1 else 0 end,
-            blur = function() return config.get("cell.blur", true) end,
+            blur = performance.blurred,
             fill = function()
                 local base = if lit() then theme.lift(theme.cell(), 0.05) else theme.cell()
                 return colour.alpha(base, opacity())

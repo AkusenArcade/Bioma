@@ -8,9 +8,10 @@
 -- sampling path. Two probes run once at the start (which card, which
 -- sensor) and `ps` only while a process list is being looked at.
 --
--- Performance mode's longer interval comes with the performance service.
+-- Performance mode's polling lever reads them less often (core/performance.luau).
 local g = require("@genoma")
 local config = require("core/config")
+local performance = require("core/performance")
 local power = require("@genoma/power")
 
 local M = {}
@@ -255,6 +256,8 @@ local function sample() g.batch(read_all) end
 -- A floor: a hand-written 0 would be a timer firing on every frame.
 g.effect(function()
     local every = math.max(250, config.get("vitals.interval", 2000)) / 1000
+    -- Performance mode's polling lever reads them less often.
+    if performance.sparse() then every = math.max(every, performance.vitals_interval() / 1000) end
     g.timer { every = every, on_tick = sample }
 end)
 sample()

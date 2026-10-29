@@ -79,7 +79,7 @@ The order is the PRD's build order (§10).
       comes with the theme cell.)
 - [x] Timing, Metrics, Typography from `docs/design/tokens.css`.
       (`core/timing.luau`, `core/metrics.luau`, `core/typography.luau`;
-      performance mode's instant transitions come with its service.)
+      performance mode's instant transitions included.)
 
 Checked 2026-10-28 (`BIOMA_GENOMA_CHECK=1 scripts/genoma`):
 - With the shipped palette the derived colours are Qt's to the byte
@@ -175,7 +175,7 @@ host, driven only by `scripts/genoma ipc`:
 | drives | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | emoji | *beyond the PRD* | 4 | | |
 | keyboard | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
-| performance | *beyond the PRD* | 4 | | |
+| performance | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | polkit | *beyond the PRD* | 4 | | |
 | privacy | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | timer | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
@@ -459,6 +459,18 @@ and MOUNTED when the writing stopped; Eject on a device that does not
 exist put udisks' complaint under the row in the alert colour. Not tried
 on a real drive: open, eject, power off.
 
+performance, checked 2026-10-29 on HDMI-A-1 (`cells/performance.luau`,
+`core/performance.luau`, `services/workload.luau`): with Gears of War
+under GameMode (six clients) the mode was on by itself, and opened said
+"On while a game runs" and the six levers. The levers that have something
+to act on in Genoma act there: instant transitions (`core/timing.luau`),
+no blur on cells and panels, still live indicators (the vitals, the
+clock's second hand, the rate threads, Sinestesia's bands), the vitals
+read less often. The organisms and the wallpaper are still Quickshell's.
+By hand is the shared `performance.manual`, so the two shells step back
+together; turned off by hand while a trigger holds it is each shell's
+own. Not pressed: the switch.
+
 ### Surfaces that are not cells
 
 | Surface | PRD | State |
@@ -607,3 +619,6 @@ configuration with nothing of Genoma's in it:
 - [x] Drives (`drives.luau`): `scripts/drives` while a cell holds it;
       open (mounting first), eject (unmount, then power off or delete the
       loop), the reason when refused.
+- [x] Performance and Workload (`core/performance.luau`,
+      `workload.luau`): by hand, GameMode's clients, app ids matched; the
+      levers read where they act.
