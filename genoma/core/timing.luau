@@ -20,6 +20,8 @@ M.curves = {
     close = { 0.5, 0.0, 0.9, 0.5 },
     -- Qt's Easing.InOutQuad, for the theme and the wallpaper's crossfade.
     in_out_quad = { 0.455, 0.03, 0.515, 0.955 },
+    -- Qt's Easing.OutQuad.
+    out_quad = { 0.25, 0.46, 0.45, 0.94 },
 }
 
 -- Seconds, after the speed setting: what timers and the cascade read.
@@ -64,6 +66,12 @@ g.effect(function()
         -- content enters once the shape is at size, and leaves first.
         bud = { duration = s.grow + s.stagger * 2, curve = c.open_flat },
         content_enter = { duration = s.content_fade, delay = s.grow + s.stagger * 2 },
+        -- The alarms (Vital.qml), the one thing that repeats at a fixed rate:
+        -- an alarm has no value to encode beyond the fact that it is one.
+        -- Never scaled, never instant.
+        alarm = { duration = 0.9, curve = c.out_quad },
+        alarm_fade = { duration = 0.405, curve = c.out_quad },
+        full_pulse = { duration = 0.45, curve = c.in_out_quad },
         -- A mark stepping once (WorkspaceBars), small, so it may overshoot.
         shift = { duration = s.transition, curve = c.open },
         -- An open cell's header, two staggers after the content has gone.

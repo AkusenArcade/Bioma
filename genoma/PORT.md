@@ -147,7 +147,7 @@ host, driven only by `scripts/genoma ipc`:
 |---|---|---|---|---|
 | window_title | §9.1 | 2 | 670c660 | checked 2026-10-29, awaiting Akusen and the cost |
 | workspaces | §9.3 | 2 | 7ea52ac | checked 2026-10-29, awaiting Akusen and the cost |
-| vitals | §9.2 | 2 | | |
+| vitals | §9.2 | 2 | 30c6cc7 | contracted checked 2026-10-29; expansion to come |
 | clock | *beyond the PRD* | 2, with the membrane | | |
 | media | §9.4 (sinestesia) | 3 | | |
 | theme | §9.7 | 3 | | |
@@ -196,6 +196,22 @@ open, `pulse()` for a condition that is an event, the wheel. The text
 tracking had been passed in logical units where Genoma takes em: the
 headers are now as wide as Quickshell's. Not yet: the shell-wide keyboard
 travel (the list answers its keys itself), the panel's shadow.
+
+vitals, contracted, checked 2026-10-29 (`genoma/cells/vitals.luau`,
+`components/vital.luau`): the processor's dot beating at its clock, the
+memory's liquid at its level (17 %, as `free` says) with its wave, the
+card's satellite in orbit, in the calm colour; the geometry is M2's,
+measured then against Quickshell's (`docs/m2-parity.md` in Genoma). Here
+the cell is conditional and nothing was critical, so Quickshell's was not
+on screen to set beside it. A cell made for the check (deleted after) drew
+the states this machine does not reach: a critical processor in the alert
+colour with its wave every 0.9 s, the memory full as a pulsing disc, a
+battery half charged filling from the left (Genoma's `level_left`). An
+indicator not drawn raises no alarm: the desktop's hidden battery read as
+empty and kept an alarm running, found in the check. Not yet: the
+expansion (the pods, the process list and its sort, its filter, which
+waits for Genoma's text field), the battery's drops and bolt (on the
+laptop), performance mode's resting poses.
 
 ### Surfaces that are not cells
 
