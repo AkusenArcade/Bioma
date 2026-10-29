@@ -419,6 +419,28 @@ ShellRoot {
         }
     }
 
+    // The desktop's look, chosen from Bioma on Genoma's theme cell while the
+    // two run side by side: Genoma chooses, this shell acts (genoma/PORT.md,
+    // "Who acts on the desktop").
+    IpcHandler {
+        target: "looks"
+
+        function icons(id: string): string {
+            Looks.setIcons(id);
+            return Looks.iconTheme;
+        }
+
+        function cursor(id: string, size: int): string {
+            Looks.setCursor(id, size);
+            return `${Looks.cursorTheme} ${Looks.cursorSize}`;
+        }
+
+        function template(id: string, on: bool): string {
+            Templates.setOn(id, on);
+            return Templates.isOn(id) ? "on" : "off";
+        }
+    }
+
     IpcHandler {
         target: "media"
 

@@ -162,7 +162,7 @@ host, driven only by `scripts/genoma ipc`:
 | vitals | §9.2 | 2 | 30c6cc7 | checked 2026-10-29, awaiting Akusen and the cost |
 | clock | *beyond the PRD* | 2, with the membrane | 7e62c5c | checked 2026-10-29, awaiting Akusen and the cost |
 | media | §9.4 (sinestesia) | 3 | 60ca560 | checked 2026-10-29, awaiting Akusen and the cost |
-| theme | §9.7 | 3 | | |
+| theme | §9.7 | 3 | 60ca560 | checked 2026-10-29, awaiting Akusen and the cost |
 | utility | §9.6 | 3 | | |
 | audio | §9.5 | 4 | | |
 | connectivity | §9.11 | 4 | | |
@@ -296,6 +296,26 @@ glyph. Not yet: the keyboard travel through the controls. Seen while
 checking, and Quickshell's behaviour as well (Cell.qml): closing, the
 contracted content returns while the header waits for the composition to
 go, so the two cross for the length of the retraction.
+
+theme, checked 2026-10-29 on HDMI-A-1 (an empty workspace, `cells/theme.luau`,
+`cells/theme_expansion.luau`, `components/segmented.luau`,
+`components/scroller.luau`; services `wallpaper`, `looks`, `templates`, the
+palettes in `core/theme.luau`): the seven chips at rest, replacing each other
+a stagger apart when the palette moves. Opened, the wallpapers as a grid (the
+thumbnails Quickshell made, favourites first, the star on its disc) or a
+carousel whose step grows the arriving picture and shrinks the leaving one;
+the source buds out of them on the spine, the palette out of the source,
+DESKTOP below it with icons, cursor, the folder and the templates. The
+palette's dropdown opens its list raised over DESKTOP, scrolled by the wheel
+with its mark. Tried on the test configuration: grid and carousel, a step of
+the carousel (wallpaper.json written in Quickshell's own form), matugen and
+Bioma as the source (the shell and the chips retinting), the list. Not tried,
+because they act on Akusen's real desktop through Quickshell: choosing icons,
+a base, a cursor or a template (the channel itself was checked with a call
+that changes nothing). Found on the way: a closed list whose rows changed
+crashed the engine in taffy (now patched, Genoma's vendor/taffy), and the
+palette's targets were not reactive (the chips, and the cell's pulse on a
+change of palette, never heard of one).
 
 ### Surfaces that are not cells
 

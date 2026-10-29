@@ -35,7 +35,15 @@ function M.secondary(): string return roles.secondary.value end
 
 -- Where the palette is going: the theme cell's chips arrive at the
 -- destination rather than chase the shell's transition.
-function M.target(role: string): string return roles[role].target end
+-- A signal of its own: an animated value's target is a plain field, and a
+-- binding that read it was never told it moved.
+local targets = g.signal({
+    background = roles.background.target,
+    text = roles.text.target,
+    primary = roles.primary.target,
+    secondary = roles.secondary.target,
+})
+function M.target(role: string): string return targets.value[role] end
 
 -- While a palette is being edited the desktop follows the hand, not a
 -- quarter of a second behind it (services/Palettes.qml).
@@ -156,6 +164,13 @@ local function apply(text: string?)
     for role, value in roles do
         if type(palette[role]) == "string" then value:set(palette[role], how) end
     end
+    g.untracked(function()
+        local next_targets = {}
+        for role in roles do
+            next_targets[role] = if type(palette[role]) == "string" then palette[role] else targets.value[role]
+        end
+        targets.value = next_targets
+    end)
     if palette.image then M.generated_image.value = palette.image end
 end
 

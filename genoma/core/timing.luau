@@ -59,6 +59,14 @@ g.effect(function()
         transition = { duration = s.transition, curve = c.open_flat },
         reflow = { duration = s.reflow, curve = c.open_flat },
         theme = { duration = s.theme, curve = c.in_out_quad },
+        -- The theme cell's chips, replacing each other a stagger apart.
+        chip_1 = { duration = s.theme, curve = c.in_out_quad },
+        chip_2 = { duration = s.theme, delay = s.stagger, curve = c.in_out_quad },
+        chip_3 = { duration = s.theme, delay = s.stagger * 2, curve = c.in_out_quad },
+        chip_4 = { duration = s.theme, delay = s.stagger * 3, curve = c.in_out_quad },
+        chip_5 = { duration = s.theme, delay = s.stagger * 4, curve = c.in_out_quad },
+        chip_6 = { duration = s.theme, delay = s.stagger * 5, curve = c.in_out_quad },
+        chip_7 = { duration = s.theme, delay = s.stagger * 6, curve = c.in_out_quad },
         -- A cell's appearing and leaving (Cell.qml's opacity Behavior), and a
         -- colour lifting under the pointer (its ColorAnimations, linear).
         fade = { duration = s.reflow, curve = c.in_out_quad },

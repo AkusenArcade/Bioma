@@ -9,7 +9,7 @@
 -- the desktop") a choice made here is written there, and Quickshell is the
 -- one that draws it and runs matugen on it.
 --
--- Not yet: the folder picker (zenity) and making thumbnails. The ones
+-- Not yet: making thumbnails. The ones
 -- Quickshell has made are read, by the same name; without one the image
 -- itself is shown, which an image node fits off the frame anyway.
 local g = require("@genoma")
@@ -173,6 +173,48 @@ function M.favour(path: string, on: boolean)
     end
     if on then table.insert(next_list, path) end
     config.set("wallpaper.favourites", next_list)
+end
+
+-- ---- The folder ---------------------------------------------------------------
+--
+-- Chosen in a GTK folder picker rather than typed: a path is found by
+-- looking, and a picker cannot return a folder that is not there. Written
+-- the short way, `~/…`. `folder_error` names what went wrong.
+
+local folder_error = g.signal("")
+local picking = g.signal(false)
+function M.folder_error(): string return folder_error.value end
+function M.picking(): boolean return picking.value end
+
+function M.set_folder(path: string)
+    local wanted = string.gsub(path, "^%s+", "")
+    wanted = string.gsub(wanted, "%s+$", "")
+    while #wanted > 1 and string.sub(wanted, -1) == "/" do wanted = string.sub(wanted, 1, -2) end
+    if string.sub(wanted, 1, 1) ~= "/" then return end
+    if home ~= "" and (wanted == home or string.sub(wanted, 1, #home + 1) == home .. "/") then
+        wanted = "~" .. string.sub(wanted, #home + 1)
+    end
+    config.set("wallpaper.folder", wanted)
+end
+
+function M.pick_folder()
+    if g.untracked(function() return picking.value end) then return end
+    folder_error.value = ""
+    picking.value = true
+    local chosen = ""
+    -- 127 is the shell's answer for a command it cannot find, told apart
+    -- from a picker that was cancelled (1).
+    g.process {
+        command = { "sh", "-c", 'command -v zenity >/dev/null || exit 127; '
+            .. 'exec zenity --file-selection --directory --title="Wallpaper folder" --filename="$1/"',
+            "sh", g.untracked(M.folder) },
+        on_line = function(line: string) chosen = line end,
+        on_exit = function(code: number)
+            picking.value = false
+            if code == 0 then M.set_folder(chosen)
+            elseif code == 127 then folder_error.value = "ZENITY MISSING" end
+        end,
+    }
 end
 
 -- ---- Thumbnails ---------------------------------------------------------------
