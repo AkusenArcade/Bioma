@@ -441,6 +441,27 @@ ShellRoot {
         }
     }
 
+    // The clipboard's history, kept by this shell while the two run side by
+    // side: Bioma on Genoma reads history.json and asks here to drop what
+    // it drops, so the list this shell holds never brings a dropped entry
+    // back (genoma/PORT.md, "Who acts on the desktop").
+    IpcHandler {
+        target: "clipboard"
+
+        function remove(hash: string): string {
+            const entry = Clipboard.entries.find(e => e.hash === hash);
+            if (!entry)
+                return "no entry";
+            Clipboard.remove(entry);
+            return "removed";
+        }
+
+        function clear(): string {
+            Clipboard.clear();
+            return "cleared";
+        }
+    }
+
     IpcHandler {
         target: "media"
 

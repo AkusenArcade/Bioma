@@ -170,7 +170,7 @@ host, driven only by `scripts/genoma ipc`:
 | dock | §9.9 | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | tray | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | actions | *beyond the PRD* | 4 | | |
-| clipboard | *beyond the PRD* | 4 | | |
+| clipboard | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | download | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | drives | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | emoji | *beyond the PRD* | 4 | | |
@@ -471,6 +471,16 @@ By hand is the shared `performance.manual`, so the two shells step back
 together; turned off by hand while a trigger holds it is each shell's
 own. Not pressed: the switch.
 
+clipboard, checked 2026-10-29 on HDMI-A-1 (`cells/clipboard.luau`,
+service `clipboard`): the history stays Quickshell's (its watcher writes
+history.json); Genoma reads the file and asks Quickshell to drop entries
+(`qs ipc call clipboard remove <hash>` / `clear`, added to shell.qml). A
+test string copied came to the head of the list with NOW; its cross
+dropped it through Quickshell, and a press on the next row put the
+previous copy back on the clipboard and closed the cell. Not pressed:
+CLEAR. Found on the way: an if-expression closed with `end` (a Luau
+syntax error the registry reports as the cell failing to load).
+
 ### Surfaces that are not cells
 
 | Surface | PRD | State |
@@ -622,3 +632,5 @@ configuration with nothing of Genoma's in it:
 - [x] Performance and Workload (`core/performance.luau`,
       `workload.luau`): by hand, GameMode's clients, app ids matched; the
       levers read where they act.
+- [x] Clipboard (`clipboard.luau`): history.json read; restore by
+      wl-copy; drop and clear asked of Quickshell, which keeps the history.
