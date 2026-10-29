@@ -194,16 +194,17 @@ function M.new(ctx: { [string]: any })
 
     local function place_of(c: any, position: { [string]: any }): { [string]: any }
         return {
+            -- On whole pixels, as the tissue is (membrane.luau).
             x = function(): number
                 local along = offsets.value[c] or ctx.padding()
-                if ctx.horizontal() then return along end
+                if ctx.horizontal() then return math.floor(along + 0.5) end
                 -- Centred across the column.
-                return ctx.padding() + (t.widest() - c.contracted_width()) / 2
+                return math.floor(ctx.padding() + (t.widest() - c.contracted_width()) / 2 + 0.5)
             end,
             y = function(): number
                 local along = offsets.value[c] or ctx.padding()
-                if ctx.horizontal() then return ctx.padding() + (t.tallest() - c.contracted_height()) / 2 end
-                return along
+                if ctx.horizontal() then return math.floor(ctx.padding() + (t.tallest() - c.contracted_height()) / 2 + 0.5) end
+                return math.floor(along + 0.5)
             end,
             width = function(): number return t.grant_for(c) end,
             placed = function(): boolean return t.placed(c) end,

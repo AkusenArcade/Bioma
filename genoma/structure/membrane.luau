@@ -154,7 +154,11 @@ function M.new(block: () -> { [string]: any }, output: string, size: { width: nu
     for i, t in tissues do
         local index = i
         local position = {
-            x = function() return if horizontal then offset_for(t, index) else cross_offset() end,
+            -- On a whole pixel, as Qt aligns what it centres: an icon is drawn
+            -- on whole pixels to stay sharp, the shapes round it are not, and
+            -- a tissue centred on half a pixel left every icon half a pixel
+            -- off its ring (Akusen, 2026-10-29, the dock).
+            x = function() return math.floor((if horizontal then offset_for(t, index) else cross_offset()) + 0.5) end,
             y = function() return if horizontal then cross_offset() else offset_for(t, index) end,
         }
         table.insert(root, t.node(position))
