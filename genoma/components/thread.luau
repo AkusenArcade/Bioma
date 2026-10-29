@@ -15,7 +15,8 @@ local M = {}
 
 -- `t`: vertical (bool), length(), shown() (drawn out while true),
 -- reversed (the origin at the far end: the bottom, or the right),
--- timing() (the name to draw out with), plus any placing props (overlay,
+-- timing() (the name to draw out with), closing() (the name to take it
+-- back with; thread_close when omitted), plus any placing props (overlay,
 -- attach, offset_x, offset_y, present) passed through.
 function M.new(t: { [string]: any }): any
     local d = metrics_mod.node_size * 2
@@ -29,7 +30,12 @@ function M.new(t: { [string]: any }): any
         color = theme.node,
         -- How much of it is drawn, from its origin out to the tip.
         growth = function() return if t.shown() then 1 else 0 end,
-        transition = { growth = function() return if t.shown() then t.timing() else "thread_close" end },
+        transition = {
+            growth = function()
+                if t.shown() then return t.timing() end
+                return if t.closing then t.closing() else "thread_close"
+            end,
+        },
     }
     local function far(): number return t.length() end
     if t.vertical then

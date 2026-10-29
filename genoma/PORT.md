@@ -230,7 +230,10 @@ at `timing.speed` 15); what flows along it starts once it is whole. Closing, eve
 holds something waits for its content to be gone (STYLE_GUIDE §6; Akusen,
 2026-10-29, as a rule): the content leaves in half its entering time, then
 the shape and its thread retract, and what the content shows (the process
-list) stays until then rather than emptying under it. Along the thread of the domain the list is sorted by, particles
+list) stays until then rather than emptying under it. The shapes go in
+the order opposite to the one they came in (Akusen, 2026-10-29): the last
+pod's thread, then that pod, then the one before it, and the panel that
+came first goes last, with the cell's thread. Along the thread of the domain the list is sorted by, particles
 flow out of the pod into the list, as many a second as that domain's load
 (eight at full load; the battery's from the watts going in, as Vital.qml's
 drops), in the primary as the sort's dot is, and none at zero (Akusen's idea, 2026-10-29,

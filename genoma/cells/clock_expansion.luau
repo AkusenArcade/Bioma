@@ -1035,7 +1035,8 @@ function M.new(cell: any, twenty_four: () -> boolean)
 
     local function side(attach: string, content: () -> any): any
         local left = attach == "left"
-        local function curve(): string return if cell.open.value then "pod_1" else "retract" end
+        -- They came together, after the month: they go together, before it.
+        local function curve(): string return if cell.open.value then "pod_1" else "pod_retract_4" end
         return g.capsule {
             overlay = true,
             attach = attach,
@@ -1071,7 +1072,7 @@ function M.new(cell: any, twenty_four: () -> boolean)
     local function below(content: () -> any): any
         local down = cell.edge ~= "bottom"
         local function shown(): boolean return cell.open.value and agenda_shown() end
-        local function curve(): string return if shown() then "pod_1" else "retract" end
+        local function curve(): string return if shown() then "pod_1" else "pod_retract_4" end
         return g.capsule {
             overlay = true,
             attach = if down then "below-center" else "above-center",
@@ -1124,6 +1125,7 @@ function M.new(cell: any, twenty_four: () -> boolean)
                     reversed = true,
                     shown = function() return cell.open.value end,
                     timing = function() return "pod_thread_1" end,
+                    closing = function() return "pod_thread_close_4" end,
                 },
                 thread.new {
                     vertical = false,
@@ -1132,6 +1134,7 @@ function M.new(cell: any, twenty_four: () -> boolean)
                     length = gap,
                     shown = function() return cell.open.value end,
                     timing = function() return "pod_thread_1" end,
+                    closing = function() return "pod_thread_close_4" end,
                 },
                 thread.new {
                     vertical = true,
@@ -1142,6 +1145,7 @@ function M.new(cell: any, twenty_four: () -> boolean)
                     reversed = not down,
                     shown = agenda_out,
                     timing = function() return "pod_thread_1" end,
+                    closing = function() return "pod_thread_close_4" end,
                 },
             }
         end,

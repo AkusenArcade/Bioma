@@ -139,7 +139,7 @@ function M.new(kind: any, ctx: { [string]: any })
             if open then
                 panel_out.value = true
             else
-                g.after(timing.retracted(), function()
+                g.after(timing.retracted(spec.panel.satellites ~= nil), function()
                     if not g.untracked(function() return c.open.value end) then panel_out.value = false end
                 end)
             end
@@ -282,7 +282,12 @@ function M.new(kind: any, ctx: { [string]: any })
         local p = spec.panel
         local down = c.edge ~= "bottom"
         local function pad(): number return 10 * c.metrics().factor end
-        local function curve(): string return if c.open.value then "bud" else "retract" end
+        -- A panel others budded out of goes after them.
+        local last = p.satellites ~= nil
+        local function curve(): string
+            if c.open.value then return "bud" end
+            return if last then "retract_last" else "retract"
+        end
 
         -- Still drawn while it is taken back.
         function c.reach(): number return if panel_out.value then place.gap() + p.height() else 0 end
@@ -492,6 +497,7 @@ function M.new(kind: any, ctx: { [string]: any })
                 reversed = c.edge == "bottom",
                 shown = function() return c.open.value end,
                 timing = function() return "thread" end,
+                closing = function() return if spec.panel.satellites then "thread_close_last" else "thread_close" end,
             })
             table.insert(node, panel_node(place))
         end

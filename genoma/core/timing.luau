@@ -93,6 +93,20 @@ g.effect(function()
         content_leave = { duration = s.content_fade / 2 },
         retract = { duration = s.close, delay = s.content_fade / 2, curve = c.close },
         thread_close = { duration = s.stagger * 2, delay = s.content_fade / 2, curve = c.close },
+        -- And the shapes go in the order opposite to the one they came in
+        -- (Akusen, 2026-10-29): the last pod's thread, then that pod, a
+        -- stagger before the one that came before it, and the panel that
+        -- came first goes last, with the cell's thread.
+        pod_thread_close_4 = { duration = s.stagger * 2, delay = s.content_fade / 2, curve = c.close },
+        pod_thread_close_3 = { duration = s.stagger * 2, delay = s.content_fade / 2 + s.stagger, curve = c.close },
+        pod_thread_close_2 = { duration = s.stagger * 2, delay = s.content_fade / 2 + s.stagger * 2, curve = c.close },
+        pod_thread_close_1 = { duration = s.stagger * 2, delay = s.content_fade / 2 + s.stagger * 3, curve = c.close },
+        pod_retract_4 = { duration = s.grow, delay = s.content_fade / 2 + s.stagger * 2, curve = c.close },
+        pod_retract_3 = { duration = s.grow, delay = s.content_fade / 2 + s.stagger * 3, curve = c.close },
+        pod_retract_2 = { duration = s.grow, delay = s.content_fade / 2 + s.stagger * 4, curve = c.close },
+        pod_retract_1 = { duration = s.grow, delay = s.content_fade / 2 + s.stagger * 5, curve = c.close },
+        retract_last = { duration = s.close, delay = s.content_fade / 2 + s.stagger * 6, curve = c.close },
+        thread_close_last = { duration = s.stagger * 2, delay = s.content_fade / 2 + s.stagger * 6, curve = c.close },
         pod_thread_1 = { duration = s.grow, delay = s.grow * 2 + s.stagger * 2, curve = c.open_flat },
         pod_thread_2 = { duration = s.grow, delay = s.grow * 2 + s.stagger * 3, curve = c.open_flat },
         pod_thread_3 = { duration = s.grow, delay = s.grow * 2 + s.stagger * 4, curve = c.open_flat },
@@ -112,8 +126,12 @@ g.effect(function()
     }
 end)
 
--- How long a shape with content takes to be gone once it starts closing.
-function M.retracted(): number return M.seconds.content_fade / 2 + M.seconds.close end
+-- How long a shape with content takes to be gone once it starts closing;
+-- `last` for a panel that waits for the shapes that budded out of it.
+function M.retracted(last: boolean?): number
+    local s = M.seconds
+    return s.content_fade / 2 + (if last then s.stagger * 6 else 0) + s.close
+end
 
 -- When the thread of the i-th shape budding out of a panel is drawn whole:
 -- its pod_thread_i entry's delay and duration. What travels along a thread

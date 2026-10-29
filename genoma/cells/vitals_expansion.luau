@@ -252,7 +252,8 @@ function M.new(cell: any)
         local function column(): number return column_of(key) end
         local function row(): number return row_of(key) end
         local function curve(): string
-            return if cell.open.value then "pod_" .. math.clamp(order(), 1, 4) else "retract"
+            local i = math.clamp(order(), 1, 4)
+            return if cell.open.value then "pod_" .. i else "pod_retract_" .. i
         end
         local horizontal = {
             present = function() return not matrix() end,
@@ -373,6 +374,7 @@ function M.new(cell: any)
                 reversed = true,
                 shown = function() return cell.open.value end,
                 timing = function() return "pod_thread_" .. math.clamp(order_of(key), 1, 4) end,
+                closing = function() return "pod_thread_close_" .. math.clamp(order_of(key), 1, 4) end,
             }),
             -- Out of the pod and into the list, while the list is sorted by
             -- this domain.
