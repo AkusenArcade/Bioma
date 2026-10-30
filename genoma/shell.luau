@@ -86,7 +86,34 @@ for i, entry in config.get("floating", {}) do
 end
 print(string.format("Bioma on Genoma: %d membranes, %d floating", membranes, #surfaces - membranes))
 
-if #surfaces > 0 then
+-- The wallpaper, and its blurred copy behind niri's overview, when
+-- `wallpaper.runtime` gives them to Genoma (Quickshell then leaves its own
+-- out). Below everything, one of each per monitor, over every zone.
+local wallpaper_surface = require("structure/wallpaper")
+local wallpapers = 0
+if config.get("wallpaper.runtime", "quickshell") == "genoma" then
+    for _, backdrop in { false, true } do
+        local blurred = backdrop
+        table.insert(surfaces, g.surface {
+            full = true,
+            anchor = { "top", "bottom", "left", "right" },
+            outputs = "all",
+            reserve = false,
+            above_zones = true,
+            layer = "background",
+            -- niri's rules match these: the backdrop is placed behind the
+            -- workspaces in the overview (config/niri/bioma.kdl).
+            namespace = if blurred then "bioma-backdrop" else "bioma-wallpaper",
+            function(output: string, size: any)
+                return wallpaper_surface.node(output, size or { width = 1920, height = 1080 }, blurred)
+            end,
+        })
+        wallpapers += 1
+    end
+end
+local blocks = #surfaces - wallpapers
+
+if blocks > 0 then
     -- Where a cell with no place of its own appears when it is asked for:
     -- the middle of each monitor, empty until then.
     table.insert(surfaces, g.surface {

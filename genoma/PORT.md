@@ -32,8 +32,9 @@ the configuration marked
 
 is drawn by Bioma on Genoma, and Bioma on Quickshell leaves it out. Today
 that key is read on membranes and floating tissues; the surfaces that are
-not configuration blocks (the wallpaper, the organisms, the OSD) get their
-own when they are ported. Notifications move last: the session's
+not configuration blocks get their own when they are ported: the wallpaper
+and its backdrop are `"wallpaper": { "runtime": "genoma" }`; the
+organisms and the OSD are to come. Notifications move last: the session's
 notification name has one owner.
 
 ## Who acts on the desktop
@@ -574,13 +575,31 @@ where it stands.
 
 | Surface | PRD | State |
 |---|---|---|
-| Wallpaper, and its blurred backdrop for niri's overview | §9.7 | |
+| Wallpaper, and its blurred backdrop for niri's overview | §9.7 | checked 2026-10-30 (`structure/wallpaper.luau`, from WallpaperSurface.qml and WallpaperImage.qml at 11bb81e), awaiting Akusen and the cost |
 | Floating tissues, and the host float for invoked cells | §4 | |
 | OSD (volume, brightness, keyboard layout) | §11, an open question then, adopted since | |
 | Selection surface (Bioma's own region picker) | §9.6 | checked 2026-10-29 with the utility (`structure/selection.luau`) |
 | Organisms, and their arrange mode | *beyond the PRD* | |
 | Lock screen (`lock.qml`, its guard, hyprlock as the fallback) | *beyond the PRD* | |
 | Greeter (`greeter.qml`, agreety as the fallback) | *beyond the PRD* | |
+
+The wallpaper, checked 2026-10-30 with `wallpaper.runtime` set in a test
+configuration (his own untouched), its own `wallpaper.json` there: a
+background surface per monitor over every zone, the picture spanned over
+both monitors from the same covering picture, Quickshell's organisms
+blurring it from above. A change of picture is laid over the old one all
+but transparent, which is enough to have it decoded, and fades in once
+`on_ready` says it is there: sampled, the crossfade ran smoothly over its
+600 ms after the ~400 ms a spanned 5787 × 3331 JPEG takes. The backdrop,
+in niri's overview, showed the new picture blurred behind the workspaces:
+decoded at a quarter and blurred once as it is decoded (`soften`, new in
+Genoma). Found on the way, in Genoma: a picture a frame asked for was
+never looked for again on a still surface (the beat was decided before
+the frame asked), so a new wallpaper waited for something else to
+redraw. Not yet: decoding only this screen's slice of a spanned picture
+(the whole box is decoded per screen); the backdrop's blur set beside
+Quickshell's by eye; letting the hidden picture go in performance mode
+(it goes once covered anyway).
 
 ### Organisms
 

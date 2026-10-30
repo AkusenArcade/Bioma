@@ -75,9 +75,15 @@ ShellRoot {
             required property var modelData
 
             // Below everything, one per monitor. It is not a membrane: it has
-            // no edge, cedes no space, and holds no cells.
-            WallpaperSurface {
-                screen: perScreen.modelData
+            // no edge, cedes no space, and holds no cells. Bioma on Genoma
+            // draws it instead when `wallpaper.runtime` says so
+            // (genoma/PORT.md).
+            LazyLoader {
+                active: Config.get("wallpaper.runtime", "quickshell") !== "genoma"
+
+                WallpaperSurface {
+                    screen: perScreen.modelData
+                }
             }
 
             // The same picture, blurred, behind the workspaces in niri's
@@ -86,6 +92,7 @@ ShellRoot {
             // a game does not open (core/Performance.qml).
             LazyLoader {
                 active: !Performance.leanWallpaper
+                        && Config.get("wallpaper.runtime", "quickshell") !== "genoma"
 
                 WallpaperSurface {
                     screen: perScreen.modelData
