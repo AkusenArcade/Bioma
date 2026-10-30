@@ -26,8 +26,12 @@ CHUNK = RATE // 20          # 50 ms of samples
 target = sys.argv[1]
 
 os.makedirs(os.path.dirname(target) or ".", exist_ok=True)
+# --raw: the pw-record of PipeWire 1.6.10 wraps stdout in a big-endian Sun AU
+# stream unless told not to. Written into the WAV as it came, the header read
+# as a click and every sample as noise at full scale, and whisper heard only
+# what it invents in silence ("Grazie a tutti", or Korean).
 recorder = subprocess.Popen(
-    ["pw-record", "--rate", str(RATE), "--channels", "1", "--format", "s16", "-"],
+    ["pw-record", "--raw", "--rate", str(RATE), "--channels", "1", "--format", "s16", "-"],
     stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
 
 stopping = False
