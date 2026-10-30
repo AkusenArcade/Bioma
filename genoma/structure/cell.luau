@@ -31,7 +31,8 @@
 --                      vitals' pods), beyond how far past it they reach
 --                      (the media's track, hung under its band); radius
 --                      when it is not the panel's; outline() a colour for
---                      its rim, nil for the usual
+--                      its rim, nil for the usual; lead() how far satellites
+--                      hang to its left
 --   on_key(name)       a key while it is open, Escape aside
 --   on_wheel(dx, dy)   the wheel over the cell
 --   header_title, header_mark(size), header_mark_size()
@@ -411,11 +412,15 @@ function M.new(kind: any, ctx: { [string]: any })
             present = function() return panel_out.value end,
             width = p.width,
             height = p.height,
+            -- What hangs to the panel's left (settings' column of
+            -- categories) is kept on the screen with it: from a cell at the
+            -- start the panel moves right by all of it, centred by half.
             offset_x = function()
                 local origin = place.origin()
+                local lead = if p.lead then p.lead() else 0
                 if origin == "end" then return place.width() - p.width() end
-                if origin == "centre" then return (place.width() - p.width()) / 2 end
-                return 0
+                if origin == "centre" then return (place.width() - p.width() + lead) / 2 end
+                return lead
             end,
             -- On the cell's edge while shut: it leaves from there, so as it
             -- grows it never crosses the cells beside it in the row.

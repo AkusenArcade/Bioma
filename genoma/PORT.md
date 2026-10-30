@@ -182,7 +182,7 @@ host, driven only by `scripts/genoma ipc`:
 | privacy | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | timer | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | notifications | §9.10 | 4, last | 11bb81e | checked 2026-10-30 on a private session bus, awaiting Akusen and the cost |
-| settings (with setup, §9.14) | §9.12 | 5 | | |
+| settings (with setup, §9.14) | §9.12 | 5 | 11bb81e | in progress 2026-10-30: the frame and Sounds checked; ten pages and the setup to come |
 | launcher | §9.13 | 6 | | |
 
 window_title, checked 2026-10-29 (`genoma/cells/window_title.luau`,
@@ -570,6 +570,19 @@ opacity (1, 0, 1 in one moment, and Genoma kept the fade running toward
 the 0 it no longer had). Both are fixed: the cell starts transparent as
 it did, and Genoma calls off a transition whose value is sent back to
 where it stands.
+
+settings, begun 2026-10-30 on HDMI-A-1 (`cells/settings.luau`, pages as
+`cells/settings_<key>.luau`): the mark at rest; opened, the page buds from
+the cell as every panel does and the eleven categories hang to its left a
+stagger apart (`cascade_N` in the timing set), the chosen one in the
+primary with the thread from it to the page; the panel moves right by the
+column's width from a cell at the start (`lead`, new in the structure).
+A press on SOUNDS brought its page: the volume with its line, and the
+four events with their switches and what each does, written to the shared
+configuration; the sounds themselves are Quickshell's to play (`qs ipc
+call sounds play`). Not pressed: the switches and the slider. The other
+ten categories say "Not built yet". Not yet: the setup's steps in the
+column, keyboard travel down it, the chosen category kept across a reload.
 
 ### Surfaces that are not cells
 

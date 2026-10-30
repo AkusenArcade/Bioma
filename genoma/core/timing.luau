@@ -138,6 +138,22 @@ g.effect(function()
         pod_content_2 = { duration = s.content_fade, delay = s.grow * 2 + s.stagger * 3 },
         pod_content_3 = { duration = s.content_fade, delay = s.grow * 2 + s.stagger * 4 },
         pod_content_4 = { duration = s.content_fade, delay = s.grow * 2 + s.stagger * 5 },
+        -- A column of capsules beside a panel, a stagger apart (settings'
+        -- categories, SettingsExpansion's cascade): in after the panel has
+        -- budded, and back first, the last one first.
+        cascade_1 = { duration = s.grow, delay = s.grow + s.stagger * 2, curve = c.open_flat },
+        cascade_2 = { duration = s.grow, delay = s.grow + s.stagger * 3, curve = c.open_flat },
+        cascade_3 = { duration = s.grow, delay = s.grow + s.stagger * 4, curve = c.open_flat },
+        cascade_4 = { duration = s.grow, delay = s.grow + s.stagger * 5, curve = c.open_flat },
+        cascade_5 = { duration = s.grow, delay = s.grow + s.stagger * 6, curve = c.open_flat },
+        cascade_6 = { duration = s.grow, delay = s.grow + s.stagger * 7, curve = c.open_flat },
+        cascade_7 = { duration = s.grow, delay = s.grow + s.stagger * 8, curve = c.open_flat },
+        cascade_8 = { duration = s.grow, delay = s.grow + s.stagger * 9, curve = c.open_flat },
+        cascade_9 = { duration = s.grow, delay = s.grow + s.stagger * 10, curve = c.open_flat },
+        cascade_10 = { duration = s.grow, delay = s.grow + s.stagger * 11, curve = c.open_flat },
+        cascade_11 = { duration = s.grow, delay = s.grow + s.stagger * 12, curve = c.open_flat },
+        cascade_12 = { duration = s.grow, delay = s.grow + s.stagger * 13, curve = c.open_flat },
+        cascade_close = { duration = s.close, delay = s.content_fade / 2, curve = c.close },
         -- An open cell's header, two staggers after the content has gone.
         header = { duration = s.content_fade, delay = s.stagger * 2 },
         wallpaper = { duration = s.wallpaper, curve = c.in_out_quad },
