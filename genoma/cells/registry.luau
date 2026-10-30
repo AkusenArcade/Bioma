@@ -17,7 +17,8 @@ end
 -- The cells written on Genoma so far, every one of which answers to its
 -- name; and those that are the engine's own, never offered to a keybind.
 M.ported = { "window_title", "workspaces", "vitals", "clock", "media", "theme", "utility", "audio", "connectivity", "system", "dock", "tray", "download", "privacy", "timer", "keyboard", "drives", "performance", "clipboard", "emoji", "actions" } :: { string }
-M.internal = { probe = true }
+-- The polkit cell comes when polkit asks for a password, never by a key.
+M.internal = { probe = true, polkit = true }
 
 -- Placed nowhere and never in the middle: a cell that comes to the point
 -- the hand is at (Registry.comesToPointer). The quick actions are a ring

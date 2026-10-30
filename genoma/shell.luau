@@ -100,6 +100,10 @@ if #surfaces > 0 then
         end,
     })
 
+    -- The session's authentication agent, there before anything asks: it
+    -- summons the polkit cell into a host.
+    require("services/polkit").start()
+
     -- While a cell is open, a press on any other monitor closes it.
     table.insert(surfaces, g.surface {
         full = true,

@@ -177,7 +177,7 @@ host, driven only by `scripts/genoma ipc`:
 | emoji | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | keyboard | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | performance | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
-| polkit | *beyond the PRD* | 4 | | |
+| polkit | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-30 on a pretend request, awaiting Akusen's password and the cost |
 | privacy | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | timer | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | notifications | §9.10 | 4, last | | |
@@ -516,6 +516,31 @@ was no longer placed, taking the cell's fade with it (every summoned
 cell left at once): the band now stays, empty, while its cell leaves.
 Not yet: the open and close sounds (no Genoma cell plays them).
 
+polkit, checked 2026-10-30 on HDMI-A-1 (`cells/polkit.luau`, service
+`polkit`), against a pretend request (`BIOMA_GENOMA_POLKIT_FAKE=1`: no
+agent registered, no PAM): summoned into the middle of the focused
+monitor with AUTHENTICATION and the lock, the message, the action's name
+under it, the field and the two choices. Typed, the dots stood centred
+with the caret; Enter dimmed the field while it was checked; a refused
+password turned the outline to the alert, emptied the field and said so
+under it, the panel growing for the line; the right one closed the cell,
+and so did Cancel, pressed. Not yet: the real helper with Akusen's
+password. polkit's PAM stack counts every failed *or abandoned*
+conversation toward pam_faillock (three in fifteen minutes lock the
+account for ten), so the interface is tried on the pretend request and
+the helper only with the right password. Found that way, at a cost of
+two counts: g.watch answers once at the start, and the cell's "closed,
+so cancel" ran before it had opened, failing the request. The agent can
+be registered for one process (`GENOMA_POLKIT_PROCESS=<pid>`, as
+`pkttyagent --process`) to try it beside the session's.
+
+Found on the way, in the structure and in Genoma: every summoned cell
+with a panel came up invisible after the ring's change to the cell's
+opacity (1, 0, 1 in one moment, and Genoma kept the fade running toward
+the 0 it no longer had). Both are fixed: the cell starts transparent as
+it did, and Genoma calls off a transition whose value is sent back to
+where it stands.
+
 ### Surfaces that are not cells
 
 | Surface | PRD | State |
@@ -672,6 +697,9 @@ configuration with nothing of Genoma's in it:
 - [x] Emoji (`emoji.luau`): the set read once wanted, search scored as
       Emoji.qml scores it, tones, recent ones, sending through
       `scripts/paste`.
+- [x] Polkit (`polkit.luau`): the agent from `@genoma/polkit` while
+      `polkit.agent` is on; the request summons the cell on the focused
+      monitor and its end takes it away; closing is cancelling.
 - [x] Actions (`actions.luau`): the macros read from `actions.macros`,
       the ring of eight, their icons; running one and writing them are
       asked of Quickshell (`actions run`, `actions write`).

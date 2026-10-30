@@ -482,7 +482,11 @@ function M.new(kind: any, ctx: { [string]: any })
         -- Still drawn while it fades out: present until the fade is over,
         -- and opaque until what it withdraws has gone home.
         local present = g.signal(true)
-        local staying = g.signal(true)
+        -- False until it is first placed, as the opacity was: starting at
+        -- true it went 1, 0, 1 in one moment, and the fade, retargeted to
+        -- where it began before it had moved, stayed at 0 (every summoned
+        -- cell with a panel came up invisible).
+        local staying = g.signal(false)
         g.watch(function() return place.placed() end, function(placed: boolean)
             c.placed.value = placed
             if placed then
