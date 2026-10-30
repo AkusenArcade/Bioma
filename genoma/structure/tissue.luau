@@ -217,6 +217,17 @@ function M.new(ctx: { [string]: any })
     -- One continuous fill behind the cells, following the tissue's radius:
     -- a plain background, as Tissue.qml draws it (the band punched out under
     -- the cells was tried and, at a 2 px margin, is an outline).
+    -- A floating tissue's last cell still fading or withdrawing: the band
+    -- stays, with nothing of its own drawn, so the cell is seen leaving
+    -- (a summoned cell, the quick actions' ring going home).
+    local function lingering(): boolean
+        if not ctx.floating then return false end
+        for _, c in t.cells do
+            if c.drawn and c.drawn() then return true end
+        end
+        return false
+    end
+
     function t.node(position: { [string]: any }): any
         local band: { [any]: any } = {
             overlay = true,
@@ -226,8 +237,10 @@ function M.new(ctx: { [string]: any })
             width = t.width,
             height = t.height,
             radius = t.radius,
-            present = t.visible,
-            fill = function() return colour.alpha(theme.elevated(), ctx.fill_opacity()) end,
+            present = function() return t.visible() or lingering() end,
+            fill = function()
+                return if t.visible() then colour.alpha(theme.elevated(), ctx.fill_opacity()) else "#00000000"
+            end,
             transition = { offset_x = "reflow", offset_y = "reflow", width = "reflow", height = "reflow" },
         }
         for _, c in t.cells do

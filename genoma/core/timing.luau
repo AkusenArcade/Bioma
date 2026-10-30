@@ -86,6 +86,9 @@ g.effect(function()
         -- content enters once the shape is at size, and leaves first.
         bud = { duration = s.grow + s.stagger * 2, curve = c.open_flat },
         content_enter = { duration = s.content_fade, delay = s.grow + s.stagger * 2 },
+        -- The quick actions' icons, once their capsules have reached the
+        -- circle (ActionsCell: in when the spread is done).
+        ring_content = { duration = s.content_fade, delay = s.open },
         -- The alarms (Vital.qml), the one thing that repeats at a fixed rate:
         -- an alarm has no value to encode beyond the fact that it is one.
         -- Never scaled, never instant.

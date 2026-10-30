@@ -31,6 +31,17 @@ function M.node(output: string, size: { width: number, height: number }): any
             on_press = function() focus.dismiss() end,
             on_key = function(name: string, text: string?, mods: any) focus.key(name, text, mods) end,
         },
+        -- For the moment a cell that comes to the pointer is looking for it:
+        -- the whole screen takes input, and niri says where the pointer is
+        -- by entering it (structure/focus.luau, `seek`).
+        g.box {
+            overlay = true,
+            attach = "corner",
+            width = size.width,
+            height = size.height,
+            present = focus.seeking,
+            on_move = function(x: number, y: number) focus.found(output, x, y) end,
+        },
     }
 end
 

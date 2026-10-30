@@ -37,6 +37,15 @@
 --                      what it shows while open: the domain's glyph and its
 --                      name in the technical voice, the title of what hangs
 --                      under it
+--   surround()         { x, y }: how far it draws past its own pill on each
+--                      side, from its centre (the quick actions' ring); a
+--                      host summoning it at the pointer keeps all of it on
+--                      the screen
+--   around()           a node drawn in the cell's own frame, past its pill
+--                      (the ring's capsules and threads)
+--   withdrawal         seconds the pill waits, once it is no longer placed,
+--                      before it fades: what it drew around itself goes home
+--                      into it first (Cell.withdrawal)
 -- and the cell gives back room(), the width its content may draw in, once
 -- the tissue has placed it, and placed, whether it is on screen.
 -- Everything the engine needs from a cell arrives in its block; adding a
@@ -296,6 +305,12 @@ function M.new(kind: any, ctx: { [string]: any })
         return 0
     end
 
+    function c.withdrawal(): number
+        local w = spec.withdrawal
+        if type(w) == "function" then return w() end
+        return w or 0
+    end
+
     -- ---- Surfaces -----------------------------------------------------------
 
     -- How far what it opened reaches past it on the side it opens, while
@@ -461,19 +476,30 @@ function M.new(kind: any, ctx: { [string]: any })
         -- The side it was born from ("start", "centre", "end"): what it opens
         -- leans away from the edge it stands against.
         function c.origin(): string return place.origin() end
+        -- The pill's corner, as the tissue rounds it.
+        function c.corner(): number return place.radius() end
 
-        -- Still drawn while it fades out: present until the fade is over.
+        -- Still drawn while it fades out: present until the fade is over,
+        -- and opaque until what it withdraws has gone home.
         local present = g.signal(true)
+        local staying = g.signal(true)
         g.watch(function() return place.placed() end, function(placed: boolean)
             c.placed.value = placed
             if placed then
                 present.value = true
+                staying.value = true
             else
-                g.after(require("core/timing").seconds.reflow, function()
+                g.after(c.withdrawal(), function()
+                    if not g.untracked(place.placed) then staying.value = false end
+                end)
+                g.after(c.withdrawal() + timing.seconds.reflow, function()
                     if not g.untracked(place.placed) then present.value = false end
                 end)
             end
         end)
+
+        -- Still on screen, fading or withdrawing included.
+        function c.drawn(): boolean return present.value end
 
         local node: { [any]: any } = {
             name = c.domain,
@@ -486,7 +512,7 @@ function M.new(kind: any, ctx: { [string]: any })
             height = function() return c.contracted_height() end,
             radius = function() return if spec.radius then spec.radius() else place.radius() end,
             present = function() return present.value end,
-            opacity = function() return if place.placed() then 1 else 0 end,
+            opacity = function() return if place.placed() or staying.value then 1 else 0 end,
             blur = performance.blurred,
             fill = function()
                 local base = if lit() then theme.lift(theme.cell(), 0.05) else theme.cell()
@@ -551,6 +577,7 @@ function M.new(kind: any, ctx: { [string]: any })
         -- Appended rather than listed: a child that is nil in the middle of
         -- the list would end it, and every child after it with it.
         if has_header then table.insert(node, header_node(place)) end
+        if spec.around then table.insert(node, spec.around()) end
         if c.has_panel then
             -- The thread to what it opened, from the middle of the cell's
             -- edge, where the bud left it.

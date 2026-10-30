@@ -141,6 +141,7 @@ function M.invoke(domain: string, output: string?): boolean
         if c.has_panel then c.open.value = true else M.opened(c) end
         return true
     end
+    if registry.comes_to_pointer(domain) then return M.seek(domain, output) end
     local h = host_for(output)
     if not h then return false end
     if h.summoned() == domain then
@@ -150,6 +151,59 @@ function M.invoke(domain: string, output: string?): boolean
     return h.summon(domain)
 end
 
+-- ---- At the pointer -------------------------------------------------------
+--
+-- A cell that comes to the pointer has to be summoned on the monitor the
+-- pointer is on, which is not always the one the keyboard is pointed at,
+-- and Wayland tells a client neither. So for a moment every monitor's input
+-- surface takes input over the whole screen: niri tells a surface that
+-- starts taking input under a pointer that has not moved where that pointer
+-- is, and the first answer names the monitor and the point. The host there
+-- summons the cell around it. No answer within `locate` — the pointer is
+-- over a membrane, or a window niri keeps above the shell — and it comes up
+-- in the middle of the monitor the keyboard is on.
+local seeking = g.signal("")
+local seeking_output: string? = nil
+local seek_timer: any = nil
+
+function M.seeking(): boolean return seeking.value ~= "" end
+
+function M.seek(domain: string, output: string?): boolean
+    -- Asked twice, it goes, from whichever monitor it came up on.
+    for _, h in hosts do
+        if h.summoned() == domain then
+            h.retire()
+            return true
+        end
+    end
+    if next(hosts) == nil then return false end
+    -- An open cell catches its whole monitor and would hide the pointer
+    -- from the question; the ring is the attention now anyway.
+    M.dismiss()
+    seeking_output = output
+    seeking.value = domain
+    if seek_timer then seek_timer:stop() end
+    seek_timer = g.after(require("core/timing").seconds.locate, function()
+        seek_timer = nil
+        M.found(seeking_output, nil, nil)
+    end)
+    return true
+end
+
+-- The answer, from the input surface the pointer was found over; no point
+-- when it was not found.
+function M.found(output: string?, x: number?, y: number?)
+    local domain = g.untracked(function() return seeking.value end)
+    if domain == "" then return end
+    if seek_timer then
+        seek_timer:stop()
+        seek_timer = nil
+    end
+    seeking.value = ""
+    local h = host_for(output)
+    if h then h.summon_at(domain, x, y) end
+end
+
 function M.retire(domain: string, output: string?): boolean
     domain = registry.canonical(domain)
     local c = M.cell_for(domain, output)
@@ -157,6 +211,15 @@ function M.retire(domain: string, output: string?): boolean
         c.open.value = false
         if g.untracked(c.visibility.type) == "invoked" then c.visibility.set_invoked(false) end
         return true
+    end
+    if registry.comes_to_pointer(domain) then
+        for _, h in hosts do
+            if h.summoned() == domain then
+                h.retire()
+                return true
+            end
+        end
+        return false
     end
     local h = host_for(output)
     if h and h.summoned() == domain then

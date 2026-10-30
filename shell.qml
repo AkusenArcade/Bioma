@@ -296,6 +296,14 @@ ShellRoot {
         function ring(): string {
             return Focus.invoke("actions", Niri.focusedOutput) ? "toggled actions" : "no ring";
         }
+
+        // Settings on the page where macros are written: the ring's one
+        // capsule while there are none, drawn by Bioma on Genoma while the
+        // two run side by side (genoma/PORT.md).
+        function write(): string {
+            SettingsPlace.category = "actions";
+            return Focus.invoke("settings", Niri.focusedOutput) ? "settings on actions" : "no settings";
+        }
     }
 
     // The first-run walk-through: `open` shows it in the settings cell of the

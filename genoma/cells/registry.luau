@@ -16,8 +16,16 @@ end
 
 -- The cells written on Genoma so far, every one of which answers to its
 -- name; and those that are the engine's own, never offered to a keybind.
-M.ported = { "window_title", "workspaces", "vitals", "clock", "media", "theme", "utility", "audio", "connectivity", "system", "dock", "tray", "download", "privacy", "timer", "keyboard", "drives", "performance", "clipboard", "emoji" } :: { string }
+M.ported = { "window_title", "workspaces", "vitals", "clock", "media", "theme", "utility", "audio", "connectivity", "system", "dock", "tray", "download", "privacy", "timer", "keyboard", "drives", "performance", "clipboard", "emoji", "actions" } :: { string }
 M.internal = { probe = true }
+
+-- Placed nowhere and never in the middle: a cell that comes to the point
+-- the hand is at (Registry.comesToPointer). The quick actions are a ring
+-- around that point, and a ring has no place on a strip.
+M.pointer = { actions = true }
+function M.comes_to_pointer(kind: string): boolean
+    return M.pointer[M.canonical(kind)] == true
+end
 
 -- Each key a block leaves out is the domain's (Registry.widthOf).
 M.widths = {

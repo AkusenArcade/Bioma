@@ -104,9 +104,10 @@ Checked 2026-10-28 (`BIOMA_GENOMA_CHECK=1 scripts/genoma`):
       - no shadow, on panels or floating tissues, until Genoma has a soft
         shadow; a panel's content fades but does not grow from its centre;
         a summoned cell fades in rather than growing into place;
-      - `"anchor": "pointer"` and cells that come to the pointer, which need
-        the pointer's position; a floating tissue holding its place while
-        the pointer is on what it opened;
+      - `"anchor": "pointer"` on a declared block (cells that come to the
+        pointer are done: `focus.seek`, the input surface answering on
+        `on_move`, `host.summon_at`); a floating tissue holding its place
+        while the pointer is on what it opened;
       - keyboard travel inside an open cell (arrows, Tab, Enter), with the
         first cell that has something to travel through;
       - the input surface and the hosts stay mapped for the whole session,
@@ -169,7 +170,7 @@ host, driven only by `scripts/genoma ipc`:
 | system | §9.8 (session menu) | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | dock | §9.9 | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | tray | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
-| actions | *beyond the PRD* | 4 | | |
+| actions | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-30, awaiting Akusen and the cost |
 | clipboard | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | download | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | drives | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
@@ -493,6 +494,28 @@ have niri's focus, the keys went elsewhere (niri gives the keyboard to an
 exclusive layer on the focused monitor); from a keybind the cell comes on
 the focused monitor and the keys reach it.
 
+actions, checked 2026-10-30 on HDMI-A-1 (`cells/actions.luau`, service
+`actions`), beside Quickshell's ring captured at the same point: asked
+for, it looks for the pointer (every monitor's input surface takes the
+whole screen for a moment and the first `on_move` names the monitor and
+the point; `locate` without an answer puts it in the middle of the
+keyboard's monitor) and comes up around it, eight capsules on the
+circle, each tied to the pill by a thread. Near a corner the ring moved
+inward until all of it fitted. The pointer to the right lit the third
+capsule and named it in the pill; Right, Right lit the first and the
+second, and 3 closed the ring and handed "Genoma test 3" to Quickshell
+(`qs ipc call actions run`), which ran nothing: the test macros were not
+his. Closing, the icons leave, the capsules go home into the pill, and
+the pill fades halfway through (`withdrawal`). With no macro, one
+capsule, the pencil, opening Settings on its page through Quickshell
+(`actions write`, added to shell.qml). Running a macro stays
+Quickshell's: its steps act on the desktop. Found on the way: a
+`g.thread` is a quadratic curve, so a straight one needs its bend
+halfway; and a floating tissue's band vanished the moment its last cell
+was no longer placed, taking the cell's fade with it (every summoned
+cell left at once): the band now stays, empty, while its cell leaves.
+Not yet: the open and close sounds (no Genoma cell plays them).
+
 ### Surfaces that are not cells
 
 | Surface | PRD | State |
@@ -649,3 +672,6 @@ configuration with nothing of Genoma's in it:
 - [x] Emoji (`emoji.luau`): the set read once wanted, search scored as
       Emoji.qml scores it, tones, recent ones, sending through
       `scripts/paste`.
+- [x] Actions (`actions.luau`): the macros read from `actions.macros`,
+      the ring of eight, their icons; running one and writing them are
+      asked of Quickshell (`actions run`, `actions write`).
