@@ -177,10 +177,10 @@ host, driven only by `scripts/genoma ipc`:
 | emoji | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | keyboard | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | performance | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
-| polkit | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-30 on a pretend request, awaiting Akusen's password and the cost |
+| polkit | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-30, Akusen's password through the real helper; awaiting the cost |
 | privacy | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | timer | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
-| notifications | §9.10 | 4, last | | |
+| notifications | §9.10 | 4, last | 11bb81e | checked 2026-10-30 on a private session bus, awaiting Akusen and the cost |
 | settings (with setup, §9.14) | §9.12 | 5 | | |
 | launcher | §9.13 | 6 | | |
 
@@ -525,7 +525,11 @@ with the caret; Enter dimmed the field while it was checked; a refused
 password turned the outline to the alert, emptied the field and said so
 under it, the panel growing for the line; the right one closed the cell,
 and so did Cancel, pressed. Not yet: the real helper with Akusen's
-password. polkit's PAM stack counts every failed *or abandoned*
+password; then, with Akusen at the keys (16:36), the real helper: the
+agent registered for a `sleep` of the test's own, `pkcheck --process`
+asked, the cell came up on HDMI-A-1, his password answered it, the cell
+went by itself and pkcheck said authorized (faillock's two counts from
+earlier cleared by the success). polkit's PAM stack counts every failed *or abandoned*
 conversation toward pam_faillock (three in fifteen minutes lock the
 account for ten), so the interface is tried on the pretend request and
 the helper only with the right password. Found that way, at a cost of
@@ -533,6 +537,31 @@ two counts: g.watch answers once at the start, and the cell's "closed,
 so cancel" ran before it had opened, failing the request. The agent can
 be registered for one process (`GENOMA_POLKIT_PROCESS=<pid>`, as
 `pkttyagent --process`) to try it beside the session's.
+
+notifications, checked 2026-10-30 on HDMI-A-1 with the engine inside
+`dbus-run-session` (the session's name stays Quickshell's), `notify-send`
+on that bus: an "always" cell in a top-left tissue and the urgent and
+ordinary pair top-right, as config/default.json has them. An ordinary one
+came with its icon (mail-unread), its title and the dial draining; a
+critical one sat on top, outlined in the alert colour, the ordinary one
+going on under it. Under the pointer the ordinary one opened its body
+(the sender in the machine's voice, the title, the text with its markup
+taken off, Open and Later) without claiming the attention, and its dial
+stood still while the pointer was there; Open reached the sender
+(`notify-send` printed "open") and the notification went. The cross
+dismissed the critical one with the pointer still on it. A press on the
+resting bell opened the history (HISTORY, CLEAR, QUIET, grouped by
+application with how long ago); a keybind's toggle closed it, and the
+bell came back centred. Not pressed: CLEAR and QUIET. Not seen: a flood
+(twenty in ten seconds becoming a count). Not yet: Bioma's sound, the
+unread list (the vacuole organism is not ported), images given only as
+pixels. The structure gained, for it: `claims_focus` (what is only shown
+under the pointer claims nothing), `touched` (the pointer anywhere on the
+cell or its panel, children included, through `on_move`, with a moment's
+grace to cross the gap), `engaging` (nothing left to say, the pointer no
+longer keeps it) and an outline for the cell and for its panel. Found on
+the way: config layers merge lists by index, so a test override's first
+floating block took the options of default.json's first.
 
 Found on the way, in the structure and in Genoma: every summoned cell
 with a panel came up invisible after the ring's change to the cell's
@@ -697,6 +726,10 @@ configuration with nothing of Genoma's in it:
 - [x] Emoji (`emoji.luau`): the set read once wanted, search scored as
       Emoji.qml scores it, tones, recent ones, sending through
       `scripts/paste`.
+- [x] Notifications (`notifications.luau`): the server's list read by id;
+      two queues, urgent and ordinary, the ordinary head's clock held by
+      the pointer, the cap and the count, the history in memory, icons
+      from the sender's image, icon or desktop entry and never a guess.
 - [x] Polkit (`polkit.luau`): the agent from `@genoma/polkit` while
       `polkit.agent` is on; the request summons the cell on the focused
       monitor and its end takes it away; closing is cancelling.

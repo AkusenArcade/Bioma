@@ -30,7 +30,8 @@
 --                      are shapes that bud out of the panel itself (the
 --                      vitals' pods), beyond how far past it they reach
 --                      (the media's track, hung under its band); radius
---                      when it is not the panel's
+--                      when it is not the panel's; outline() a colour for
+--                      its rim, nil for the usual
 --   on_key(name)       a key while it is open, Escape aside
 --   on_wheel(dx, dy)   the wheel over the cell
 --   header_title, header_mark(size), header_mark_size()
@@ -43,6 +44,14 @@
 --                      the screen
 --   around()           a node drawn in the cell's own frame, past its pill
 --                      (the ring's capsules and threads)
+--   claims_focus()     false while what it opened is only shown, not asked
+--                      for: the notification's body under the pointer
+--                      neither closes other cells nor catches presses
+--                      (Cell.claimsFocus); the default is true
+--   outline()          a colour drawn round the pill, nil for none: a
+--                      critical notification's urgency (Cell.outline)
+--   engaging()         false when the pointer on it should no longer keep
+--                      it: it has nothing left to say (Cell.engaging)
 --   withdrawal         seconds the pill waits, once it is no longer placed,
 --                      before it fades: what it drew around itself goes home
 --                      into it first (Cell.withdrawal)
@@ -108,6 +117,33 @@ function M.new(kind: any, ctx: { [string]: any })
         pulse_timer = g.after(timing.seconds.pulse, function() pulsing.value = false end)
     end
     function c.pulsing(): boolean return pulsing.value end
+
+    -- The pointer anywhere on the cell or on what it opened, the shapes'
+    -- children included: a hover stays with the node it is on, so a pointer
+    -- over a button in the panel would read as gone, while a move climbs to
+    -- the shape that listens. Leaving waits a moment, so the gap between
+    -- the cell and its panel can be crossed (Cell.touched). Before the domain's
+    -- own part is built, which may read it.
+    local inside = { cell = false, panel = false }
+    local touched = g.signal(false)
+    local leaving: any = nil
+    function c.touch(part: string)
+        inside[part] = true
+        if leaving then
+            leaving:stop()
+            leaving = nil
+        end
+        if not g.untracked(function() return touched.value end) then touched.value = true end
+    end
+    function c.untouch(part: string)
+        inside[part] = false
+        if inside.cell or inside.panel or leaving then return end
+        leaving = g.after(timing.seconds.debounce, function()
+            leaving = nil
+            if not inside.cell and not inside.panel then touched.value = false end
+        end)
+    end
+    function c.touched(): boolean return touched.value end
 
     local spec = kind.new(c)
     c.spec = spec
@@ -265,17 +301,32 @@ function M.new(kind: any, ctx: { [string]: any })
 
     -- Interaction suspends disappearance; an open cell is interacted with
     -- wherever the pointer is.
+    -- A cell with nothing left to say is no longer held by the pointer:
+    -- dismissing the last notification with the pointer still on it left an
+    -- empty pill there until the hand moved (Cell.engaging).
     g.effect(function()
-        c.visibility.set_interacting(c.hovered.value or c.open.value)
+        local engaging = spec.engaging == nil or spec.engaging() == true
+        c.visibility.set_interacting(((c.hovered.value or touched.value) and engaging) or c.open.value)
     end)
 
+    local function claims(): boolean
+        return spec.claims_focus == nil or spec.claims_focus() == true
+    end
+    function c.claims(): boolean return claims() end
+
     -- One cell open at a time: opening this one closes whatever was open.
+    -- What is only shown under the pointer claims nothing, until it is
+    -- asked for.
     c.focus_id = focus.offer(c)
-    g.watch(function() return c.open.value end, function(open: boolean)
-        if open then
+    g.watch(function() return c.open.value and claims() end, function(claiming: boolean)
+        if claiming then
             focus.opened(c)
-            return
+        elseif g.untracked(function() return c.open.value end) then
+            focus.released(c)
         end
+    end)
+    g.watch(function() return c.open.value end, function(open: boolean)
+        if open then return end
         focus.released(c)
         -- A cell there only while it is asked for goes when it is closed,
         -- however it was closed: the press that shut it, or the capture it
@@ -378,12 +429,16 @@ function M.new(kind: any, ctx: { [string]: any })
             bud = function() return if c.open.value then 0 else c.metrics().cell_height end,
             blur = performance.blurred,
             fill = function() return colour.alpha(theme.cell(), opacity()) end,
-            rim_top = theme.rim,
-            rim_bottom = theme.line,
+            -- A panel with an outline of its own: a critical notification's
+            -- body is as urgent as its title.
+            rim_top = function() return (p.outline and p.outline()) or theme.rim() end,
+            rim_bottom = function() return (p.outline and p.outline()) or theme.line() end,
             -- Nothing under the shape hears the pointer: a press on the panel
             -- is not a press on the cell it came from, nor is a click, which
             -- would otherwise reach the cell and close it.
             on_press = function() end,
+            on_hover = function(on: boolean) if on then c.touch("panel") else c.untouch("panel") end end,
+            on_move = function() c.touch("panel") end,
             on_click = function() end,
             transition = {
                 offset_y = curve,
@@ -522,13 +577,27 @@ function M.new(kind: any, ctx: { [string]: any })
                 local base = if lit() then theme.lift(theme.cell(), 0.05) else theme.cell()
                 return colour.alpha(base, opacity())
             end,
-            rim_top = function() return if lit() then theme.lift(theme.rim(), 0.10) else theme.rim() end,
-            rim_bottom = function() return if lit() then theme.lift(theme.line(), 0.06) else theme.line() end,
-            on_hover = function(on: boolean) c.hovered.value = on end,
+            -- Urgency is an outline, never a fill: the rim, in its colour,
+            -- all round.
+            rim_top = function()
+                local o = spec.outline and spec.outline()
+                if o then return o end
+                return if lit() then theme.lift(theme.rim(), 0.10) else theme.rim()
+            end,
+            rim_bottom = function()
+                local o = spec.outline and spec.outline()
+                if o then return o end
+                return if lit() then theme.lift(theme.line(), 0.06) else theme.line()
+            end,
+            on_hover = function(on: boolean)
+                c.hovered.value = on
+                if on then c.touch("cell") else c.untouch("cell") end
+            end,
+            on_move = function() c.touch("cell") end,
             on_wheel = spec.on_wheel,
             -- While it is open it has the attention: a press on anything but
             -- itself and what it opened closes it, and so does Escape.
-            catch = function() return c.open.value or focus.is(c) end,
+            catch = function() return (c.open.value and claims()) or focus.is(c) end,
             on_outside = function() focus.dismiss() end,
             on_key = function(name: string, text: string?, mods: any) focus.key(name, text, mods) end,
             -- The left button presses; the middle one is the cell's to give a
