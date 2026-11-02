@@ -29,9 +29,31 @@ local function read_uptime()
     }
 end
 
+-- When this system was installed, in seconds since the epoch; 0 until
+-- known (Machine.born): the oldest of the creation of / and of /home and
+-- the first line of pacman's log, since a btrfs rollback makes / a snapshot
+-- born the day it was taken.
+local born = g.signal(0)
+function M.born(): number return born.value end
+function M.host(): string return facts.value.host or "" end
+
 function M.ask()
     if asked then return end
     asked = true
+    local seconds = {}
+    g.process {
+        command = { "bash", "-c",
+            "for p in / /home; do stat -c %W \"$p\" 2>/dev/null; done; "
+            .. "d=$(head -n1 /var/log/pacman.log 2>/dev/null | sed -n 's/^\\[\\([^]]*\\)\\].*/\\1/p'); "
+            .. "[ -n \"$d\" ] && date -d \"$d\" +%s 2>/dev/null" },
+        on_line = function(line: string)
+            local v = tonumber(line)
+            if v and v > 0 then table.insert(seconds, v) end
+        end,
+        on_exit = function()
+            if #seconds > 0 then born.value = math.min(table.unpack(seconds)) end
+        end,
+    }
     local lines: { string } = {}
     g.process {
         command = { "sh", "-c",

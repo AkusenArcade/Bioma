@@ -110,12 +110,11 @@ local function read(text: string?)
     check(kept)
 end
 
-local reader: any = nil
+-- Read from the load, not from inside the effect below: made there, it
+-- would be the effect's, and go with its next run.
+local reader = g.file { path = PATH }
 g.effect(function()
     if holders.value <= 0 then return end
-    g.untracked(function()
-        if not reader then reader = g.file { path = PATH } end
-    end)
     local text = reader.text
     g.untracked(function() read(text) end)
 end)
