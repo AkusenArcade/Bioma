@@ -12,6 +12,8 @@ local metrics_mod = require("core/metrics")
 local theme = require("core/theme")
 local typography = require("core/typography")
 local field_mod = require("components/field")
+local config = require("core/config")
+local timing = require("core/timing")
 
 local M = {}
 
@@ -275,13 +277,49 @@ function M.new(t: { [string]: any }): any
             width = p.inner,
             height = chip_height,
             padding_x = function() return 14 * f() end,
+            direction = "row",
             align = "center",
+            justify = "start",
             radius = function() return metrics_mod.radius_for(chip_height(), m()) end,
             fill = "#00000000",
             rim_top = edge,
             rim_bottom = edge,
             node,
         }, handle
+    end
+
+    -- A setting a slider moves: its value at once, under the hand, and the
+    -- override written at most once a debounce while it moves and once
+    -- more when it rests. A write per step rewrote the whole override at
+    -- every motion and a quick drag fell behind. `write(v)` for a setting
+    -- that is not one key (default: config.set at `path`).
+    function p.live(path: string, fallback: any, write: ((any) -> ())?): (() -> any, (any) -> ())
+        local held = g.signal(nil :: any)
+        local timer: any = nil
+        local function put(v: any) if write then write(v) else config.set(path, v) end end
+        local function value(): any
+            local h = held.value
+            if h ~= nil then return h end
+            return config.get(path, fallback)
+        end
+        local function set(v: any)
+            if v == g.untracked(value) then return end
+            held.value = v
+            if timer then return end
+            put(v)
+            timer = g.after(timing.seconds.debounce, function()
+                timer = nil
+                local last = g.untracked(function() return held.value end)
+                if last == nil then return end
+                put(last)
+                -- Let go once the file has been read back, not before: the
+                -- control would step back to the old value for a moment.
+                g.after(timing.seconds.debounce, function()
+                    if timer == nil and g.untracked(function() return held.value end) == last then held.value = nil end
+                end)
+            end)
+        end
+        return value, set
     end
 
     -- Chips that go on to the next line when the row is full (Qt's Flow):

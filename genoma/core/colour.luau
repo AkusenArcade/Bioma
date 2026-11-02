@@ -53,6 +53,35 @@ function M.hsla(h: number, s: number, l: number, a: number): RGB
 end
 
 -- Qt.alpha(colour, a).
+-- Hue 0…1, -1 for an achromatic colour (QColor's hsvHue), saturation and
+-- value 0…1.
+function M.hsv(c: RGB): (number, number, number)
+    local max, min = math.max(c.r, c.g, c.b), math.min(c.r, c.g, c.b)
+    local d = max - min
+    local s = if max > 0 then d / max else 0
+    if d == 0 then return -1, s, max end
+    local h
+    if max == c.r then h = ((c.g - c.b) / d) % 6
+    elseif max == c.g then h = (c.b - c.r) / d + 2
+    else h = (c.r - c.g) / d + 4 end
+    return h / 6, s, max
+end
+
+-- Qt.hsva: hue, saturation, value and alpha 0…1.
+function M.hsva(h: number, s: number, v: number, a: number): RGB
+    local i = math.floor(h * 6) % 6
+    local fr = h * 6 - math.floor(h * 6)
+    local p, q, t = v * (1 - s), v * (1 - fr * s), v * (1 - (1 - fr) * s)
+    local r, g, b
+    if i == 0 then r, g, b = v, t, p
+    elseif i == 1 then r, g, b = q, v, p
+    elseif i == 2 then r, g, b = p, v, t
+    elseif i == 3 then r, g, b = p, q, v
+    elseif i == 4 then r, g, b = t, p, v
+    else r, g, b = v, p, q end
+    return { r = r, g = g, b = b, a = a }
+end
+
 function M.alpha(hex: string, a: number): string
     local c = M.parse(hex)
     c.a = a

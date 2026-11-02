@@ -454,6 +454,12 @@ ShellRoot {
             Templates.setOn(id, on);
             return Templates.isOn(id) ? "on" : "off";
         }
+
+        // The glass's strength, a step written into niri's configuration.
+        function blur(strength: int): string {
+            Looks.setBlur(strength);
+            return String(Metrics.blurStrength);
+        }
     }
 
     // The monitors' layout, written into niri's configuration by this shell
