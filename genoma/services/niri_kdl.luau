@@ -311,9 +311,140 @@ function M.scan(text: string): { items: { any } }
             table.insert(items, output_of(node))
         elseif node.name == "window-rule" and node.children then
             table.insert(items, rule_of(node))
+        elseif node.name == "binds" and node.children then
+            for _, bind in node.children.nodes do
+                if not bind.dropped then
+                    local action = nil
+                    for _, child in (if bind.children then bind.children.nodes else {}) do
+                        if not child.dropped then
+                            action = child
+                            break
+                        end
+                    end
+                    local args = {}
+                    if action then for _, a in action.args do table.insert(args, a.value) end end
+                    table.insert(items, {
+                        kind = "bind",
+                        key = bind.name,
+                        key_start = bind.name_start,
+                        key_end = bind.name_end,
+                        start = bind.start,
+                        ["end"] = bind["end"],
+                        props = bind.props,
+                        action = if action then { name = action.name, args = args, props = action.props } else nil,
+                    })
+                end
+            end
         end
     end
     return { items = items }
+end
+
+-- ---- Keys ------------------------------------------------------------------
+
+local MODIFIER_NAMES = {
+    mod = "Mod", super = "Super", win = "Super", ctrl = "Ctrl", control = "Ctrl", shift = "Shift", alt = "Alt",
+    iso_level3_shift = "ISO_Level3_Shift", mod5 = "ISO_Level3_Shift",
+    iso_level5_shift = "ISO_Level5_Shift", mod3 = "ISO_Level5_Shift",
+}
+-- The order a combination is written in, whatever order it was pressed in.
+local MODIFIER_ORDER = { "Mod", "Super", "Ctrl", "Alt", "Shift", "ISO_Level3_Shift", "ISO_Level5_Shift" }
+local function by_order(a: string, b: string): boolean
+    return (table.find(MODIFIER_ORDER, a) or 99) < (table.find(MODIFIER_ORDER, b) or 99)
+end
+
+function M.split(key: string): { mods: { string }, key: string }
+    local parts = string.split(key, "+")
+    local last = table.remove(parts) or ""
+    local mods = {}
+    for _, part in parts do
+        local known = MODIFIER_NAMES[string.lower(part)]
+        if known and not table.find(mods, known) then table.insert(mods, known) end
+    end
+    table.sort(mods, by_order)
+    return { mods = mods, key = last }
+end
+
+-- Two spellings of one combination compare equal; `Mod` is compared as
+-- `Super`, which is what it means when niri runs on a TTY.
+function M.normalize(key: string): string
+    local parts = M.split(key)
+    local mods = {}
+    for _, m in parts.mods do
+        local n = if m == "Mod" then "Super" else m
+        if not table.find(mods, n) then table.insert(mods, n) end
+    end
+    table.sort(mods)
+    table.insert(mods, string.lower(parts.key))
+    return table.concat(mods, "+")
+end
+
+function M.compose(mods: { string }, key: string): string
+    local sorted = table.clone(mods)
+    table.sort(sorted, by_order)
+    table.insert(sorted, key)
+    return table.concat(sorted, "+")
+end
+
+-- What a key is called on a keycap: names already short stay, keysym
+-- jargon is translated.
+local KEY_LABELS = {
+    space = "Space", ["return"] = "Enter", kp_enter = "Enter", escape = "Esc", tab = "Tab",
+    backspace = "⌫", delete = "Del", insert = "Ins", home = "Home", ["end"] = "End",
+    page_up = "PgUp", page_down = "PgDn", prior = "PgUp", next = "PgDn",
+    up = "↑", down = "↓", left = "←", right = "→",
+    comma = ",", period = ".", slash = "/", backslash = "\\", semicolon = ";", apostrophe = "'",
+    grave = "`", minus = "−", equal = "=", plus = "+", bracketleft = "[", bracketright = "]",
+    print = "Print", pause = "Pause", menu = "Menu",
+    wheelscrollup = "Wheel ↑", wheelscrolldown = "Wheel ↓", wheelscrollleft = "Wheel ←", wheelscrollright = "Wheel →",
+    touchpadscrollup = "Swipe ↑", touchpadscrolldown = "Swipe ↓", touchpadscrollleft = "Swipe ←", touchpadscrollright = "Swipe →",
+    mouseleft = "Left click", mouseright = "Right click", mousemiddle = "Middle click",
+    mouseback = "Back button", mouseforward = "Forward button",
+    xf86audioraisevolume = "Vol +", xf86audiolowervolume = "Vol −", xf86audiomute = "Mute", xf86audiomicmute = "Mic mute",
+    xf86audioplay = "Play", xf86audiopause = "Pause", xf86audiostop = "Stop", xf86audionext = "Next", xf86audioprev = "Previous",
+    xf86monbrightnessup = "Bright +", xf86monbrightnessdown = "Bright −",
+}
+local MODIFIER_LABELS = {
+    Mod = "Super", Super = "Super", Ctrl = "Ctrl", Alt = "Alt", Shift = "Shift",
+    ISO_Level3_Shift = "AltGr", ISO_Level5_Shift = "Level 5",
+}
+
+function M.keycaps(key: string): { string }
+    local parts = M.split(key)
+    local out = {}
+    for _, m in parts.mods do table.insert(out, MODIFIER_LABELS[m] or m) end
+    local label = KEY_LABELS[string.lower(parts.key)]
+    if label == nil then
+        label = if utf8.len(parts.key) == 1 then string.upper(parts.key) else (string.gsub(parts.key, "^XF86", ""))
+    end
+    table.insert(out, label)
+    return out
+end
+
+-- ---- What a bind does, in words ---------------------------------------------
+
+function M.humanize(name: string): string
+    local words = string.gsub(name, "-", " ")
+    return string.upper(string.sub(words, 1, 1)) .. string.sub(words, 2)
+end
+
+-- The name a row goes by: niri's own `hotkey-overlay-title` when somebody
+-- chose one, otherwise what the action does.
+function M.describe(bind: any): string
+    local title = bind.props["hotkey-overlay-title"]
+    if title and title ~= "null" and title ~= "#null" then return title end
+    local action = bind.action
+    if not action then return bind.key end
+    if action.name == "spawn" or action.name == "spawn-sh" then
+        local words = table.clone(action.args)
+        if #words == 0 then return "Run a command" end
+        local parts = string.split(words[1], "/")
+        words[1] = parts[#parts]
+        return "Run " .. table.concat(words, " ")
+    end
+    local out = { M.humanize(action.name) }
+    for _, a in action.args do table.insert(out, tostring(a)) end
+    return table.concat(out, " ")
 end
 
 -- Where an include points, from the directory of the file that names it.

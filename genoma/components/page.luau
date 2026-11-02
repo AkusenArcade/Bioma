@@ -260,6 +260,31 @@ function M.new(t: { [string]: any }): any
         return g.capsule(row)
     end
 
+    -- A key on a keycap: outlined, its name in the technical face; faint
+    -- for a bind written down but overridden.
+    function p.keycap(label: string | () -> string, faint: (() -> boolean)?, height: (() -> number)?): any
+        local function h(): number return if height then height() else 26 * f() end
+        local function ink(): string return if faint and faint() then theme.text_faint() else theme.text() end
+        return g.capsule {
+            height = h,
+            min_width = h,
+            padding_x = function() return 7 * f() end,
+            align = "center",
+            justify = "center",
+            radius = function() return 6 * f() end,
+            fill = "#00000000",
+            rim_top = theme.line,
+            rim_bottom = theme.line,
+            g.text {
+                text = label,
+                color = ink,
+                font = typography.technical,
+                size = function() return m().font_meta end,
+                tracking = 0.04,
+            },
+        }
+    end
+
     -- A one-line field, outlined, in the human voice. Returns the node and
     -- the field's handle (key, set). `t`: text (a signal), placeholder,
     -- taking().

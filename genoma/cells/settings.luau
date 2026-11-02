@@ -48,6 +48,7 @@ local CATEGORIES = {
 local PAGES = {
     appearance = "cells/settings_appearance",
     cells = "cells/settings_cells",
+    keybinds = "cells/settings_keybinds",
     monitors = "cells/settings_monitors",
     organisms = "cells/settings_organisms",
     performance = "cells/settings_performance",

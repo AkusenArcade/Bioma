@@ -506,6 +506,47 @@ ShellRoot {
         }
     }
 
+    // The keybinds, written into niri's configuration by this shell while
+    // the two run side by side: Bioma on Genoma's Keybinds page records the
+    // combination and names the bind by its id (`file#start#key`, as
+    // Keybinds.binds has it), and this shell rewrites the file it came from
+    // (genoma/PORT.md, "Who acts on the desktop"). `add` takes the action as
+    // `{"name":…,"args":[…]}`.
+    IpcHandler {
+        target: "keybinds"
+
+        function rekey(id: string, key: string): string {
+            const bind = Keybinds.binds.find(b => b.id === id);
+            if (!bind)
+                return "no such bind";
+            Keybinds.rekey(bind, key);
+            return key;
+        }
+
+        function remove(id: string): string {
+            const bind = Keybinds.binds.find(b => b.id === id);
+            if (!bind)
+                return "no such bind";
+            Keybinds.remove(bind);
+            return "removed";
+        }
+
+        function add(key: string, action: string, title: string): string {
+            let parsed;
+            try {
+                parsed = JSON.parse(action);
+            } catch (e) {
+                return "not JSON";
+            }
+            Keybinds.add(key, parsed, title);
+            return key;
+        }
+
+        function error(): string {
+            return Keybinds.error;
+        }
+    }
+
     // The organisms, drawn and arranged by this shell while the two run side
     // by side: Bioma on Genoma's Organisms page writes their options into
     // the configuration itself and asks here for what this shell's
