@@ -714,7 +714,7 @@ col 1.5 row 2.
 | adipose | checked 2026-11-02 (`services/storage.luau` from Storage.qml); the Canvas drawn by a shader (`organisms/adipose.wgsl`) |
 | sediment | checked 2026-11-02 (`services/recent.luau` from Recent.qml); the Canvas drawn by a shader (`organisms/sediment.wgsl`); names cut in the middle (`ellipsize`, Genoma 2026-11-02) |
 | rings | checked 2026-11-02 (`services/machine.luau` gained the system's birth); `services/activity.luau` counts as Activity.qml does (idle by `@genoma/idle`, locked by logind's LockedHint) while no Quickshell rings is configured, and only reads what Quickshell counts otherwise, showing today's time then; checked: AWAY after a quiet minute, a minute written while present; the Canvas drawn by a shader (`organisms/rings.wgsl`) |
-| note | checked 2026-11-02 (`g.file` follows the file as it is edited); its bold, italic, code and struck words as the text's runs (Genoma 2026-11-02); the page runs to the foot and fades its last 36, by the clip's `fade_bottom` (Genoma 2026-11-02); a struck word in the fade loses its line |
+| note | checked 2026-11-02 (`g.file` follows the file as it is edited); its bold, italic, code and struck words as the text's runs (Genoma 2026-11-02); the page runs to the foot and fades its last 36, by the clip's `fade_bottom` (Genoma 2026-11-02) |
 
 Every figure Quickshell lights with LitText is lit the same way here, by
 the text's `color_bottom` (Genoma 2026-11-02): the clock's, the vitals',
