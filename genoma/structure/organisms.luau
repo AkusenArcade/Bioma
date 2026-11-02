@@ -322,9 +322,13 @@ function M.organism(a: { [string]: any }): (any, any)
     local function grid_point(): (number, number)
         local e = entry()
         if e.col ~= nil and e.row ~= nil then return place.kept(cover_width(), cover_height(), e.col, e.row) end
+        -- One with no point yet (just added) goes to the nearest place
+        -- nobody covers: organisms never overlap.
         local fx, fy, fw, fh = place.free()
-        return place.point(cover_width(), cover_height(),
+        local col, row = place.point(cover_width(), cover_height(),
             fx + (e.x or 0.5) * fw - cover_width() / 2, fy + (e.y or 0.5) * fh - cover_height() / 2)
+        local list = if arranging.active() then arranging.working() else config.get("organisms", {})
+        return place.free_point(cover_width(), cover_height(), col, row, place.others(list, e.id))
     end
     local function rest(): (number, number)
         local col, row = grid_point()

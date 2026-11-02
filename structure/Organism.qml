@@ -94,11 +94,17 @@ Item {
         const entry = root.entry;
         if (!surface)
             return Qt.point(0, 0);
-        const p = entry.col !== undefined && entry.row !== undefined
-            ? surface.kept(root.coverWidth, root.coverHeight, entry.col, entry.row)
-            : surface.point(root.coverWidth, root.coverHeight,
-                            surface.free.x + (entry.x ?? 0.5) * surface.free.width - root.coverWidth / 2,
-                            surface.free.y + (entry.y ?? 0.5) * surface.free.height - root.coverHeight / 2);
+        if (entry.col !== undefined && entry.row !== undefined) {
+            const kept = surface.kept(root.coverWidth, root.coverHeight, entry.col, entry.row);
+            return Qt.point(kept.col, kept.row);
+        }
+        // One with no point yet — just added — goes to the nearest place
+        // nobody covers: organisms never overlap.
+        const wanted = surface.point(root.coverWidth, root.coverHeight,
+                                     surface.free.x + (entry.x ?? 0.5) * surface.free.width - root.coverWidth / 2,
+                                     surface.free.y + (entry.y ?? 0.5) * surface.free.height - root.coverHeight / 2);
+        const p = surface.freePoint(root.coverWidth, root.coverHeight, wanted.col, wanted.row,
+                                    surface.others(root.place));
         return Qt.point(p.col, p.row);
     }
 
