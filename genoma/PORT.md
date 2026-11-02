@@ -183,7 +183,7 @@ host, driven only by `scripts/genoma ipc`:
 | timer | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | notifications | §9.10 | 4, last | 11bb81e | checked 2026-10-30 on a private session bus, awaiting Akusen and the cost |
 | settings (with setup, §9.14) | §9.12 | 5 | 11bb81e | in progress: the frame and the eleven pages checked 2026-11-02; the setup to come |
-| launcher | §9.13 | 6 | | |
+| launcher | §9.13 | 6 | 2cafc17 | checked 2026-11-02 summoned on HDMI-A-1: apps by use and by subsequence with the matched letters lit (Genoma's new text `marks`), sums from qalc, files from fd under FILES; launching, Enter and the form on a membrane are Akusen's to press |
 
 window_title, checked 2026-10-29 (`genoma/cells/window_title.luau`,
 `components/sweep.luau`) beside Bioma on Quickshell's on DP-1, the same

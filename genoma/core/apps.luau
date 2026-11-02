@@ -130,17 +130,20 @@ function M.command_of(entry: any): { string }
     return out
 end
 
+-- The desktop's terminal, asked the way the freedesktop proposal asks it
+-- (`xdg-terminal-exec`), else $TERMINAL, else the first of the usual ones;
+-- each of those takes the command after `-e`.
+local IN_TERMINAL = 'if command -v xdg-terminal-exec >/dev/null 2>&1; then exec xdg-terminal-exec "$@"; fi; '
+    .. 'for t in "$TERMINAL" kitty alacritty foot ghostty wezterm konsole xterm; do '
+    .. '[ -n "$t" ] && command -v "$t" >/dev/null 2>&1 && exec "$t" -e "$@"; done; '
+    .. 'echo "no terminal for $1" >&2; exit 1'
+
 -- Start an application, with whatever the shell adds to its environment
 -- (the proxy, while one is on). Not as the shell's child: `scripts/launch`
 -- makes it a user service of its own, out of the shell's scheduling and
--- cgroup. One that runs in a terminal is started by the terminal the
--- launcher service knows, which comes with it.
+-- cgroup. One that runs in a terminal is started inside the desktop's.
 function M.run(entry: any, environment: { [string]: string }?)
     if not entry then return end
-    if entry.terminal then
-        print("apps: " .. entry.id .. " runs in a terminal, which comes with the launcher")
-        return
-    end
     local command = M.command_of(entry)
     if #command == 0 then return end
     local launch = { paths.script("launch"), "--id", entry.id or "" }
@@ -149,6 +152,9 @@ function M.run(entry: any, environment: { [string]: string }?)
         table.insert(launch, entry.path)
     end
     table.insert(launch, "--")
+    if entry.terminal then
+        for _, w in { "bash", "-c", IN_TERMINAL, "terminal" } do table.insert(launch, w) end
+    end
     for _, w in command do table.insert(launch, w) end
     g.process { command = launch, env = environment or {} }
 end
