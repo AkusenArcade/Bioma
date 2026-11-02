@@ -1485,8 +1485,12 @@ function M.new(t: { [string]: any }): any
         g.box { grow = 1 },
         -- The walk-through again, from WELCOME, in this same panel: the
         -- first start is where a layout is chosen, so a second one is asked
-        -- for here. It leaves the saved presets alone.
-        choice_mod.new {
+        -- for here. It leaves the saved presets alone. Hidden until the
+        -- setup's steps are ported: a button that answers nothing reads as
+        -- broken.
+        g.box {
+            present = function() return false end,
+            choice_mod.new {
             metrics = m,
             label = "SETUP",
             on_click = function()
@@ -1494,6 +1498,7 @@ function M.new(t: { [string]: any }): any
                 naming.value = false
                 place.setup.value = true
             end,
+            },
         },
     }
 
