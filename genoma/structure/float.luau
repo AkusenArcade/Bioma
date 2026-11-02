@@ -190,7 +190,7 @@ function M.host(output: string, size: { width: number, height: number }): any
             end)
             g.watch(function() return c.shown() end, function(shown: boolean)
                 if shown then return end
-                g.after(c.withdrawal() + math.max(timing.seconds.close, timing.seconds.reflow), function()
+                g.after(c.withdrawal() + math.max(timing.seconds.close, c.departure()), function()
                     if g.untracked(c.shown) then return end
                     focus.withdraw(c)
                     if current == c then current = nil end

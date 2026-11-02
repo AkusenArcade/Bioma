@@ -544,6 +544,12 @@ function M.new(kind: any, ctx: { [string]: any })
         local a = arrival.value
         return if a == "start" or a == "leaving" then 0.82 else 1
     end
+    -- How long it takes to go once it starts: its arrival backwards, after
+    -- its content, for one that grew into place.
+    function c.departure(): number
+        if not arrived then return timing.seconds.reflow end
+        return timing.seconds.content_fade / 2 + math.max(timing.seconds.open, timing.seconds.reflow)
+    end
     -- Built by the tissue, which knows where the cell goes: `place` has
     -- x(), y(), width() (granted), placed(), radius(), origin() (the side
     -- the cell was born from) and gap() (how far its panel hangs).
@@ -563,14 +569,18 @@ function M.new(kind: any, ctx: { [string]: any })
             local a = arrival.value
             if a == "start" then return "instant" end
             if a == "growing" then return "open_flat" end
-            if a == "leaving" then return "close" end
+            if a == "leaving" then return "depart" end
             return "reflow"
         end
         local function growing(): boolean
             local a = arrival.value
             return a == "start" or a == "growing"
         end
+        -- Going, a cell that grew into place lets its content go first, as
+        -- it let it come last.
+        local function going(): boolean return arrived and not place.placed() end
         local function content_timing(): string
+            if going() then return "content_leave" end
             if arrived or c.shows_header() then return "content_fade" end
             return "content_return"
         end
@@ -607,7 +617,7 @@ function M.new(kind: any, ctx: { [string]: any })
                         if arrived and been_placed then arrival.value = "leaving" end
                     end
                 end)
-                g.after(c.withdrawal() + timing.seconds.reflow, function()
+                g.after(c.withdrawal() + c.departure(), function()
                     if not g.untracked(place.placed) then present.value = false end
                 end)
             end
@@ -675,7 +685,7 @@ function M.new(kind: any, ctx: { [string]: any })
                 offset_y = shaping,
                 width = shaping,
                 height = shaping,
-                opacity = function() return if arrival.value == "leaving" then "close" else "fade" end,
+                opacity = function() return if arrival.value == "leaving" then "depart_fade" else "fade" end,
                 fill = "colour",
                 rim_top = "colour",
                 rim_bottom = "colour",
@@ -695,7 +705,7 @@ function M.new(kind: any, ctx: { [string]: any })
                 -- the header waits for the composition to go, and content
                 -- back before it went crossed it.
                 -- And, for a cell growing into place, until it is at size.
-                opacity = function() return if c.shows_header() or growing() then 0 else 1 end,
+                opacity = function() return if c.shows_header() or growing() or going() then 0 else 1 end,
                 -- One table: a second `transition` key would replace the first.
                 transition = {
                     width = "reflow",
