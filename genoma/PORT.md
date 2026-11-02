@@ -553,7 +553,9 @@ stood still while the pointer was there; Open reached the sender
 dismissed the critical one with the pointer still on it. A press on the
 resting bell opened the history (HISTORY, CLEAR, QUIET, grouped by
 application with how long ago); a keybind's toggle closed it, and the
-bell came back centred. Not pressed: CLEAR and QUIET. Not seen: a flood
+bell came back centred. CLEAR and QUIET pressed by Akusen on 2026-11-02: CLEAR
+left a critical notification standing, in Quickshell too, and now closes
+what is still on screen as well, in both versions. Not seen: a flood
 (twenty in ten seconds becoming a count). Not yet: Bioma's sound, the
 unread list (the vacuole organism is not ported), images given only as
 pixels. The structure gained, for it: `claims_focus` (what is only shown

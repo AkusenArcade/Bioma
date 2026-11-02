@@ -252,7 +252,23 @@ local function remember(n: any)
     history.value = out
 end
 
-function M.forget() history.value = {} end
+-- Clearing clears what is still on screen too. A critical one never leaves
+-- by itself, so emptying only the history left it standing over a history
+-- that said nothing had been said (Akusen, 2026-11-02).
+function M.forget()
+    local live = table.clone(g.untracked(function() return urgent.value end))
+    for _, n in g.untracked(function() return queue.value end) do table.insert(live, n) end
+    g.batch(function()
+        urgent.value = {}
+        queue.value = {}
+        collapsed.value = 0
+        history.value = {}
+    end)
+    begin()
+    for _, n in live do
+        if find(n) then server:close(n, "dismissed") end
+    end
+end
 
 -- Grouped for the history panel: one block per application, in the order
 -- the history has them.

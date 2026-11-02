@@ -349,7 +349,18 @@ Singleton {
         root.history = [entry].concat(root.history).slice(0, root.keep);
     }
 
+    // Clearing clears what is still on screen too. A critical notification
+    // never leaves by itself, so emptying only the history left it standing
+    // over a history that said nothing had been said (Akusen, 2026-11-02).
     function forget() {
+        for (const notification of root.urgent.concat(root.queue)) {
+            if (root.alive(notification))
+                notification.dismiss();
+        }
+        root.urgent = [];
+        root.queue = [];
+        root.collapsed = 0;
+        root.begin();
         root.history = [];
         root.unread = [];
     }
