@@ -18,8 +18,6 @@ M.curves = {
     sweep = { 0.45, 0, 0.55, 1 },
     open = { 0.2, 0.9, 0.3, 1.15 },
     open_flat = { 0.2, 0.9, 0.3, 1.0 },
-    -- The same curve run backwards: a shape that leaves the way it came.
-    open_flat_reversed = { 0.7, 0.0, 0.8, 0.1 },
     close = { 0.5, 0.0, 0.9, 0.5 },
     -- Qt's Easing.InOutQuad, for the theme and the wallpaper's crossfade.
     in_out_quad = { 0.455, 0.03, 0.515, 0.955 },
@@ -64,12 +62,14 @@ g.effect(function()
         open = { duration = s.open, curve = c.open },
         open_flat = { duration = s.open, curve = c.open_flat },
         close = { duration = s.close, curve = c.close },
-        -- A cell summoned into the middle of the screen leaving: its arrival
-        -- backwards, once its content has gone (Akusen, 2026-11-02).
-        depart = { duration = s.open, delay = s.content_fade / 2, curve = c.open_flat_reversed },
-        -- Arriving, the fade and the growth start together; leaving, they
-        -- end together.
-        depart_fade = { duration = s.reflow, delay = s.content_fade / 2 + math.max(0, s.open - s.reflow), curve = c.in_out_quad },
+        -- A cell summoned into the middle of the screen leaving, once its
+        -- content has gone: it shrinks about its centre over the opening
+        -- time, and fades only in the second half, ending with the shrink,
+        -- so the shrink is seen. The opening curve run backwards put nearly
+        -- all of the shrink where the fade had already hidden it (Akusen,
+        -- 2026-11-02: "only a fade").
+        depart = { duration = s.open, delay = s.content_fade / 2, curve = c.in_out_quad },
+        depart_fade = { duration = s.open / 2, delay = s.content_fade / 2 + s.open / 2, curve = c.in_out_quad },
         grow = { duration = s.grow, curve = c.open_flat },
         transition = { duration = s.transition, curve = c.open_flat },
         reflow = { duration = s.reflow, curve = c.open_flat },
