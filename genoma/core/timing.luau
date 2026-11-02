@@ -108,6 +108,9 @@ g.effect(function()
         ring_content = { duration = s.content_fade, delay = s.open },
         -- An organism's content, once its panel has grown in place.
         organism_content = { duration = s.content_fade, delay = s.open },
+        -- What follows a simulation's thirty steps a second
+        -- (components/stepper.luau): one step, linear.
+        step = { duration = 1 / 30 },
         -- The alarms (Vital.qml), the one thing that repeats at a fixed rate:
         -- an alarm has no value to encode beyond the fact that it is one.
         -- Never scaled, never instant.
