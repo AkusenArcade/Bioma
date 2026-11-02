@@ -710,11 +710,11 @@ col 1.5 row 2.
 | nucleus | written 2026-11-02, seen only blank (no battery here) |
 | vacuole | checked 2026-11-02 on a private bus with five notifications; the notifications service now keeps the unread list |
 | photoperiod | checked 2026-11-02 beside Quickshell's; the Canvas drawn by a shader (`organisms/photoperiod.wgsl`), the paths sampled into columns; `organisms/sky.luau` from sky.js |
-| media | written 2026-11-02, seen blank (nothing playing here); the cover's fade in two stops |
+| media | checked 2026-11-02 with `scripts/mpris-dummy.py` on a private bus (its scrim lay under the cover until Genoma drew in tree order, Genoma 291b389); the cover's fade in two stops |
 | adipose | checked 2026-11-02 (`services/storage.luau` from Storage.qml); the Canvas drawn by a shader (`organisms/adipose.wgsl`) |
 | sediment | checked 2026-11-02 (`services/recent.luau` from Recent.qml); the Canvas drawn by a shader (`organisms/sediment.wgsl`) |
 | rings | checked 2026-11-02 (`services/activity.luau` reads what Quickshell counts; `services/machine.luau` gained the system's birth); today's active time in place of the session's, which only the counter knows; the Canvas drawn by a shader (`organisms/rings.wgsl`) |
-| note | checked 2026-11-02 (`g.file` follows the file as it is edited); words inside a line lose their bold, italic, code and strike, since a Genoma text has one face; the page holds whole blocks and stops above the foot, where Quickshell runs the text to the foot and fades its last 36 px (Genoma has clip but no mask); no crossfade when the file changes |
+| note | checked 2026-11-02 (`g.file` follows the file as it is edited); words inside a line lose their bold, italic, code and strike, since a Genoma text has one face; the page holds whole blocks and stops above the foot, where Quickshell runs the text to the foot and fades its last 36 px (Genoma has clip but no mask) |
 
 Not yet: the Settings page's ADD, remove and ARRANGE for a Genoma
 organism (they ask Quickshell); a taken-away organism leaving before the

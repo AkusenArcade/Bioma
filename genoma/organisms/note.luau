@@ -10,10 +10,11 @@
 --
 -- Not yet: bold, italic, code and struck words inside a line (Genoma sets a
 -- text in one face, so they read as plain); the fade at the foot of a page
--- that runs over; the page's crossfade when the file changes.
+-- that runs over.
 local g = require("@genoma")
 local colour = require("core/colour")
 local theme = require("core/theme")
+local timing = require("core/timing")
 local typography = require("core/typography")
 
 local READ_AT_MOST = 400
@@ -146,6 +147,26 @@ return {
             return "EDITED " .. hours // 24 .. " D AGO"
         end
         local parsed = g.computed(function(): any return parse(source.value or "") end)
+        -- Cross-faded when the file changes: the panel stays where it is,
+        -- the text goes and comes back changed.
+        local shown = g.signal(g.untracked(function() return parsed.value end))
+        local visible = g.signal(true)
+        local swap: any = nil
+        local primed = false
+        g.watch(function() return parsed.value end, function(now: any)
+            if not primed then
+                primed = true
+                return
+            end
+            if swap then swap:stop() end
+            visible.value = false
+            swap = g.after(timing.seconds.content_fade, function()
+                g.batch(function()
+                    shown.value = g.untracked(function() return parsed.value end)
+                    visible.value = true
+                end)
+            end)
+        end)
         local function title(): string
             local t = parsed.value.title
             if readable() and t ~= "" then return t end
@@ -181,20 +202,20 @@ return {
             return lead + g.text_height { text = b.text, font = typography.expressive(), size = size(), width = o.width() - text_x(b) }
         end
         local fitted = g.computed(function(): any
-            local list = parsed.value.blocks
+            local list = shown.value.blocks
             local room = page_height()
-            local shown, used, hidden = {}, 0, parsed.value.unread
+            local fits, used, hidden = {}, 0, shown.value.unread
             for i, b in list do
                 local h = height_of(b, i == 1)
-                local next = used + (if #shown > 0 then spacing() else 0) + h
-                if next <= room and hidden == parsed.value.unread then
-                    table.insert(shown, { i = i, b = b, y = used + (if #shown > 0 then spacing() else 0), h = h })
+                local next = used + (if #fits > 0 then spacing() else 0) + h
+                if next <= room and hidden == shown.value.unread then
+                    table.insert(fits, { i = i, b = b, y = used + (if #fits > 0 then spacing() else 0), h = h })
                     used = next
                 else
                     hidden += b.lines or 1
                 end
             end
-            return { shown = shown, hidden = hidden }
+            return { shown = fits, hidden = hidden }
         end)
 
         local function block(item: () -> any): any
@@ -300,9 +321,11 @@ return {
                         overlay = true, attach = "corner", present = readable,
                         offset_y = page_top,
                         width = o.width, height = page_height,
+                        opacity = function() return if visible.value then 1 else 0 end,
+                        transition = { opacity = "content_fade" },
                         g.text {
                             overlay = true, attach = "corner",
-                            present = function() return #parsed.value.blocks == 0 end,
+                            present = function() return #shown.value.blocks == 0 end,
                             text = "Nothing written yet.", color = theme.text_faint, font = typography.expressive,
                             size = size, italic = true,
                         },
