@@ -12,8 +12,7 @@
 -- the point the pointer was found at (structure/focus.luau, `seek`).
 --
 -- Not yet: `"anchor": "pointer"` on a declared block; a tissue holding its
--- place while the pointer is on what it opened; the floating shadow; a
--- summoned cell growing into place rather than fading in.
+-- place while the pointer is on what it opened; the floating shadow.
 local g = require("@genoma")
 local config = require("core/config")
 local metrics_mod = require("core/metrics")
@@ -178,6 +177,9 @@ function M.host(output: string, size: { width: number, height: number }): any
         local tree, t = build(function() return block end, output, size, point)
         local c = t.cells[1]
         current = c
+        -- In the middle of the screen it grows into place; at the pointer
+        -- the ring spreads out of its pill instead.
+        if c and not point and c.arrive then c.arrive() end
         if c then
             -- Arriving is opening, for a cell with a panel; one whose content
             -- is itself claims the attention, so a press outside still sends

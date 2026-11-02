@@ -526,6 +526,24 @@ function M.new(kind: any, ctx: { [string]: any })
         return g.box(header)
     end
 
+    -- A cell born in the middle of the screen grows into place
+    -- (Cell.qml, growsOnArrival): there is nowhere for it to grow *from*,
+    -- so the growth is the arrival itself, in both measures, from the
+    -- middle of where it will be, and its content enters once it is at
+    -- size. It leaves the way it came, shrinking about its centre as it
+    -- fades, over the closing time. Width and height, never a scale.
+    -- "" at rest; "start", "growing", "leaving".
+    local arrival = g.signal("")
+    local arrived = false
+    function c.arrive()
+        arrived = true
+        arrival.value = "start"
+    end
+
+    local function emergence(): number
+        local a = arrival.value
+        return if a == "start" or a == "leaving" then 0.82 else 1
+    end
     -- Built by the tissue, which knows where the cell goes: `place` has
     -- x(), y(), width() (granted), placed(), radius(), origin() (the side
     -- the cell was born from) and gap() (how far its panel hangs).
@@ -539,9 +557,28 @@ function M.new(kind: any, ctx: { [string]: any })
         -- The pill's corner, as the tissue rounds it.
         function c.corner(): number return place.radius() end
 
+        local function width(): number return place.width() * emergence() end
+        local function height(): number return c.contracted_height() * emergence() end
+        local function shaping(): string
+            local a = arrival.value
+            if a == "start" then return "instant" end
+            if a == "growing" then return "open_flat" end
+            if a == "leaving" then return "close" end
+            return "reflow"
+        end
+        local function growing(): boolean
+            local a = arrival.value
+            return a == "start" or a == "growing"
+        end
+        local function content_timing(): string
+            if arrived or c.shows_header() then return "content_fade" end
+            return "content_return"
+        end
+
         -- Still drawn while it fades out: present until the fade is over,
         -- and opaque until what it withdraws has gone home.
         local present = g.signal(true)
+        local been_placed = false
         -- False until it is first placed, as the opacity was: starting at
         -- true it went 1, 0, 1 in one moment, and the fade, retargeted to
         -- where it began before it had moved, stayed at 0 (every summoned
@@ -552,9 +589,23 @@ function M.new(kind: any, ctx: { [string]: any })
             if placed then
                 present.value = true
                 staying.value = true
+                been_placed = true
+                if g.untracked(function() return arrival.value end) == "start" then
+                    g.after(0, function()
+                        arrival.value = "growing"
+                        g.after(timing.seconds.open, function()
+                            if g.untracked(function() return arrival.value end) == "growing" then arrival.value = "" end
+                        end)
+                    end)
+                end
             else
                 g.after(c.withdrawal(), function()
-                    if not g.untracked(place.placed) then staying.value = false end
+                    if not g.untracked(place.placed) then
+                        staying.value = false
+                        -- Leaving is for one that was there: the watch also
+                        -- answers at its birth, before it is first placed.
+                        if arrived and been_placed then arrival.value = "leaving" end
+                    end
                 end)
                 g.after(c.withdrawal() + timing.seconds.reflow, function()
                     if not g.untracked(place.placed) then present.value = false end
@@ -570,10 +621,10 @@ function M.new(kind: any, ctx: { [string]: any })
             role = if interactive then "button" else "group",
             overlay = true,
             attach = "corner",
-            offset_x = place.x,
-            offset_y = place.y,
-            width = place.width,
-            height = function() return c.contracted_height() end,
+            offset_x = function() return place.x() + (place.width() - width()) / 2 end,
+            offset_y = function() return place.y() + (c.contracted_height() - height()) / 2 end,
+            width = width,
+            height = height,
             radius = function() return if spec.radius then spec.radius() else place.radius() end,
             present = function() return present.value end,
             opacity = function() return if place.placed() or staying.value then 1 else 0 end,
@@ -620,11 +671,11 @@ function M.new(kind: any, ctx: { [string]: any })
                 end
             end,
             transition = {
-                offset_x = "reflow",
-                offset_y = "reflow",
-                width = "reflow",
-                height = "reflow",
-                opacity = "fade",
+                offset_x = shaping,
+                offset_y = shaping,
+                width = shaping,
+                height = shaping,
+                opacity = function() return if arrival.value == "leaving" then "close" else "fade" end,
                 fill = "colour",
                 rim_top = "colour",
                 rim_bottom = "colour",
@@ -643,11 +694,12 @@ function M.new(kind: any, ctx: { [string]: any })
                 -- Away for as long as the header is there, closing included:
                 -- the header waits for the composition to go, and content
                 -- back before it went crossed it.
-                opacity = function() return if c.shows_header() then 0 else 1 end,
+                -- And, for a cell growing into place, until it is at size.
+                opacity = function() return if c.shows_header() or growing() then 0 else 1 end,
                 -- One table: a second `transition` key would replace the first.
                 transition = {
                     width = "reflow",
-                    opacity = function() return if c.shows_header() then "content_fade" else "content_return" end,
+                    opacity = content_timing,
                 },
                 spec.contracted(),
             },

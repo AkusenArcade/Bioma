@@ -229,6 +229,14 @@ function M.new(ctx: { [string]: any })
     end
 
     function t.node(position: { [string]: any }): any
+        -- A tissue on a membrane reflows, and that movement is the design
+        -- moment the PRD calls it. A floating one does not: what it holds
+        -- arrives and leaves whole, and a band that animated its own size
+        -- dragged the cell inside it across the screen (Tissue.qml,
+        -- `animates`): the launcher slid in from the right.
+        local function moving(): string
+            return if ctx.floating then "instant" else "reflow"
+        end
         local band: { [any]: any } = {
             overlay = true,
             attach = "corner",
@@ -238,10 +246,16 @@ function M.new(ctx: { [string]: any })
             height = t.height,
             radius = t.radius,
             present = function() return t.visible() or lingering() end,
+            -- Only on a membrane. A floating tissue holds nothing but its
+            -- cells and has no band to show: its fill was a second layer
+            -- between a cell and the blurred desktop (Akusen, 2026-09-29).
             fill = function()
+                if ctx.floating then return "#00000000" end
                 return if t.visible() then colour.alpha(theme.elevated(), ctx.fill_opacity()) else "#00000000"
             end,
-            transition = { offset_x = "reflow", offset_y = "reflow", width = "reflow", height = "reflow" },
+            transition = {
+                offset_x = moving, offset_y = moving, width = moving, height = moving,
+            },
         }
         for _, c in t.cells do
             table.insert(band, c.node(place_of(c, position)))
