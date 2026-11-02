@@ -7,8 +7,6 @@
 -- A file used again is deposited on top, and the rest settle under it.
 -- Names where a layer is thick enough to hold one. 8, 16 or 32 layers.
 -- Drawn with a shader (organisms/sediment.wgsl), Genoma having no canvas.
---
--- Not yet: a name elided in its middle.
 local g = require("@genoma")
 local colour = require("core/colour")
 local theme = require("core/theme")
@@ -151,7 +149,7 @@ return {
                                 transition = { offset_y = "reflow", height = "reflow" },
                                 g.text { text = function() return it().l.file.name end, color = theme.text,
                                     font = typography.expressive, size = function() return math.round(13 * f()) end,
-                                    max_width = function() return o.width() - 24 * f() - 50 * f() end },
+                                    max_width = function() return o.width() - 24 * f() - 50 * f() end, ellipsize = "middle" },
                                 g.text { text = function() return age(it().l.file.at) end, color = theme.text_muted,
                                     font = typography.technical, size = function() return m().font_meta end, tabular = true },
                             }
