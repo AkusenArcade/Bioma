@@ -11,9 +11,10 @@
 --
 -- Drawn with a shader (organisms/rings.wgsl), Genoma having no canvas.
 --
--- Not yet: the session's own active time and AWAY, which only Bioma on
--- Quickshell knows while it counts (services/activity.luau): today's is
--- said instead; each ring's own small wobble.
+-- The session's active time, or AWAY, while this shell counts it
+-- (services/activity.luau); while Quickshell does, today's.
+--
+-- Not yet: each ring's own small wobble.
 local g = require("@genoma")
 local colour = require("core/colour")
 local theme = require("core/theme")
@@ -205,8 +206,17 @@ return {
                             direction = "row",
                             align = "end",
                             gap = function() return 8 * f() end,
-                            meta(function() return "TODAY ACTIVE TIME" end, theme.text, function() return m().font_meta end, typography.weight_label),
-                            g.text { text = function() return duration(activity.today_minutes()) end,
+                            -- The session's own time while this shell counts it;
+                            -- while Quickshell does, today's.
+                            meta(function()
+                                if not activity.counting() then return "TODAY ACTIVE TIME" end
+                                return if activity.present() then "SESSION ACTIVE TIME" else "AWAY"
+                            end, theme.text, function() return m().font_meta end, typography.weight_label),
+                            g.text {
+                                present = function() return not activity.counting() or activity.present() end,
+                                text = function()
+                                    return duration(if activity.counting() then activity.session_minutes() else activity.today_minutes())
+                                end,
                                 color = function() return theme.gradient_top(theme.primary()) end,
                                 color_bottom = function() return theme.gradient_bottom(theme.primary()) end,
                                 font = typography.technical, size = function() return m().font_label end,

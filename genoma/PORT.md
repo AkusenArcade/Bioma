@@ -713,7 +713,7 @@ col 1.5 row 2.
 | media | checked 2026-11-02 with `scripts/mpris-dummy.py` on a private bus (its scrim lay under the cover until Genoma drew in tree order, Genoma 291b389); the cover's fade in two stops |
 | adipose | checked 2026-11-02 (`services/storage.luau` from Storage.qml); the Canvas drawn by a shader (`organisms/adipose.wgsl`) |
 | sediment | checked 2026-11-02 (`services/recent.luau` from Recent.qml); the Canvas drawn by a shader (`organisms/sediment.wgsl`) |
-| rings | checked 2026-11-02 (`services/activity.luau` reads what Quickshell counts; `services/machine.luau` gained the system's birth); today's active time in place of the session's, which only the counter knows; the Canvas drawn by a shader (`organisms/rings.wgsl`) |
+| rings | checked 2026-11-02 (`services/machine.luau` gained the system's birth); `services/activity.luau` counts as Activity.qml does (idle by `@genoma/idle`, locked by logind's LockedHint) while no Quickshell rings is configured, and only reads what Quickshell counts otherwise, showing today's time then; checked: AWAY after a quiet minute, a minute written while present; the Canvas drawn by a shader (`organisms/rings.wgsl`) |
 | note | checked 2026-11-02 (`g.file` follows the file as it is edited); its bold, italic, code and struck words as the text's runs (Genoma 2026-11-02); the page runs to the foot and fades its last 36, by the clip's `fade_bottom` (Genoma 2026-11-02); a struck word in the fade loses its line |
 
 Every figure Quickshell lights with LitText is lit the same way here, by
