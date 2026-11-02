@@ -364,6 +364,7 @@ function M.organism(a: { [string]: any }): (any, any)
     -- form, so the hand has something to take.
     local function present(): boolean
         if not body then return false end
+        if arranging.retiring(entry().id) then return false end
         if a.arranging() then return true end
         return if body.present then body.present() else true
     end

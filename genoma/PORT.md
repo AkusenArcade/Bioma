@@ -716,9 +716,18 @@ col 1.5 row 2.
 | rings | checked 2026-11-02 (`services/activity.luau` reads what Quickshell counts; `services/machine.luau` gained the system's birth); today's active time in place of the session's, which only the counter knows; the Canvas drawn by a shader (`organisms/rings.wgsl`) |
 | note | checked 2026-11-02 (`g.file` follows the file as it is edited); words inside a line lose their bold, italic, code and strike, since a Genoma text has one face; the page holds whole blocks and stops above the foot, where Quickshell runs the text to the foot and fades its last 36 px (Genoma has clip but no mask) |
 
-Not yet: the Settings page's ADD, remove and ARRANGE for a Genoma
-organism (they ask Quickshell); a taken-away organism leaving before the
-list is written.
+The Settings page acts with Genoma, 2026-11-02: an organism added there
+is Genoma's (`"runtime": "genoma"`) and the arrange mode begins round it;
+one taken away leaves, content and then shape, before the list is written
+without it; a note's file is chosen with zenity from
+`structure/arranging.luau`, so the picker outlives the settings it closes;
+ARRANGE is Genoma's while any organism is. One still drawn by Quickshell is
+handed to Quickshell as before. The organisms' two surfaces are always
+there, empty while no organism is Genoma's, so the first one added appears
+without a reload. Pressed on HDMI-A-1 against the scratch configuration:
+a lava lamp added (landed on the nearest free place, Done), taken away; a
+note added, its file chosen (a stand-in zenity on `PATH`; the real one
+checked to outlive the settings).
 
 ### Shaders, to WGSL
 

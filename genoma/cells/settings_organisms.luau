@@ -10,10 +10,11 @@
 -- hand, on the desktop itself. The weather's city is here too, because it
 -- belongs to the weather and not to one organism.
 --
--- The organisms are still Bioma on Quickshell's to draw and to arrange:
--- this page writes their options into the configuration, and asks
--- Quickshell (`qs ipc call organisms …`) to add, take away, arrange and
--- choose a note's file (genoma/PORT.md, "Who acts on the desktop").
+-- A new organism is Genoma's to draw (`"runtime": "genoma"`), and Genoma
+-- arranges, takes away and chooses a file for its own. One still drawn by
+-- Quickshell is handed to Quickshell (`qs ipc call organisms …`), and so is
+-- the arranging while no organism is Genoma's (genoma/PORT.md, "Who acts on
+-- the desktop").
 local g = require("@genoma")
 local colour = require("core/colour")
 local config = require("core/config")
@@ -26,6 +27,8 @@ local segmented = require("components/segmented")
 local choice_mod = require("components/choice")
 local switch = require("components/switch")
 local monitors = require("services/monitors")
+local weather = require("services/weather")
+local arranging = require("structure/arranging")
 local focus = require("structure/focus")
 
 local M = {}
@@ -113,8 +116,15 @@ function M.new(t: { [string]: any }): any
     end
 
     -- Placing is done on the desktop, so the settings step out of the way.
+    local function genoma(index: number): boolean return (g.untracked(organisms)[index] or {}).runtime == "genoma" end
     local function arrange()
         focus.dismiss()
+        for _, e in g.untracked(organisms) do
+            if type(e) == "table" and e.runtime == "genoma" then
+                arranging.start()
+                return
+            end
+        end
         quickshell({ "arrange" })
     end
     local function add(kind: string, screen: string)
@@ -123,14 +133,18 @@ function M.new(t: { [string]: any }): any
         -- stay and open its options instead; it is placed once it has one.
         if kind == "note" then
             chosen.value = #g.untracked(organisms) + 1
-            quickshell({ "add", kind, screen, "true" })
+            arranging.add(kind, screen, true)
             return
         end
         focus.dismiss()
-        quickshell({ "add", kind, screen, "false" })
+        arranging.add(kind, screen, false)
     end
     local function remove(index: number)
         if g.untracked(function() return chosen.value end) == index then chosen.value = -1 end
+        if genoma(index) then
+            arranging.remove(index)
+            return
+        end
         -- Quickshell counts from 0.
         quickshell({ "remove", tostring(index - 1) })
     end
@@ -151,7 +165,6 @@ function M.new(t: { [string]: any }): any
         taking = function() return typing.value == "city" end,
     }
     local readable = g.signal(false)
-    local problem = g.signal("")
     local function file_of(i: number): string return (entry(i).file or "") end
     local function city(): string return string.match(config.get("weather.city", "") or "", "^%s*(.-)%s*$") or "" end
     local function expanded(path: string): string
@@ -172,10 +185,6 @@ function M.new(t: { [string]: any }): any
             }
         end)
     end)
-    local function ask_problem()
-        quickshell({ "weatherProblem" }, function(text: string) problem.value = text end)
-    end
-    ask_problem()
 
     local function start_typing(which: string)
         typing.value = which
@@ -194,11 +203,9 @@ function M.new(t: { [string]: any }): any
             typing.value = ""
             if which == "city" then
                 config.set("weather.city", string.match(g.untracked(function() return city_text.value end), "^%s*(.-)%s*$") or "")
-                problem.value = ""
-                g.after(3, ask_problem)
             else
                 local c = g.untracked(function() return chosen.value end)
-                quickshell({ "setFile", tostring(c - 1), g.untracked(function() return file_text.value end) })
+                arranging.set_file(c, g.untracked(function() return file_text.value end))
             end
             return true
         end
@@ -352,7 +359,7 @@ function M.new(t: { [string]: any }): any
             local o = open()
             return o > 0 and file_of(o) ~= "" and not readable.value
         end
-        local function city_wrong(): boolean return problem.value ~= "" and city() ~= "" end
+        local function city_wrong(): boolean return weather.problem() ~= "" and city() ~= "" end
         local function edge(wrong: () -> boolean, which: string): () -> string
             return function()
                 if wrong() then return theme.alert() end
@@ -486,15 +493,18 @@ function M.new(t: { [string]: any }): any
                     -- The picker is a window: the settings step out of its way.
                     local o = g.untracked(open)
                     focus.dismiss()
-                    quickshell({ "chooseFile", tostring(o - 1) })
+                    if genoma(o) then arranging.choose_file(o) else quickshell({ "chooseFile", tostring(o - 1) }) end
                 end)),
                 g.box {
-                    present = file_wrong,
+                    present = function() return file_wrong() or arranging.picker_error() ~= "" end,
                     direction = "row",
                     align = "center",
                     gap = function() return 8 * f() end,
                     g.icon { width = function() return 14 * f() end, height = function() return 14 * f() end, icon = "error", color = theme.alert },
-                    line(function() return "It cannot be read." end, theme.alert),
+                    line(function()
+                        return if arranging.picker_error() ~= "" then arranging.picker_error()
+                            else "This file cannot be read, so the note is not shown."
+                    end, theme.alert),
                 },
             },
             -- A weather organism's city: one place for every weather
@@ -519,7 +529,7 @@ function M.new(t: { [string]: any }): any
                     align = "center",
                     gap = function() return 8 * f() end,
                     g.icon { width = function() return 14 * f() end, height = function() return 14 * f() end, icon = "error", color = theme.alert },
-                    line(function() return problem.value end, theme.alert),
+                    line(weather.problem, theme.alert),
                 },
             },
             line(function()

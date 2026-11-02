@@ -114,35 +114,34 @@ end
 -- The organisms marked for this runtime, on the Bottom layer: above the
 -- wallpaper, under every window (structure/organisms.luau).
 local organisms = require("structure/organisms")
-local organism_surfaces = 0
-if organisms.any() then
-    table.insert(surfaces, g.surface {
-        full = true,
-        anchor = { "top", "bottom", "left", "right" },
-        outputs = "all",
-        reserve = false,
-        above_zones = true,
-        layer = "bottom",
-        namespace = "bioma-organisms",
-        function(output: string, size: any)
-            return organisms.surface(output, size or { width = 1920, height = 1080 })
-        end,
-    })
-    -- And above the windows while they are placed (structure/arranging.luau).
-    table.insert(surfaces, g.surface {
-        full = true,
-        anchor = { "top", "bottom", "left", "right" },
-        outputs = "all",
-        reserve = false,
-        above_zones = true,
-        layer = "top",
-        namespace = "bioma-organisms",
-        function(output: string, size: any)
-            return organisms.arrange_surface(output, size or { width = 1920, height = 1080 })
-        end,
-    })
-    organism_surfaces = 2
-end
+-- Always there, empty while no organism is Genoma's: the first one added
+-- from the settings appears without a reload.
+table.insert(surfaces, g.surface {
+    full = true,
+    anchor = { "top", "bottom", "left", "right" },
+    outputs = "all",
+    reserve = false,
+    above_zones = true,
+    layer = "bottom",
+    namespace = "bioma-organisms",
+    function(output: string, size: any)
+        return organisms.surface(output, size or { width = 1920, height = 1080 })
+    end,
+})
+-- And above the windows while they are placed (structure/arranging.luau).
+table.insert(surfaces, g.surface {
+    full = true,
+    anchor = { "top", "bottom", "left", "right" },
+    outputs = "all",
+    reserve = false,
+    above_zones = true,
+    layer = "top",
+    namespace = "bioma-organisms",
+    function(output: string, size: any)
+        return organisms.arrange_surface(output, size or { width = 1920, height = 1080 })
+    end,
+})
+local organism_surfaces = 2
 g.ipc("organisms", {
     arrange = function(): string
         local arranging = require("structure/arranging")
