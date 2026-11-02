@@ -657,7 +657,7 @@ category kept across a reload.
 | Selection surface (Bioma's own region picker) | §9.6 | checked 2026-10-29 with the utility (`structure/selection.luau`) |
 | Organisms, and their arrange mode | *beyond the PRD* | in progress 2026-11-02: the surface, the frame and arranging checked with the clock (`structure/organisms.luau`, `structure/arranging.luau`) |
 | Lock screen (`lock.qml`, its guard, hyprlock as the fallback) | *beyond the PRD* | |
-| Greeter (`greeter.qml`, agreety as the fallback) | *beyond the PRD* | |
+| Greeter (`greeter.qml`, agreety as the fallback) | *beyond the PRD* | written 2026-11-02 (`genoma/greeter.luau`, `components/gate.luau` from Gate.qml at 2cafc17), with the machine's commands Quickshell's greeter does not have; checked in its test mode, not yet under greetd |
 
 The wallpaper, checked 2026-10-30 with `wallpaper.runtime` set in a test
 configuration (his own untouched), its own `wallpaper.json` there: a
@@ -734,6 +734,39 @@ without a reload. Pressed on HDMI-A-1 against the scratch configuration:
 a lava lamp added (landed on the nearest free place, Done), taken away; a
 note added, its file chosen (a stand-in zenity on `PATH`; the real one
 checked to outlive the settings).
+
+### The greeter
+
+Bioma on Genoma's greeter, 2026-11-02: a second entry point of the
+interface, `genoma <genoma/> greeter.luau` (Genoma learned the entry
+argument and `g.quit`). The threshold is `components/gate.luau`, for the
+lock screen too once Genoma has ext-session-lock: the blurred, veiled
+wallpaper, the time and the clock's face, the date, the portrait in its
+cell, the name, the field growing from its middle, the error under it, and
+the greeter's welcome (the person stays, "Welcome to" and the logotype open
+under the name, the screen goes black, then the session starts).
+
+New with it, from "Nuove idee" (Akusen, 2026-11-02): a power glyph in the
+corner of the primary screen opening, upward out of it, RESTART, FIRMWARE
+SETUP and SHUT DOWN, numbered 1 to 3 as the session cell's commands are;
+logind's Reboot, SetRebootToFirmwareSetup then Reboot, PowerOff, each
+offered only where logind says the greeter may (the firmware's only on a
+machine that has one). Nothing asks twice: nobody is logged in, so nothing
+is lost. `firmware.svg` drawn for it.
+
+It is the greeter when the configuration says `"greeter": { "runtime":
+"genoma" }`: `scripts/greeter-sync` then copies `genoma/` and Genoma's
+runtime, stripped, into the copy (`$GENOMA_BIN` or `genoma` on the PATH,
+else the runtime the last copy carried), and the greeter's niri starts it,
+falling back to the Quickshell greeter if it ends in an error.
+
+Checked with `BIOMA_GREETER_TEST=HDMI-A-1` (that output only, no keyboard
+taken, the password over `genoma ipc greeter type|submit`, the commands
+only said): against a stand-in greetd, a wrong password (red rim, the dots
+selected, the sentence), the right one (the welcome, the dark,
+start_session, the process ending); the commands panel and each command;
+and run from a synced copy with the environment greeter-session gives it.
+Not yet under the real greetd, and the commands not yet run for real.
 
 ### Shaders, to WGSL
 

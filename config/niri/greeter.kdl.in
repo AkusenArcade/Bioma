@@ -28,4 +28,4 @@ layout {
 
 prefer-no-csd
 
-spawn-sh-at-startup "BIOMA_GREETER_DIR=@GREETER@ qs -p @GREETER@/shell/greeter.qml; niri msg action quit --skip-confirmation"
+spawn-sh-at-startup "@START@; niri msg action quit --skip-confirmation"

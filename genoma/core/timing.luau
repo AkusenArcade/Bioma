@@ -78,6 +78,32 @@ g.effect(function()
         welcome_3 = { duration = s.welcome_open, delay = s.welcome_stagger * 2, curve = c.out_cubic },
         welcome_4 = { duration = s.welcome_open, delay = s.welcome_stagger * 3, curve = c.out_cubic },
         welcome_5 = { duration = s.welcome_open, delay = s.welcome_stagger * 4, curve = c.out_cubic },
+        -- The threshold (components/gate.luau, from Gate.qml): the picture
+        -- blurs and veils over the wallpaper's own crossfade; the
+        -- composition follows once it has begun, an element every three
+        -- staggers, each easing out over the opening time.
+        gate_dissolve = { duration = s.wallpaper, curve = c.in_out_quad },
+        gate_1 = { duration = s.open, delay = s.open, curve = c.out_cubic },
+        gate_2 = { duration = s.open, delay = s.open + s.stagger * 3, curve = c.out_cubic },
+        gate_3 = { duration = s.open, delay = s.open + s.stagger * 6, curve = c.out_cubic },
+        gate_4 = { duration = s.open, delay = s.open + s.stagger * 9, curve = c.out_cubic },
+        gate_5 = { duration = s.open, delay = s.open + s.stagger * 12, curve = c.out_cubic },
+        -- What is inside the field, once its shape is nearly at size.
+        gate_inside = { duration = s.open * 0.3, delay = s.open + s.stagger * 12 + s.open * 0.7 },
+        -- The lock's leaving: the composition goes quickly, then the picture
+        -- clears back to the desktop.
+        gate_close = { duration = s.close },
+        gate_clear = { duration = s.open, delay = s.close, curve = c.in_out_quad },
+        -- The greeter's: what is not the person steps back, the welcome opens
+        -- under the name a line at a time, stays to be read, and the screen
+        -- darkens, slower than the picture came.
+        gate_leave = { duration = s.open },
+        greet_1 = { duration = s.welcome_open, delay = s.open, curve = c.out_cubic },
+        greet_2 = { duration = s.welcome_open, delay = s.open + s.welcome_stagger, curve = c.out_cubic },
+        greet_3 = { duration = s.welcome_open, delay = s.open + s.welcome_stagger * 2, curve = c.out_cubic },
+        greet_4 = { duration = s.welcome_open, delay = s.open + s.welcome_stagger * 3, curve = c.out_cubic },
+        gate_dark = { duration = s.welcome_fade,
+            delay = s.open + s.welcome_open + s.welcome_stagger * 3 + s.welcome, curve = c.in_out_quad },
         depart_fade = { duration = s.open / 2, delay = s.content_fade / 2 + s.open / 2, curve = c.in_out_quad },
         grow = { duration = s.grow, curve = c.open_flat },
         transition = { duration = s.transition, curve = c.open_flat },

@@ -12,7 +12,9 @@
 #
 # The copy holds, under `live/`:
 #
-#   shell/         greeter.qml and the parts of Bioma it imports
+#   shell/         greeter.qml and the parts of Bioma it imports, and genoma/
+#                  when Bioma on Genoma has the greeter
+#   bin/           Genoma's runtime then
 #   config/bioma/  the configuration layers, the wallpaper's state, the
 #                  palette and the user's own palettes — XDG_CONFIG_HOME points
 #                  here, so the greeter reads the user's own appearance through
@@ -60,6 +62,34 @@ cp "$here/cells/Registry.qml" "$next/shell/cells/"
 cp "$here/config/default.json" "$next/shell/config/"
 cp -r "$here/config/palettes" "$next/shell/config/"
 cp "$here/scripts/greeter-session" "$next/shell/scripts/"
+
+# Bioma on Genoma's greeter, when the configuration gives it the greeter
+# (`"greeter": { "runtime": "genoma" }`): its Luau, and Genoma's runtime,
+# stripped, under bin/. The runtime is $GENOMA_BIN or `genoma` on the PATH;
+# with neither, the one the last copy carried is kept, so a sync from a
+# shell that does not know where Genoma is never takes it away. Without a
+# runtime at all the greeter stays Quickshell's.
+runtime="$(python3 - "$config/bioma/override.json" "$here/config/default.json" <<'PY' 2>/dev/null || echo quickshell
+import json, sys
+value = "quickshell"
+for path in reversed(sys.argv[1:]):
+    try:
+        value = json.load(open(path)).get("greeter", {}).get("runtime", value)
+    except (OSError, ValueError, AttributeError):
+        pass
+print(value)
+PY
+)"
+if [ "$runtime" = genoma ]; then
+    mkdir -p "$next/bin"
+    cp -r "$here/genoma" "$next/shell/"
+    bin="${GENOMA_BIN:-$(command -v genoma || true)}"
+    if [ -n "$bin" ] && [ -x "$bin" ]; then
+        strip -o "$next/bin/genoma" "$bin" 2>/dev/null || cp "$bin" "$next/bin/genoma"
+    elif [ -x "$live/bin/genoma" ]; then
+        cp "$live/bin/genoma" "$next/bin/genoma"
+    fi
+fi
 
 # ---- The configuration ----------------------------------------------------------
 
@@ -152,7 +182,14 @@ for part in outputs.kdl bioma-keyboard.kdl bioma-cursor.kdl; do
     fi
 done
 
-sed -e "s|@GREETER@|$live|g" "$here/config/niri/greeter.kdl.in" > "$next/niri.kdl"
+# What the greeter's niri starts: Bioma on Genoma when the copy carries its
+# runtime, falling back to the Quickshell greeter if it ends in an error;
+# otherwise the Quickshell greeter. Either way niri ends with it.
+start="BIOMA_GREETER_DIR=$live qs -p $live/shell/greeter.qml"
+if [ -x "$next/bin/genoma" ]; then
+    start="BIOMA_GREETER_DIR=$live $live/bin/genoma $live/shell/genoma greeter.luau || $start"
+fi
+sed -e "s|@GREETER@|$live|g" -e "s#@START@#$start#" "$here/config/niri/greeter.kdl.in" > "$next/niri.kdl"
 
 # ---- The cursor ----------------------------------------------------------------------
 
@@ -162,7 +199,7 @@ sed -e "s|@GREETER@|$live|g" "$here/config/niri/greeter.kdl.in" > "$next/niri.kd
 # slot name that inherits the theme itself (scripts/cursors), so both come.
 # scripts/greeter-session puts this directory on the greeter's cursor path.
 mkdir -p "$next/data/icons"
-theme="$(sed -n 's/^[[:space:]]*xcursor-theme[[:space:]]*"\(.*\)".*/\1/p' "$niri_config/bioma-cursor.kdl" 2>/dev/null | tail -1)"
+theme="$(sed -n 's/^[[:space:]]*xcursor-theme[[:space:]]*"\(.*\)".*/\1/p' "$niri_config/bioma-cursor.kdl" 2>/dev/null | tail -1 || true)"
 while [ -n "$theme" ] && [ ! -e "$next/data/icons/$theme" ]; do
     found=""
     for root in "${XDG_DATA_HOME:-$HOME/.local/share}/icons" "$HOME/.icons"; do

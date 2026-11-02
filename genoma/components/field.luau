@@ -158,6 +158,15 @@ function M.new(t: { [string]: any })
 
     local handle = {}
 
+    -- All of it selected: a wrong password left where it was typed, so the
+    -- next key replaces it.
+    function handle.select_all()
+        g.batch(function()
+            anchor.value = 0
+            caret.value = length(g.untracked(text))
+        end)
+    end
+
     function handle.set(s: string)
         g.batch(function()
             value.value = s
