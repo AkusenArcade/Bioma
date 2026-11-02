@@ -11,6 +11,7 @@ local colour = require("core/colour")
 local metrics_mod = require("core/metrics")
 local theme = require("core/theme")
 local typography = require("core/typography")
+local field_mod = require("components/field")
 
 local M = {}
 
@@ -94,6 +95,193 @@ function M.new(t: { [string]: any }): any
         }
         for _, node in body do table.insert(well, node) end
         return g.capsule(well)
+    end
+
+    local function chip_height(): number return 28 * f() end
+    local function meta_text(text: string | () -> string, color: any): any
+        return g.text {
+            text = text,
+            color = color,
+            font = typography.technical,
+            size = function() return m().font_meta end,
+            tracking = typography.label_tracking,
+        }
+    end
+
+    -- A place for something not there yet: dashed, a plus and its name.
+    function p.offer(label: string, on_click: () -> ()): any
+        local hovered = g.signal(false)
+        local function ink(): string return if hovered.value then theme.primary() else theme.text() end
+        local function edge(): string return if hovered.value then theme.primary() else colour.alpha(theme.line(), 0.7) end
+        return g.capsule {
+            role = "button",
+            name = label,
+            height = chip_height,
+            padding_left = function() return 11 * f() end,
+            padding_right = function() return 15 * f() end,
+            direction = "row",
+            align = "center",
+            gap = function() return 7 * f() end,
+            radius = function() return metrics_mod.radius_for(chip_height(), m()) end,
+            rim_top = edge,
+            rim_bottom = edge,
+            dash = 3,
+            dash_gap = 3,
+            on_hover = function(on: boolean) hovered.value = on end,
+            on_click = on_click,
+            g.icon { width = function() return 9 * f() end, height = function() return 9 * f() end, icon = "plus", color = ink },
+            meta_text(label, ink),
+        }
+    end
+
+    -- The press that takes a row away for good, asking once before it
+    -- does (components/RemoveTool.qml): the trash at rest; the first press
+    -- grows the question out of it toward the row, alert, the second
+    -- answers; leaving withdraws the question. Red only while it asks.
+    function p.remove(on_confirm: () -> (), visible: (() -> boolean)?, question: string?): any
+        local asking = g.signal(false)
+        local hovered = g.signal(false)
+        local words = question or "REMOVE?"
+        local function side(): number return 22 * f() end
+        local function size(): number return math.round(11 * f()) end
+        local function word_width(): number
+            return g.text_width {
+                text = words, font = typography.technical(), size = size(),
+                weight = typography.weight_label, tracking = typography.label_tracking,
+            }
+        end
+        return g.capsule {
+            role = "button",
+            name = "Remove",
+            opacity = function()
+                if visible == nil or asking.value or hovered.value then return 1 end
+                return if visible() then 1 else 0
+            end,
+            width = function() return if asking.value then side() + word_width() + 12 * f() else side() end,
+            height = side,
+            radius = function() return side() / 2 end,
+            clip = true,
+            direction = "row",
+            align = "center",
+            justify = "end",
+            fill = function() return if asking.value then colour.alpha(theme.alert(), 0.12) else "#00000000" end,
+            rim_top = "#00000000",
+            rim_bottom = "#00000000",
+            transition = { width = "transition", opacity = "fade", fill = "colour" },
+            on_hover = function(on: boolean)
+                hovered.value = on
+                if not on then asking.value = false end
+            end,
+            on_click = function()
+                if not g.untracked(function() return asking.value end) then
+                    asking.value = true
+                    return
+                end
+                asking.value = false
+                on_confirm()
+            end,
+            g.text {
+                opacity = function() return if asking.value then 1 else 0 end,
+                text = words,
+                color = theme.alert,
+                font = typography.technical,
+                size = size,
+                weight = typography.weight_label,
+                tracking = typography.label_tracking,
+            },
+            g.box {
+                width = side,
+                height = side,
+                align = "center",
+                justify = "center",
+                g.icon {
+                    width = function() return 14 * f() end,
+                    height = function() return 14 * f() end,
+                    icon = "trash",
+                    color = function()
+                        if asking.value then return theme.alert() end
+                        return if hovered.value then theme.primary() else theme.text()
+                    end,
+                },
+            },
+        }
+    end
+
+    -- An application: its icon, its name, and a detail in the technical
+    -- face at the far end (the app-id, OPEN NOW). `t`: icon() (a path or
+    -- ""), name(), detail(), on_choose (a press on the whole row chooses
+    -- it), trailing (nodes at the end), hovered (a signal it keeps).
+    function p.app(a: { [string]: any }): any
+        local hovered = a.hovered or g.signal(false)
+        local function side(): number return 20 * f() end
+        local row: { [any]: any } = {
+            role = if a.on_choose then "button" else nil,
+            width = p.inner,
+            height = function() return 30 * f() end,
+            padding_left = function() return 8 * f() end,
+            padding_right = function() return 4 * f() end,
+            direction = "row",
+            align = "center",
+            gap = function() return 10 * f() end,
+            radius = function() return metrics_mod.radius_for(30 * f(), m()) end,
+            fill = function()
+                return if hovered.value and a.on_choose then colour.alpha(theme.text(), 0.06) else "#00000000"
+            end,
+            rim_top = "#00000000",
+            rim_bottom = "#00000000",
+            on_hover = function(on: boolean) hovered.value = on end,
+            on_click = a.on_choose,
+            g.icon {
+                present = function() return a.icon() ~= "" end,
+                width = side,
+                height = side,
+                icon = a.icon,
+            },
+            g.icon {
+                present = function() return a.icon() == "" end,
+                width = side,
+                height = side,
+                icon = "app-fallback",
+                color = theme.text_muted,
+            },
+            g.text {
+                text = a.name,
+                color = theme.text,
+                font = typography.expressive,
+                size = function() return m().font_secondary end,
+                max_width = function() return p.inner() * 0.5 end,
+            },
+            g.box { grow = 1 },
+            meta_text(a.detail, theme.text_muted),
+        }
+        for _, node in a.trailing or {} do table.insert(row, node) end
+        return g.capsule(row)
+    end
+
+    -- A one-line field, outlined, in the human voice. Returns the node and
+    -- the field's handle (key, set). `t`: text (a signal), placeholder,
+    -- taking().
+    function p.field(a: { [string]: any }): (any, any)
+        local node, handle = field_mod.new {
+            text = a.text,
+            width = function() return p.inner() - 28 * f() end,
+            font = typography.expressive,
+            size = function() return m().font_secondary end,
+            placeholder = a.placeholder,
+            taking = a.taking,
+        }
+        local function edge(): string return if a.taking() then theme.primary() else theme.line() end
+        return g.capsule {
+            width = p.inner,
+            height = chip_height,
+            padding_x = function() return 14 * f() end,
+            align = "center",
+            radius = function() return metrics_mod.radius_for(chip_height(), m()) end,
+            fill = "#00000000",
+            rim_top = edge,
+            rim_bottom = edge,
+            node,
+        }, handle
     end
 
     -- The page itself: its wells in a column, ten apart.

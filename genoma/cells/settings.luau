@@ -46,6 +46,7 @@ local CATEGORIES = {
 
 -- The pages written on Genoma so far, by category.
 local PAGES = {
+    performance = "cells/settings_performance",
     session = "cells/settings_session",
     sounds = "cells/settings_sounds",
 }
@@ -110,6 +111,9 @@ return {
         -- ---- The page ------------------------------------------------------------
 
         local pages: { [string]: any } = {}
+        -- A page that types (a field, a search) hands its keys handler here
+        -- through `keyed`; the open page's has the keys.
+        local page_keys: { [string]: any } = {}
         local function page_of(key: string): any
             if pages[key] == nil then
                 local path = PAGES[key]
@@ -158,11 +162,14 @@ return {
                         end,
                         key = function(k: string) return k end,
                         row = function(k: () -> string)
-                            local page = page_of(g.untracked(k))
+                            local key = g.untracked(k)
+                            local page = page_of(key)
+                            page_keys[key] = nil
                             return page.new {
                                 metrics = m,
                                 width = function() return inner_width() - 8 * f() end,
                                 height = inner_height,
+                                keyed = function(handler: any) page_keys[key] = handler end,
                             }
                         end,
                     },
@@ -302,6 +309,10 @@ return {
             header_mark_size = mark_size,
             header_mark = mark,
             contracted = function() return mark(mark_size) end,
+            on_key = function(name: string, typed: string?, mods: { [string]: boolean }): boolean
+                local handler = page_keys[g.untracked(function() return chosen.value end)]
+                return if handler then handler(name, typed, mods) == true else false
+            end,
         }
     end,
 }

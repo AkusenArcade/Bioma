@@ -82,6 +82,12 @@ local function matched_apps(): { string }
     return out
 end
 
+-- Games registered with GameMode now (0 while it is not followed).
+function M.games(): number return games.value end
+
+-- Whether an app-id matches a pattern from the list (`*` for anything).
+function M.matches(pattern: string, id: string): boolean return matcher(pattern)(id) end
+
 function M.triggers(): { any }
     local out = {}
     if games.value > 0 then table.insert(out, { kind = "game", name = "GameMode" }) end
