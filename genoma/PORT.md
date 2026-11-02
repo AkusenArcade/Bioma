@@ -707,7 +707,7 @@ col 1.5 row 2.
 | agenda | checked 2026-11-02 beside Quickshell's |
 | lava, osmosis | checked 2026-11-02 beside Quickshell's; their shaders in WGSL, their simulations stepped thirty times a second while anything moves (`components/stepper.luau`), the shader easing between steps |
 | cytoplasm | checked 2026-11-02 (`services/app_load.luau` from AppLoad.qml); no shadow under the names |
-| nucleus | written 2026-11-02, seen only blank (no battery here) |
+| nucleus | checked 2026-11-02, discharging and charging, against a fake UPower on a private system bus (`DBUS_SYSTEM_BUS_ADDRESS`) |
 | vacuole | checked 2026-11-02 on a private bus with five notifications; the notifications service now keeps the unread list |
 | photoperiod | checked 2026-11-02 beside Quickshell's; the Canvas drawn by a shader (`organisms/photoperiod.wgsl`), the paths sampled into columns; `organisms/sky.luau` from sky.js |
 | media | checked 2026-11-02 with `scripts/mpris-dummy.py` on a private bus (its scrim lay under the cover until Genoma drew in tree order, Genoma 291b389); the cover's fade in two stops |
