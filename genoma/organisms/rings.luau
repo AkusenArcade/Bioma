@@ -14,7 +14,6 @@
 -- The session's active time, or AWAY, while this shell counts it
 -- (services/activity.luau); while Quickshell does, today's.
 --
--- Not yet: each ring's own small wobble.
 local g = require("@genoma")
 local colour = require("core/colour")
 local theme = require("core/theme")
@@ -95,6 +94,14 @@ return {
             return if h > 0 then string.format("%d H %02d M", h, mm) else mm .. " M"
         end
 
+        -- A small hash of a date, for each ring's own wobble, as a part of a
+        -- turn (RingsOrganism.qml's seed, divided by a whole turn).
+        local function seed(key: string): number
+            local h = 0
+            for i = 1, #key do h = (h * 31 + string.byte(key, i)) % 9973 end
+            return h / 9973
+        end
+
         local function values(): { number }
             local out = table.create(16 + 4 * MAX_BANDS, 0)
             local function put(at: number, hex: string)
@@ -131,9 +138,10 @@ return {
                 local last = bands[#bands]
                 if is_bare and span < 10 and last and last.bare and last.unit == unit then
                     last.to = to
+                    last.key = day.key
                 else
                     if last then last.ends = last.unit ~= unit end
-                    table.insert(bands, { from = from, to = to, bare = is_bare, today = is_today, minutes = day.minutes,
+                    table.insert(bands, { key = day.key, from = from, to = to, bare = is_bare, today = is_today, minutes = day.minutes,
                         unit = unit, index = units, ends = true })
                 end
             end
@@ -142,6 +150,7 @@ return {
             while #bands > MAX_BANDS do
                 local a, b = bands[1], bands[2]
                 a.to = b.to
+                a.key = b.key
                 a.minutes = math.max(a.minutes, b.minutes)
                 a.bare = a.bare and b.bare
                 a.ends = b.ends
@@ -158,7 +167,9 @@ return {
                 elseif band.ends then
                     line = if band.bare then -0.16 else 0.55
                 end
-                out[base + 1], out[base + 2], out[base + 3], out[base + 4] = band.to, fill, line, w
+                -- The ring's own wobble rides in the width's fraction: its
+                -- phase, a hash of its date, as a part of a turn.
+                out[base + 1], out[base + 2], out[base + 3], out[base + 4] = band.to, fill, line, math.round(w * 100) + seed(band.key)
             end
             return out
         end

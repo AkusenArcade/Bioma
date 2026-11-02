@@ -9,7 +9,9 @@
 //   8        how many bands;  9  factor;  10  the pith's radius
 //   16 + 4k  band k: its outer radius, its fill (grain's alpha, or below 0
 //            the bare colour's alpha negated), the line round it (alpha,
-//            0 for none; below 0 the bare colour's, negated), its width
+//            0 for none; below 0 the bare colour's, negated), its width in
+//            hundredths with the ring's own phase as the fraction (a part of
+//            a turn): every ring wobbles a little on its own as well
 
 fn colour_at(at: i32) -> vec4<f32> {
     return vec4<f32>(value(at), value(at + 1), value(at + 2), value(at + 3));
@@ -23,6 +25,13 @@ fn over(dst: vec4<f32>, colour: vec3<f32>, alpha: f32) -> vec4<f32> {
     return vec4<f32>(colour * alpha + dst.rgb * (1.0 - alpha), alpha + dst.a * (1.0 - alpha));
 }
 
+// A ring's radius at an angle: its own small wobble, over the trunk's
+// that `e` already takes out.
+fn ring(k: i32, angle: f32) -> f32 {
+    let own = fract(value(16 + 4 * k + 3)) * 6.2831853;
+    return value(16 + 4 * k) * (1.0 + 0.008 * sin(7.0 * angle + own));
+}
+
 fn outer(k: i32) -> f32 { return value(16 + 4 * k); }
 
 fn shade(p: vec2<f32>) -> vec4<f32> {
@@ -33,7 +42,8 @@ fn shade(p: vec2<f32>) -> vec4<f32> {
     let f = value(9);
     let c = shader.size * 0.5;
     let q = p - c;
-    let wobble = 1.0 + trunk(atan2(q.y, q.x));
+    let angle = atan2(q.y, q.x);
+    let wobble = 1.0 + trunk(angle);
     let dist = length(q);
     // The radius this point is at, as a ring would measure it.
     let e = dist / wobble;
@@ -47,10 +57,10 @@ fn shade(p: vec2<f32>) -> vec4<f32> {
     for (var step = 0; step < 12; step++) {
         if (lo >= hi) { break; }
         let mid = (lo + hi) / 2;
-        if (outer(mid) < e) { lo = mid + 1; } else { hi = mid; }
+        if (ring(mid, angle) < e) { lo = mid + 1; } else { hi = mid; }
     }
     let k = lo;
-    let inside = 1.0 - smoothstep(outer(n - 1) - aa, outer(n - 1) + aa, e);
+    let inside = 1.0 - smoothstep(ring(n - 1, angle) - aa, ring(n - 1, angle) + aa, e);
     let fill = value(16 + 4 * k + 1);
     if (fill >= 0.0) {
         out_ = over(out_, grain, fill * inside);
@@ -61,8 +71,8 @@ fn shade(p: vec2<f32>) -> vec4<f32> {
     for (var j = max(k - 1, 0); j <= min(k + 1, n - 1); j++) {
         let line = value(16 + 4 * j + 2);
         if (line != 0.0) {
-            let w = value(16 + 4 * j + 3);
-            let d = abs(e - outer(j)) * wobble;
+            let w = floor(value(16 + 4 * j + 3)) / 100.0;
+            let d = abs(e - ring(j, angle)) * wobble;
             let a = 1.0 - smoothstep(w * 0.5 - aa, w * 0.5 + aa, d);
             if (line > 0.0) { out_ = over(out_, grain, line * a); } else { out_ = over(out_, bare, -line * a); }
         }
