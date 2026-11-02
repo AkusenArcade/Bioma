@@ -705,7 +705,12 @@ col 1.5 row 2.
 | vitals | checked 2026-11-02; its figures in their state's colour, flat |
 | weather | checked 2026-11-02 beside Quickshell's (`services/weather.luau`, from Weather.qml at 2cafc17) |
 | agenda | checked 2026-11-02 beside Quickshell's |
-| adipose, cytoplasm, lava, media, note, nucleus, osmosis, photoperiod, rings, sediment, vacuole | to come |
+| lava, osmosis | checked 2026-11-02 beside Quickshell's; their shaders in WGSL, their simulations stepped thirty times a second while anything moves (`components/stepper.luau`), the shader easing between steps |
+| cytoplasm | checked 2026-11-02 (`services/app_load.luau` from AppLoad.qml); no shadow under the names |
+| nucleus | written 2026-11-02, seen only blank (no battery here) |
+| vacuole | checked 2026-11-02 on a private bus with five notifications; the notifications service now keeps the unread list |
+| photoperiod | checked 2026-11-02 beside Quickshell's; the Canvas drawn by a shader (`organisms/photoperiod.wgsl`), the paths sampled into columns; `organisms/sky.luau` from sky.js |
+| adipose, media, note, rings, sediment | to come |
 
 Not yet: the Settings page's ADD, remove and ARRANGE for a Genoma
 organism (they ask Quickshell); a taken-away organism leaving before the
