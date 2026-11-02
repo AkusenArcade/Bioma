@@ -583,15 +583,23 @@ column's width from a cell at the start (`lead`, new in the structure).
 A press on SOUNDS brought its page: the volume with its line, and the
 four events with their switches and what each does, written to the shared
 configuration; the sounds themselves are Quickshell's to play (`qs ipc
-call sounds play`). Not pressed: the switches and the slider. The other
-ten categories say "Not built yet". Not yet: the setup's steps in the
+call sounds play`), but for the volume's preview, played on Genoma at the
+volume just chosen. Akusen pressed them on 2026-11-02 on DP-1 and found
+three things, now fixed: a category's glyph stood in the air before its
+capsule had grown (glyph and words now enter with their own capsule,
+`cascade_content_N`, as SettingsExpansion's contentReady); a quick drag
+of the volume fell behind, since every step rewrote the whole override
+(the value is the page's own while the hand moves and is written once it
+stops); and the thread to the page jumped to a new choice whole (drawn
+out again from its origin, on `grow`). The other ten categories say "Not
+built yet". Not yet: the setup's steps in the
 column, keyboard travel down it, the chosen category kept across a reload.
 
 ### Surfaces that are not cells
 
 | Surface | PRD | State |
 |---|---|---|
-| Wallpaper, and its blurred backdrop for niri's overview | §9.7 | checked 2026-10-30 (`structure/wallpaper.luau`, from WallpaperSurface.qml and WallpaperImage.qml at 11bb81e), awaiting Akusen and the cost |
+| Wallpaper, and its blurred backdrop for niri's overview | §9.7 | checked 2026-10-30 (`structure/wallpaper.luau`, from WallpaperSurface.qml and WallpaperImage.qml at 11bb81e); seen by Akusen 2026-11-02 with the key in his override, Quickshell stepping aside and running matugen on the new picture |
 | Floating tissues, and the host float for invoked cells | §4 | |
 | OSD (volume, brightness, keyboard layout) | §11, an open question then, adopted since | |
 | Selection surface (Bioma's own region picker) | §9.6 | checked 2026-10-29 with the utility (`structure/selection.luau`) |

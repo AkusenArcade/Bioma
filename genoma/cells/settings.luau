@@ -65,9 +65,25 @@ return {
         local function padding(): number return 14 * f() end
 
         local chosen = g.signal(place.category or CATEGORIES[1].key)
+        -- A new choice draws the thread out again from its origin, at the
+        -- new capsule, rather than moving it there whole (Akusen, 2026-11-02):
+        -- taken away at once, then grown in the next turn.
+        local redrawing = g.signal(false)
+        -- Whether the thread last grew for a choice, not for the opening:
+        -- the opening keeps its place in the cascade.
+        local rechosen = g.signal(false)
+        g.watch(function() return cell.open.value end, function(open: boolean)
+            if not open then rechosen.value = false end
+        end)
         local function choose(key: string)
             place.category = key
-            chosen.value = key
+            if chosen.value == key then return end
+            g.batch(function()
+                redrawing.value = true
+                rechosen.value = true
+                chosen.value = key
+            end)
+            g.after(0, function() redrawing.value = false end)
         end
         local function chosen_index(): number
             for i, c in CATEGORIES do
@@ -161,6 +177,11 @@ return {
                 return if cell.open.value then "cascade_" .. math.min(index, 12) else "cascade_close"
             end
             local hovered = g.signal(false)
+            -- Glyph and words once the capsule is at size, and first to go.
+            local function shown(): number return if cell.open.value then 1 else 0 end
+            local function content_curve(): string
+                return if cell.open.value then "cascade_content_" .. math.min(index, 12) else "content_leave"
+            end
             return g.capsule {
                 name = c.label,
                 role = "button",
@@ -197,6 +218,8 @@ return {
                     width = glyph_size,
                     height = glyph_size,
                     icon = c.glyph,
+                    opacity = shown,
+                    transition = { opacity = content_curve },
                     gradient_top = function() return if is_chosen() then theme.gradient_top(theme.primary()) else theme.text_muted() end,
                     gradient_bottom = function() return if is_chosen() then theme.gradient_bottom(theme.primary()) else theme.text_muted() end,
                 },
@@ -204,8 +227,8 @@ return {
                     direction = "column",
                     align = "start",
                     gap = function() return 3 * f() end,
-                    opacity = function() return if cell.open.value then 1 else 0 end,
-                    transition = { opacity = function() return if cell.open.value then "content_enter" else "content_leave" end },
+                    opacity = shown,
+                    transition = { opacity = content_curve },
                     g.text {
                         text = c.label,
                         color = function() return if is_chosen() then theme.primary() else theme.text() end,
@@ -238,9 +261,11 @@ return {
                     local centre = (chosen_index() - 1) * pitch() + capsule_height() / 2
                     return centre - column_height() / 2
                 end,
-                shown = function() return cell.open.value end,
-                timing = function() return "cascade_" .. math.min(#CATEGORIES + 1, 12) end,
-                closing = function() return "thread_close" end,
+                shown = function() return cell.open.value and not redrawing.value end,
+                timing = function()
+                    return if rechosen.value then "grow" else "cascade_" .. math.min(#CATEGORIES + 1, 12)
+                end,
+                closing = function() return if cell.open.value then "instant" else "thread_close" end,
             }
         end
 

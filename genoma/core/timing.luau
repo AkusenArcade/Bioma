@@ -154,6 +154,20 @@ g.effect(function()
         cascade_11 = { duration = s.grow, delay = s.grow + s.stagger * 12, curve = c.open_flat },
         cascade_12 = { duration = s.grow, delay = s.grow + s.stagger * 13, curve = c.open_flat },
         cascade_close = { duration = s.close, delay = s.content_fade / 2, curve = c.close },
+        -- And each category's glyph and words once that capsule is at size
+        -- (SettingsExpansion's contentReady), never in the air before it.
+        cascade_content_1 = { duration = s.content_fade, delay = s.grow * 2 + s.stagger * 2 },
+        cascade_content_2 = { duration = s.content_fade, delay = s.grow * 2 + s.stagger * 3 },
+        cascade_content_3 = { duration = s.content_fade, delay = s.grow * 2 + s.stagger * 4 },
+        cascade_content_4 = { duration = s.content_fade, delay = s.grow * 2 + s.stagger * 5 },
+        cascade_content_5 = { duration = s.content_fade, delay = s.grow * 2 + s.stagger * 6 },
+        cascade_content_6 = { duration = s.content_fade, delay = s.grow * 2 + s.stagger * 7 },
+        cascade_content_7 = { duration = s.content_fade, delay = s.grow * 2 + s.stagger * 8 },
+        cascade_content_8 = { duration = s.content_fade, delay = s.grow * 2 + s.stagger * 9 },
+        cascade_content_9 = { duration = s.content_fade, delay = s.grow * 2 + s.stagger * 10 },
+        cascade_content_10 = { duration = s.content_fade, delay = s.grow * 2 + s.stagger * 11 },
+        cascade_content_11 = { duration = s.content_fade, delay = s.grow * 2 + s.stagger * 12 },
+        cascade_content_12 = { duration = s.content_fade, delay = s.grow * 2 + s.stagger * 13 },
         -- An open cell's header, two staggers after the content has gone.
         header = { duration = s.content_fade, delay = s.stagger * 2 },
         wallpaper = { duration = s.wallpaper, curve = c.in_out_quad },

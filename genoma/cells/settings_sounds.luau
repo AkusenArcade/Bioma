@@ -6,8 +6,10 @@
 -- what the current choice does. A sound switched on plays once, and the
 -- volume plays the notification when the hand stops: a sound is chosen by
 -- hearing it, not by reading its name. The sounds are Quickshell's to play
--- while the two run side by side (`qs ipc call sounds play`); the switches
--- and the volume are written to the shared configuration.
+-- while the two run side by side (`qs ipc call sounds play`), but for the
+-- volume's preview, played here at the volume just chosen (as Sounds.qml
+-- plays a file): Quickshell would play it at whatever it last read. The
+-- switches and the volume are written to the shared configuration.
 local g = require("@genoma")
 local colour = require("core/colour")
 local config = require("core/config")
@@ -33,7 +35,11 @@ function M.new(t: { [string]: any }): any
     local function header(): number return 28 * f() end
     local function inner(): number return t.width() - inset() * 2 end
 
-    local function volume(): number return config.get("sounds.volume", 0.6) end
+    -- While the hand moves the volume is the page's own, and written once
+    -- it stops: a write per step rewrote the whole override at every
+    -- motion, and a quick drag fell behind the pointer.
+    local live = g.signal(nil :: number?)
+    local function volume(): number return live.value or config.get("sounds.volume", 0.6) end
 
     local function line(text: () -> string): any
         return g.text {
@@ -94,11 +100,22 @@ function M.new(t: { [string]: any }): any
     -- Heard when the hand stops, not at every step of the way.
     local preview: any = nil
     local function moved(fraction: number)
-        config.set("sounds.volume", math.round(fraction * 20) / 20)
+        local v = math.round(fraction * 20) / 20
+        if v == g.untracked(volume) then return end
+        live.value = v
         if preview then preview:stop() end
         preview = g.after(timing.seconds.debounce, function()
             preview = nil
-            play("notification")
+            local chosen = g.untracked(function() return live.value end)
+            if chosen == nil then return end
+            config.set("sounds.volume", chosen)
+            live.value = nil
+            if chosen > 0 then
+                g.process { command = {
+                    "pw-play", "--media-role", "Notification", "--volume", tostring(chosen),
+                    "-P", '{ application.name = "Bioma" }', paths.root .. "/assets/sounds/notification.wav",
+                } }
+            end
         end)
     end
 
