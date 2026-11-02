@@ -11,15 +11,13 @@
 -- plays a file): Quickshell would play it at whatever it last read. The
 -- switches and the volume are written to the shared configuration.
 local g = require("@genoma")
-local colour = require("core/colour")
 local config = require("core/config")
-local metrics_mod = require("core/metrics")
 local paths = require("core/paths")
 local theme = require("core/theme")
 local timing = require("core/timing")
-local typography = require("core/typography")
 local switch = require("components/switch")
 local slider = require("components/slider")
+local page = require("components/page")
 
 local M = {}
 
@@ -29,61 +27,14 @@ end
 
 -- `t`: metrics(), width(), height().
 function M.new(t: { [string]: any }): any
-    local function m(): any return t.metrics() end
-    local function f(): number return m().factor end
-    local function inset(): number return 14 * f() end
-    local function header(): number return 28 * f() end
-    local function inner(): number return t.width() - inset() * 2 end
+    local p = page.new(t)
+    local f, inner, line, section = p.factor, p.inner, p.line, p.section
 
     -- While the hand moves the volume is the page's own, and written once
     -- it stops: a write per step rewrote the whole override at every
     -- motion, and a quick drag fell behind the pointer.
     local live = g.signal(nil :: number?)
     local function volume(): number return live.value or config.get("sounds.volume", 0.6) end
-
-    local function line(text: () -> string): any
-        return g.text {
-            text = text,
-            color = theme.text,
-            font = typography.expressive,
-            size = function() return m().font_secondary end,
-            max_width = inner,
-            wrap = true,
-        }
-    end
-
-    -- A well: its label, perhaps its control on the same line, then what it
-    -- means.
-    local function section(label: string, trailing: any?, body: { any }): any
-        local well: { [any]: any } = {
-            width = t.width,
-            padding = inset,
-            direction = "column",
-            align = "start",
-            gap = function() return 6 * f() end,
-            radius = function() return metrics_mod.inner_radius(m().radius_panel, 10 * f()) end,
-            fill = function() return colour.alpha(theme.lift(theme.background(), -0.01), 0.8) end,
-            rim_top = "#00000000",
-            rim_bottom = "#00000000",
-            g.box {
-                width = inner,
-                height = header,
-                direction = "row",
-                align = "center",
-                justify = "between",
-                g.text {
-                    text = label,
-                    color = theme.text,
-                    font = typography.technical,
-                    size = function() return m().font_secondary end,
-                    tracking = typography.label_tracking,
-                },
-                trailing or g.box {},
-            },
-        }
-        for _, node in body do table.insert(well, node) end
-        return g.capsule(well)
-    end
 
     local function event(label: string, kind: string, sound: string, when_on: () -> string, when_off: string): any
         local function on(): boolean return config.get("sounds." .. kind, true) == true end
@@ -128,11 +79,7 @@ function M.new(t: { [string]: any }): any
                 else "Every time.")
     end
 
-    return g.box {
-        width = t.width,
-        direction = "column",
-        align = "start",
-        gap = function() return 10 * f() end,
+    return p.column {
         section("VOLUME", nil, {
             slider.new { width = inner, factor = f, value = volume, dimmed = function() return false end, on_move = moved },
             line(function()

@@ -46,12 +46,15 @@ local CATEGORIES = {
 
 -- The pages written on Genoma so far, by category.
 local PAGES = {
+    session = "cells/settings_session",
     sounds = "cells/settings_sounds",
 }
 
 -- Which category is being looked at, kept across a close and on every
 -- screen (cells/SettingsPlace.qml).
-local place = { category = nil :: string? }
+-- BIOMA_GENOMA_SETTINGS=<key> opens on that category, to look at a page
+-- without pressing anything on a desktop someone is using.
+local place = { category = g.env("BIOMA_GENOMA_SETTINGS") :: string? }
 
 return {
     new = function(cell: any)

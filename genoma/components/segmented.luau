@@ -19,13 +19,15 @@ local M = {}
 
 -- `t`: options() ({ { key, label } } or { { key, icon } }; `dimmed` to
 -- show one that cannot be chosen), current(), on_choose(key), metrics(),
--- and optionally font_size(), button_height(), icon_size(), icon_padding().
+-- and optionally font_size(), button_height(), button_padding(),
+-- icon_size(), icon_padding().
 function M.new(t: { [string]: any }): any
     local function f(): number return t.metrics().factor end
     local function font_size(): number return if t.font_size then t.font_size() else math.round(12 * f()) end
     local function button_height(): number return if t.button_height then t.button_height() else 26 * f() end
     local function icon_size(): number return if t.icon_size then t.icon_size() else 14 * f() end
     local function icon_padding(): number return if t.icon_padding then t.icon_padding() else 8 * f() end
+    local function button_padding(): number return if t.button_padding then t.button_padding() else 14 * f() end
     local function pad(): number return 3 * f() end
     local function gap(): number return 2 * f() end
 
@@ -39,7 +41,7 @@ function M.new(t: { [string]: any }): any
             size = font_size(),
             weight = typography.weight_title,
             tracking = 0.04,
-        } + 14 * f() * 2
+        } + button_padding() * 2
     end
 
     -- Where the chosen one starts, and how wide it is.
