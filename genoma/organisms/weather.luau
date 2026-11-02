@@ -30,8 +30,8 @@ return {
             return if weather.problem() ~= "" then weather.problem() else "The forecast is on its way."
         end
         local function degrees(v: number?): string return if v == nil then "" else math.round(v) .. "°" end
-        local function technical(text: () -> string, color: any, size: () -> number, weight: any): any
-            return g.text { text = text, color = color, font = typography.technical, size = size,
+        local function technical(text: () -> string, color: any, size: () -> number, weight: any, bottom: any?): any
+            return g.text { text = text, color = color, color_bottom = bottom, font = typography.technical, size = size,
                 weight = weight or typography.weight_secondary, tabular = true }
         end
         local function lit_icon(name: () -> string, size: () -> number, lit: () -> boolean): any
@@ -85,7 +85,8 @@ return {
                             end, function() return 44 * f() end, function() return not blank() end),
                             technical(function() local n = now() return if n then degrees(n.temperature) else "" end,
                                 function() return theme.gradient_top(theme.primary()) end,
-                                function() return math.round(40 * f()) end, typography.weight_value),
+                                function() return math.round(40 * f()) end, typography.weight_value,
+                                function() return theme.gradient_bottom(theme.primary()) end),
                             g.box {
                                 direction = "column",
                                 align = "start",

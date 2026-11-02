@@ -208,6 +208,7 @@ return {
                             meta(function() return "TODAY ACTIVE TIME" end, theme.text, function() return m().font_meta end, typography.weight_label),
                             g.text { text = function() return duration(activity.today_minutes()) end,
                                 color = function() return theme.gradient_top(theme.primary()) end,
+                                color_bottom = function() return theme.gradient_bottom(theme.primary()) end,
                                 font = typography.technical, size = function() return m().font_label end,
                                 weight = typography.weight_value, tabular = true },
                         },

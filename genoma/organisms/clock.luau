@@ -7,9 +7,6 @@
 -- what is left of a timer while one runs, and round the rim the disc that
 -- is where the second hand is. 12 or 24 hours as the clock cell was told,
 -- so the desktop does not answer the same question two ways.
---
--- Not yet: the figures lit by the primary's gradient (LitText): Genoma
--- fills text with one colour, so they take the gradient's top.
 local g = require("@genoma")
 local clock = require("@genoma/clock")
 local theme = require("core/theme")
@@ -53,6 +50,7 @@ return {
                         g.text {
                             text = figures,
                             color = function() return theme.gradient_top(theme.primary()) end,
+                            color_bottom = function() return theme.gradient_bottom(theme.primary()) end,
                             font = typography.expressive,
                             size = function() return math.round(72 * f()) end,
                             weight = 500,

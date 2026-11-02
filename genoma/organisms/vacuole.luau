@@ -10,8 +10,7 @@
 -- Nothing moves but that. With nothing unread there is no vacuole. A body
 -- is primary; one holding a critical notification is alert.
 --
--- Not yet: the shadow under the names (MultiEffect); the count lit by the
--- primary's gradient (LitText).
+-- Not yet: the shadow under the names (MultiEffect).
 local g = require("@genoma")
 local colour = require("core/colour")
 local theme = require("core/theme")
@@ -344,6 +343,7 @@ return {
                             meta(function() return "UNREAD" end, typography.weight_label, 1),
                             g.text { text = function() return tostring(#notifications.unread()) end,
                                 color = function() return theme.gradient_top(theme.primary()) end,
+                                color_bottom = function() return theme.gradient_bottom(theme.primary()) end,
                                 font = typography.technical, size = function() return m().font_label end,
                                 weight = typography.weight_value, tabular = true },
                         },

@@ -9,8 +9,6 @@
 -- theme's own with `colour: "theme"`. Up to four disks, the boot partition
 -- only when asked for. Drawn with a shader (organisms/adipose.wgsl), Genoma
 -- having no canvas.
---
--- Not yet: the figures lit by their state's gradient (LitText).
 local g = require("@genoma")
 local colour = require("core/colour")
 local theme = require("core/theme")
@@ -91,8 +89,8 @@ return {
             return out
         end
 
-        local function tech(text: () -> string, color: any, size: () -> number, weight: number?): any
-            return g.text { text = text, color = color, font = typography.technical, size = size,
+        local function tech(text: () -> string, color: any, size: () -> number, weight: number?, bottom: any?): any
+            return g.text { text = text, color = color, color_bottom = bottom, font = typography.technical, size = size,
                 weight = weight or typography.weight_secondary, tabular = true }
         end
 
@@ -136,8 +134,9 @@ return {
                             font = typography.expressive, size = function() return m().font_label end,
                             max_width = function() return o.width() - column() - 14 * f() end },
                         tech(function() local d = disks()[1] return if d then percent(d) else "" end,
-                            function() local d = disks()[1] return tint(if d then d.fill else 0) end,
-                            function() return math.round(40 * f()) end, typography.weight_value),
+                            function() local d = disks()[1] return theme.gradient_top(tint(if d then d.fill else 0)) end,
+                            function() return math.round(40 * f()) end, typography.weight_value,
+                            function() local d = disks()[1] return theme.gradient_bottom(tint(if d then d.fill else 0)) end),
                         tech(function()
                             local d = disks()[1]
                             return if d then storage.bytes(d.used) .. " OF " .. storage.bytes(d.size) else ""
@@ -169,8 +168,9 @@ return {
                                 g.box {
                                     direction = "row",
                                     gap = function() return 6 * f() end,
-                                    tech(function() return percent(it().d) end, function() return tint(it().d.fill) end,
-                                        function() return m().font_meta end, typography.weight_value),
+                                    tech(function() return percent(it().d) end, function() return theme.gradient_top(tint(it().d.fill)) end,
+                                        function() return m().font_meta end, typography.weight_value,
+                                        function() return theme.gradient_bottom(tint(it().d.fill)) end),
                                     g.box { present = function() return #disks() == 2 end,
                                         tech(function() return storage.bytes(it().d.size) end, theme.text_muted, function() return m().font_meta end) },
                                 },

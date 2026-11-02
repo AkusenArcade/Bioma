@@ -7,8 +7,6 @@
 -- A drop crosses in about a second whatever the traffic: how many cross is
 -- what the traffic says, on a logarithmic scale from an idle link to a
 -- gigabit one, and drops come at that rate on average, never on a beat.
---
--- Not yet: the figures lit by the water's gradient (LitText).
 local g = require("@genoma")
 local colour = require("core/colour")
 local theme = require("core/theme")
@@ -159,7 +157,9 @@ return {
             }
         end
         local function figure(read: () -> number): any
-            return g.text { text = function() return rate(read()) end, color = theme.primary, font = typography.technical,
+            return g.text { text = function() return rate(read()) end,
+                color = function() return theme.gradient_top(theme.primary()) end,
+                color_bottom = function() return theme.gradient_bottom(theme.primary()) end, font = typography.technical,
                 size = function() return m().font_value end, weight = typography.weight_value, tabular = true }
         end
 

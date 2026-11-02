@@ -11,8 +11,6 @@
 --
 -- Drawn with a shader (organisms/photoperiod.wgsl), Genoma having no
 -- canvas: the paths are sampled into columns here.
---
--- Not yet: the remaining time lit by the primary's gradient (LitText).
 local g = require("@genoma")
 local clock = require("@genoma/clock")
 local colour = require("core/colour")
@@ -226,6 +224,7 @@ return {
                             meta(headline, theme.text, typography.weight_label),
                             g.text { present = function() return remaining() ~= "" end, text = remaining,
                                 color = function() return theme.gradient_top(theme.primary()) end,
+                                color_bottom = function() return theme.gradient_bottom(theme.primary()) end,
                                 font = typography.technical, size = function() return m().font_label end,
                                 weight = typography.weight_value, tabular = true },
                         },

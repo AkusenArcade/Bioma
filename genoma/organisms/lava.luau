@@ -9,8 +9,6 @@
 -- high it gets is how hot the processor is, and below the start of the
 -- scale nothing leaves the bottom, so a cool machine is a still pool. The
 -- simulation runs only while something moves (components/stepper.luau).
---
--- Not yet: the figure lit by the wax's gradient (LitText).
 local g = require("@genoma")
 local colour = require("core/colour")
 local theme = require("core/theme")
@@ -176,7 +174,8 @@ return {
                         },
                         g.text {
                             text = function() return math.round(system.cpu_temperature()) .. "°" end,
-                            color = wax,
+                            color = function() return theme.gradient_top(wax()) end,
+                            color_bottom = function() return theme.gradient_bottom(wax()) end,
                             font = typography.technical,
                             size = function() return m().font_value end,
                             weight = typography.weight_value,

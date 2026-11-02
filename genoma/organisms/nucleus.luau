@@ -8,8 +8,6 @@
 -- beats, as fast as watts go out; full on the mains it is still. Colour is
 -- the charge's state. The drops melt in with the cytoplasm's shader. Only a
 -- laptop has one; on a desktop it is absent.
---
--- Not yet: the figure lit by its state's gradient (LitText).
 local g = require("@genoma")
 local colour = require("core/colour")
 local theme = require("core/theme")
@@ -216,7 +214,9 @@ return {
                         align = "start",
                         justify = "center",
                         gap = function() return 6 * f() end,
-                        g.text { text = function() return math.round(level() * 100) .. "%" end, color = tint,
+                        g.text { text = function() return math.round(level() * 100) .. "%" end,
+                            color = function() return theme.gradient_top(tint()) end,
+                            color_bottom = function() return theme.gradient_bottom(tint()) end,
                             font = typography.technical, size = function() return math.round(40 * f()) end,
                             weight = typography.weight_value, tabular = true },
                         g.text { text = flow, color = theme.text, font = typography.technical,

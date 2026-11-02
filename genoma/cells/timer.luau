@@ -115,7 +115,9 @@ return {
                     end,
                     g.text {
                         text = function() return figure(time.left()) end,
-                        color = theme.text,
+                        -- Lit by the primary's gradient, as a value is.
+                        color = function() return theme.gradient_top(theme.primary()) end,
+                        color_bottom = function() return theme.gradient_bottom(theme.primary()) end,
                         font = typography.technical,
                         size = function() return math.floor(34 * f() + 0.5) end,
                         weight = typography.weight_value,

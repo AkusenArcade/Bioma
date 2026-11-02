@@ -70,8 +70,8 @@ return {
             local days = math.round((calendar.day_start(e["end"]) - calendar.day_start(e.start)) / 86400000)
             return if days > 1 then days .. " DAYS" else "ALL DAY"
         end
-        local function technical(text: () -> string, color: any, size: () -> number, weight: any): any
-            return g.text { text = text, color = color, font = typography.technical, size = size,
+        local function technical(text: () -> string, color: any, size: () -> number, weight: any, bottom: any?): any
+            return g.text { text = text, color = color, color_bottom = bottom, font = typography.technical, size = size,
                 weight = weight or typography.weight_secondary, tracking = typography.label_tracking, tabular = true }
         end
         local function expressive(text: () -> string, color: any, size: number, weight: number?, max: (() -> number)?): any
@@ -206,7 +206,8 @@ return {
                                     if l.allDay then return all_day_span(l) end
                                     return hhmm(l.start) .. " – " .. hhmm(l["end"])
                                 end, function() return theme.gradient_top(theme.primary()) end,
-                                    function() return math.round(17 * f()) end, typography.weight_value),
+                                    function() return math.round(17 * f()) end, typography.weight_value,
+                                    function() return theme.gradient_bottom(theme.primary()) end),
                                 expressive(function()
                                     local l = lead()
                                     if not l then return "" end

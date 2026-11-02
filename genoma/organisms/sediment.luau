@@ -8,8 +8,7 @@
 -- Names where a layer is thick enough to hold one. 8, 16 or 32 layers.
 -- Drawn with a shader (organisms/sediment.wgsl), Genoma having no canvas.
 --
--- Not yet: today's count lit by the primary's gradient (LitText); a name
--- elided in its middle.
+-- Not yet: a name elided in its middle.
 local g = require("@genoma")
 local colour = require("core/colour")
 local theme = require("core/theme")
@@ -187,6 +186,7 @@ return {
                                 tracking = typography.label_tracking },
                             g.text { text = function() return tostring(today()) end,
                                 color = function() return theme.gradient_top(theme.primary()) end,
+                                color_bottom = function() return theme.gradient_bottom(theme.primary()) end,
                                 font = typography.technical, size = function() return m().font_label end,
                                 weight = typography.weight_value, tabular = true },
                         },

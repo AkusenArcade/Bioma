@@ -6,8 +6,6 @@
 -- same rhythms, the same state colours. What it adds is the figures beside
 -- them in their state's colour, because a surface put on the desktop to be
 -- read may say what it measures. In a row, or a 2 × 2 square.
---
--- Not yet: the figures lit by their state's gradient (LitText).
 local g = require("@genoma")
 local theme = require("core/theme")
 local typography = require("core/typography")
@@ -94,7 +92,8 @@ return {
                 g.box { height = function() return 2 * f() end },
                 g.text {
                     text = function() return reading_of(key()) end,
-                    color = function() return theme.state_for(load_of(key())) end,
+                    color = function() return theme.gradient_top(theme.state_for(load_of(key()))) end,
+                    color_bottom = function() return theme.gradient_bottom(theme.state_for(load_of(key()))) end,
                     font = typography.technical,
                     size = function() return m().font_value end,
                     weight = typography.weight_value,
