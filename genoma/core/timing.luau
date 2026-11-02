@@ -23,6 +23,8 @@ M.curves = {
     in_out_quad = { 0.455, 0.03, 0.515, 0.955 },
     -- Qt's Easing.OutQuad.
     out_quad = { 0.25, 0.46, 0.45, 0.94 },
+    -- 1 - (1 - t)^3: the greeter's welcome easing out.
+    out_cubic = { 0.33, 1, 0.68, 1 },
 }
 
 -- Seconds, after the speed setting: what timers and the cascade read.
@@ -69,6 +71,13 @@ g.effect(function()
         -- all of the shrink where the fade had already hidden it (Akusen,
         -- 2026-11-02: "only a fade").
         depart = { duration = s.open, delay = s.content_fade / 2, curve = c.in_out_quad },
+        -- The setup's welcome: each line a stagger after the one before, let
+        -- in from just above at the welcome's own pace (SetupWelcome.qml).
+        welcome_1 = { duration = s.welcome_open, curve = c.out_cubic },
+        welcome_2 = { duration = s.welcome_open, delay = s.welcome_stagger, curve = c.out_cubic },
+        welcome_3 = { duration = s.welcome_open, delay = s.welcome_stagger * 2, curve = c.out_cubic },
+        welcome_4 = { duration = s.welcome_open, delay = s.welcome_stagger * 3, curve = c.out_cubic },
+        welcome_5 = { duration = s.welcome_open, delay = s.welcome_stagger * 4, curve = c.out_cubic },
         depart_fade = { duration = s.open / 2, delay = s.content_fade / 2 + s.open / 2, curve = c.in_out_quad },
         grow = { duration = s.grow, curve = c.open_flat },
         transition = { duration = s.transition, curve = c.open_flat },

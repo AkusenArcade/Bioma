@@ -15,7 +15,4 @@ M.monitor = g.signal("")
 M.slot_edge = g.signal("top")
 M.slot = g.signal(0)
 
--- The walk-through asked for again, from the Structure page's SETUP.
-M.setup = g.signal(false)
-
 return M

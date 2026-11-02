@@ -390,6 +390,171 @@ function M.new(t: { [string]: any }): any
         }
     end
 
+    -- ---- The setup's pieces (components/Setup*.qml) ------------------------------
+
+    -- A fact and its state: a dot, the name in Orbitron, and beside it what
+    -- it is. Calm when in place, muted when not yet, active when it wants
+    -- attention, alert when it failed. `a`: label (string or getter),
+    -- detail(), state(), trailing (a node), present().
+    function p.fact(a: { [string]: any }): any
+        local function dot_colour(): string
+            local s = a.state()
+            if s == "calm" then return theme.calm() end
+            if s == "active" then return theme.active() end
+            if s == "alert" then return theme.alert() end
+            return theme.text_faint()
+        end
+        local function trailing_room(): number return if a.trailing then (a.trailing_width or 110) * f() else 0 end
+        return g.box {
+            present = a.present,
+            width = p.inner,
+            direction = "row",
+            align = "center",
+            gap = function() return 8 * f() end,
+            g.capsule {
+                width = function() return 7 * f() end,
+                height = function() return 7 * f() end,
+                fill = dot_colour,
+                rim_top = "#00000000",
+                rim_bottom = "#00000000",
+            },
+            g.box {
+                width = function() return 150 * f() end,
+                padding_left = function() return 2 * f() end,
+                g.text {
+                    text = a.label,
+                    color = theme.text,
+                    font = typography.technical,
+                    size = function() return m().font_meta end,
+                    tracking = typography.label_tracking,
+                    max_width = function() return 148 * f() end,
+                },
+            },
+            g.text {
+                text = a.detail,
+                color = theme.text_muted,
+                font = typography.expressive,
+                size = function() return m().font_secondary end,
+                wrap = true,
+                max_width = function() return p.inner() - 7 * f() - 150 * f() - 24 * f() - trailing_room() end,
+            },
+            g.box { grow = 1 },
+            a.trailing or g.box {},
+        }
+    end
+
+    -- One answer among several: a ring that fills when it is the one
+    -- chosen, the answer in Orbitron, what it means in Spectral under it.
+    -- `a`: label(), line(), chosen(), busy(), on_click.
+    function p.option(a: { [string]: any }): any
+        local hovered = g.signal(false)
+        local function ring(): number return 12 * f() end
+        local function edge(): string return if a.chosen() then theme.primary() else colour.alpha(theme.line(), 0.7) end
+        local sweep = require("components/sweep")
+        return g.capsule {
+            role = "button",
+            name = "Option",
+            width = p.inner,
+            padding_x = function() return 14 * f() end,
+            padding_y = function() return 10 * f() end,
+            direction = "row",
+            align = "center",
+            justify = "start",
+            gap = function() return 12 * f() end,
+            radius = function() return m().radius_well end,
+            fill = function() return if hovered.value then colour.alpha(theme.text(), 0.06) else "#00000000" end,
+            rim_top = edge,
+            rim_bottom = edge,
+            on_hover = function(on: boolean) hovered.value = on end,
+            on_click = a.on_click,
+            g.box {
+                width = function() return 16 * f() end,
+                height = function() return 16 * f() end,
+                align = "center",
+                justify = "center",
+                g.capsule {
+                    present = function() return not a.busy() end,
+                    width = ring,
+                    height = ring,
+                    align = "center",
+                    justify = "center",
+                    stroke = 1,
+                    rim_top = function() return if a.chosen() then theme.primary() else theme.text_muted() end,
+                    rim_bottom = function() return if a.chosen() then theme.primary() else theme.text_muted() end,
+                    g.capsule {
+                        opacity = function() return if a.chosen() then 1 else 0 end,
+                        width = function() return ring() * 0.5 end,
+                        height = function() return ring() * 0.5 end,
+                        fill = theme.primary,
+                        rim_top = "#00000000",
+                        rim_bottom = "#00000000",
+                    },
+                },
+                sweep.new { size = 16 * f(), present = a.busy, running = a.busy },
+            },
+            g.box {
+                direction = "column",
+                align = "start",
+                gap = function() return 3 * f() end,
+                g.text {
+                    text = a.label,
+                    color = function() return if a.chosen() then theme.primary() else theme.text() end,
+                    font = typography.technical,
+                    size = function() return math.round(12 * f()) end,
+                    weight = function() return if a.chosen() then typography.weight_title else typography.weight_label end,
+                    tracking = 0.04,
+                },
+                g.text {
+                    text = a.line,
+                    color = theme.text_muted,
+                    font = typography.expressive,
+                    size = function() return m().font_secondary end,
+                    wrap = true,
+                    max_width = function() return p.inner() - 28 * f() - 16 * f() - 12 * f() end,
+                },
+            },
+        }
+    end
+
+    -- A command for a terminal, with COPY: what the setup offers when it must
+    -- not or cannot do something itself.
+    function p.command(command: () -> string, present: (() -> boolean)?): any
+        local copied = g.signal(false)
+        g.watch(command, function() copied.value = false end)
+        local choice = require("components/choice")
+        return g.capsule {
+            present = present,
+            width = p.inner,
+            padding_left = function() return 12 * f() end,
+            padding_right = function() return 6 * f() end,
+            padding_y = function() return 6 * f() end,
+            direction = "row",
+            align = "center",
+            justify = "between",
+            radius = function() return m().radius_well end,
+            fill = function() return colour.alpha(theme.text(), 0.04) end,
+            rim_top = theme.line,
+            rim_bottom = theme.line,
+            g.text {
+                text = command,
+                color = theme.text,
+                font = typography.technical,
+                size = function() return m().font_meta end,
+                tracking = 0.02,
+                wrap = true,
+                max_width = function() return p.inner() - 18 * f() - 90 * f() end,
+            },
+            choice.new {
+                metrics = m,
+                label = function() return if copied.value then "COPIED" else "COPY" end,
+                on_click = function()
+                    g.process { command = { "wl-copy", "--", g.untracked(command) } }
+                    copied.value = true
+                end,
+            },
+        }
+    end
+
     -- The page itself: its wells in a column, ten apart.
     function p.column(wells: { any }): any
         local out: { [any]: any } = {

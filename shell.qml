@@ -355,6 +355,52 @@ ShellRoot {
                 "pending": Setup.pending
             });
         }
+
+        // What the setup on Genoma asks done: Genoma chooses, Quickshell
+        // acts while the two run side by side (genoma/PORT.md). Each starts
+        // the script and returns; `progress` says when it has finished and
+        // what it said.
+        function niri(autostart: bool): string {
+            Setup.setUpNiri(autostart);
+            return "writing";
+        }
+
+        function greeter(enable: bool): string {
+            Setup.setGreeter(enable);
+            return "asking";
+        }
+
+        function stop(pid: string, name: string, from: string): string {
+            Setup.stop({ "pid": pid, "name": name, "from": from,
+                         "what": Setup.conflicts.find(entry => entry.pid === pid)?.what ?? "" });
+            return "stopping";
+        }
+
+        function enable(unit: string): string {
+            Setup.enableService(unit);
+            return "enabling";
+        }
+
+        function takeover(): string {
+            Setup.useBiomaAgent();
+            return "switching";
+        }
+
+        function progress(): string {
+            return JSON.stringify({
+                "niriBusy": Setup.niriBusy,
+                "niriError": Setup.niriError,
+                "loginBusy": Setup.loginBusy,
+                "loginError": Setup.loginError,
+                "stopping": Object.keys(Setup.stopping),
+                "stopErrors": Setup.stopErrors,
+                "enabling": Object.keys(Setup.enabling),
+                "enableErrors": Setup.enableErrors,
+                "handingOver": Setup.handingOver,
+                "handOverError": Setup.handOverError,
+                "restartAtEnd": Setup.restartAtEnd
+            });
+        }
     }
 
     // ---- The keys that are not cells ----------------------------------------

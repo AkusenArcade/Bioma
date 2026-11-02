@@ -31,6 +31,11 @@ local agent: any = if wanted and not fake then require("@genoma/polkit") else ni
 local pretend = g.signal(nil :: any)
 
 function M.registered(): boolean return agent ~= nil and agent.registered == true end
+-- Another agent holds the session (Bioma on Quickshell's, while the two run
+-- side by side): something can still ask for a password.
+function M.held_elsewhere(): boolean
+    return agent ~= nil and agent.registered ~= true and string.find(tostring(agent.error or ""), "already exists", 1, true) ~= nil
+end
 
 -- The request being answered: { cookie, action_id, message, icon_name,
 -- user, prompt, echo, failed, info }, or nil.

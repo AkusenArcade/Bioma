@@ -182,7 +182,7 @@ host, driven only by `scripts/genoma ipc`:
 | privacy | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | timer | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | notifications | §9.10 | 4, last | 11bb81e | checked 2026-10-30 on a private session bus, awaiting Akusen and the cost |
-| settings (with setup, §9.14) | §9.12 | 5 | 11bb81e | in progress: the frame and the eleven pages checked 2026-11-02; the setup to come |
+| settings (with setup, §9.14) | §9.12 | 5 | 11bb81e (setup 2cafc17) | checked 2026-11-02: the frame, the eleven pages and the setup's eight steps; the setup's actions on the machine are Quickshell's and Akusen's to press |
 | launcher | §9.13 | 6 | 2cafc17 | checked 2026-11-02 summoned on HDMI-A-1: apps by use and by subsequence with the matched letters lit (Genoma's new text `marks`), sums from qalc, files from fd under FILES; launching, Enter and the form on a membrane are Akusen's to press |
 
 window_title, checked 2026-10-29 (`genoma/cells/window_title.luau`,
@@ -619,8 +619,32 @@ A list is now a table with no key that is not a position. And Genoma
 panicked when the pointer still named a node a list had just rebuilt
 (`Scene::parent` on a stale key); it answers none now.
 
-Not yet: the setup's steps (SETUP raises `settings_place.setup` for
-them), keyboard travel down the column and through a page, the chosen
+The setup followed the same day (`services/setup.luau`, the steps as
+`cells/setup_<key>.luau`, from services/Setup.qml and cells/settings/
+Setup*.qml at 2cafc17): the settings cell in its setup form, the steps
+where the categories stand with what each chose in its line, the page
+ending in SKIP SETUP, BACK and NEXT; the first start applying Complete and
+opening it once the shell has settled; SETUP on the Structure page running
+it again. What it reads it reads itself (`install --report`,
+`polkit-agent report`, `greeter-setup status`, `setup-scan list`); what it
+does to the machine (niri's configuration, the login screen through
+pkexec, another shell stopped, a service enabled, the polkit agent handed
+over) it asks of Quickshell (`setup niri|greeter|stop|enable|takeover`,
+followed through `setup progress` while one is under way). Genoma's own
+`setup open|go|state` IPC opens it on a screen. Walked through by IPC and
+by presses on HDMI-A-1 against the scratch configuration; the actions are
+Akusen's to press, after Quickshell is restarted to know them.
+
+Found on the way, in Genoma: a module required for the first time from
+inside a passing computed (a page built in a keyed list) made its
+module-level signals that computed's, and its next run disposed them
+while the module stayed cached, so they read nil from then on: the
+Monitors page silently forgot the chosen screen after a change of page,
+and the Structure page broke when the setup took the panel. A module now
+belongs to the load that keeps it. And text gained `text_align`, for the
+welcome's centred paragraph.
+
+Not yet: keyboard travel down the column and through a page, the chosen
 category kept across a reload.
 
 ### Surfaces that are not cells

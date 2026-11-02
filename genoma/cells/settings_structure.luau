@@ -37,6 +37,7 @@ local thread_mod = require("components/thread")
 local field_mod = require("components/field")
 local scroller_mod = require("components/scroller")
 local monitors = require("services/monitors")
+local setup = require("services/setup")
 
 local M = {}
 
@@ -1485,18 +1486,15 @@ function M.new(t: { [string]: any }): any
         g.box { grow = 1 },
         -- The walk-through again, from WELCOME, in this same panel: the
         -- first start is where a layout is chosen, so a second one is asked
-        -- for here. It leaves the saved presets alone. Hidden until the
-        -- setup's steps are ported: a button that answers nothing reads as
-        -- broken.
+        -- for here. It leaves the saved presets alone.
         g.box {
-            present = function() return false end,
             choice_mod.new {
             metrics = m,
             label = "SETUP",
             on_click = function()
                 presets_open.value = false
                 naming.value = false
-                place.setup.value = true
+                setup.restart(t.output)
             end,
             },
         },

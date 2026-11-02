@@ -184,6 +184,36 @@ g.ipc("cell", {
     list = function(): string return table.concat(focus.domains(), "\n") end,
 })
 
+-- The walk-through, as Quickshell's `setup` target has it: opened on a
+-- screen, moved to a step, its state read.
+g.ipc("setup", {
+    open = function(output: string?): string
+        local setup = require("services/setup")
+        local screen = meant(output)
+        setup.open(screen)
+        return "open on " .. (screen or "the primary screen") .. ", step " .. g.untracked(setup.step)
+    end,
+    go = function(step: string): string
+        local setup = require("services/setup")
+        for _, s in g.untracked(setup.steps) do
+            if s.key == step then
+                setup.go(step)
+                return step
+            end
+        end
+        return 'no step "' .. tostring(step) .. '"'
+    end,
+    state = function(): string
+        local setup = require("services/setup")
+        local keys = {}
+        for _, s in g.untracked(setup.steps) do table.insert(keys, s.key) end
+        return g.to_json({
+            active = g.untracked(setup.active), output = g.untracked(setup.output), step = g.untracked(setup.step),
+            steps = g.array(keys), done = g.untracked(setup.done), pending = g.untracked(setup.pending),
+        })
+    end,
+})
+
 -- BIOMA_GENOMA_CHECK=<service>: that service's state as it changes, with
 -- no interface (services/check.luau), the way each was verified on Quickshell.
 local check = g.env("BIOMA_GENOMA_CHECK")
