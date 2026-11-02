@@ -712,7 +712,8 @@ col 1.5 row 2.
 | photoperiod | checked 2026-11-02 beside Quickshell's; the Canvas drawn by a shader (`organisms/photoperiod.wgsl`), the paths sampled into columns; `organisms/sky.luau` from sky.js |
 | media | written 2026-11-02, seen blank (nothing playing here); the cover's fade in two stops |
 | adipose | checked 2026-11-02 (`services/storage.luau` from Storage.qml); the Canvas drawn by a shader (`organisms/adipose.wgsl`) |
-| note, rings, sediment | to come |
+| sediment | checked 2026-11-02 (`services/recent.luau` from Recent.qml); the Canvas drawn by a shader (`organisms/sediment.wgsl`) |
+| note, rings | to come |
 
 Not yet: the Settings page's ADD, remove and ARRANGE for a Genoma
 organism (they ask Quickshell); a taken-away organism leaving before the
