@@ -710,7 +710,8 @@ col 1.5 row 2.
 | nucleus | written 2026-11-02, seen only blank (no battery here) |
 | vacuole | checked 2026-11-02 on a private bus with five notifications; the notifications service now keeps the unread list |
 | photoperiod | checked 2026-11-02 beside Quickshell's; the Canvas drawn by a shader (`organisms/photoperiod.wgsl`), the paths sampled into columns; `organisms/sky.luau` from sky.js |
-| adipose, media, note, rings, sediment | to come |
+| media | written 2026-11-02, seen blank (nothing playing here); the cover's fade in two stops |
+| adipose, note, rings, sediment | to come |
 
 Not yet: the Settings page's ADD, remove and ARRANGE for a Genoma
 organism (they ask Quickshell); a taken-away organism leaving before the
