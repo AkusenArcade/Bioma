@@ -1,6 +1,7 @@
 --!strict
--- The cell registry (cells/Registry.qml), the part the configuration needs
--- now: old names and retired cells. The rest comes with the cells.
+-- The cell registry (cells/Registry.qml): old names and retired cells, how
+-- wide each cell is, when it is there, and what the settings cell says
+-- about it.
 local M = {}
 
 -- `session` became `system` on 2026-09-23; `sinestesia` became `media` on
@@ -107,6 +108,100 @@ function M.type_of(kind: string): any
         end
     end
     return types[kind] or nil
+end
+
+-- ---- What the settings cell says about each cell -------------------------------
+
+-- What a cell is called when it is spoken about rather than drawn, in the
+-- catalogue's order: the order the cells were built in, read as a tour of
+-- the shell rather than an alphabet.
+M.catalogue = {
+    { "clock", "Clock" }, { "window_title", "Window title" }, { "workspaces", "Workspaces" },
+    { "vitals", "Vitals" }, { "media", "Media" }, { "audio", "Audio" }, { "utility", "Utility" },
+    { "theme", "Theme" }, { "system", "System" }, { "dock", "Dock" }, { "notifications", "Notifications" },
+    { "connectivity", "Connectivity" }, { "launcher", "Launcher" }, { "settings", "Settings" },
+    { "tray", "Tray" }, { "clipboard", "Clipboard" }, { "keyboard", "Keyboard" }, { "privacy", "Privacy" },
+    { "timer", "Timer" }, { "download", "Downloads" }, { "drives", "Drives" }, { "emoji", "Emoji" },
+    { "actions", "Quick actions" }, { "performance", "Performance" },
+} :: { { string } }
+
+function M.name_of(kind: string): string
+    kind = M.canonical(kind)
+    for _, pair in M.catalogue do
+        if pair[1] == kind then return pair[2] end
+    end
+    return kind
+end
+
+-- When each cell is there by itself, said the way the Cells page explains
+-- it. What the condition is lives in the cell; this is the sentence about
+-- it, kept beside the name so a new cell brings both in one line of work.
+M.conditions = {
+    clock = "When the hour strikes, for that minute.",
+    window_title = "While a window has the focus. With none, there is no title to show.",
+    workspaces = "For five seconds after the workspace changes.",
+    vitals = "While the processor, the memory, the graphics card or the battery is past its alert level, and three seconds after it comes back.",
+    media = "While sound is playing, and four seconds after it stops.",
+    audio = "For five seconds after the volume changes or the sound is muted.",
+    utility = "For five seconds after a screenshot, and for as long as a recording runs and waits to be kept.",
+    theme = "For five seconds after the palette changes.",
+    system = "While a restart is due: the kernel was updated and the one running is no longer installed.",
+    dock = "While the desktop is showing (no windows on this monitor's workspace) and it has something to hold.",
+    notifications = "When a notification arrives, and while many arrive at once.",
+    connectivity = "For five seconds after something connects: the wire, a Wi-Fi network, a Bluetooth device, a VPN, or a print starting.",
+    launcher = "Never by itself: it comes when its keybind asks for it.",
+    settings = "Never by itself: it comes when its keybind asks for it.",
+    tray = "From the moment an application's icon changes state until the pointer has been over it, then five seconds.",
+    clipboard = "For five seconds after something is copied.",
+    keyboard = "For five seconds after the keyboard layout changes.",
+    privacy = "While the microphone, a camera or the screen is being taken, and two seconds after.",
+    timer = "While a timer runs, or waits, paused, to be resumed.",
+    download = "While a browser is downloading into the downloads folder, and until a minute after it stalls.",
+    drives = "While a removable drive is attached: a stick, a card, a disk on a cable.",
+    emoji = "Never by itself: it comes when its keybind asks for it.",
+    actions = "Never by itself: it comes to the pointer when its keybind asks for it.",
+    performance = "While performance mode is on: turned on by its key, or by a game or an application on its list.",
+} :: { [string]: string }
+
+function M.condition_of(kind: string): string
+    return M.conditions[M.canonical(kind)] or ""
+end
+
+-- Which visibilities a cell can wear. Every cell can be invoked, so this
+-- is about whether it exists without being: a window title with no window
+-- has nothing to say. The Cells page shows the ones it cannot have dimmed
+-- rather than hidden, which is how the shell explains itself.
+M.visibilities = {
+    clock = { "always", "conditional" }, window_title = { "conditional" },
+    workspaces = { "always", "conditional" }, vitals = { "always", "conditional" },
+    media = { "conditional" }, audio = { "always", "conditional", "invoked" },
+    utility = { "always", "conditional" }, theme = { "always", "conditional" },
+    system = { "always", "conditional" }, dock = { "always", "conditional" },
+    notifications = { "always", "conditional" }, connectivity = { "always", "conditional" },
+    launcher = { "always", "invoked" }, settings = { "always", "invoked" },
+    tray = { "conditional", "always" }, clipboard = { "always", "conditional" },
+    keyboard = { "always", "conditional" }, privacy = { "conditional" }, timer = { "conditional" },
+    download = { "conditional" }, drives = { "conditional" }, polkit = { "invoked" },
+    emoji = { "always", "invoked" }, actions = { "invoked" }, performance = { "conditional", "always" },
+} :: { [string]: { string } }
+
+function M.allows(kind: string, visibility: string): boolean
+    local list = M.visibilities[M.canonical(kind)]
+    return list == nil or table.find(list, visibility) ~= nil
+end
+
+-- A cell whose form changes when it floats, and its visibility with it:
+-- floating, the launcher is the panel, and a panel always open would hold
+-- the keyboard for good.
+M.floating_visibility = { launcher = "invoked" } :: { [string]: string }
+
+function M.fixed_when_floating(kind: string): string
+    return M.floating_visibility[M.canonical(kind)] or ""
+end
+
+function M.allows_in(kind: string, visibility: string, floating: boolean): boolean
+    local fixed = if floating then M.fixed_when_floating(kind) else ""
+    return if fixed ~= "" then visibility == fixed else M.allows(kind, visibility)
 end
 
 -- A membrane or floating list with old names replaced and retired cells

@@ -46,6 +46,7 @@ local CATEGORIES = {
 
 -- The pages written on Genoma so far, by category.
 local PAGES = {
+    cells = "cells/settings_cells",
     performance = "cells/settings_performance",
     session = "cells/settings_session",
     sounds = "cells/settings_sounds",

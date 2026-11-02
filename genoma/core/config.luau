@@ -102,6 +102,23 @@ function M.set_many(pairs: { { any } })
     override_file:write(text)
 end
 
+-- A deep copy of a configured list (the membranes, the floating blocks),
+-- to change and write back whole: a list is one value to the merge. The
+-- lists inside it stay lists even when empty (a tissue with no cells is
+-- `[]`, never `{}`).
+local LISTS = { tissues = true, cells = true, favourites = true }
+local function copy(value: any, list: boolean): any
+    if type(value) ~= "table" then return value end
+    local out = if list then g.array({}) else {}
+    for k, v in value do
+        out[k] = copy(v, type(k) == "string" and LISTS[k] == true)
+    end
+    return out
+end
+function M.copy_list(value: any): { any }
+    return copy(if type(value) == "table" then value else {}, true)
+end
+
 function M.set(path: string, value: any)
     M.set_many({ { path, value } })
 end
