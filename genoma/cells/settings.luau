@@ -51,6 +51,7 @@ local PAGES = {
     cells = "cells/settings_cells",
     keybinds = "cells/settings_keybinds",
     monitors = "cells/settings_monitors",
+    niri = "cells/settings_niri",
     organisms = "cells/settings_organisms",
     performance = "cells/settings_performance",
     session = "cells/settings_session",

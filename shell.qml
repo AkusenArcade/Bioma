@@ -506,6 +506,149 @@ ShellRoot {
         }
     }
 
+    // A few of niri's settings, written into niri's configuration by this
+    // shell while the two run side by side: Bioma on Genoma's Niri page
+    // names a workspace, a startup line or a rule by `file#start#kind`
+    // (start counted from 0, as NiriConfig.items has it) and this shell
+    // rewrites it (genoma/PORT.md, "Who acts on the desktop"). A value of -1
+    // clears a rule's opacity or width; an empty name clears its workspace.
+    IpcHandler {
+        target: "niri"
+
+        function item(id: string): var {
+            const at = id.lastIndexOf("#");
+            const before = id.slice(0, at);
+            const cut = before.lastIndexOf("#");
+            const file = before.slice(0, cut);
+            const start = parseInt(before.slice(cut + 1), 10);
+            const kind = id.slice(at + 1);
+            return NiriConfig.items.find(i => i.file === file && i.start === start && i.kind === kind) || null;
+        }
+
+        function gaps(value: real): string {
+            NiriSettings.setGaps(value);
+            return String(value);
+        }
+
+        function focusRing(value: real): string {
+            NiriSettings.setFocusRing(value);
+            return String(value);
+        }
+
+        function followsMouse(on: bool): string {
+            NiriSettings.setFollowsMouse(on);
+            return on ? "on" : "off";
+        }
+
+        function addWorkspace(): string {
+            NiriSettings.addWorkspace();
+            return "added";
+        }
+
+        function renameWorkspace(id: string, name: string): string {
+            const ws = item(id);
+            if (!ws)
+                return "no such workspace";
+            NiriSettings.renameWorkspace(ws, name);
+            return name;
+        }
+
+        function workspaceOutput(id: string, output: string): string {
+            const ws = item(id);
+            if (!ws)
+                return "no such workspace";
+            NiriSettings.setWorkspaceOutput(ws, output);
+            return output;
+        }
+
+        function moveWorkspace(id: string, delta: int): string {
+            const ws = item(id);
+            if (!ws)
+                return "no such workspace";
+            NiriSettings.moveWorkspace(ws, delta);
+            return "moved";
+        }
+
+        function removeWorkspace(id: string): string {
+            const ws = item(id);
+            if (!ws)
+                return "no such workspace";
+            NiriSettings.removeWorkspace(ws);
+            return "removed";
+        }
+
+        // `command` is a JSON list of words, or with `sh` one shell line.
+        function addStartup(command: string, sh: bool): string {
+            let words = command;
+            if (!sh) {
+                try {
+                    words = JSON.parse(command);
+                } catch (e) {
+                    return "not JSON";
+                }
+            }
+            NiriSettings.addStartup(words, sh);
+            return "added";
+        }
+
+        function startupOn(id: string, on: bool): string {
+            const line = item(id);
+            if (!line)
+                return "no such line";
+            NiriSettings.setStartupOn(line, on);
+            return on ? "on" : "off";
+        }
+
+        function removeStartup(id: string): string {
+            const line = item(id);
+            if (!line)
+                return "no such line";
+            NiriSettings.removeStartup(line);
+            return "removed";
+        }
+
+        function ruleOpacity(id: string, value: real): string {
+            const rule = item(id);
+            if (!rule)
+                return "no such rule";
+            NiriSettings.setRuleOpacity(rule, value < 0 ? null : value);
+            return String(value);
+        }
+
+        function ruleWidth(id: string, fraction: real): string {
+            const rule = item(id);
+            if (!rule)
+                return "no such rule";
+            NiriSettings.setRuleWidth(rule, fraction < 0 ? null : fraction);
+            return String(fraction);
+        }
+
+        function ruleWorkspace(id: string, name: string): string {
+            const rule = item(id);
+            if (!rule)
+                return "no such rule";
+            NiriSettings.setRuleWorkspace(rule, name.length > 0 ? name : null);
+            return name;
+        }
+
+        function removeRule(id: string): string {
+            const rule = item(id);
+            if (!rule)
+                return "no such rule";
+            NiriSettings.removeRule(rule);
+            return "removed";
+        }
+
+        function addRule(appId: string): string {
+            NiriSettings.addRule(appId);
+            return appId;
+        }
+
+        function error(): string {
+            return NiriSettings.error;
+        }
+    }
+
     // The keybinds, written into niri's configuration by this shell while
     // the two run side by side: Bioma on Genoma's Keybinds page records the
     // combination and names the bind by its id (`file#start#key`, as

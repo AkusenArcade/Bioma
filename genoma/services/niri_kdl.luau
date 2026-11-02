@@ -293,12 +293,121 @@ local function rule_of(node: any): any
     }
 end
 
+-- What the Niri settings page edits of a rule: its opacity, the width its
+-- windows open at and the workspace they open on, the last of each, which
+-- is the one niri goes by. Everything else in it is counted.
+local RULE_EDITS = { "opacity", "default-column-width", "open-on-workspace" }
+local function width_of(node: any): any
+    if not node then return nil end
+    local size = nil
+    for _, child in (if node.children then node.children.nodes else {}) do
+        if not child.dropped and (child.name == "proportion" or child.name == "fixed") then size = child end
+    end
+    if not size or #size.args == 0 then return { kind = "window" } end
+    return { kind = size.name, value = tonumber(size.args[1].value) }
+end
+local function rule_details(rule: any): any
+    local last = {}
+    local excludes, others = 0, 0
+    for _, child in rule.children do
+        last[child.name] = child
+        if child.name == "exclude" then excludes += 1
+        elseif child.name ~= "match" and not table.find(RULE_EDITS, child.name) then others += 1 end
+    end
+    local opacity, workspace = last["opacity"], last["open-on-workspace"]
+    rule.excludes = excludes
+    rule.others = others
+    rule.opacity = if opacity and #opacity.args > 0 then tonumber(opacity.args[1].value) else nil
+    rule.width = width_of(last["default-column-width"])
+    rule.workspace = if workspace and #workspace.args > 0 then workspace.args[1].value else nil
+    return rule
+end
+
+local function workspace_of(node: any): any
+    local children = {}
+    local output = nil
+    for _, child in (if node.children then node.children.nodes else {}) do
+        if not child.dropped then
+            table.insert(children, child)
+            if child.name == "open-on-output" then output = child end
+        end
+    end
+    return {
+        kind = "workspace",
+        name = node.args[1].value,
+        start = node.start,
+        ["end"] = node["end"],
+        children = children,
+        output = if output and #output.args > 0 then output.args[1].value else "",
+    }
+end
+
+local function is_spawn(name: string): boolean
+    return name == "spawn-at-startup" or name == "spawn-sh-at-startup"
+end
+-- `mark` is where the line is switched off, when it is: the comment or the
+-- slashdash.
+local function spawn_of(node: any, mark: any?): any
+    local args = {}
+    for _, a in node.args do table.insert(args, a.value) end
+    return {
+        kind = "spawn",
+        sh = node.name == "spawn-sh-at-startup",
+        args = args,
+        on = mark == nil,
+        start = if mark then mark.start else node.start,
+        ["end"] = if mark then mark["end"] else node["end"],
+    }
+end
+
+-- Lines commented out whole: a comment at the start of its line whose body
+-- is one node, parsed with its offsets in the whole text.
+local function commented_nodes(text: string): { any }
+    local out = {}
+    for _, token in M.tokenize(text, true) do
+        if token.type == "comment" and string.sub(text, token.start, token.start + 1) == "//" then
+            local s = token.start
+            while s > 1 and (string.sub(text, s - 1, s - 1) == " " or string.sub(text, s - 1, s - 1) == "\t") do s -= 1 end
+            if s == 1 or string.sub(text, s - 1, s - 1) == "\n" then
+                local from = token.start + 2
+                local body = string.sub(text, from, token["end"] - 1)
+                local nodes = M.parse_nodes(M.tokenize(body), 1, false)
+                if #nodes == 1 and not nodes[1].dropped and string.match(nodes[1].name, "^[a-z][a-z%-]*$") then
+                    local n = table.clone(nodes[1])
+                    local by = from - 1
+                    n.start += by
+                    n["end"] += by
+                    local args = {}
+                    for _, a in n.args do table.insert(args, { value = a.value, start = a.start + by, ["end"] = a["end"] + by }) end
+                    n.args = args
+                    table.insert(out, { start = token.start, ["end"] = token["end"], node = n })
+                end
+            end
+        end
+    end
+    return out
+end
+
 -- One file's items, in the order they appear: an include is expanded where
 -- it stands, so the order between it and what is around it decides.
 function M.scan(text: string): { items: { any } }
     local top = M.parse_nodes(M.tokenize(text), 1, false)
     local items = {}
+    local function inside(at: number, node: any): boolean
+        return node.children ~= nil and at > node.children.open and at < node.children.close
+    end
+    for _, note in commented_nodes(text) do
+        if is_spawn(note.node.name) then
+            local nested = false
+            for _, node in top do if inside(note.start, node) then nested = true end end
+            if not nested then table.insert(items, spawn_of(note.node, note)) end
+        end
+    end
     for _, node in top do
+        if is_spawn(node.name) then
+            table.insert(items, spawn_of(node, if node.dropped then { start = node.start, ["end"] = node["end"] } else nil))
+            continue
+        end
         if node.dropped then continue end
         if node.name == "include" and #node.args > 0 then
             table.insert(items, {
@@ -310,7 +419,11 @@ function M.scan(text: string): { items: { any } }
         elseif node.name == "output" and #node.args > 0 and node.children then
             table.insert(items, output_of(node))
         elseif node.name == "window-rule" and node.children then
-            table.insert(items, rule_of(node))
+            table.insert(items, rule_details(rule_of(node)))
+        elseif node.name == "workspace" and #node.args > 0 then
+            table.insert(items, workspace_of(node))
+        elseif (node.name == "layout" or node.name == "input") and node.children then
+            table.insert(items, { kind = "section", name = node.name, start = node.start, ["end"] = node["end"], children = node.children.nodes })
         elseif node.name == "binds" and node.children then
             for _, bind in node.children.nodes do
                 if not bind.dropped then
@@ -337,6 +450,9 @@ function M.scan(text: string): { items: { any } }
             end
         end
     end
+    -- The commented lines were gathered first; the file's order is the
+    -- position of each thing in it.
+    table.sort(items, function(a, b) return a.start < b.start end)
     return { items = items }
 end
 
