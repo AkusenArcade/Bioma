@@ -106,6 +106,8 @@ g.effect(function()
         -- The quick actions' icons, once their capsules have reached the
         -- circle (ActionsCell: in when the spread is done).
         ring_content = { duration = s.content_fade, delay = s.open },
+        -- An organism's content, once its panel has grown in place.
+        organism_content = { duration = s.content_fade, delay = s.open },
         -- The alarms (Vital.qml), the one thing that repeats at a fixed rate:
         -- an alarm has no value to encode beyond the fact that it is one.
         -- Never scaled, never instant.

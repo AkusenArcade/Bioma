@@ -111,7 +111,46 @@ if config.get("wallpaper.runtime", "quickshell") == "genoma" then
         wallpapers += 1
     end
 end
-local blocks = #surfaces - wallpapers
+-- The organisms marked for this runtime, on the Bottom layer: above the
+-- wallpaper, under every window (structure/organisms.luau).
+local organisms = require("structure/organisms")
+local organism_surfaces = 0
+if organisms.any() then
+    table.insert(surfaces, g.surface {
+        full = true,
+        anchor = { "top", "bottom", "left", "right" },
+        outputs = "all",
+        reserve = false,
+        above_zones = true,
+        layer = "bottom",
+        namespace = "bioma-organisms",
+        function(output: string, size: any)
+            return organisms.surface(output, size or { width = 1920, height = 1080 })
+        end,
+    })
+    -- And above the windows while they are placed (structure/arranging.luau).
+    table.insert(surfaces, g.surface {
+        full = true,
+        anchor = { "top", "bottom", "left", "right" },
+        outputs = "all",
+        reserve = false,
+        above_zones = true,
+        layer = "top",
+        namespace = "bioma-organisms",
+        function(output: string, size: any)
+            return organisms.arrange_surface(output, size or { width = 1920, height = 1080 })
+        end,
+    })
+    organism_surfaces = 2
+end
+g.ipc("organisms", {
+    arrange = function(): string
+        local arranging = require("structure/arranging")
+        arranging.toggle()
+        return if g.untracked(arranging.active) then "arranging" else "done"
+    end,
+})
+local blocks = #surfaces - wallpapers - organism_surfaces
 
 if blocks > 0 then
     -- Where a cell with no place of its own appears when it is asked for:

@@ -655,7 +655,7 @@ category kept across a reload.
 | Floating tissues, and the host float for invoked cells | §4 | |
 | OSD (volume, brightness, keyboard layout) | §11, an open question then, adopted since | |
 | Selection surface (Bioma's own region picker) | §9.6 | checked 2026-10-29 with the utility (`structure/selection.luau`) |
-| Organisms, and their arrange mode | *beyond the PRD* | |
+| Organisms, and their arrange mode | *beyond the PRD* | in progress 2026-11-02: the surface, the frame and arranging checked with the clock (`structure/organisms.luau`, `structure/arranging.luau`) |
 | Lock screen (`lock.qml`, its guard, hyprlock as the fallback) | *beyond the PRD* | |
 | Greeter (`greeter.qml`, agreety as the fallback) | *beyond the PRD* | |
 
@@ -679,8 +679,33 @@ Quickshell's by eye; letting the hidden picture go in performance mode
 
 ### Organisms
 
-adipose, agenda, calendar, clock, cytoplasm, lava, media, note, nucleus,
-osmosis, photoperiod, rings, sediment, vacuole, vitals, weather.
+An organism marked `"runtime": "genoma"` is drawn by Bioma on Genoma and
+kept in Quickshell's list but shown nowhere there (OrganismSurface.qml),
+so the places arranging writes back still count it; the others stay
+Quickshell's. Moved over one at a time, each from its file at 2cafc17 as
+`organisms/<kind>.luau`.
+
+The frame, 2026-11-02 (from OrganismSurface.qml, Organism.qml,
+Organisms.qml and Arranging.qml at 2cafc17): one surface per monitor on
+the Bottom layer, the free area to the line the windows begin on, the
+grid of modules and its divisions, the template per kind, an organism
+growing from its own centre and leaving into it content first; and the
+arrange mode on a second surface above the windows, the windows dimmed,
+the free area dashed, the grid drawn, each organism lifted with its ring
+and plate and carried, its landing shown, dropped on the nearest point
+of this screen or another, written once on Done or Escape;
+`genoma ipc organisms arrange`. Checked with the clock on HDMI-A-1
+against the scratch configuration: drawn, lifted, dragged, written as
+col 1.5 row 2.
+
+| Organism | State |
+|---|---|
+| clock | checked 2026-11-02; its figures take the gradient's top, as Genoma fills text with one colour |
+| adipose, agenda, calendar, cytoplasm, lava, media, note, nucleus, osmosis, photoperiod, rings, sediment, vacuole, vitals, weather | to come |
+
+Not yet: the Settings page's ADD, remove and ARRANGE for a Genoma
+organism (they ask Quickshell); a taken-away organism leaving before the
+list is written.
 
 ### Shaders, to WGSL
 

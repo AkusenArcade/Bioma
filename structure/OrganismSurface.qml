@@ -303,7 +303,10 @@ PanelWindow {
             surface: root
             place: root.keys.indexOf(key)
             entry: root.all[place] ?? ({})
-            here: Strips.belongs(entry, root.screenItem)
+            // One marked `"runtime": "genoma"` is drawn by Bioma on Genoma
+            // (genoma/PORT.md): kept in the list, so the places written
+            // back by arranging still count it, and shown nowhere here.
+            here: entry.runtime !== "genoma" && Strips.belongs(entry, root.screenItem)
             baseMetrics: root.metrics
             arranging: root.arranging
 
