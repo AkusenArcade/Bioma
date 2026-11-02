@@ -17,10 +17,8 @@
 -- categories hang to its left, a stagger apart, as the vitals' pods hang
 -- from theirs; the cell's thread always lands on the page.
 --
--- Ported so far: the frame and the Sounds page. The others say "Not built
--- yet", as Quickshell's did for a category whose page was still to come.
--- Not yet: the setup's steps (docs/design/SETUP.md), keyboard travel down
--- the column.
+-- Every category has its page. Not yet: the setup's steps
+-- (docs/design/SETUP.md), keyboard travel down the column.
 local g = require("@genoma")
 local colour = require("core/colour")
 local metrics_mod = require("core/metrics")
@@ -56,6 +54,7 @@ local PAGES = {
     performance = "cells/settings_performance",
     session = "cells/settings_session",
     sounds = "cells/settings_sounds",
+    structure = "cells/settings_structure",
 }
 
 -- Which category is being looked at, kept across a close and on every
@@ -177,6 +176,7 @@ return {
                                 width = function() return inner_width() - 8 * f() end,
                                 height = inner_height,
                                 keyed = function(handler: any) page_keys[key] = handler end,
+                                output = cell.output,
                             }
                         end,
                     },

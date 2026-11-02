@@ -29,9 +29,13 @@ end
 
 -- Objects merge key by key; arrays and scalars are replaced wholesale. An
 -- override that declares a tissue list means that list, not an append.
--- An array parsed from JSON carries the array metatable; an object does not.
+-- A list parsed from JSON is a plain table (g.parse_json leaves it
+-- unmarked, so table.clone takes it), so an object is a table with a key
+-- that is not a position. An empty table is taken as a list: an override
+-- that empties a list (`"floating": []`) empties it.
 local function is_object(v: any): boolean
-    return type(v) == "table" and getmetatable(v) == nil
+    if type(v) ~= "table" or getmetatable(v) ~= nil then return false end
+    return next(v) ~= nil and #v == 0
 end
 
 function M.merge(base: any, override: any): any
@@ -105,8 +109,8 @@ end
 -- A deep copy of a configured list (the membranes, the floating blocks),
 -- to change and write back whole: a list is one value to the merge. The
 -- lists inside it stay lists even when empty (a tissue with no cells is
--- `[]`, never `{}`).
-local LISTS = { tissues = true, cells = true, favourites = true }
+-- `[]`, never `{}`), and so do a preset's.
+local LISTS = { tissues = true, cells = true, favourites = true, membranes = true, floating = true, organisms = true }
 local function copy(value: any, list: boolean): any
     if type(value) ~= "table" then return value end
     local out = if list then g.array({}) else {}

@@ -207,8 +207,10 @@ end
 -- A membrane or floating list with old names replaced and retired cells
 -- dropped, in place.
 function M.renamed(list: { any }?): { any }
+    local g = require("@genoma")
     local function walk(cells: { any }?): { any }
-        local kept = {}
+        -- A list, empty or not: a tissue with no cells is written `[]`.
+        local kept = g.array({})
         for _, entry in cells or {} do
             if type(entry) == "table" and entry.type then
                 entry.type = M.canonical(entry.type)

@@ -182,7 +182,7 @@ host, driven only by `scripts/genoma ipc`:
 | privacy | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | timer | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | notifications | §9.10 | 4, last | 11bb81e | checked 2026-10-30 on a private session bus, awaiting Akusen and the cost |
-| settings (with setup, §9.14) | §9.12 | 5 | 11bb81e | in progress 2026-10-30: the frame and Sounds checked; ten pages and the setup to come |
+| settings (with setup, §9.14) | §9.12 | 5 | 11bb81e | in progress: the frame and the eleven pages checked 2026-11-02; the setup to come |
 | launcher | §9.13 | 6 | | |
 
 window_title, checked 2026-10-29 (`genoma/cells/window_title.luau`,
@@ -591,9 +591,37 @@ capsule had grown (glyph and words now enter with their own capsule,
 of the volume fell behind, since every step rewrote the whole override
 (the value is the page's own while the hand moves and is written once it
 stops); and the thread to the page jumped to a new choice whole (drawn
-out again from its origin, on `grow`). The other ten categories say "Not
-built yet". Not yet: the setup's steps in the
-column, keyboard travel down it, the chosen category kept across a reload.
+out again from its origin, on `grow`).
+
+The other ten pages followed on 2026-11-02, each from its file in
+`cells/settings/` at 11bb81e (Structure at 2cafc17), built from one
+shared kit (`components/page.luau`: wells, lines, offers, the remove that
+asks, chips that wrap, keycaps, fields, sliders written at most once a
+debounce): Session, Performance, Cells, Monitors, Organisms, Appearance
+(with the user's palettes, `services/palettes.luau`), Keybinds, Actions,
+Niri and Structure (the six slots and the nine floating places, shares
+that add up to 100, chips reordered by dragging, move and copy, the
+presets put back, saved, forgotten and started from nothing,
+`core/presets.luau`). What writes niri's config or arranges the desktop
+goes through Quickshell, which acts on it while the two run side by side:
+new IpcHandlers in `shell.qml` (`monitors`, `organisms`, `keybinds`,
+`niri`, `looks.blur`). Structure's interactions were pressed on HDMI-A-1
+against a scratch configuration (choose, reorder, light, add and remove a
+floating tissue, a cell added, the width slider, SAVE AS, a shipped preset
+put back, a move); the other pages were checked by eye, their presses are
+Akusen's to make.
+
+Found on the way: `core/config.luau` told a list from an object by a
+metatable `g.parse_json` does not set, so every list of the override was
+merged into the default's position by position instead of replacing it:
+the membranes drawn and written carried the default's cells and fields.
+A list is now a table with no key that is not a position. And Genoma
+panicked when the pointer still named a node a list had just rebuilt
+(`Scene::parent` on a stale key); it answers none now.
+
+Not yet: the setup's steps (SETUP raises `settings_place.setup` for
+them), keyboard travel down the column and through a page, the chosen
+category kept across a reload.
 
 ### Surfaces that are not cells
 
