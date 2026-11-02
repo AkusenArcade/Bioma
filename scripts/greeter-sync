@@ -80,7 +80,8 @@ for path in reversed(sys.argv[1:]):
 print(value)
 PY
 )"
-if [ "$runtime" = genoma ]; then
+# The package leaves genoma/ out until it ships, so there is nothing to copy.
+if [ "$runtime" = genoma ] && [ -d "$here/genoma" ]; then
     mkdir -p "$next/bin"
     cp -r "$here/genoma" "$next/shell/"
     bin="${GENOMA_BIN:-$(command -v genoma || true)}"
