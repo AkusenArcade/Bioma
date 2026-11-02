@@ -7,8 +7,6 @@
 -- open and done boxes, quotes, code, rules. As much as the panel holds,
 -- and how many lines are left when it does not. It follows the file as it
 -- is edited. Absent when the file cannot be read.
---
--- Not yet: the fade at the foot of a page that runs over.
 local g = require("@genoma")
 local colour = require("core/colour")
 local theme = require("core/theme")
@@ -262,21 +260,20 @@ return {
             return lead + g.text_height { text = b.text, font = typography.expressive(), size = size(), width = o.width() - text_x(b),
                 weight = if b.kind == "heading" then 700 else nil, italic = b.kind == "quote", runs = runs_of(b) }
         end
+        -- Longer than the panel, the text runs to the foot and fades out
+        -- over the last 36: nothing scrolls, there is no hand to scroll it.
+        -- A block that reaches below the foot counts as not shown.
         local fitted = g.computed(function(): any
             local list = shown.value.blocks
             local room = page_height()
-            local fits, used, hidden = {}, 0, shown.value.unread
+            local fits, y, hidden = {}, 0, shown.value.unread
             for i, b in list do
                 local h = height_of(b, i == 1)
-                local next = used + (if #fits > 0 then spacing() else 0) + h
-                if next <= room and hidden == shown.value.unread then
-                    table.insert(fits, { i = i, b = b, y = used + (if #fits > 0 then spacing() else 0), h = h })
-                    used = next
-                else
-                    hidden += b.lines or 1
-                end
+                if y < room then table.insert(fits, { i = i, b = b, y = y, h = h }) end
+                if y + h > room then hidden += b.lines or 1 end
+                y += h + spacing()
             end
-            return { shown = fits, hidden = hidden }
+            return { shown = fits, hidden = hidden, over = y - spacing() > room }
         end)
 
         local function block(item: () -> any): any
@@ -391,11 +388,17 @@ return {
                             text = "Nothing written yet.", color = theme.text_faint, font = typography.expressive,
                             size = size, italic = true,
                         },
-                        g.each {
+                        g.box {
                             overlay = true, attach = "corner",
-                            items = function() return fitted.value.shown end,
-                            key = function(it: any) return tostring(it.i) end,
-                            row = block,
+                            width = o.width, height = page_height,
+                            clip = true,
+                            fade_bottom = function() return if fitted.value.over then 36 * f() else 0 end,
+                            g.each {
+                                overlay = true, attach = "corner",
+                                items = function() return fitted.value.shown end,
+                                key = function(it: any) return tostring(it.i) end,
+                                row = block,
+                            },
                         },
                         g.box {
                             overlay = true, attach = "corner",
