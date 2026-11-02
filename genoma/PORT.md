@@ -704,7 +704,8 @@ col 1.5 row 2.
 | calendar | checked 2026-11-02 |
 | vitals | checked 2026-11-02; its figures in their state's colour, flat |
 | weather | checked 2026-11-02 beside Quickshell's (`services/weather.luau`, from Weather.qml at 2cafc17) |
-| adipose, agenda, cytoplasm, lava, media, note, nucleus, osmosis, photoperiod, rings, sediment, vacuole | to come |
+| agenda | checked 2026-11-02 beside Quickshell's |
+| adipose, cytoplasm, lava, media, note, nucleus, osmosis, photoperiod, rings, sediment, vacuole | to come |
 
 Not yet: the Settings page's ADD, remove and ARRANGE for a Genoma
 organism (they ask Quickshell); a taken-away organism leaving before the
