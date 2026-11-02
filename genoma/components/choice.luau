@@ -11,7 +11,7 @@ local metrics_mod = require("core/metrics")
 local M = {}
 
 -- `t`: label, kind ("plain" | "primary" | "alert"), metrics(), on_click(),
--- marked() (the keyboard's mark is on it).
+-- marked() (the keyboard's mark is on it), dimmed().
 function M.new(t: { [string]: any }): any
     -- The kind may change while it is shown: DELETE turning DELETE? asks in
     -- the alert's colour.
@@ -40,7 +40,12 @@ function M.new(t: { [string]: any }): any
         fill_bottom = function() return if filled() then theme.gradient_bottom(base()) else "#00000000" end,
         rim_top = function() return if filled() then "#00000000" else theme.line() end,
         rim_bottom = function() return if filled() then "#00000000" else theme.line() end,
-        on_click = t.on_click,
+        -- Dimmed: shown, so what it would do is seen, but deaf.
+        opacity = function() return if t.dimmed and t.dimmed() then 0.45 else 1 end,
+        on_click = function()
+            if t.dimmed and g.untracked(t.dimmed) then return end
+            if t.on_click then t.on_click() end
+        end,
         g.text {
             text = t.label,
             font = typography.technical,
