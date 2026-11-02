@@ -8,9 +8,7 @@
 -- and how many lines are left when it does not. It follows the file as it
 -- is edited. Absent when the file cannot be read.
 --
--- Not yet: bold, italic, code and struck words inside a line (Genoma sets a
--- text in one face, so they read as plain); the fade at the foot of a page
--- that runs over.
+-- Not yet: the fade at the foot of a page that runs over.
 local g = require("@genoma")
 local colour = require("core/colour")
 local theme = require("core/theme")
@@ -19,18 +17,57 @@ local typography = require("core/typography")
 
 local READ_AT_MOST = 400
 
--- The marks of a line, taken out: links to their words, the rest to their
--- text.
-local function plain(text: string): string
+-- A line's marks taken out and kept as stretches of its text: links to
+-- their words, then code, bold, italic and struck words, one inside another
+-- as the line nests them. Returns the text and its stretches, characters
+-- counted from 1 ({ from, to, bold, italic, code, strike }).
+local MARKS = {
+    { open = "`", style = "code", raw = true },
+    { open = "**", style = "bold" },
+    { open = "__", style = "bold", word = true },
+    { open = "~~", style = "strike" },
+    { open = "*", style = "italic" },
+    { open = "_", style = "italic", word = true },
+}
+local function styled(text: string): (string, { any })
     text = string.gsub(text, "%[%[([^%]|]+)|([^%]]+)%]%]", "%2")
     text = string.gsub(text, "%[%[([^%]]+)%]%]", "%1")
     text = string.gsub(text, "!?%[([^%]]*)%]%([^)]*%)", "%1")
-    text = string.gsub(text, "`([^`]+)`", "%1")
-    text = string.gsub(text, "%*%*([^*]+)%*%*", "%1")
-    text = string.gsub(text, "__([^_]+)__", "%1")
-    text = string.gsub(text, "%*([^*%s][^*]*)%*", "%1")
-    text = string.gsub(text, "~~([^~]+)~~", "%1")
-    return text
+    local out, runs, count = {}, {}, 0
+    local function emit(piece: string)
+        table.insert(out, piece)
+        count += utf8.len(piece) or #piece
+    end
+    local function scan(line: string)
+        local i, plain = 1, 1
+        while i <= #line do
+            local found = false
+            for _, mark in MARKS do
+                local open = mark.open
+                if string.sub(line, i, i + #open - 1) ~= open then continue end
+                local first = string.sub(line, i + #open, i + #open)
+                if first == "" or string.match(first, "%s") or (not mark.raw and first == string.sub(open, 1, 1)) then continue end
+                if mark.word and i > 1 and string.match(string.sub(line, i - 1, i - 1), "[%w]") then continue end
+                local close = string.find(line, open, i + #open + 1, true)
+                if not close then continue end
+                if plain < i then emit(string.sub(line, plain, i - 1)) end
+                local inner = string.sub(line, i + #open, close - 1)
+                local run = { from = count + 1 }
+                run[mark.style] = true
+                table.insert(runs, run)
+                if mark.raw then emit(inner) else scan(inner) end
+                run.to = count
+                i = close + #open
+                plain = i
+                found = true
+                break
+            end
+            if not found then i += 1 end
+        end
+        if plain <= #line then emit(string.sub(line, plain)) end
+    end
+    scan(text)
+    return table.concat(out), runs
 end
 
 local function parse(source: string): any
@@ -49,7 +86,10 @@ local function parse(source: string): any
     end
     local paragraph = {}
     local function flush()
-        if #paragraph > 0 then table.insert(blocks, { kind = "text", text = plain(table.concat(paragraph, " ")), lines = #paragraph }) end
+        if #paragraph > 0 then
+            local text, runs = styled(table.concat(paragraph, " "))
+            table.insert(blocks, { kind = "text", text = text, runs = runs, lines = #paragraph })
+        end
         paragraph = {}
     end
     while i <= n do
@@ -69,10 +109,11 @@ local function parse(source: string): any
         elseif string.match(trimmed, "^#+%s") then
             flush()
             local hashes, rest = string.match(trimmed, "^(#+)%s+(.*)$")
+            local text, runs = styled(rest)
             if #hashes == 1 and title == "" and #blocks == 0 then
-                title = plain(rest)
+                title = text
             else
-                table.insert(blocks, { kind = "heading", text = plain(rest), depth = #hashes, lines = 1 })
+                table.insert(blocks, { kind = "heading", text = text, runs = runs, depth = #hashes, lines = 1 })
             end
         elseif string.match(trimmed, "^%-%-%-+$") or string.match(trimmed, "^%*%*%*+$") or string.match(trimmed, "^___+$") then
             flush()
@@ -88,10 +129,12 @@ local function parse(source: string): any
                 mark = if box == " " then "open" else "done"
                 body = rest
             end
-            table.insert(blocks, { kind = "item", text = plain(body), mark = mark, depth = math.min(#lead // 2, 4), lines = 1 })
+            local text, runs = styled(body)
+            table.insert(blocks, { kind = "item", text = text, runs = runs, mark = mark, depth = math.min(#lead // 2, 4), lines = 1 })
         elseif string.sub(trimmed, 1, 1) == ">" then
             flush()
-            table.insert(blocks, { kind = "quote", text = plain((string.gsub(trimmed, "^>%s?", ""))), lines = 1 })
+            local text, runs = styled((string.gsub(trimmed, "^>%s?", "")))
+            table.insert(blocks, { kind = "quote", text = text, runs = runs, lines = 1 })
         else
             table.insert(paragraph, trimmed)
         end
@@ -185,6 +228,23 @@ return {
         local function size(): number return math.round(14 * f()) end
         local function spacing(): number return 6 * f() end
 
+        -- A block's stretches as the text node takes them.
+        local function runs_of(b: any): { any }
+            local out = {}
+            for _, r in b.runs or {} do
+                if r.to < r.from then continue end
+                table.insert(out, {
+                    from = r.from, to = r.to,
+                    weight = if r.bold then 700 else nil,
+                    italic = if r.italic then true else nil,
+                    font = if r.code then typography.technical() else nil,
+                    size = if r.code then m().font_meta else nil,
+                    strike = r.strike,
+                })
+            end
+            return out
+        end
+
         -- What the page holds, a whole block or none, and what is left over.
         local function indent(b: any): number return (b.depth or 0) * 14 * f() end
         local function text_x(b: any): number
@@ -199,7 +259,8 @@ return {
                 local lines = #string.split(b.text, "\n")
                 return lead + lines * m().font_meta * 1.3 + 16 * f()
             end
-            return lead + g.text_height { text = b.text, font = typography.expressive(), size = size(), width = o.width() - text_x(b) }
+            return lead + g.text_height { text = b.text, font = typography.expressive(), size = size(), width = o.width() - text_x(b),
+                weight = if b.kind == "heading" then 700 else nil, italic = b.kind == "quote", runs = runs_of(b) }
         end
         local fitted = g.computed(function(): any
             local list = shown.value.blocks
@@ -281,6 +342,7 @@ return {
                     offset_x = function() return text_x(b()) end,
                     offset_y = lead,
                     text = function() return b().text or "" end,
+                    runs = function() return runs_of(b()) end,
                     color = function() return if muted() then theme.text_muted() else theme.text() end,
                     font = typography.expressive, size = size,
                     weight = function() return if kind() == "heading" then 700 else 400 end,
