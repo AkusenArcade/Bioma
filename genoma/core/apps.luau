@@ -51,6 +51,18 @@ end
 local function search(name: string): any
     local wanted = normalise(name)
     if #wanted < 2 then return nil end
+    -- A Steam game's window is `steam_app_<id>`, and Steam writes the game a
+    -- desktop file that starts `steam://rungameid/<id>`. Without this the
+    -- search below found "steam" inside the name and drew Steam's logo on
+    -- the game (Akusen, 2026-11-02).
+    local game = string.match(wanted, "^steam_app_(%d+)$")
+    if game then
+        local url = "steam://rungameid/" .. game
+        for _, e in entries do
+            if table.find(M.command_of(e), url) then return e end
+        end
+        return nil
+    end
     local direct = heuristic(name) or heuristic(wanted)
     if direct then return direct end
     -- A cut executable is a prefix of the real thing, so the match goes both

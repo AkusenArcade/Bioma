@@ -3,8 +3,9 @@
 -- domain: Genoma registers as a host with the watcher Bioma on Quickshell
 -- serves, so the two read the same items side by side.
 --
--- Not yet: an icon an application sends only as pixels (Genoma's images
--- from pixels are still to come); such an item shows the neutral glyph.
+-- An icon is looked up by its name in the desktop's theme first (Akusen's
+-- choice, 2026-11-02: Quickshell reads the item's own path and pixels
+-- first), and an item that sends only pixels is drawn from them.
 local g = require("@genoma")
 local sni = require("@genoma/tray")
 
@@ -34,13 +35,14 @@ function M.name_of(item: any): string
     return if (item.title or "") ~= "" then item.title else tostring(item.id or "")
 end
 
--- The file to draw: the name the item gives, looked up in its own theme
--- path first, then the desktop's; "" when only pixels were sent.
+-- The file to draw: the name the item gives, looked up in the desktop's
+-- theme, then in the item's own path; else the pixels it sent, written out
+-- as a picture; "" when it sent neither.
 function M.icon_for(item: any): string
     if not item then return "" end
     local name = if item.status == "NeedsAttention" and (item.attention_icon_name or "") ~= ""
         then item.attention_icon_name else item.icon_name or ""
-    if name == "" then return "" end
+    if name == "" then return item.pixmap or "" end
     if string.sub(name, 1, 1) == "/" then return name end
     local found = g.icon_path(name)
     if found then return found end

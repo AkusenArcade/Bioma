@@ -76,6 +76,16 @@ Singleton {
         if (wanted.length < 2)
             return null;
 
+        // A Steam game's window is `steam_app_<id>`, and Steam writes the
+        // game a desktop file that starts `steam://rungameid/<id>`. Without
+        // this the search below found "steam" inside the name and drew
+        // Steam's logo, or nothing, on the game (Akusen, 2026-11-02).
+        const game = wanted.match(/^steam_app_(\d+)$/);
+        if (game) {
+            const url = "steam://rungameid/" + game[1];
+            return root.entries.find(entry => (entry.command || []).includes(url)) ?? null;
+        }
+
         let direct = DesktopEntries.heuristicLookup(name) || DesktopEntries.heuristicLookup(wanted);
         if (direct)
             return direct;
