@@ -284,6 +284,49 @@ function M.new(t: { [string]: any }): any
         }, handle
     end
 
+    -- Chips that go on to the next line when the row is full (Qt's Flow):
+    -- `items()`, `key(item)`, `width_of(item)` measured as drawn, and
+    -- `chip(item)` building one from a getter. `gap` between chips and
+    -- rows.
+    function p.flow(a: { [string]: any }): any
+        local function gap(): number return if a.gap then a.gap() else 6 * f() end
+        local rows = g.computed(function(): { any }
+            local out, line, used = {}, {}, 0
+            local room = p.inner()
+            for _, item in a.items() do
+                local w = a.width_of(item)
+                if #line > 0 and used + gap() + w > room then
+                    table.insert(out, line)
+                    line, used = {}, 0
+                end
+                used += (if #line > 0 then gap() else 0) + w
+                table.insert(line, item)
+            end
+            if #line > 0 then table.insert(out, line) end
+            return out
+        end)
+        return g.each {
+            direction = "column",
+            align = "start",
+            gap = gap,
+            items = function()
+                local out = {}
+                for i, line in rows.value do table.insert(out, { index = i, line = line }) end
+                return out
+            end,
+            key = function(r: any) return tostring(r.index) end,
+            row = function(r: () -> any)
+                return g.each {
+                    direction = "row",
+                    gap = gap,
+                    items = function() return r().line end,
+                    key = a.key,
+                    row = a.chip,
+                }
+            end,
+        }
+    end
+
     -- The page itself: its wells in a column, ten apart.
     function p.column(wells: { any }): any
         local out: { [any]: any } = {

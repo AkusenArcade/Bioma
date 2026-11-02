@@ -500,6 +500,42 @@ ShellRoot {
         }
     }
 
+    // The organisms, drawn and arranged by this shell while the two run side
+    // by side: Bioma on Genoma's Organisms page writes their options into
+    // the configuration itself and asks here for what this shell's
+    // arranging mode does (genoma/PORT.md, "Who acts on the desktop").
+    IpcHandler {
+        target: "organisms"
+
+        function arrange(): string {
+            Arranging.start();
+            return "arranging";
+        }
+
+        function add(type: string, monitor: string, quietly: bool): string {
+            Arranging.add(type, monitor, quietly);
+            return type;
+        }
+
+        function remove(index: int): string {
+            Arranging.remove(index);
+            return "removing";
+        }
+
+        function chooseFile(index: int): string {
+            Arranging.chooseFile(index);
+            return "choosing";
+        }
+
+        function setFile(index: int, path: string): string {
+            return Arranging.setFile(index, path) ?? "refused";
+        }
+
+        function weatherProblem(): string {
+            return Weather.problem;
+        }
+    }
+
     // The clipboard's history, kept by this shell while the two run side by
     // side: Bioma on Genoma reads history.json and asks here to drop what
     // it drops, so the list this shell holds never brings a dropped entry
