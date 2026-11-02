@@ -181,6 +181,10 @@ return {
         -- was asked: the pointer brings the body and the actions, a press
         -- brings the history, and only the press claims the attention.
         local history = g.signal(false)
+        -- Looking at the history is reading what is in it.
+        g.watch(function() return history.value end, function(on: boolean)
+            if on then notifications.read_all() end
+        end)
         local function settle()
             local want = history.value or (cell.touched() and shout() ~= nil)
             if g.untracked(function() return cell.open.value end) ~= want then cell.open.value = want end

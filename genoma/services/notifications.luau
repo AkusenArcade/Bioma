@@ -13,8 +13,7 @@
 -- that is not a failure state to draw, it is the shell not being the shell
 -- yet. Notifications move last (genoma/PORT.md).
 --
--- Not yet: Bioma's notification sound (no Genoma cell plays sounds); the
--- unread list the vacuole organism holds (organisms are not ported); an
+-- Not yet: Bioma's notification sound (no Genoma cell plays sounds); an
 -- image a sender gives only as pixels, which the scene cannot draw yet:
 -- such a notification takes its icon, or the bell.
 local g = require("@genoma")
@@ -182,6 +181,36 @@ end
 g.watch(function() return holding.value end, function() pace() end)
 g.watch(ordinary_visible, function() pace() end)
 
+-- ---- Unread ------------------------------------------------------------------------
+--
+-- What the vacuole organism holds. Every notification arrives unread,
+-- whether it was seen going past or not (Akusen, 2026-10-07), and stays so
+-- until it is read: closed by the user or by its sender, or taken in all
+-- together by opening the history. Expiring does not read it.
+local expired: { [number]: boolean } = {}
+local unread = g.signal({} :: { any })
+function M.unread(): { any } return unread.value end
+local function unread_(n: any)
+    local now = g.untracked(function() return unread.value end)
+    for _, e in now do if e.id == n.id then return end end
+    local next = table.clone(now)
+    table.insert(next, { id = n.id, app_name = n.app_name or "", critical = M.is_critical(n), at = os.time() })
+    local keep = g.untracked(function() return config.get("notifications.history", 100) end)
+    while #next > keep do table.remove(next, 1) end
+    unread.value = next
+end
+function M.read(id: number)
+    local now = g.untracked(function() return unread.value end)
+    local next, found = {}, false
+    for _, e in now do
+        if e.id == id then found = true else table.insert(next, e) end
+    end
+    if found then unread.value = next end
+end
+function M.read_all()
+    if #g.untracked(function() return unread.value end) > 0 then unread.value = {} end
+end
+
 local function without(list: { number }, id: number?): { number }
     local out = {}
     for _, n in list do
@@ -209,7 +238,10 @@ end
 expire = function()
     local head = g.untracked(function() return queue.value[1] end)
     advance(head)
-    if head and find(head) then server:close(head, "expired") end
+    if head and find(head) then
+        expired[head] = true
+        server:close(head, "expired")
+    end
 end
 
 -- The one named, or what a cell showing everything shows. A count is
@@ -263,6 +295,7 @@ function M.forget()
         queue.value = {}
         collapsed.value = 0
         history.value = {}
+        unread.value = {}
     end)
     begin()
     for _, n in live do
@@ -307,6 +340,7 @@ end
 local function receive(n: any)
     if not says(n) then return end
     remember(n)
+    unread_(n)
     -- What went while nobody was looking, gone before this one queues.
     advance(nil)
     if M.is_critical(n) then
@@ -338,6 +372,9 @@ g.watch(function() return by_id.value end, function(now: { [number]: any })
         if not now[id] then
             seen[id] = nil
             gone = true
+            -- Expiring is not reading: what went past while nobody looked
+            -- is still unread. Closed by the user or by its sender, it is.
+            if expired[id] then expired[id] = nil else M.read(id) end
         end
     end
     if gone then advance(nil) end
