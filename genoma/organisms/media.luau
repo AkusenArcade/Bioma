@@ -6,12 +6,10 @@
 -- the band the media cell draws, the title, the artist, the album, and how
 -- far along the track is. Absent with nothing loaded; with no cover, the
 -- domain's glyph. The band runs only while something sounds.
---
--- Not yet: the cover crossfading from one track's to the next; the fade
--- over it in four stops (Genoma's fill has two).
 local g = require("@genoma")
 local colour = require("core/colour")
 local theme = require("core/theme")
+local timing = require("core/timing")
 local typography = require("core/typography")
 local media = require("services/media")
 local sinestesia = require("services/sinestesia")
@@ -37,6 +35,55 @@ return {
         local function inset(): number return 20 * f() end
         local function inner(): number return o.width() - inset() * 2 end
 
+        -- A new track's cover comes up over the old one, which goes once it
+        -- is covered: a cross rather than a blink. One generation per cover,
+        -- newest last.
+        local covers = g.signal({} :: { any })
+        local serial = 0
+        g.watch(function() return if has_art() then media.art_path() else "" end, function(path: string)
+            if path == "" then return end
+            local now = g.untracked(function() return covers.value end)
+            if #now > 0 and now[#now].path == path then return end
+            serial += 1
+            local newest = serial
+            local list = table.clone(now)
+            table.insert(list, {
+                key = newest,
+                path = path,
+                shown = g.signal(#now == 0),
+                ready = function()
+                    local current = g.untracked(function() return covers.value end)
+                    local last = current[#current]
+                    if not last or last.key ~= newest then return end
+                    last.shown.value = true
+                    g.after(timing.seconds.content_fade + 0.05, function()
+                        local kept = {}
+                        for _, c in g.untracked(function() return covers.value end) do
+                            if c.key >= newest then table.insert(kept, c) end
+                        end
+                        covers.value = kept
+                    end)
+                end,
+            })
+            covers.value = list
+        end)
+        local function cover(item: () -> any): any
+            return g.image {
+                overlay = true,
+                attach = "corner",
+                width = o.width,
+                height = o.height,
+                radius = function() return m().radius_panel end,
+                fit = "cover",
+                src = function() return item().path end,
+                -- Not quite nothing while it waits: a node not drawn is
+                -- never decoded.
+                opacity = function() return if item().shown.value then 1 else 0.004 end,
+                transition = { opacity = "content_fade" },
+                on_ready = function() g.untracked(item).ready() end,
+            }
+        end
+
         local function expressive(text: () -> string, color: any, size: number, weight: number?, italic: boolean?, shown: (() -> boolean)?): any
             return g.text { present = shown, text = text, color = color, font = typography.expressive,
                 size = function() return math.round(size * f()) end, weight = weight, italic = italic, max_width = inner }
@@ -49,27 +96,31 @@ return {
                 return g.box {
                     width = o.width,
                     height = o.height,
-                    g.image {
+                    g.each {
                         overlay = true,
                         attach = "corner",
                         present = has_art,
                         width = o.width,
                         height = o.height,
-                        radius = function() return m().radius_panel end,
-                        fit = "cover",
-                        src = media.art_path,
+                        items = function() return covers.value end,
+                        key = function(c: any) return tostring(c.key) end,
+                        row = cover,
                     },
                     -- Darker toward the words.
                     g.capsule {
                         overlay = true,
                         attach = "corner",
                         present = has_art,
-                        offset_y = function() return o.height() * 0.36 end,
                         width = o.width,
-                        height = function() return o.height() * 0.64 end,
+                        height = o.height,
                         radius = function() return m().radius_panel end,
-                        fill = function() return colour.alpha(theme.background(), 0) end,
-                        fill_bottom = function() return colour.alpha(theme.background(), 0.92) end,
+                        -- The theme's background, nothing down to 36 % of the
+                        -- height, 0.80 at 60 %, 0.92 at the bottom: the words
+                        -- read on the shell's own colour whatever the picture.
+                        fill_stops = function()
+                            local b = theme.background()
+                            return { { 0.36, colour.alpha(b, 0) }, { 0.6, colour.alpha(b, 0.8) }, { 1, colour.alpha(b, 0.92) } }
+                        end,
                         rim_top = "#00000000",
                         rim_bottom = "#00000000",
                     },

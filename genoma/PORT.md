@@ -710,7 +710,7 @@ col 1.5 row 2.
 | nucleus | checked 2026-11-02, discharging and charging, against a fake UPower on a private system bus (`DBUS_SYSTEM_BUS_ADDRESS`) |
 | vacuole | checked 2026-11-02 on a private bus with five notifications; the notifications service now keeps the unread list |
 | photoperiod | checked 2026-11-02 beside Quickshell's; the Canvas drawn by a shader (`organisms/photoperiod.wgsl`), the paths sampled into columns; `organisms/sky.luau` from sky.js |
-| media | checked 2026-11-02 with `scripts/mpris-dummy.py` on a private bus (its scrim lay under the cover until Genoma drew in tree order, Genoma 291b389); the cover's fade in two stops |
+| media | checked 2026-11-02 with `scripts/mpris-dummy.py` on a private bus (its scrim lay under the cover until Genoma drew in tree order, Genoma 291b389); its scrim in Quickshell's stops (`fill_stops`), a new cover crossing over the old (both Genoma 2026-11-02) |
 | adipose | checked 2026-11-02 (`services/storage.luau` from Storage.qml); the Canvas drawn by a shader (`organisms/adipose.wgsl`) |
 | sediment | checked 2026-11-02 (`services/recent.luau` from Recent.qml); the Canvas drawn by a shader (`organisms/sediment.wgsl`) |
 | rings | checked 2026-11-02 (`services/machine.luau` gained the system's birth); `services/activity.luau` counts as Activity.qml does (idle by `@genoma/idle`, locked by logind's LockedHint) while no Quickshell rings is configured, and only reads what Quickshell counts otherwise, showing today's time then; checked: AWAY after a quiet minute, a minute written while present; the Canvas drawn by a shader (`organisms/rings.wgsl`) |
