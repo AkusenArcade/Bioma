@@ -563,8 +563,26 @@ function M.new(kind: any, ctx: { [string]: any })
         -- The pill's corner, as the tissue rounds it.
         function c.corner(): number return place.radius() end
 
-        local function width(): number return place.width() * emergence() end
-        local function height(): number return c.contracted_height() * emergence() end
+        -- Where it stood when it began to go: a floating tissue's thickness
+        -- is its visible cells', so a cell no longer placed was re-placed
+        -- toward the tissue's top and shrank upward. It shrinks where it
+        -- stood instead.
+        local frozen = g.signal(nil :: { x: number, y: number, width: number, height: number }?)
+        local function px(): number local f = frozen.value return if f then f.x else place.x() end
+        local function py(): number local f = frozen.value return if f then f.y else place.y() end
+        local function pw(): number local f = frozen.value return if f then f.width else place.width() end
+        local function ph(): number local f = frozen.value return if f then f.height else c.contracted_height() end
+        -- The last place it held while placed: the place changes in the same
+        -- turn the cell stops being placed, before anything hears of it.
+        local held_place = { x = 0, y = 0, width = 0, height = 0 }
+        if c.floating then
+            g.effect(function()
+                if not place.placed() then return end
+                held_place = { x = place.x(), y = place.y(), width = place.width(), height = c.contracted_height() }
+            end)
+        end
+        local function width(): number return pw() * emergence() end
+        local function height(): number return ph() * emergence() end
         local function shaping(): string
             local a = arrival.value
             if a == "start" then return "instant" end
@@ -597,6 +615,7 @@ function M.new(kind: any, ctx: { [string]: any })
         g.watch(function() return place.placed() end, function(placed: boolean)
             c.placed.value = placed
             if placed then
+                frozen.value = nil
                 present.value = true
                 staying.value = true
                 been_placed = true
@@ -609,6 +628,7 @@ function M.new(kind: any, ctx: { [string]: any })
                     end)
                 end
             else
+                if arrived and been_placed then frozen.value = held_place end
                 g.after(c.withdrawal(), function()
                     if not g.untracked(place.placed) then
                         staying.value = false
@@ -631,8 +651,8 @@ function M.new(kind: any, ctx: { [string]: any })
             role = if interactive then "button" else "group",
             overlay = true,
             attach = "corner",
-            offset_x = function() return place.x() + (place.width() - width()) / 2 end,
-            offset_y = function() return place.y() + (c.contracted_height() - height()) / 2 end,
+            offset_x = function() return px() + (pw() - width()) / 2 end,
+            offset_y = function() return py() + (ph() - height()) / 2 end,
             width = width,
             height = height,
             radius = function() return if spec.radius then spec.radius() else place.radius() end,
