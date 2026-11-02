@@ -9,8 +9,6 @@
 -- until it is read (Akusen, 2026-10-07); read, its drop is taken back in.
 -- Nothing moves but that. With nothing unread there is no vacuole. A body
 -- is primary; one holding a critical notification is alert.
---
--- Not yet: the shadow under the names (MultiEffect).
 local g = require("@genoma")
 local colour = require("core/colour")
 local theme = require("core/theme")
@@ -257,7 +255,11 @@ return {
         local function meta(text: () -> string, weight: number, alpha: number): any
             return g.text { text = text, color = function() return colour.alpha(theme.text(), alpha) end,
                 font = typography.technical, size = function() return m().font_meta end, weight = weight,
-                tracking = typography.label_tracking, tabular = true }
+                tracking = typography.label_tracking, tabular = true,
+                -- Over translucent wax of any colour the words need ground of their
+                -- own: a shadow in the theme's background, close and soft, not
+                -- coloured, so not the halo the style guide forbids.
+                shadow = theme.background, shadow_blur = function() return 8 * f() end, shadow_y = 1 }
         end
         local function tag(item: () -> any): any
             local function named(): boolean

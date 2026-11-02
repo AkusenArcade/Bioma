@@ -10,8 +10,6 @@
 -- panel. Motion is processor: lobes circle their cell at a rate proportional
 -- to the application's load, so an idle one is still and a busy one turns.
 -- The grouping of processes into applications is AppLoad's.
---
--- Not yet: the shadow under the names (MultiEffect), which Genoma lacks.
 local g = require("@genoma")
 local colour = require("core/colour")
 local theme = require("core/theme")
@@ -264,7 +262,11 @@ return {
             local function meta(text: () -> string, weight: number, alpha: number): any
                 return g.text { text = text, color = function() return colour.alpha(theme.text(), alpha) end,
                     font = typography.technical, size = function() return m().font_meta end, weight = weight,
-                    tracking = typography.label_tracking, tabular = true }
+                    tracking = typography.label_tracking, tabular = true,
+                    -- Over translucent wax of any colour the words need ground of their
+                    -- own: a shadow in the theme's background, close and soft, not
+                    -- coloured, so not the halo the style guide forbids.
+                    shadow = theme.background, shadow_blur = function() return 8 * f() end, shadow_y = 1 }
             end
             return g.box {
                 overlay = true,

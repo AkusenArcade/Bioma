@@ -706,7 +706,7 @@ col 1.5 row 2.
 | weather | checked 2026-11-02 beside Quickshell's (`services/weather.luau`, from Weather.qml at 2cafc17) |
 | agenda | checked 2026-11-02 beside Quickshell's |
 | lava, osmosis | checked 2026-11-02 beside Quickshell's; their shaders in WGSL, their simulations stepped thirty times a second while anything moves (`components/stepper.luau`), the shader easing between steps |
-| cytoplasm | checked 2026-11-02 (`services/app_load.luau` from AppLoad.qml); no shadow under the names |
+| cytoplasm | checked 2026-11-02 (`services/app_load.luau` from AppLoad.qml); the names' shadow by the text's `shadow` (Genoma 2026-11-02) |
 | nucleus | checked 2026-11-02, discharging and charging, against a fake UPower on a private system bus (`DBUS_SYSTEM_BUS_ADDRESS`) |
 | vacuole | checked 2026-11-02 on a private bus with five notifications; the notifications service now keeps the unread list |
 | photoperiod | checked 2026-11-02 beside Quickshell's; the Canvas drawn by a shader (`organisms/photoperiod.wgsl`), the paths sampled into columns; `organisms/sky.luau` from sky.js |
