@@ -1,8 +1,10 @@
 --!strict
--- The monitors, as niri lays them out (services/Monitors.qml), the part read
--- so far: where each output is and what it runs, and which is primary.
--- Switching outputs on and off, moving them, variable refresh and making one
--- primary come with the settings page that writes them.
+-- The monitors, as niri lays them out (services/Monitors.qml): where each
+-- output is and what it runs, and which is primary. Moving them, switching
+-- them on and off, variable refresh and making one primary are written by
+-- Bioma on Quickshell while the two run side by side (`qs ipc call
+-- monitors …`): Genoma chooses, Quickshell writes and validates niri's
+-- configuration (genoma/PORT.md, "Who acts on the desktop").
 --
 -- Two sources, because neither says everything. niri answers where each
 -- output is (`niri msg --json outputs`, asked again whenever its
@@ -12,6 +14,7 @@
 local g = require("@genoma")
 local niri_config = require("services/niri_config")
 local kdl = require("services/niri_kdl")
+local paths = require("core/paths")
 
 local M = {}
 
@@ -115,6 +118,73 @@ function M.primary(): string
 end
 
 function M.answered(): boolean return answered.value end
+
+-- Whether any window rule asks for variable refresh: without one, an
+-- output set to on-demand never turns it on.
+function M.vrr_rule(): boolean
+    for _, item in niri_config.items() do
+        if item.kind == "rule" and item.vrr then return true end
+    end
+    return false
+end
+
+-- Whether Bioma's own rule for games is the one in place.
+function M.games_rule(): boolean
+    for _, item in niri_config.items() do
+        if item.kind == "rule" and item.vrr and string.sub(item.file, -#"/bioma-vrr.kdl") == "/bioma-vrr.kdl" then
+            return true
+        end
+    end
+    return false
+end
+
+-- ---- Writing, through Quickshell ----------------------------------------------
+
+-- While a write is still being handed over; and the last answer that was a
+-- refusal, said where the page says anything.
+local writing = g.signal(0)
+local said = g.signal("")
+function M.busy(): boolean return writing.value > 0 end
+function M.error(): string return said.value end
+
+local function ask(args: { string }, on_answer: ((string) -> ())?)
+    local command = { "qs", "-p", paths.root .. "/shell.qml", "ipc", "call", "monitors" }
+    for _, a in args do table.insert(command, a) end
+    local lines = {}
+    writing.value += 1
+    said.value = ""
+    g.process {
+        command = command,
+        on_line = function(line: string) table.insert(lines, line) end,
+        on_exit = function()
+            writing.value -= 1
+            if on_answer then on_answer(table.concat(lines, "\n")) end
+            -- niri's refusal comes once Quickshell has validated the file.
+            g.after(1.5, function()
+                g.process {
+                    command = { "qs", "-p", paths.root .. "/shell.qml", "ipc", "call", "monitors", "error" },
+                    on_line = function(line: string) if line ~= "" then said.value = line end end,
+                }
+            end)
+        end,
+    }
+end
+
+-- Positions in logical units, `{ ["DP-1"] = { x = 0, y = 0 }, … }`.
+function M.place(positions: { [string]: { x: number, y: number } })
+    ask({ "place", g.to_json(positions) })
+end
+
+-- Answered false when refused: the last monitor on stays on.
+function M.power(name: string, on: boolean): boolean
+    if not on and g.untracked(M.count) <= 1 then return false end
+    ask({ "power", name, if on then "true" else "false" }, function() M.refresh() end)
+    return true
+end
+
+function M.make_primary(name: string) ask({ "primary", name }) end
+function M.set_vrr(name: string, mode: string) ask({ "vrr", name, mode }) end
+function M.set_games(on: boolean) ask({ "games", if on then "true" else "false" }) end
 
 -- ---- Asking niri --------------------------------------------------------------
 

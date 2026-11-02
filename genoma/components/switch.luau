@@ -9,8 +9,10 @@ local metrics_mod = require("core/metrics")
 
 local M = {}
 
--- `t`: on(), factor(), on_toggle(on), and settling() for a change on its
--- way (a radio powering up): faint and deaf until it has arrived.
+-- `t`: on(), factor(), on_toggle(on), settling() for a change on its way
+-- (a radio powering up): faint and deaf until it has arrived, and dimmed()
+-- for one that cannot be moved now (the last monitor on): fainter, and
+-- deaf, as a dimmed option in a segmented control.
 function M.new(t: { [string]: any }): any
     local function f(): number return t.factor() end
     local function w(): number return 42 * f() end
@@ -33,9 +35,13 @@ function M.new(t: { [string]: any }): any
         end,
         rim_top = function() return if t.on() then "#00000000" else theme.line() end,
         rim_bottom = function() return if t.on() then "#00000000" else theme.line() end,
-        opacity = function() return if t.settling and t.settling() then 0.6 else 1 end,
+        opacity = function()
+            if t.dimmed and t.dimmed() then return 0.45 end
+            return if t.settling and t.settling() then 0.6 else 1
+        end,
         on_click = function()
             if t.settling and g.untracked(t.settling) then return end
+            if t.dimmed and g.untracked(t.dimmed) then return end
             t.on_toggle(not g.untracked(t.on))
         end,
         transition = { fill = "transition", fill_bottom = "transition", rim_top = "transition", rim_bottom = "transition", opacity = "transition" },

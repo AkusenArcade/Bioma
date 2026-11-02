@@ -268,6 +268,31 @@ local function output_of(node: any): any
     }
 end
 
+-- A window rule, the part read so far: what it matches, and whether it
+-- asks for variable refresh (what an output set to on-demand waits for).
+local function rule_of(node: any): any
+    local children = {}
+    for _, child in node.children.nodes do
+        if not child.dropped then table.insert(children, child) end
+    end
+    local vrr = nil
+    local matches = {}
+    for _, child in children do
+        if child.name == "variable-refresh-rate" then vrr = child end
+        if child.name == "match" then table.insert(matches, child.props) end
+    end
+    return {
+        kind = "rule",
+        start = node.start,
+        ["end"] = node["end"],
+        open = node.children.open,
+        close = node.children.close,
+        children = children,
+        matches = matches,
+        vrr = vrr ~= nil and (#vrr.args == 0 or truthy(vrr.args[1].value)),
+    }
+end
+
 -- One file's items, in the order they appear: an include is expanded where
 -- it stands, so the order between it and what is around it decides.
 function M.scan(text: string): { items: { any } }
@@ -284,6 +309,8 @@ function M.scan(text: string): { items: { any } }
             })
         elseif node.name == "output" and #node.args > 0 and node.children then
             table.insert(items, output_of(node))
+        elseif node.name == "window-rule" and node.children then
+            table.insert(items, rule_of(node))
         end
     end
     return { items = items }

@@ -456,6 +456,50 @@ ShellRoot {
         }
     }
 
+    // The monitors' layout, written into niri's configuration by this shell
+    // while the two run side by side: Bioma on Genoma's Monitors page
+    // chooses, and this shell writes and validates (genoma/PORT.md, "Who
+    // acts on the desktop"). `place` takes `{"DP-1":{"x":0,"y":0},…}`.
+    IpcHandler {
+        target: "monitors"
+
+        function place(positions: string): string {
+            let parsed;
+            try {
+                parsed = JSON.parse(positions);
+            } catch (e) {
+                return "not JSON";
+            }
+            Monitors.place(parsed);
+            return "placing";
+        }
+
+        function power(name: string, on: bool): string {
+            return Monitors.power(name, on) ? (on ? "on" : "off") : "the last monitor stays on";
+        }
+
+        function primary(name: string): string {
+            Monitors.makePrimary(name);
+            return name.length > 0 ? name : "none";
+        }
+
+        function vrr(name: string, mode: string): string {
+            if (!["off", "on", "demand"].includes(mode))
+                return "off, on or demand";
+            Monitors.setVrr(name, mode);
+            return mode;
+        }
+
+        function games(on: bool): string {
+            Monitors.setGamesRule(on);
+            return on ? "on" : "off";
+        }
+
+        function error(): string {
+            return Monitors.error;
+        }
+    }
+
     // The clipboard's history, kept by this shell while the two run side by
     // side: Bioma on Genoma reads history.json and asks here to drop what
     // it drops, so the list this shell holds never brings a dropped entry
