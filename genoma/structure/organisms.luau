@@ -63,9 +63,8 @@ function M.template(entry: any): (number, number)
     end
     if kind == "vitals" then
         if entry.layout == "square" then return 2, 2 end
-        local machine = require("services/machine")
-        local domains = 2 + (if machine.gpu_present and machine.gpu_present() then 1 else 0)
-            + (if machine.has_battery and machine.has_battery() then 1 else 0)
+        local system = require("services/system_monitor")
+        local domains = 2 + (if system.gpu_present() then 1 else 0) + (if system.has_battery() then 1 else 0)
         return if domains > 3 then 3 else 2, 1
     end
     local k = M.kinds[kind]
