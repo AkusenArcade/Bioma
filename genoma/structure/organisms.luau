@@ -227,6 +227,69 @@ function M.place(output: string, size: { width: number, height: number }, grid: 
         local gx, gy = p.grid()
         return gx + col * p.module(), gy + row * p.module()
     end
+
+    -- ---- No two in one place ----
+    --
+    -- Organisms never overlap (Akusen, 2026-11-02): what each covers on the
+    -- grid (its panel and half a gap round it) is its own. Every organism of
+    -- the screen counts, whichever runtime draws it.
+    function p.cover_of(entry: any): (number, number, number, number)
+        local m = if entry.size then metrics_mod.step(entry.size) else p.metrics()
+        local c, r = M.template(entry)
+        local w = c * m.organism_unit + (c - 1) * m.gap + p.metrics().gap
+        local h = r * m.organism_unit + (r - 1) * m.gap + p.metrics().gap
+        local col, row
+        if entry.col ~= nil and entry.row ~= nil then
+            col, row = p.kept(w, h, entry.col, entry.row)
+        else
+            local fx, fy, fw, fh = p.free()
+            col, row = p.point(w, h, fx + (entry.x or 0.5) * fw - w / 2, fy + (entry.y or 0.5) * fh - h / 2)
+        end
+        return col, row, w, h
+    end
+    -- What the others on this screen cover, in pixels.
+    function p.others(list: { any }, except: any): { any }
+        local out = {}
+        for _, entry in list do
+            if type(entry) == "table" and entry.id ~= except and belongs(entry, output) then
+                local col, row, w, h = p.cover_of(entry)
+                local x, y = p.corner(col, row)
+                table.insert(out, { x = x, y = y, w = w, h = h })
+            end
+        end
+        return out
+    end
+    -- The grid point nearest (col, row) where w × h overlaps none of
+    -- `others`: the point itself when it is free.
+    function p.free_point(w: number, h: number, col: number, row: number, others: { any }): (number, number)
+        local function hits(c: number, r: number): boolean
+            local x, y = p.corner(c, r)
+            for _, o in others do
+                if x < o.x + o.w - 0.5 and o.x < x + w - 0.5 and y < o.y + o.h - 0.5 and o.y < y + h - 0.5 then return true end
+            end
+            return false
+        end
+        if not hits(col, row) then return col, row end
+        local square = p.square()
+        local x0, y0 = p.corner(col, row)
+        for radius = 1, 48 do
+            local best, best_distance = nil, math.huge
+            for dy = -radius, radius do
+                for dx = -radius, radius do
+                    if math.max(math.abs(dx), math.abs(dy)) == radius then
+                        local c, r = p.point(w, h, x0 + dx * square, y0 + dy * square)
+                        local cx, cy = p.corner(c, r)
+                        local distance = (cx - x0) ^ 2 + (cy - y0) ^ 2
+                        if distance < best_distance and not hits(c, r) then
+                            best, best_distance = { c, r }, distance
+                        end
+                    end
+                end
+            end
+            if best then return best[1], best[2] end
+        end
+        return col, row
+    end
     return p
 end
 
@@ -378,11 +441,13 @@ function M.organism(a: { [string]: any }): (any, any)
         local squares = math.round(modules * arranging.grid() * 1000) / 1000
         return if squares == math.floor(squares) then tostring(squares + 1) else string.format("%.1f", squares + 1)
     end
+    -- Where it would land: the nearest point no other organism covers.
     local function landing(): (number, number)
         local h = held.value
         if not h then return grid_point() end
         local cw, ch = cover_width(), cover_height()
-        return place.point(cw, ch, h.x - cw / 2, h.y - ch / 2)
+        local col, row = place.point(cw, ch, h.x - cw / 2, h.y - ch / 2)
+        return place.free_point(cw, ch, col, row, place.others(arranging.working(), entry().id))
     end
     handle.landing = landing
     handle.held = function() return held.value ~= nil end
@@ -596,6 +661,7 @@ function M.arrange_surface(output: string, size: { width: number, height: number
             return { width = if o then o.width else size.width, height = if o then o.height else size.height }
         end)(), M.grid)
         local col, row = p.point(cw, ch, tx - cw / 2, ty - ch / 2)
+        col, row = p.free_point(cw, ch, col, row, p.others(g.untracked(arranging.working), entry_id))
         arranging.place(entry_id, target, col, row)
     end
     local function lines(axis: string): any

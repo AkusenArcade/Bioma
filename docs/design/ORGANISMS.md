@@ -132,6 +132,10 @@ Organisms take no input at rest, so they are placed in a mode of their own.
 - **Landing.** In the hand the panel follows the pointer freely; the squares it would cover are
   lit under it — its own shape, primary at 14 % with a 55 % hairline — and the plate says that
   grid point. Let go, it slides onto them (`reflow`, flat open curve).
+- **Never one over another** (Akusen, 2026-11-02). What an organism covers — its panel and half
+  a gap round it — is its own: dropped where another already is, it lands on the nearest grid
+  point no other organism of that screen covers, and the lit squares under the hand show that
+  point while it is carried. Every organism of the screen counts, whichever runtime draws it.
 - An organism dropped onto **another monitor** moves there; it lands on the nearest grid point of
   that monitor. It leaves the first screen from where it was let go and grows on the
   second. (Every surface keeps one organism for every block and shows only its own, so a drop

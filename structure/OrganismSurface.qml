@@ -190,6 +190,71 @@ PanelWindow {
         return Qt.point(root.grid.x + col * root.module, root.grid.y + row * root.module);
     }
 
+    // ---- No two in one place --------------------------------------------------------
+    //
+    // Organisms never overlap (Akusen, 2026-11-02): what each covers on the
+    // grid — its panel and half a gap round it — is its own. Every organism
+    // of this screen counts, Bioma on Genoma's included.
+
+    // What `entry` covers here: its grid point and its size, in pixels.
+    function coverOf(entry) {
+        const m = entry.size ? Metrics.step(entry.size) : root.metrics;
+        const t = Organisms.template(entry);
+        const w = t[0] * m.organismUnit + (t[0] - 1) * m.gap + root.metrics.gap;
+        const h = t[1] * m.organismUnit + (t[1] - 1) * m.gap + root.metrics.gap;
+        const p = entry.col !== undefined && entry.row !== undefined
+            ? root.kept(w, h, entry.col, entry.row)
+            : root.point(w, h, root.free.x + (entry.x ?? 0.5) * root.free.width - w / 2,
+                         root.free.y + (entry.y ?? 0.5) * root.free.height - h / 2);
+        const at = root.corner(p.col, p.row);
+        return Qt.rect(at.x, at.y, w, h);
+    }
+
+    // What the others on this screen cover: every block but the one at
+    // `except` in the list.
+    function others(except) {
+        const out = [];
+        for (let i = 0; i < root.all.length; i++) {
+            const entry = root.all[i];
+            if (i !== except && entry && Strips.belongs(entry, root.screenItem))
+                out.push(root.coverOf(entry));
+        }
+        return out;
+    }
+
+    // The grid point nearest (col, row) where w × h overlaps none of
+    // `others`: the point itself when it is free.
+    function freePoint(w, h, col, row, others) {
+        const hits = (c, r) => {
+            const at = root.corner(c, r);
+            return others.some(o => at.x < o.x + o.width - 0.5 && o.x < at.x + w - 0.5
+                                    && at.y < o.y + o.height - 0.5 && o.y < at.y + h - 0.5);
+        };
+        if (!hits(col, row))
+            return { "col": col, "row": row };
+        const start = root.corner(col, row);
+        for (let radius = 1; radius <= 48; radius++) {
+            let best = null;
+            let bestDistance = Infinity;
+            for (let dy = -radius; dy <= radius; dy++) {
+                for (let dx = -radius; dx <= radius; dx++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dy)) !== radius)
+                        continue;
+                    const p = root.point(w, h, start.x + dx * root.square, start.y + dy * root.square);
+                    const at = root.corner(p.col, p.row);
+                    const distance = Math.pow(at.x - start.x, 2) + Math.pow(at.y - start.y, 2);
+                    if (distance < bestDistance && !hits(p.col, p.row)) {
+                        best = p;
+                        bestDistance = distance;
+                    }
+                }
+            }
+            if (best)
+                return best;
+        }
+        return { "col": col, "row": row };
+    }
+
     // The lines, while arranging: every square faint, every module a little
     // stronger, so the units of the templates can be counted.
     readonly property real hairline: Metrics.crisp(1, Screen.devicePixelRatio)

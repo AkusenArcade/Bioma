@@ -366,8 +366,11 @@ Item {
             surface.landing = Qt.rect(0, 0, 0, 0);
             return;
         }
-        const p = surface.point(root.coverWidth, root.coverHeight,
-                                root.heldX - root.coverWidth / 2, root.heldY - root.coverHeight / 2);
+        const wanted = surface.point(root.coverWidth, root.coverHeight,
+                                     root.heldX - root.coverWidth / 2, root.heldY - root.coverHeight / 2);
+        // Where nothing else is: organisms never overlap.
+        const p = surface.freePoint(root.coverWidth, root.coverHeight, wanted.col, wanted.row,
+                                    surface.others(root.place));
         root.landingPoint = Qt.point(p.col, p.row);
         const corner = surface.corner(p.col, p.row);
         surface.landing = Qt.rect(corner.x + root.gridGap / 2, corner.y + root.gridGap / 2,
@@ -403,7 +406,8 @@ Item {
 
         const cover = root.targetWidth + target.metrics.gap;
         const coverDown = root.targetHeight + target.metrics.gap;
-        const p = target.point(cover, coverDown, cx - cover / 2, cy - coverDown / 2);
+        const wanted = target.point(cover, coverDown, cx - cover / 2, cy - coverDown / 2);
+        const p = target.freePoint(cover, coverDown, wanted.col, wanted.row, target.others(root.place));
         const place = root.place;
         const monitor = target.screenItem.name;
 
