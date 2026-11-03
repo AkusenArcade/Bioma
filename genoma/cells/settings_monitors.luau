@@ -259,7 +259,10 @@ function M.new(t: { [string]: any }): any
         local function at(): (number, number) return to_area(position_of(o())) end
         local function w(): number return o().width * fit.value.scale end
         local function h(): number return o().height * fit.value.scale end
+        -- Where the press landed, and where the monitor was then: a drag is
+        -- told from the node as it was at the press.
         local grab_x, grab_y = 0, 0
+        local from_x, from_y = 0, 0
         local pressed = false
         local function inset(): number return 2 * f() end
         return g.box {
@@ -282,15 +285,15 @@ function M.new(t: { [string]: any }): any
                 if not g.untracked(lit) or g.untracked(monitors.busy) then return end
                 pressed = true
                 grab_x, grab_y = x, y
+                from_x = g.untracked(function() local v = at() return v end)
+                from_y = g.untracked(function() local _, v = at() return v end)
             end,
             -- Carried from where it was touched, not by its middle.
             on_drag = function(x: number, y: number)
                 if not pressed then return end
                 local n = g.untracked(name)
                 if g.untracked(function() return held.value end) ~= n then take(n) end
-                local ax = g.untracked(function() local v = at() return v end)
-                local ay = g.untracked(function() local _, v = at() return v end)
-                local lx, ly = to_logical(ax + x - grab_x, ay + y - grab_y)
+                local lx, ly = to_logical(from_x + x - grab_x, from_y + y - grab_y)
                 carry(n, lx, ly)
             end,
             on_release = function()

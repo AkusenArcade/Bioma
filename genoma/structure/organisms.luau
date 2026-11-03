@@ -261,25 +261,36 @@ function M.place(output: string, size: { width: number, height: number }, grid: 
         return out
     end
     -- The grid point nearest (col, row) where w × h overlaps none of
-    -- `others`: the point itself when it is free.
+    -- `others`: the point itself when it is free. The grid is read once:
+    -- on a fine grid the search walks a thousand candidates while an
+    -- organism is carried over another, and reading the free area for each
+    -- (every membrane of the config, four times) made the carrying stutter.
     function p.free_point(w: number, h: number, col: number, row: number, others: { any }): (number, number)
+        local gx, gy, gw, gh = p.grid()
+        local module, square = p.module(), p.square()
+        local function corner(c: number, r: number): (number, number) return gx + c * module, gy + r * module end
+        local function axis(start: number, extent: number, size: number, wanted: number): number
+            local room = extent - size
+            if room < 0 then return room / 2 / module end
+            local most = math.floor(room / square + 1e-6)
+            return math.clamp(math.round((wanted - start) / square), 0, most) * square / module
+        end
         local function hits(c: number, r: number): boolean
-            local x, y = p.corner(c, r)
+            local x, y = corner(c, r)
             for _, o in others do
                 if x < o.x + o.w - 0.5 and o.x < x + w - 0.5 and y < o.y + o.h - 0.5 and o.y < y + h - 0.5 then return true end
             end
             return false
         end
         if not hits(col, row) then return col, row end
-        local square = p.square()
-        local x0, y0 = p.corner(col, row)
+        local x0, y0 = corner(col, row)
         for radius = 1, 48 do
             local best, best_distance = nil, math.huge
             for dy = -radius, radius do
                 for dx = -radius, radius do
                     if math.max(math.abs(dx), math.abs(dy)) == radius then
-                        local c, r = p.point(w, h, x0 + dx * square, y0 + dy * square)
-                        local cx, cy = p.corner(c, r)
+                        local c, r = axis(gx, gw, w, x0 + dx * square), axis(gy, gh, h, y0 + dy * square)
+                        local cx, cy = corner(c, r)
                         local distance = (cx - x0) ^ 2 + (cy - y0) ^ 2
                         if distance < best_distance and not hits(c, r) then
                             best, best_distance = { c, r }, distance
@@ -440,7 +451,9 @@ function M.organism(a: { [string]: any }): (any, any)
     -- that can move; brighter under the pointer and in the hand. Its name and
     -- template, and where it is on the grid, on a plate in its corner.
     local hovered = g.signal(false)
-    local grab: { x: number, y: number }? = nil
+    -- Where the press landed from its centre, and where its corner was then:
+    -- a drag is told from the node as it was at the press.
+    local grab: { x: number, y: number, left: number, top: number }? = nil
     local function ring(): number return 8 * f() end
     local function lit(): boolean return hovered.value or held.value ~= nil end
     local function counted(modules: number): string
@@ -448,12 +461,18 @@ function M.organism(a: { [string]: any }): (any, any)
         return if squares == math.floor(squares) then tostring(squares + 1) else string.format("%.1f", squares + 1)
     end
     -- Where it would land: the nearest point no other organism covers.
-    local function landing(): (number, number)
+    -- Worked out once per movement, however many read it (the shape's
+    -- place and the plate's figures).
+    local landed = g.computed(function(): { number }
         local h = held.value
-        if not h then return grid_point() end
+        if not h then return table.pack(grid_point()) end
         local cw, ch = cover_width(), cover_height()
         local col, row = place.point(cw, ch, h.x - cw / 2, h.y - ch / 2)
-        return place.free_point(cw, ch, col, row, place.others(arranging.working(), entry().id))
+        return table.pack(place.free_point(cw, ch, col, row, place.others(arranging.working(), entry().id)))
+    end)
+    local function landing(): (number, number)
+        local l = landed.value
+        return l[1], l[2]
     end
     handle.landing = landing
     handle.held = function() return held.value ~= nil end
@@ -547,16 +566,14 @@ function M.organism(a: { [string]: any }): (any, any)
             on_hover = function(on: boolean) hovered.value = on end,
             on_press = function(button: number, x: number, y: number)
                 if button ~= 272 then return end
-                grab = { x = x - g.untracked(target_width) / 2, y = y - g.untracked(target_height) / 2 }
+                -- g.untracked hands back one value: the two go through a table.
+                local c = g.untracked(function() return table.pack(centre()) end)
+                local w, h = g.untracked(target_width), g.untracked(target_height)
+                grab = { x = x - w / 2, y = y - h / 2, left = c[1] - w / 2, top = c[2] - h / 2 }
             end,
             on_drag = function(x: number, y: number)
                 if not grab then return end
-                -- g.untracked hands back one value: the two go through a table.
-                local c = g.untracked(function() return table.pack(centre()) end)
-                local cx, cy = c[1], c[2]
-                local left = cx - g.untracked(target_width) / 2
-                local top = cy - g.untracked(target_height) / 2
-                held.value = { x = left + x - grab.x, y = top + y - grab.y }
+                held.value = { x = grab.left + x - grab.x, y = grab.top + y - grab.y }
             end,
             on_release = function()
                 grab = nil

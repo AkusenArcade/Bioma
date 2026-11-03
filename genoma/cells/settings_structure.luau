@@ -1774,14 +1774,17 @@ function M.new(t: { [string]: any }): any
                 height = chip_height,
                 align = "center",
                 justify = "start",
+                -- A drag is told from the chip as it was at the press, so
+                -- where it was then is kept with the press.
                 on_press = function(button: number, px: number, py: number)
                     moved = false
-                    pressed = if button == LEFT then { px, py } else nil
+                    pressed = if button == LEFT
+                        then { px, py, g.untracked(x) + 10 * g.untracked(f), g.untracked(y) }
+                        else nil
                 end,
                 on_drag = function(px: number, py: number)
                     if not pressed then return end
-                    local ox = g.untracked(x) + 10 * g.untracked(f)
-                    local oy = g.untracked(y)
+                    local ox, oy = pressed[3], pressed[4]
                     if not moved and math.abs(px - pressed[1]) + math.abs(py - pressed[2]) > 6 then
                         moved = true
                         take(g.untracked(index), ox + pressed[1], oy + pressed[2])

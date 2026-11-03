@@ -197,7 +197,10 @@ return {
                 return if t.held and t.held() then icon_size() * 1.12 else icon_size()
             end
             local function source(): string return apps.icon_for(t.app_id()) end
+            -- Where the press landed, and where the icon was then: a drag is
+            -- told from the icon as it was at the press.
             local pressed_at: number? = nil
+            local from_x = 0
             local moved = false
             return g.capsule {
                 role = "button",
@@ -230,13 +233,14 @@ return {
                 on_press = function(button: number, x: number)
                     moved = false
                     pressed_at = if button == LEFT then x else nil
+                    from_x = if t.x then g.untracked(t.x) else 0
                 end,
                 on_drag = function(x: number)
                     if not t.holdable or pressed_at == nil then return end
-                    local row_x = g.untracked(t.x) + x
+                    local row_x = from_x + x
                     if not moved and math.abs(x - pressed_at) > 6 then
                         moved = true
-                        take(t.index(), g.untracked(t.x) + pressed_at)
+                        take(t.index(), from_x + pressed_at)
                     end
                     if moved then drag(row_x) end
                 end,
