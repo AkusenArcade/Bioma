@@ -179,7 +179,10 @@ done
 # otherwise the Quickshell greeter. Either way niri ends with it.
 start="BIOMA_GREETER_DIR=$live qs -p $live/shell/greeter.qml"
 if [ -x "$next/bin/genoma" ]; then
-    start="BIOMA_GREETER_DIR=$live $live/bin/genoma $live/shell/genoma greeter.luau || $start"
+    # Run under the greeter's own name: the process takes the name it is
+    # started by, and Genoma is only the toolkit.
+    ln -sfn genoma "$next/bin/bioma-greeter"
+    start="BIOMA_GREETER_DIR=$live $live/bin/bioma-greeter $live/shell/genoma greeter.luau || $start"
 fi
 sed -e "s|@GREETER@|$live|g" -e "s#@START@#$start#" "$here/config/niri/greeter.kdl.in" > "$next/niri.kdl"
 

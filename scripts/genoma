@@ -20,4 +20,5 @@ if [ "${1:-}" = ipc ]; then
     shift
     exec "$bin" ipc "$@"
 fi
-exec "$bin" "$here/genoma" "$@"
+# Named for what it runs: Genoma is the toolkit, the process is Bioma.
+exec -a bioma "$bin" "$here/genoma" "$@"
