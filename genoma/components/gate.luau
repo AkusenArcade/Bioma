@@ -35,7 +35,6 @@
 --   density(), twenty_four()
 --   entered()                optional: once a welcome has gone dark, called
 --                            by every screen, the owner acting on the first
---   set_active(output)       optional: a press brings the field here (the lock)
 --   capture(output)          optional: a photograph of the screen to start
 --                            from, and to leave back to (the lock)
 local g = require("@genoma")
@@ -391,9 +390,6 @@ function M.new(t: { [string]: any }): (any, any)
     local node = g.box {
         width = size.width,
         height = size.height,
-        on_press = function()
-            if gate.set_active and not active() then gate.set_active(output) end
-        end,
         behind,
         g.box {
             overlay = true,

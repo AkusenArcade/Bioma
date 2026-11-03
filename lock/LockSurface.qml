@@ -6,8 +6,7 @@ import qs.components
 
 // The lock screen on one monitor: the threshold (components/Gate.qml) on a
 // session-lock surface, starting from the photograph of the desktop it covers.
-// A press on another screen brings the field there, because that is where the
-// hand is.
+// The field is only on the primary monitor, as at the greeter.
 WlSessionLockSurface {
     id: root
 
@@ -19,7 +18,7 @@ WlSessionLockSurface {
         id: gate
         gate: root.lockState
         screen: root.screen
-        movable: true
+        movable: false
     }
 
     onVisibleChanged: if (root.visible) gate.focusField()

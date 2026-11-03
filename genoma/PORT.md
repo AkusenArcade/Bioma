@@ -697,6 +697,11 @@ sentence, the text selected); success through a scratch `pam_permit` copy:
 unlocked, photographs removed, hint false; the guard with the key in a
 scratch configuration, the lock killed with SIGKILL: hyprlock took over.
 Akusen locked and unlocked his own session with it on 2026-11-03.
+The field is on the primary monitor of Bioma's settings (niri's
+`focus-at-startup`, services/monitors.luau), the greeter's screen, and a
+press elsewhere no longer moves it (Akusen, 2026-11-03; lock.qml the same,
+which also asks niri to focus that monitor, since Qt's keys follow niri's
+focus while Genoma's go to the surface that catches).
 Not yet: the photograph blurring as it goes (it fades over the blurred
 wallpaper).
 

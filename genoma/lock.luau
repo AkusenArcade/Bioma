@@ -22,6 +22,7 @@
 local g = require("@genoma")
 local lock = require("@genoma/lock")
 local niri = require("@genoma/niri")
+local monitors = require("services/monitors")
 local paths = require("core/paths")
 local timing = require("core/timing")
 local session = require("services/session")
@@ -142,12 +143,14 @@ local failed = g.state("lock.failed", false)
 local reason = g.state("lock.reason", "")
 local leaving = g.state("lock.leaving", false)
 
--- The screen the keyboard is on: niri hands the keys to the lock surface of
--- the focused output, so that is where the field has to be, until a press
--- on another screen brings it there.
-local chosen = g.state("lock.active", "")
+-- The screen that holds the field: the primary monitor, as Bioma's
+-- settings make it (niri's `focus-at-startup`), the same screen as the
+-- greeter's (Akusen, 2026-11-03); the focused output while there is none.
+-- Whichever lock surface niri gives the keys to, they reach the field: they
+-- go to the surface that catches.
 local function active(): string
-    if chosen.value ~= "" then return chosen.value end
+    local primary = monitors.primary()
+    if primary ~= "" then return primary end
     return niri.focused_output or ""
 end
 
@@ -201,7 +204,6 @@ end)
 
 local gate = {
     active = active,
-    set_active = function(output: string) chosen.value = output end,
     password = password,
     checking = function(): boolean return checking.value end,
     failed = function(): boolean return failed.value end,

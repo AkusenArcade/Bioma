@@ -27,10 +27,17 @@ import qs.lock
 ShellRoot {
     id: root
 
-    // The screen the keyboard is on. niri hands the keys to the lock surface
-    // of the focused output, so that is where the field has to be; asked
-    // once, at start, and moved by a press on another screen.
-    property string active: scenery.focusedOutput
+    // The screen that holds the field: the primary monitor, as Bioma's
+    // settings make it (niri's `focus-at-startup`), the same screen as the
+    // greeter's (Akusen, 2026-11-03). The focused output until the monitors
+    // have answered. niri hands the keys to the lock surface of the focused
+    // output, so niri is asked to focus this one.
+    readonly property string active: Monitors.primary.length > 0 ? Monitors.primary : scenery.focusedOutput
+
+    onActiveChanged: {
+        if (root.active.length > 0)
+            Quickshell.execDetached(["niri", "msg", "action", "focus-monitor", root.active]);
+    }
 
     property string password: ""
     property bool checking: false
