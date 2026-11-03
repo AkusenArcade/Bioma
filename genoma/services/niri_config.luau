@@ -23,11 +23,25 @@ M.main = g.env("NIRI_CONFIG") or ((g.env("XDG_CONFIG_HOME") or (home .. "/.confi
 -- Every file found so far. It starts with the main one and grows as the
 -- includes are read, since what a file includes is known once it is read.
 local files: { [string]: any } = {}
+-- What each file says, scanned when that file changes and not when another
+-- does: a template rewriting bioma-theme.kdl scanned config.kdl's hundreds
+-- of lines again, 17 ms of the main thread each time.
+local scans: { [string]: any } = {}
 local found = g.signal(0)
 
 local function open(path: string)
     if not files[path] then
-        files[path] = g.file { path = path }
+        local file = g.file { path = path }
+        files[path] = file
+        scans[path] = g.lasting(function()
+            return g.computed(function(): any
+                local text = file.text
+                if text == nil then return nil end
+                local items = kdl.scan(text).items
+                for _, item in items do item.file = path end
+                return items
+            end)
+        end)
         found.value += 1
     end
 end
@@ -49,11 +63,10 @@ local walked = g.computed(function(): { [string]: any }
         local text = file.text
         if text == nil then return end
         table.insert(texts, { path = path, text = text })
-        for _, item in kdl.scan(text).items do
+        for _, item in scans[path].value or {} do
             if item.kind == "include" then
                 walk(kdl.resolve(item.path, kdl.directory_of(path), home))
             else
-                item.file = path
                 table.insert(items, item)
             end
         end

@@ -123,40 +123,67 @@ return {
             local along = ((bearing - facing() + 540) % 360) / 360
             return margin() + along * (o.width() - 2 * margin())
         end
-        local function py(altitude: number): number
-            local above = (horizon() - margin()) / 90
-            local below = (picture_height() - horizon() - 2 * f()) / 90
-            return if altitude >= 0 then horizon() - altitude * above else horizon() - altitude * below
-        end
-        -- A path into n columns across the picture: each segment that does
-        -- not wrap round the edge fills the columns under it.
-        local function columns(samples: { any }, n: number, keep: (any) -> boolean): { number }
-            local out = table.create(n, NONE)
-            local w = o.width()
-            local function column_x(k: number): number return margin() + k * (w - 2 * margin()) / (n - 1) end
-            for i = 2, #samples do
-                local a, b = samples[i - 1], samples[i]
-                if keep(a) and keep(b) then
-                    local xa, xb = px(a.bearing), px(b.bearing)
-                    if math.abs(xb - xa) < w / 2 then
-                        local ya, yb = py(a.altitude), py(b.altitude)
-                        local lo, hi = math.min(xa, xb), math.max(xa, xb)
-                        for k = 0, n - 1 do
-                            local x = column_x(k)
-                            if x >= lo and x <= hi then
+        -- The picture's geometry, worked out once for the sky and the size:
+        -- not again when a colour moves. Kept in the same binding as the
+        -- palette, every palette change re-ran a thousand samples through
+        -- functions that each read the sizes again, 200 ms of the main
+        -- thread (Akusen, 2026-11-03: the wallpaper's crossfade stuttered).
+        local geometry = g.computed(function(): any
+            local s = sky.value
+            local w, mg, hz, ph, unit = o.width(), margin(), horizon(), picture_height(), f()
+            local face = facing()
+            local span = w - 2 * mg
+            local above = (hz - mg) / 90
+            local below = (ph - hz - 2 * unit) / 90
+            local function x_of(bearing: number): number return mg + (((bearing - face + 540) % 360) / 360) * span end
+            local function y_of(altitude: number): number
+                return if altitude >= 0 then hz - altitude * above else hz - altitude * below
+            end
+            -- A path into n columns across the picture: each segment that
+            -- does not wrap round the edge fills the columns under it.
+            local function columns(samples: { any }, n: number, keep: (any) -> boolean): { number }
+                local out = table.create(n, NONE)
+                local step = span / (n - 1)
+                for i = 2, #samples do
+                    local a, b = samples[i - 1], samples[i]
+                    if keep(a) and keep(b) then
+                        local xa, xb = x_of(a.bearing), x_of(b.bearing)
+                        if math.abs(xb - xa) < w / 2 then
+                            local ya, yb = y_of(a.altitude), y_of(b.altitude)
+                            local lo, hi = math.min(xa, xb), math.max(xa, xb)
+                            local first = math.max(0, math.ceil((lo - mg) / step))
+                            local last = math.min(n - 1, math.floor((hi - mg) / step))
+                            for k = first, last do
+                                local x = mg + k * step
                                 local t = if hi > lo then (x - xa) / (xb - xa) else 0
                                 out[k + 1] = ya + (yb - ya) * t
                             end
                         end
                     end
                 end
+                return out
             end
+            local out: { [string]: any } = { horizon = hz, margin = mg, unit = unit, north = latitude() >= 0 }
+            if not s then return out end
+            out.sun = { x_of(s.sun_now.bearing), y_of(s.sun_now.altitude), if s.sun_now.altitude >= 0 then 1 else 0 }
+            out.moon = { x_of(s.moon_now.bearing), y_of(s.moon_now.altitude), if s.moon_now.altitude >= 0 then 1 else 0.45 }
+            out.phase = s.light.phase
+            out.sun_cols = columns(s.sun, NS, function() return true end)
+            out.moon_cols = columns(s.moon, NM, function(p: any) return p.altitude >= 0 end)
+            -- The day runs the way the sun goes from rising to setting.
+            local c = s.today_crossings
+            local forward = true
+            if #c >= 2 then
+                local lat, lon = latitude(), longitude()
+                forward = x_of(sky_mod.sun(c[1].time, lat, lon).bearing) < x_of(sky_mod.sun(c[2].time, lat, lon).bearing)
+            end
+            out.forward = forward
             return out
-        end
+        end)
         local function values(): { number }
-            local s = sky.value
+            local geo = geometry.value
             local out = table.create(128, 0)
-            out[1] = horizon()
+            out[1] = geo.horizon
             local function put(at: number, hex: string)
                 local c = colour.parse(hex)
                 out[at + 1], out[at + 2], out[at + 3], out[at + 4] = c.r, c.g, c.b, c.a
@@ -164,29 +191,21 @@ return {
             put(8, theme.primary())
             put(12, theme.text())
             put(16, theme.line())
-            out[21] = margin()
+            out[21] = geo.margin
             out[22] = 1
-            out[23] = f()
-            out[24] = if latitude() >= 0 then 1 else -1
-            if not s then
+            out[23] = geo.unit
+            out[24] = if geo.north then 1 else -1
+            if not geo.sun then
                 out[2], out[3], out[5], out[6] = -100, -100, -100, -100
                 for i = 25, 128 do out[i] = NONE end
                 return out
             end
-            out[2], out[3] = px(s.sun_now.bearing), py(s.sun_now.altitude)
-            out[4] = if s.sun_now.altitude >= 0 then 1 else 0
-            out[5], out[6] = px(s.moon_now.bearing), py(s.moon_now.altitude)
-            out[7] = if s.moon_now.altitude >= 0 then 1 else 0.45
-            out[8] = s.light.phase
-            local sun_cols = columns(s.sun, NS, function() return true end)
-            for i = 1, NS do out[24 + i] = sun_cols[i] end
-            local moon_cols = columns(s.moon, NM, function(p: any) return p.altitude >= 0 end)
-            for i = 1, NM do out[80 + i] = moon_cols[i] end
-            -- The day runs the way the sun goes from rising to setting.
-            local c = s.today_crossings
-            local forward = true
-            if #c >= 2 then forward = px(sky_mod.sun(c[1].time, latitude(), longitude()).bearing) < px(sky_mod.sun(c[2].time, latitude(), longitude()).bearing) end
-            out[128] = if forward then 1 else 0
+            out[2], out[3], out[4] = geo.sun[1], geo.sun[2], geo.sun[3]
+            out[5], out[6], out[7] = geo.moon[1], geo.moon[2], geo.moon[3]
+            out[8] = geo.phase
+            for i = 1, NS do out[24 + i] = geo.sun_cols[i] end
+            for i = 1, NM do out[80 + i] = geo.moon_cols[i] end
+            out[128] = if geo.forward then 1 else 0
             return out
         end
 
