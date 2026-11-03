@@ -656,7 +656,7 @@ category kept across a reload.
 | OSD (volume, brightness, keyboard layout) | §11, an open question then, adopted since | |
 | Selection surface (Bioma's own region picker) | §9.6 | checked 2026-10-29 with the utility (`structure/selection.luau`) |
 | Organisms, and their arrange mode | *beyond the PRD* | in progress 2026-11-02: the surface, the frame and arranging checked with the clock (`structure/organisms.luau`, `structure/arranging.luau`) |
-| Lock screen (`lock.qml`, its guard, hyprlock as the fallback) | *beyond the PRD* | written 2026-11-03 (`genoma/lock.luau` from lock.qml at 92cd36c, the photograph in `components/gate.luau`), started by `scripts/lock` when `"lock": { "runtime": "genoma" }`; checked in a nested niri, not yet on his session |
+| Lock screen (`lock.qml`, its guard, hyprlock as the fallback) | *beyond the PRD* | written 2026-11-03 (`genoma/lock.luau` from lock.qml at 92cd36c, the photograph in `components/gate.luau`), started by `scripts/lock` when `"lock": { "runtime": "genoma" }`; checked in a nested niri, then on his session by Akusen 2026-11-03 (the key in his override, `genoma` on his PATH) |
 | Greeter (`greeter.qml`, agreety as the fallback) | *beyond the PRD* | written 2026-11-02 (`genoma/greeter.luau`, `components/gate.luau` from Gate.qml at 2cafc17), with the machine's commands Quickshell's greeter does not have; checked in its test mode, then under greetd by Akusen 2026-11-02 (a wrong password, then in) |
 
 The wallpaper, checked 2026-10-30 with `wallpaper.runtime` set in a test
@@ -696,8 +696,9 @@ dissolves; a wrong password through the real PAM file (red rim, the
 sentence, the text selected); success through a scratch `pam_permit` copy:
 unlocked, photographs removed, hint false; the guard with the key in a
 scratch configuration, the lock killed with SIGKILL: hyprlock took over.
+Akusen locked and unlocked his own session with it on 2026-11-03.
 Not yet: the photograph blurring as it goes (it fades over the blurred
-wallpaper), and a run on his session with his password.
+wallpaper).
 
 ### Organisms
 
