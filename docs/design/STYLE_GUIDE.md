@@ -214,6 +214,21 @@ change, 180 ms — is not an animated indicator: there is no live value in the r
 event. It is still the rest of the time, and that is exactly why it is noticed. It earns its
 place when the command comes from the keyboard and the eye is not on the membrane.
 
+### Organic motion (Bioma on Genoma)
+
+Settings → Appearance → MOTION: **Organic** (the default) or Classic. Organic, what *travels*
+arrives on a spring and goes a little past before it settles, and a thread's middle follows
+on a looser spring, so the thread sways behind what it holds (Akusen, 2026-11-04). Where:
+the organic launcher's clusters, the quick actions' satellites, the vitals' pods, the settings'
+category capsules, a notification coming in, the OSD, a segmented pill and a switch knob, a
+cell making room in its tissue, an organism let go in arrange mode, the workspace list's rows.
+
+Never on a **closing** (it retracts and stops), never on a **panel's size** (a spring swells it
+past itself and over its neighbours), never on an **indicator whose motion is a value**, and
+never on scrolling, an auto-hiding membrane, colour, text or the wallpaper. Classic is §6 as
+written above. Reduced motion (performance mode) makes every spring instant. The springs are
+`tether`, `sway`, `hop`, `land` and `settle` in the timing set (`--spring-*` in tokens.css).
+
 ### Indicator rhythms
 
 | Indicator | Form | Rhythm |

@@ -22,6 +22,7 @@ local metrics_mod = require("core/metrics")
 local performance = require("core/performance")
 local theme = require("core/theme")
 local runtime = require("core/runtime")
+local timing = require("core/timing")
 local monitors = require("services/monitors")
 local niri = require("services/niri")
 local arranging = require("structure/arranging")
@@ -405,6 +406,12 @@ function M.organism(a: { [string]: any }): (any, any)
         if lifted then return if held.value then "instant" else "reflow" end
         return if shown() then "open_flat" else "retract"
     end
+    -- Let go, it lands where it is put on a spring and settles; only its
+    -- place does, never its size (core/timing.luau, motion).
+    local function travelling(): string
+        if lifted and not held.value then return timing.motion("land", "reflow") end
+        return growing()
+    end
 
     local handle = {}
     function handle.centre(): (number, number) return rest() end
@@ -428,7 +435,7 @@ function M.organism(a: { [string]: any }): (any, any)
         fill = function() return colour.alpha(theme.cell(), config.get("cell.opacity", 0.72)) end,
         rim_top = theme.rim,
         rim_bottom = theme.line,
-        transition = { width = growing, height = growing, offset_x = growing, offset_y = growing },
+        transition = { width = growing, height = growing, offset_x = travelling, offset_y = travelling },
         g.box {
             overlay = true,
             attach = "corner",
@@ -509,7 +516,7 @@ function M.organism(a: { [string]: any }): (any, any)
             rim_bottom = function() return if lit() then theme.primary() else colour.alpha(theme.primary(), 0.55) end,
             dash = 8,
             dash_gap = 6,
-            transition = { offset_x = growing, offset_y = growing },
+            transition = { offset_x = travelling, offset_y = travelling },
         },
         g.capsule {
             overlay = true,
@@ -525,7 +532,7 @@ function M.organism(a: { [string]: any }): (any, any)
             fill = function() return colour.alpha(theme.background(), 0.88) end,
             rim_top = CLEAR,
             rim_bottom = CLEAR,
-            transition = { offset_x = growing, offset_y = growing },
+            transition = { offset_x = travelling, offset_y = travelling },
             g.text {
                 text = function()
                     local c, r = M.template(entry())

@@ -636,6 +636,8 @@ return {
         end
 
         return {
+            -- A notification comes in on a spring (structure/cell.luau).
+            lands = true,
             panel = {
                 width = panel_width,
                 height = function() return panel_height() end,

@@ -76,6 +76,13 @@ g.effect(function()
             stiffness = config.get("timing.tether_stiffness", 210), damping = config.get("timing.tether_damping", 15) } },
         sway = if instant then { duration = 0.001 } else { spring = {
             stiffness = config.get("timing.sway_stiffness", 90), damping = config.get("timing.sway_damping", 7) } },
+        -- The organic motion's other springs (M.motion): `hop` for a small
+        -- pill or knob answering a gesture, quick and a little past;
+        -- `land` for a capsule arriving where it belongs; `settle` for a
+        -- cell making room in its tissue, barely past at all.
+        hop = if instant then { duration = 0.001 } else { spring = { stiffness = 420, damping = 22 } },
+        land = if instant then { duration = 0.001 } else { spring = { stiffness = 260, damping = 17 } },
+        settle = if instant then { duration = 0.001 } else { spring = { stiffness = 320, damping = 30 } },
         -- An auto-hiding membrane sliding out of the edge or back into it,
         -- and its halo fading with it (Membrane.qml, Timing.open InOutQuad).
         reveal = { duration = s.open, curve = c.in_out_quad },
@@ -166,6 +173,12 @@ g.effect(function()
         pod_2 = { duration = s.grow, delay = s.grow + s.stagger * 3, curve = c.open_flat },
         pod_3 = { duration = s.grow, delay = s.grow + s.stagger * 4, curve = c.open_flat },
         pod_4 = { duration = s.grow, delay = s.grow + s.stagger * 5, curve = c.open_flat },
+        -- The pods' travel out of the panel on the organic motion: `land`,
+        -- at each pod's own turn (M.motion).
+        pod_land_1 = if instant then { duration = 0.001 } else { spring = { stiffness = 260, damping = 17 }, delay = s.grow + s.stagger * 2 },
+        pod_land_2 = if instant then { duration = 0.001 } else { spring = { stiffness = 260, damping = 17 }, delay = s.grow + s.stagger * 3 },
+        pod_land_3 = if instant then { duration = 0.001 } else { spring = { stiffness = 260, damping = 17 }, delay = s.grow + s.stagger * 4 },
+        pod_land_4 = if instant then { duration = 0.001 } else { spring = { stiffness = 260, damping = 17 }, delay = s.grow + s.stagger * 5 },
         -- The thread that stays once a bud has parted: drawn out as the neck
         -- thins, and taken back first, before the shape it ties.
         thread = { duration = s.grow, delay = s.grow, curve = c.open_flat },
@@ -216,6 +229,20 @@ g.effect(function()
         cascade_10 = { duration = s.grow, delay = s.grow + s.stagger * 11, curve = c.open_flat },
         cascade_11 = { duration = s.grow, delay = s.grow + s.stagger * 12, curve = c.open_flat },
         cascade_12 = { duration = s.grow, delay = s.grow + s.stagger * 13, curve = c.open_flat },
+        -- The categories' travel out of the panel on the organic motion:
+        -- `land`, at each capsule's own turn (M.motion).
+        cascade_land_1 = if instant then { duration = 0.001 } else { spring = { stiffness = 260, damping = 17 }, delay = s.grow + s.stagger * 2 },
+        cascade_land_2 = if instant then { duration = 0.001 } else { spring = { stiffness = 260, damping = 17 }, delay = s.grow + s.stagger * 3 },
+        cascade_land_3 = if instant then { duration = 0.001 } else { spring = { stiffness = 260, damping = 17 }, delay = s.grow + s.stagger * 4 },
+        cascade_land_4 = if instant then { duration = 0.001 } else { spring = { stiffness = 260, damping = 17 }, delay = s.grow + s.stagger * 5 },
+        cascade_land_5 = if instant then { duration = 0.001 } else { spring = { stiffness = 260, damping = 17 }, delay = s.grow + s.stagger * 6 },
+        cascade_land_6 = if instant then { duration = 0.001 } else { spring = { stiffness = 260, damping = 17 }, delay = s.grow + s.stagger * 7 },
+        cascade_land_7 = if instant then { duration = 0.001 } else { spring = { stiffness = 260, damping = 17 }, delay = s.grow + s.stagger * 8 },
+        cascade_land_8 = if instant then { duration = 0.001 } else { spring = { stiffness = 260, damping = 17 }, delay = s.grow + s.stagger * 9 },
+        cascade_land_9 = if instant then { duration = 0.001 } else { spring = { stiffness = 260, damping = 17 }, delay = s.grow + s.stagger * 10 },
+        cascade_land_10 = if instant then { duration = 0.001 } else { spring = { stiffness = 260, damping = 17 }, delay = s.grow + s.stagger * 11 },
+        cascade_land_11 = if instant then { duration = 0.001 } else { spring = { stiffness = 260, damping = 17 }, delay = s.grow + s.stagger * 12 },
+        cascade_land_12 = if instant then { duration = 0.001 } else { spring = { stiffness = 260, damping = 17 }, delay = s.grow + s.stagger * 13 },
         cascade_close = { duration = s.close, delay = s.content_fade / 2, curve = c.close },
         -- And each category's glyph and words once that capsule is at size
         -- (SettingsExpansion's contentReady), never in the air before it.
@@ -243,6 +270,20 @@ end)
 
 -- How long a shape with content takes to be gone once it starts closing;
 -- `last` for a panel that waits for the shapes that budded out of it.
+-- The organic motion (Settings → Appearance → MOTION; organic unless set
+-- to classic): what travels arrives on a spring and goes a little past,
+-- threads sway behind what they hold. Only movements, never a closing,
+-- never a panel's size, never an indicator whose motion is a value
+-- (STYLE_GUIDE §6). `motion(spring, classic)` names the timing a
+-- transition takes: the spring, or what that movement took before.
+-- Reduced motion (performance mode) makes every spring instant anyway.
+function M.organic(): boolean
+    return config.get("appearance.motion", "organic") ~= "classic"
+end
+function M.motion(spring: string, classic: string): string
+    return if M.organic() then spring else classic
+end
+
 function M.retracted(last: boolean?): number
     local s = M.seconds
     return s.content_fade / 2 + (if last then s.stagger * 6 else 0) + s.close

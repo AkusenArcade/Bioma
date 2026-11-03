@@ -14,6 +14,7 @@ local theme = require("core/theme")
 local colour = require("core/colour")
 local typography = require("core/typography")
 local metrics_mod = require("core/metrics")
+local timing = require("core/timing")
 
 local M = {}
 
@@ -82,7 +83,9 @@ function M.new(t: { [string]: any }): any
             fill_bottom = function() return theme.gradient_bottom(theme.primary()) end,
             rim_top = "#00000000",
             rim_bottom = "#00000000",
-            transition = { offset_x = "transition", width = "transition" },
+            -- It slides and goes a little past before it settles; its width
+            -- only changes (core/timing.luau, motion).
+            transition = { offset_x = function() return timing.motion("hop", "transition") end, width = "transition" },
         },
         g.each {
             overlay = true,

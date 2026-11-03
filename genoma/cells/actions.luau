@@ -184,6 +184,10 @@ return {
             local function size(): number return if out() then capsule() else 0 end
             local function lit(): boolean return chosen() == i end
             local function moving(): string return if out() then "open" else "retract" end
+            -- The capsule's travel, and its thread's middle a little behind
+            -- it (core/timing.luau, motion): its size only grows.
+            local function travelling(): string return if out() then timing.motion("tether", "open") else "retract" end
+            local function swaying(): string return if out() then timing.motion("sway", "open") else "retract" end
             local function entry(): any return entries()[i] or { icon = "edit" } end
             local s = reach
 
@@ -200,14 +204,14 @@ return {
                 color = theme.node,
                 from_x = function() return s() + ux() * start() end,
                 from_y = function() return s() + uy() * start() end,
-                to_x = function() return s() + ux() * (radius_ring() - capsule() / 2) end,
-                to_y = function() return s() + uy() * (radius_ring() - capsule() / 2) end,
-                -- A thread is a quadratic curve: its bend halfway keeps it
-                -- straight, a ray out of the pill.
-                bend_x = function() return s() + ux() * (start() + radius_ring() - capsule() / 2) / 2 end,
-                bend_y = function() return s() + uy() * (start() + radius_ring() - capsule() / 2) / 2 end,
+                -- Its tip rides the capsule's edge out; its middle, halfway,
+                -- keeps it a straight ray once both have settled.
+                to_x = function() return s() + ux() * (if out() then radius_ring() - capsule() / 2 else start()) end,
+                to_y = function() return s() + uy() * (if out() then radius_ring() - capsule() / 2 else start()) end,
+                bend_x = function() return s() + ux() * (if out() then (start() + radius_ring() - capsule() / 2) / 2 else start()) end,
+                bend_y = function() return s() + uy() * (if out() then (start() + radius_ring() - capsule() / 2) / 2 else start()) end,
                 growth = function() return if out() then 1 else 0 end,
-                transition = { growth = moving },
+                transition = { growth = moving, to_x = travelling, to_y = travelling, bend_x = swaying, bend_y = swaying },
             }
 
             local glass = g.capsule {
@@ -232,8 +236,8 @@ return {
                     width = moving,
                     height = moving,
                     radius = moving,
-                    offset_x = moving,
-                    offset_y = moving,
+                    offset_x = travelling,
+                    offset_y = travelling,
                     fill = "colour",
                     rim_top = "colour",
                     rim_bottom = "colour",

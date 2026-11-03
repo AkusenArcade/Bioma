@@ -56,6 +56,9 @@
 --   withdrawal         seconds the pill waits, once it is no longer placed,
 --                      before it fades: what it drew around itself goes home
 --                      into it first (Cell.withdrawal)
+--   lands              true for a cell that arrives on a spring and goes a
+--                      little past before it settles, when the motion is
+--                      organic: a notification coming in
 -- and the cell gives back room(), the width its content may draw in, once
 -- the tissue has placed it, and placed, whether it is on screen.
 -- Everything the engine needs from a cell arrives in its block; adding a
@@ -597,9 +600,16 @@ function M.new(kind: any, ctx: { [string]: any })
         local function shaping(): string
             local a = arrival.value
             if a == "start" then return "instant" end
-            if a == "growing" then return "open_flat" end
+            if a == "growing" then return if spec.lands then timing.motion("land", "open_flat") else "open_flat" end
             if a == "leaving" then return "depart" end
             return "reflow"
+        end
+        -- Where it is, once it has arrived: making room for a neighbour,
+        -- a cell settles into its new place on a firm spring rather than
+        -- easing (core/timing.luau, motion). Its size still only reflows.
+        local function placing(): string
+            if arrival.value == "" then return timing.motion("settle", "reflow") end
+            return shaping()
         end
         local function growing(): boolean
             local a = arrival.value
@@ -712,8 +722,8 @@ function M.new(kind: any, ctx: { [string]: any })
                 end
             end,
             transition = {
-                offset_x = shaping,
-                offset_y = shaping,
+                offset_x = placing,
+                offset_y = placing,
                 width = shaping,
                 height = shaping,
                 opacity = function() return if arrival.value == "leaving" then "depart_fade" else "fade" end,

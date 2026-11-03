@@ -23,6 +23,7 @@ local g = require("@genoma")
 local colour = require("core/colour")
 local metrics_mod = require("core/metrics")
 local theme = require("core/theme")
+local timing = require("core/timing")
 local typography = require("core/typography")
 local thread_mod = require("components/thread")
 local scroller_mod = require("components/scroller")
@@ -366,7 +367,17 @@ return {
                 blur = require("core/performance").blurred,
                 on_hover = function(on: boolean) hovered.value = on end,
                 on_click = function() choose(g.untracked(c).key) end,
-                transition = { growth = curve, offset_x = curve, fill = "colour" },
+                -- Its travel out lands on a spring at its turn in the cascade;
+                -- its budding only grows (core/timing.luau, motion).
+                transition = {
+                    growth = curve,
+                    offset_x = function()
+                        if not cell.open.value then return curve() end
+                        local i = math.min(index, 12)
+                        return timing.motion("cascade_land_" .. i, "cascade_" .. i)
+                    end,
+                    fill = "colour",
+                },
                 -- The chosen one carries more light: the glyph the primary
                 -- gradient, the name the primary.
                 g.icon {

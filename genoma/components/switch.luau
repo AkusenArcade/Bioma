@@ -6,6 +6,7 @@ local g = require("@genoma")
 local theme = require("core/theme")
 local colour = require("core/colour")
 local metrics_mod = require("core/metrics")
+local timing = require("core/timing")
 
 local M = {}
 
@@ -54,7 +55,8 @@ function M.new(t: { [string]: any }): any
             offset_x = function() return if t.on() then w() - knob() - inset() else inset() end,
             offset_y = inset,
             fill = function() return if t.on() then theme.background() else colour.alpha(theme.text(), 0.45) end,
-            transition = { offset_x = "transition", fill = "transition" },
+            -- The knob hops across and settles (core/timing.luau, motion).
+            transition = { offset_x = function() return timing.motion("hop", "transition") end, fill = "transition" },
         },
     }
 end

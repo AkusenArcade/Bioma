@@ -407,8 +407,8 @@ function M.new(cell: any): any
         local function items(): { any } return if held.value then held.value.items else {} end
         local function height(): number return pad() * 2 + title_height() + #items() * row_height() end
         local function lit(): boolean return out() and lit_slot() == i end
-        local function moving(): string return if out() then "tether" else "retract" end
-        local function swaying(): string return if out() then "sway" else "retract" end
+        local function moving(): string return if out() then timing.motion("tether", "open_flat") else "retract" end
+        local function swaying(): string return if out() then timing.motion("sway", "open_flat") else "retract" end
         local function growing(): string return if out() then "open_flat" else "retract" end
 
         -- From the pill's centre: the middle of the cluster's edge that

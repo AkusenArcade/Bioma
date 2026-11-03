@@ -17,6 +17,7 @@ local config = require("core/config")
 local metrics_mod = require("core/metrics")
 local performance = require("core/performance")
 local theme = require("core/theme")
+local timing = require("core/timing")
 local typography = require("core/typography")
 local gauge = require("components/gauge")
 local slider = require("components/slider")
@@ -83,7 +84,9 @@ function M.node(output: string, size: { width: number, height: number }): any
     local cy = size.height - 3 * m.cell_height - capsule_height / 2
     local function width(): number return if here() then full_width() else 0 end
     local function height(): number return if here() then capsule_height else 0 end
-    local function grow(): string return if here() then "open" else "close" end
+    -- A small capsule: it arrives on a spring and swells a little past its
+    -- size, about its centre (core/timing.luau, motion); it closes plainly.
+    local function grow(): string return if here() then timing.motion("land", "open") else "close" end
 
     local dial_face = g.box {
         present = function() return not plain() end,

@@ -17,6 +17,7 @@ local theme = require("core/theme")
 local colour = require("core/colour")
 local typography = require("core/typography")
 local metrics_mod = require("core/metrics")
+local timing = require("core/timing")
 local niri = require("services/niri")
 local bars = require("components/workspace_bars")
 
@@ -124,10 +125,34 @@ return {
 
         local function row(item: () -> any, index: () -> number): any
             local function ws(): any return item() end
+            -- The cascade, on the organic motion: opening, each row drops in
+            -- from a little above and lands on a spring, one after the
+            -- other from the top, once the panel has budded. The panel's
+            -- own content fade carries them in; closing, nothing moves.
+            local landed = g.signal(not timing.organic())
+            g.watch(function() return cell.open.value end, function(open: boolean)
+                if not open or not timing.organic() then
+                    landed.value = true
+                    return
+                end
+                landed.value = false
+                local turn = timing.seconds.open + (g.untracked(index) - 1) * timing.seconds.cluster_stagger
+                g.after(turn, function()
+                    if g.untracked(function() return cell.open.value end) then landed.value = true end
+                end)
+            end)
             return g.capsule {
                 role = "button",
                 width = list_width,
                 height = row_height,
+                offset_y = function() return if landed.value then 0 else -row_height() * 0.5 end,
+                -- Waiting its turn it is not there yet, or it would lie over
+                -- the row above.
+                opacity = function() return if landed.value then 1 else 0 end,
+                transition = {
+                    offset_y = function() return if landed.value then "land" else "instant" end,
+                    opacity = function() return if landed.value then "content_fade" else "instant" end,
+                },
                 radius = function() return metrics_mod.shaped(math.min(row_height() / 2, 14 * f())) end,
                 -- The keyboard's mark (KeyMark.qml): shown once a key moved it.
                 fill = function()

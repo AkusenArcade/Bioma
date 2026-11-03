@@ -318,7 +318,17 @@ function M.new(cell: any)
             align = "center",
             -- The indicators double as the sort control.
             on_click = function() sort.value = key end,
-            transition = { growth = curve, bud = curve, offset_x = curve },
+            -- Its travel out lands on a spring at its turn; its budding
+            -- only grows (core/timing.luau, motion).
+            transition = {
+                growth = curve,
+                bud = curve,
+                offset_x = function()
+                    if not cell.open.value then return curve() end
+                    local i = math.clamp(order(), 1, 4)
+                    return require("core/timing").motion("pod_land_" .. i, "pod_" .. i)
+                end,
+            },
             -- The matrix reads top to bottom: the indicator above its
             -- figures, the name at the foot.
             g.box {

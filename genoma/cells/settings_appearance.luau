@@ -185,6 +185,21 @@ function M.new(t: { [string]: any }): any
             end,
         },
     })
+    -- How things move, as well as how fast: organic, what travels arrives
+    -- on a spring and goes a little past, threads sway behind what they
+    -- hold; classic, every movement eases in and stops (core/timing.luau).
+    table.insert(numbers, plain_row {
+        label("MOTION"),
+        segmented.new {
+            metrics = m,
+            font_size = function() return m().font_meta end,
+            options = function()
+                return { { key = "classic", label = "Classic" }, { key = "organic", label = "Organic" } }
+            end,
+            current = function() return if config.get("appearance.motion", "organic") == "classic" then "classic" else "organic" end,
+            on_choose = function(key: string) config.set("appearance.motion", key) end,
+        },
+    })
 
     -- ---- The palettes ------------------------------------------------------------
 

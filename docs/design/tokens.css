@@ -77,6 +77,9 @@
   /* springs (Genoma only): stiffness / damping, unit mass */
   --spring-tether:  210 / 15;  /* a shape tied by a thread, arriving with overshoot */
   --spring-sway:    90 / 7;    /* a thread's middle, following later and looser */
+  --spring-hop:     420 / 22;  /* a pill or knob answering a gesture */
+  --spring-land:    260 / 17;  /* a capsule arriving where it belongs */
+  --spring-settle:  320 / 30;  /* a cell making room in its tissue, barely past */
 
   /* --- thresholds --- */
   --threshold-calm:   0.30;
