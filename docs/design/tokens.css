@@ -74,6 +74,9 @@
   --ease-open:      cubic-bezier(.2, .9, .3, 1.15);  /* small capsules only */
   --ease-open-flat: cubic-bezier(.2, .9, .3, 1);     /* large panels */
   --ease-close:     cubic-bezier(.5, 0, .9, .5);
+  /* springs (Genoma only): stiffness / damping, unit mass */
+  --spring-tether:  210 / 15;  /* a shape tied by a thread, arriving with overshoot */
+  --spring-sway:    90 / 7;    /* a thread's middle, following later and looser */
 
   /* --- thresholds --- */
   --threshold-calm:   0.30;

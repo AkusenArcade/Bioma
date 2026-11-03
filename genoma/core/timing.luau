@@ -38,6 +38,9 @@ M.seconds = {} :: { [string]: number }
 local moved = {
     open = 250, close = 150, grow = 100, transition = 180, reflow = 220, theme = 250,
     content_fade = 120, wallpaper = 600, welcome_open = 450, welcome_stagger = 100, welcome_fade = 1000,
+    -- Between one cluster of the organic launcher leaving the field and the
+    -- next, the most relevant first.
+    cluster_stagger = 70,
 }
 local scaled = { stagger = 16, debounce = 180, auto_hide = 500, notification = 5000, loader = 1200, welcome = 900 }
 local fixed = {
@@ -64,6 +67,15 @@ g.effect(function()
         open = { duration = s.open, curve = c.open },
         open_flat = { duration = s.open, curve = c.open_flat },
         close = { duration = s.close, curve = c.close },
+        -- Springs, for what is tied to something by a thread and is seen to
+        -- pull on it: the organic launcher's clusters arrive on `tether`
+        -- and overshoot, and their threads' middles follow on `sway`, looser
+        -- and later, so a thread whips and settles behind what it holds.
+        -- Springs have no duration; performance mode makes them instant.
+        tether = if instant then { duration = 0.001 } else { spring = {
+            stiffness = config.get("timing.tether_stiffness", 210), damping = config.get("timing.tether_damping", 15) } },
+        sway = if instant then { duration = 0.001 } else { spring = {
+            stiffness = config.get("timing.sway_stiffness", 90), damping = config.get("timing.sway_damping", 7) } },
         -- An auto-hiding membrane sliding out of the edge or back into it,
         -- and its halo fading with it (Membrane.qml, Timing.open InOutQuad).
         reveal = { duration = s.open, curve = c.in_out_quad },

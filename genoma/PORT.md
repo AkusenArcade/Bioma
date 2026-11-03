@@ -298,7 +298,7 @@ host, driven only by `scripts/genoma ipc`:
 | timer | *beyond the PRD* | 4 | 11bb81e | checked 2026-10-29, awaiting Akusen and the cost |
 | notifications | §9.10 | 4, last | 11bb81e | checked 2026-10-30 on a private session bus, awaiting Akusen and the cost |
 | settings (with setup, §9.14) | §9.12 | 5 | 11bb81e (setup 2cafc17) | checked 2026-11-02: the frame, the eleven pages and the setup's eight steps; the setup's actions on the machine are Quickshell's and Akusen's to press |
-| launcher | §9.13 | 6 | 2cafc17 | checked 2026-11-02 summoned on HDMI-A-1: apps by use and by subsequence with the matched letters lit (Genoma's new text `marks`), sums from qalc, files from fd under FILES; launching, Enter and the form on a membrane are Akusen's to press |
+| launcher | §9.13 | 6 | 2cafc17 | checked 2026-11-02 summoned on HDMI-A-1: apps by use and by subsequence with the matched letters lit (Genoma's new text `marks`), sums from qalc, files from fd under FILES; launching, Enter and the form on a membrane are Akusen's to press. 2026-11-04: an organic form, Genoma's only (no Quickshell counterpart), chosen in Settings → Cells: clusters by kind on springs and threads round the field, particles at a result's worth (cells/launcher_organic.luau, search shared in cells/launcher_search.luau) |
 
 window_title, checked 2026-10-29 (`genoma/cells/window_title.luau`,
 `components/sweep.luau`) beside Bioma on Quickshell's on DP-1, the same

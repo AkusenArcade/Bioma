@@ -172,11 +172,14 @@ function M.new(t: { [string]: any }): any
 
         -- What a cell may carry beyond when it appears: the dock its
         -- launcher, the media its effect (which the media organism follows
-        -- too, so it is offered even when the cell is placed nowhere).
+        -- too, so it is offered even when the cell is placed nowhere), the
+        -- launcher its form when it is asked for (simple, a list; organic,
+        -- clusters on threads round the field).
         local function extra(): string
             local k = kind()
             if k == "dock" and r().placed then return "dock" end
             if k == "media" then return "media" end
+            if k == "launcher" then return "launcher" end
             return ""
         end
 
@@ -210,7 +213,10 @@ function M.new(t: { [string]: any }): any
                 align = "center",
                 gap = function() return 8 * f() end,
                 padding_right = function() return 12 * f() end,
-                meta(function() return if extra() == "dock" then "LAUNCHER" else "EFFECT" end, theme.text),
+                meta(function()
+                    local e = extra()
+                    return if e == "dock" then "LAUNCHER" elseif e == "launcher" then "FORM" else "EFFECT"
+                end, theme.text),
                 g.box {
                     present = function() return extra() == "dock" end,
                     switch.new {
@@ -220,6 +226,20 @@ function M.new(t: { [string]: any }): any
                     },
                 },
                 g.box { present = function() return extra() == "media" end, effect_node },
+                g.box {
+                    present = function() return extra() == "launcher" end,
+                    segmented.new {
+                        metrics = m,
+                        font_size = function() return m().font_meta end,
+                        button_height = function() return 22 * f() end,
+                        button_padding = function() return 10 * f() end,
+                        options = function()
+                            return { { key = "simple", label = "Simple" }, { key = "organic", label = "Organic" } }
+                        end,
+                        current = function() return config.get("launcher.style", "simple") end,
+                        on_choose = function(key: string) config.set("launcher.style", key) end,
+                    },
+                },
             },
             -- The question: what "conditional" means for this one.
             g.box {
