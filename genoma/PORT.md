@@ -123,6 +123,24 @@ choosing code asks Quickshell only while Quickshell is the shell:
   close; a plain notification played Bioma's, a suppressed one nothing, a
   named one the freedesktop sound; the greeter's copy was made. The mains
   await the laptop; the printer a machine with one queue and no default.
+- niri's configuration written (2026-11-03): `niri_kdl.luau` gained the
+  edits of niri-config.js (a bind's key replaced, a node removed with its
+  line, children and sections added, positions, flags, variable refresh,
+  startup lines switched by comment or slashdash, rules, renames across
+  rules and binds, a file standalone for validation) and `niri_config.luau`
+  the writing (one at a time, `niri validate` on the part that changed,
+  niri's own reason when it refuses); Keybinds, the Niri page and Monitors
+  write through them, and Genoma answers `niri`, `monitors` and
+  `keybinds` as shell.qml does. Checked alone on a scratch copy of
+  Akusen's niri files, each change made and undone through IPC: gaps in
+  both files that set them, focus following the mouse switched by its
+  comment, a workspace added, renamed (with every rule naming it), sent to
+  an output and removed, a startup line added, switched off and on and
+  removed, a rule added with opacity, width and workspace and removed: the
+  files came back byte for byte. A bind added, moved to another key and
+  removed; a duplicate key refused in niri's words. Monitors: a position,
+  the primary and variable refresh written for the nested output, the
+  games rule on and off.
 
 ## Parity
 

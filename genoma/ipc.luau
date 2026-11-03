@@ -95,6 +95,158 @@ function M.register()
         end,
     })
 
+    -- niri's settings, as the Niri page writes them; a thing is named by
+    -- `file#start#kind`, start counted from 0.
+    local function item(id: string): any
+        local file, start, kind = string.match(id or "", "^(.*)#(%d+)#([%w%-]+)$")
+        if not file then return nil end
+        for _, i in g.untracked(require("services/niri_config").items) do
+            if i.file == file and i.start - 1 == tonumber(start) and i.kind == kind then return i end
+        end
+        return nil
+    end
+    local function number(text: string?): number return tonumber(text or "") or 0 end
+    g.ipc("niri", {
+        gaps = function(value: string): string require("services/niri_settings").set_gaps(number(value)) return value end,
+        focusRing = function(value: string): string require("services/niri_settings").set_focus_ring(number(value)) return value end,
+        followsMouse = function(on: string): string
+            require("services/niri_settings").set_follows_mouse(on == "true")
+            return if on == "true" then "on" else "off"
+        end,
+        addWorkspace = function(): string require("services/niri_settings").add_workspace() return "added" end,
+        renameWorkspace = function(id: string, name: string): string
+            local ws = item(id)
+            if not ws then return "no such workspace" end
+            require("services/niri_settings").rename_workspace(ws, name)
+            return name
+        end,
+        workspaceOutput = function(id: string, output: string?): string
+            local ws = item(id)
+            if not ws then return "no such workspace" end
+            require("services/niri_settings").set_workspace_output(ws, output or "")
+            return output or ""
+        end,
+        moveWorkspace = function(id: string, delta: string): string
+            local ws = item(id)
+            if not ws then return "no such workspace" end
+            require("services/niri_settings").move_workspace(ws, number(delta))
+            return "moved"
+        end,
+        removeWorkspace = function(id: string): string
+            local ws = item(id)
+            if not ws then return "no such workspace" end
+            require("services/niri_settings").remove_workspace(ws)
+            return "removed"
+        end,
+        -- `command` is a JSON list of words, or with `sh` one shell line.
+        addStartup = function(command: string, sh: string): string
+            if sh == "true" then
+                require("services/niri_settings").add_startup(command, true)
+                return "added"
+            end
+            local ok, words = pcall(g.parse_json, command)
+            if not ok or type(words) ~= "table" then return "not JSON" end
+            require("services/niri_settings").add_startup(words, false)
+            return "added"
+        end,
+        startupOn = function(id: string, on: string): string
+            local line = item(id)
+            if not line then return "no such line" end
+            require("services/niri_settings").set_startup_on(line, on == "true")
+            return if on == "true" then "on" else "off"
+        end,
+        removeStartup = function(id: string): string
+            local line = item(id)
+            if not line then return "no such line" end
+            require("services/niri_settings").remove_startup(line)
+            return "removed"
+        end,
+        ruleOpacity = function(id: string, value: string): string
+            local rule = item(id)
+            if not rule then return "no such rule" end
+            local v = number(value)
+            require("services/niri_settings").set_rule_opacity(rule, if v < 0 then nil else v)
+            return value
+        end,
+        ruleWidth = function(id: string, fraction: string): string
+            local rule = item(id)
+            if not rule then return "no such rule" end
+            local v = number(fraction)
+            require("services/niri_settings").set_rule_width(rule, if v < 0 then nil else v)
+            return fraction
+        end,
+        ruleWorkspace = function(id: string, name: string?): string
+            local rule = item(id)
+            if not rule then return "no such rule" end
+            require("services/niri_settings").set_rule_workspace(rule, if name and name ~= "" then name else nil)
+            return name or ""
+        end,
+        removeRule = function(id: string): string
+            local rule = item(id)
+            if not rule then return "no such rule" end
+            require("services/niri_settings").remove_rule(rule)
+            return "removed"
+        end,
+        addRule = function(app_id: string): string require("services/niri_settings").add_rule(app_id or "") return app_id or "" end,
+        error = function(): string return g.untracked(require("services/niri_settings").error) end,
+    })
+
+    -- The monitors' layout, as the Monitors page writes it.
+    g.ipc("monitors", {
+        place = function(positions: string): string
+            local ok, parsed = pcall(g.parse_json, positions)
+            if not ok or type(parsed) ~= "table" then return "not JSON" end
+            require("services/monitors").place(parsed)
+            return "placing"
+        end,
+        power = function(name: string, on: string): string
+            local yes = on == "true"
+            return if require("services/monitors").power(name, yes) then (if yes then "on" else "off")
+                else "the last monitor stays on"
+        end,
+        primary = function(name: string?): string
+            require("services/monitors").make_primary(name or "")
+            return if name and name ~= "" then name else "none"
+        end,
+        vrr = function(name: string, mode: string): string require("services/monitors").set_vrr(name, mode) return mode end,
+        games = function(on: string): string
+            require("services/monitors").set_games(on == "true")
+            return if on == "true" then "on" else "off"
+        end,
+        error = function(): string return g.untracked(require("services/monitors").error) end,
+    })
+
+    -- niri's keybinds, as the Keybinds page writes them.
+    g.ipc("keybinds", {
+        rekey = function(id: string, key: string): string
+            local keybinds = require("services/keybinds")
+            for _, b in g.untracked(keybinds.binds) do
+                if b.id == id then
+                    keybinds.rekey(b, key)
+                    return key
+                end
+            end
+            return "no such bind"
+        end,
+        remove = function(id: string): string
+            local keybinds = require("services/keybinds")
+            for _, b in g.untracked(keybinds.binds) do
+                if b.id == id then
+                    keybinds.remove(b)
+                    return "removed"
+                end
+            end
+            return "no such bind"
+        end,
+        add = function(key: string, action: string, title: string?): string
+            local ok, parsed = pcall(g.parse_json, action)
+            if not ok or type(parsed) ~= "table" then return "not JSON" end
+            require("services/keybinds").add(key, { name = parsed.name, args = parsed.args or {} }, title or "")
+            return key
+        end,
+        error = function(): string return g.untracked(require("services/keybinds").error) end,
+    })
+
     g.ipc("looks", {
         icons = function(id: string): string
             local looks = require("services/looks")

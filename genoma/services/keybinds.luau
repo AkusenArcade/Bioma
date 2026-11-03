@@ -6,11 +6,13 @@
 -- and the one read later wins. A bind overridden that way is still listed,
 -- marked `shadowed`, because it is still written down somewhere.
 --
--- Writing stays Bioma on Quickshell's while the two run side by side (`qs
--- ipc call keybinds …`): it rewrites the file each bind came from and has
--- niri validate it (genoma/PORT.md, "Who acts on the desktop").
+-- Writing rewrites the file each bind came from and has niri validate it.
+-- Bioma on Genoma alone writes (M6 step 7a); beside Quickshell, Quickshell
+-- does (`keybinds …` through scripts/ipc; genoma/PORT.md, "Who acts on the
+-- desktop").
 local g = require("@genoma")
 local paths = require("core/paths")
+local runtime = require("core/runtime")
 local niri_config = require("services/niri_config")
 local kdl = require("services/niri_kdl")
 
@@ -30,6 +32,10 @@ local binds = g.computed(function(): { any }
                 file = item.file,
                 key = item.key,
                 key_raw = string.sub(text, item.key_start, item.key_end - 1),
+                start = item.start,
+                ["end"] = item["end"],
+                key_start = item.key_start,
+                key_end = item.key_end,
                 props = item.props,
                 action = item.action,
                 label = kdl.describe(item),
@@ -66,11 +72,17 @@ function M.humanize(name: string): string return kdl.humanize(name) end
 
 local writing = g.signal(0)
 local said = g.signal("")
-function M.busy(): boolean return writing.value > 0 end
-function M.error(): string return said.value end
+function M.busy(): boolean
+    if runtime.alone() then return niri_config.busy() end
+    return writing.value > 0
+end
+function M.error(): string
+    if runtime.alone() then return niri_config.error() end
+    return said.value
+end
 
 local function ask(args: { string })
-    local command = { "qs", "-p", paths.root .. "/shell.qml", "ipc", "call", "keybinds" }
+    local command = { paths.script("ipc"), "keybinds" }
     for _, a in args do table.insert(command, a) end
     writing.value += 1
     said.value = ""
@@ -81,7 +93,7 @@ local function ask(args: { string })
             -- niri's refusal comes once Quickshell has validated the file.
             g.after(1.5, function()
                 g.process {
-                    command = { "qs", "-p", paths.root .. "/shell.qml", "ipc", "call", "keybinds", "error" },
+                    command = { paths.script("ipc"), "keybinds", "error" },
                     on_line = function(line: string) if line ~= "" then said.value = line end end,
                 }
             end)
@@ -89,10 +101,44 @@ local function ask(args: { string })
     }
 end
 
-function M.rekey(bind: any, key: string) ask({ "rekey", bind.id, key }) end
-function M.remove(bind: any) ask({ "remove", bind.id }) end
+-- The text a bind was read from must still be there: an edit made against a
+-- file somebody else has changed since would land in the wrong place.
+local function current(bind: any): string?
+    local text = niri_config.text_of(bind.file)
+    if not text or string.sub(text, bind.key_start, bind.key_end - 1) ~= bind.key_raw then
+        niri_config.set_error("The file changed under this bind. Try again.")
+        return nil
+    end
+    return text
+end
+local function commit(file: string, text: string) niri_config.write(file, text, kdl.block_of(text)) end
+
+function M.rekey(bind: any, key: string)
+    if not g.untracked(runtime.alone) then ask({ "rekey", bind.id, key }) return end
+    local text = current(bind)
+    if text then commit(bind.file, kdl.with_key(text, bind, key)) end
+end
+function M.remove(bind: any)
+    if not g.untracked(runtime.alone) then ask({ "remove", bind.id }) return end
+    local text = current(bind)
+    if text then commit(bind.file, kdl.without(text, bind)) end
+end
+-- A new bind goes into niri's own file, at the end of its block: the one
+-- file here nothing else rewrites.
 function M.add(key: string, action: { name: string, args: { string } }, title: string)
-    ask({ "add", key, g.to_json({ name = action.name, args = g.array(table.clone(action.args)) }), title })
+    if not g.untracked(runtime.alone) then
+        ask({ "add", key, g.to_json({ name = action.name, args = g.array(table.clone(action.args)) }), title })
+        return
+    end
+    local text = niri_config.text_of(M.main)
+    if not text then
+        niri_config.set_error("niri's configuration could not be read.")
+        return
+    end
+    local scanned = kdl.scan(text)
+    local last = nil
+    for _, item in scanned.items do if item.kind == "bind" then last = item end end
+    commit(M.main, kdl.with_added(text, scanned.block, kdl.line(key, action, title), last))
 end
 
 -- ---- What a new bind can do -------------------------------------------------

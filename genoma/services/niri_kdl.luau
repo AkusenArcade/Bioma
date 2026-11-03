@@ -1,8 +1,8 @@
 --!strict
--- Reading niri's configuration as text (services/niri-config.js), the part
--- the services ported so far need: includes and `output` sections. Binds,
--- window rules, workspaces, startup lines and their rewriting come with the
--- services that read them (Keybinds, NiriSettings, Monitors' editing).
+-- Reading and rewriting niri's configuration as text
+-- (services/niri-config.js at 8ed8892): includes, binds and their block,
+-- outputs, window rules, workspaces, startup lines, sections and the lines
+-- commented out in them; and the edits the settings make.
 --
 -- The configuration belongs to niri and to whoever wrote it, so it is never
 -- parsed into a model and printed back: it is scanned for positions, and an
@@ -335,10 +335,15 @@ local function workspace_of(node: any): any
     return {
         kind = "workspace",
         name = node.args[1].value,
+        name_start = node.args[1].start,
+        name_end = node.args[1]["end"],
         start = node.start,
         ["end"] = node["end"],
+        open = if node.children then node.children.open else -1,
+        close = if node.children then node.children.close else -1,
         children = children,
         output = if output and #output.args > 0 then output.args[1].value else "",
+        output_node = output,
     }
 end
 
@@ -346,7 +351,7 @@ local function is_spawn(name: string): boolean
     return name == "spawn-at-startup" or name == "spawn-sh-at-startup"
 end
 -- `mark` is where the line is switched off, when it is: the comment or the
--- slashdash.
+-- slashdash, and where the node itself begins after it.
 local function spawn_of(node: any, mark: any?): any
     local args = {}
     for _, a in node.args do table.insert(args, a.value) end
@@ -357,6 +362,7 @@ local function spawn_of(node: any, mark: any?): any
         on = mark == nil,
         start = if mark then mark.start else node.start,
         ["end"] = if mark then mark["end"] else node["end"],
+        body_start = if mark then mark.body_start else node.start,
     }
 end
 
@@ -377,10 +383,12 @@ local function commented_nodes(text: string): { any }
                     local by = from - 1
                     n.start += by
                     n["end"] += by
+                    if n.name_start then n.name_start += by end
+                    if n.name_end then n.name_end += by end
                     local args = {}
                     for _, a in n.args do table.insert(args, { value = a.value, start = a.start + by, ["end"] = a["end"] + by }) end
                     n.args = args
-                    table.insert(out, { start = token.start, ["end"] = token["end"], node = n })
+                    table.insert(out, { start = token.start, ["end"] = token["end"], body_start = from + nodes[1].start - 1, node = n })
                 end
             end
         end
@@ -390,13 +398,15 @@ end
 
 -- One file's items, in the order they appear: an include is expanded where
 -- it stands, so the order between it and what is around it decides.
-function M.scan(text: string): { items: { any } }
+function M.scan(text: string): { items: { any }, block: any }
     local top = M.parse_nodes(M.tokenize(text), 1, false)
     local items = {}
+    local block = nil
+    local notes = commented_nodes(text)
     local function inside(at: number, node: any): boolean
         return node.children ~= nil and at > node.children.open and at < node.children.close
     end
-    for _, note in commented_nodes(text) do
+    for _, note in notes do
         if is_spawn(note.node.name) then
             local nested = false
             for _, node in top do if inside(note.start, node) then nested = true end end
@@ -405,7 +415,10 @@ function M.scan(text: string): { items: { any } }
     end
     for _, node in top do
         if is_spawn(node.name) then
-            table.insert(items, spawn_of(node, if node.dropped then { start = node.start, ["end"] = node["end"] } else nil))
+            -- Switched off by slashdash: the node starts at the `/-`, its
+            -- body at its name.
+            table.insert(items, spawn_of(node, if node.dropped
+                then { start = node.start, ["end"] = node["end"], body_start = node.name_start } else nil))
             continue
         end
         if node.dropped then continue end
@@ -423,8 +436,20 @@ function M.scan(text: string): { items: { any } }
         elseif node.name == "workspace" and #node.args > 0 then
             table.insert(items, workspace_of(node))
         elseif (node.name == "layout" or node.name == "input") and node.children then
-            table.insert(items, { kind = "section", name = node.name, start = node.start, ["end"] = node["end"], children = node.children.nodes })
+            -- Lines commented out directly in the section, not in a block
+            -- inside it.
+            local commented = {}
+            for _, note in notes do
+                if inside(note.start, node) then
+                    local deeper = false
+                    for _, child in node.children.nodes do if inside(note.start, child) then deeper = true end end
+                    if not deeper then table.insert(commented, note) end
+                end
+            end
+            table.insert(items, { kind = "section", name = node.name, start = node.start, ["end"] = node["end"],
+                open = node.children.open, close = node.children.close, children = node.children.nodes, commented = commented })
         elseif node.name == "binds" and node.children then
+            block = { start = node.start, ["end"] = node["end"], open = node.children.open, close = node.children.close }
             for _, bind in node.children.nodes do
                 if not bind.dropped then
                     local action = nil
@@ -453,7 +478,7 @@ function M.scan(text: string): { items: { any } }
     -- The commented lines were gathered first; the file's order is the
     -- position of each thing in it.
     table.sort(items, function(a, b) return a.start < b.start end)
-    return { items = items }
+    return { items = items, block = block }
 end
 
 -- ---- Keys ------------------------------------------------------------------
@@ -582,6 +607,279 @@ end
 function M.names(section: any, connector: string, description: string): boolean
     local wanted = string.lower(tostring(section.name))
     return wanted == string.lower(connector) or (#description > 0 and wanted == string.lower(description))
+end
+
+-- ---- Writing ------------------------------------------------------------------
+--
+-- Every edit replaces exactly the span it changes; offsets as everywhere
+-- here, 1-based, `end` exclusive. `at(text, p)` is the character at p.
+
+local function at(text: string, p: number): string return string.sub(text, p, p) end
+local function blank(c: string): boolean return c == " " or c == "\t" end
+
+function M.quote(value: any): string
+    return '"' .. string.gsub(string.gsub(tostring(value), "\\", "\\\\"), '"', '\\"') .. '"'
+end
+
+-- One bind as a line. Only what Bioma itself adds is written this way: an
+-- edited bind keeps its own text and has only its key replaced.
+function M.line(key: string, action: { name: string, args: { string } }, title: string?): string
+    local words = { key }
+    if title and title ~= "" then table.insert(words, "hotkey-overlay-title=" .. M.quote(title)) end
+    local call = { action.name }
+    for _, a in action.args do table.insert(call, M.quote(a)) end
+    return table.concat(words, " ") .. " { " .. table.concat(call, " ") .. "; }"
+end
+
+function M.with_key(text: string, bind: any, key: string): string
+    return string.sub(text, 1, bind.key_start - 1) .. key .. string.sub(text, bind.key_end)
+end
+
+-- A bind removed with the whole of its lines when it has them to itself,
+-- so the block keeps no hole where it was; a comment on the line directly
+-- above belongs to it and goes with it.
+function M.without(text: string, bind: any): string
+    local from, to = bind.start, bind["end"]
+    local line_start = from
+    while line_start > 1 and blank(at(text, line_start - 1)) do line_start -= 1 end
+    local owns_start = line_start == 1 or at(text, line_start - 1) == "\n"
+    local line_end = to
+    while line_end <= #text and blank(at(text, line_end)) do line_end += 1 end
+    local owns_end = line_end > #text or at(text, line_end) == "\n"
+    if not owns_start or not owns_end then
+        return string.sub(text, 1, from - 1) .. string.sub(text, to)
+    end
+    from = line_start
+    to = math.min(#text + 1, line_end + 1)
+    -- Comment lines immediately above, with no blank line between.
+    while from > 1 do
+        local prev_end = from - 1
+        local prev_start = prev_end
+        while prev_start > 1 and at(text, prev_start - 1) ~= "\n" do prev_start -= 1 end
+        local previous = string.match(string.sub(text, prev_start, prev_end - 1), "^%s*(.-)%s*$") or ""
+        if string.sub(previous, 1, 2) ~= "//" then break end
+        from = prev_start
+    end
+    -- Set apart by blank lines on both sides, it leaves one of them.
+    local blank_before = from >= 3 and at(text, from - 1) == "\n" and at(text, from - 2) == "\n"
+    if blank_before and at(text, to) == "\n" then to += 1 end
+    return string.sub(text, 1, from - 1) .. string.sub(text, to)
+end
+
+-- A child line at the end of a block, indented like the children already
+-- in it.
+function M.with_child(text: string, block: any, entry: string, last_child: any?): string
+    local indent = "    "
+    if last_child then
+        local s = last_child.start
+        while s > 1 and at(text, s - 1) ~= "\n" do s -= 1 end
+        local lead = string.match(string.sub(text, s, last_child.start - 1), "^[ \t]*") or ""
+        if #lead > 0 then indent = lead end
+    end
+    local back = block.close
+    while back > 1 and blank(at(text, back - 1)) do back -= 1 end
+    if back > 1 and at(text, back - 1) == "\n" then
+        return string.sub(text, 1, back - 1) .. indent .. entry .. "\n" .. string.sub(text, back)
+    end
+    return string.sub(text, 1, block.close - 1) .. "\n" .. indent .. entry .. "\n" .. string.sub(text, block.close)
+end
+
+-- A new bind at the end of the block; a file with none gets one at its end.
+function M.with_added(text: string, block: any?, entry: string, last_bind: any?): string
+    if not block then
+        local tail = if #text == 0 or string.sub(text, -1) == "\n" then "" else "\n"
+        return text .. tail .. "\nbinds {\n    " .. entry .. "\n}\n"
+    end
+    return M.with_child(text, block, entry, last_bind)
+end
+
+-- The binds block alone, as niri would read it: what is validated before a
+-- file is written, so a mistake is found in a scratch copy.
+function M.block_of(text: string): string
+    local found = M.scan(text).block
+    return if found then string.sub(text, found.start, found["end"] - 1) .. "\n" else ""
+end
+
+-- ---- Outputs ---------------------------------------------------------------------
+
+function M.position_line(x: number, y: number): string
+    return "position x=" .. math.round(x) .. " y=" .. math.round(y)
+end
+
+local function last_of(list: { any }): any return list[#list] end
+
+-- The position replaced where it is written, or added when it is not.
+function M.with_position(text: string, output: any, x: number, y: number): string
+    local entry = M.position_line(x, y)
+    if output.position then
+        return string.sub(text, 1, output.position.start - 1) .. entry .. string.sub(text, output.position["end"])
+    end
+    return M.with_child(text, output, entry, last_of(output.children))
+end
+
+-- A flag (a child with no value, like `focus-at-startup`), set or cleared.
+function M.with_flag(text: string, output: any, flag: string, on: boolean): string
+    local present = nil
+    for _, child in output.children do if child.name == flag then present = child break end end
+    if on and not present then return M.with_child(text, output, flag, last_of(output.children)) end
+    if not on and present then return M.without(text, present) end
+    return text
+end
+
+-- Variable refresh as off, on or demand: replaced where it is written,
+-- added when it is not, removed for off.
+function M.with_vrr(text: string, output: any, mode: string): string
+    local present = nil
+    for _, child in output.children do if child.name == "variable-refresh-rate" then present = child break end end
+    local entry = if mode == "demand" then "variable-refresh-rate on-demand=true" else "variable-refresh-rate"
+    if mode == "off" then return if present then M.without(text, present) else text end
+    if present then return string.sub(text, 1, present.start - 1) .. entry .. string.sub(text, present["end"]) end
+    return M.with_child(text, output, entry, last_of(output.children))
+end
+
+-- A section for an output the configuration does not mention yet.
+function M.with_output(text: string, name: string, x: number, y: number): string
+    local tail = if #text == 0 or string.sub(text, -1) == "\n" then "" else "\n"
+    return text .. tail .. "\noutput " .. M.quote(name) .. " {\n    " .. M.position_line(x, y) .. "\n}\n"
+end
+
+-- Every output section of a file on its own: what is validated before the
+-- file is written.
+function M.outputs_text(text: string): string
+    local out = {}
+    for _, item in M.scan(text).items do
+        if item.kind == "output" then table.insert(out, string.sub(text, item.start, item["end"] - 1)) end
+    end
+    return table.concat(out, "\n") .. "\n"
+end
+
+-- ---- Startup, rules -----------------------------------------------------------------
+
+function M.spawn_line(command: any, sh: boolean): string
+    if sh then return "spawn-sh-at-startup " .. M.quote(command) end
+    local words = {}
+    for _, w in command do table.insert(words, M.quote(w)) end
+    return "spawn-at-startup " .. table.concat(words, " ")
+end
+
+function M.rule_block(app_id: string): string
+    return "window-rule {\n    match app-id=" .. M.quote(app_id) .. "\n}"
+end
+
+-- A number as niri reads it back: no float noise, and always with a point
+-- (niri takes `opacity 1.0` and refuses `opacity 1`).
+function M.figure(value: number): string
+    local rounded = math.round(value * 1000) / 1000
+    local text = if rounded == math.floor(rounded) then string.format("%d", rounded) else tostring(rounded)
+    return if string.find(text, ".", 1, true) then text else text .. ".0"
+end
+
+-- ---- Editing ----------------------------------------------------------------------
+
+-- Several edits to one text, each { start, end, text } against the text as
+-- it was read: applied from the last, so none moves another.
+function M.spliced(text: string, edits: { any }): string
+    local sorted = table.clone(edits)
+    table.sort(sorted, function(a, b) return a.start > b.start end)
+    local out = text
+    for _, e in sorted do out = string.sub(out, 1, e.start - 1) .. e.text .. string.sub(out, e["end"]) end
+    return out
+end
+
+-- A node replaced by a new line, keeping the semicolon that ended it.
+function M.replacing(text: string, node: any, entry: string): any
+    local semi = at(text, node["end"] - 1) == ";" and string.sub(entry, -1) ~= ";"
+    return { start = node.start, ["end"] = node["end"], text = entry .. (if semi then ";" else "") }
+end
+
+-- Whether a node has its line to itself, a comment after it aside.
+function M.owns_line(text: string, node: any): boolean
+    local s = node.start
+    while s > 1 and blank(at(text, s - 1)) do s -= 1 end
+    if s > 1 and at(text, s - 1) ~= "\n" then return false end
+    local newline = string.find(text, "\n", node["end"], true)
+    local rest = string.match(string.sub(text, node["end"], (newline or #text + 1) - 1), "^%s*(.-)%s*$") or ""
+    return rest == "" or string.sub(rest, 1, 2) == "//"
+end
+
+-- Switched off by commenting out the line when it is the node's own, by
+-- slashdash otherwise: a comment would take its neighbours with it.
+function M.switching_off(text: string, node: any): any
+    local multiline = string.find(string.sub(text, node.start, node["end"] - 1), "\n", 1, true) ~= nil
+    local mark = if M.owns_line(text, node) and not multiline then "//" else "/-"
+    return { start = node.start, ["end"] = node.start, text = mark }
+end
+
+-- The mark taken away, and the space between it and the node with it.
+function M.switching_on(item: any): any
+    return { start = item.start, ["end"] = item.body_start, text = "" }
+end
+
+-- A node removed with its line, without the comment above it: around the
+-- startup lines, that comment is often another line switched off.
+function M.removing(text: string, node: any): any
+    local from, to = node.start, node["end"]
+    local line_start = from
+    while line_start > 1 and blank(at(text, line_start - 1)) do line_start -= 1 end
+    local line_end = to
+    while line_end <= #text and blank(at(text, line_end)) do line_end += 1 end
+    if (line_start == 1 or at(text, line_start - 1) == "\n") and (line_end > #text or at(text, line_end) == "\n") then
+        from = line_start
+        to = math.min(#text + 1, line_end + 1)
+        -- Set apart by blank lines on both sides, it leaves one of them;
+        -- last in the file, it takes the blank line before it.
+        local blank_before = from >= 3 and at(text, from - 1) == "\n" and at(text, from - 2) == "\n"
+        if blank_before and at(text, to) == "\n" then
+            to += 1
+        elseif blank_before and to > #text then
+            from -= 1
+        end
+    end
+    return { start = from, ["end"] = to, text = "" }
+end
+
+-- A new top-level entry on the line after a node like it, indented as that
+-- node is; after a blank line when it is a block, as blocks are written.
+function M.after(text: string, node: any, entry: string, apart: boolean): any
+    local s = node.start
+    while s > 1 and at(text, s - 1) ~= "\n" do s -= 1 end
+    local indent = string.match(string.sub(text, s, node.start - 1), "^[ \t]*") or ""
+    local spot = string.find(text, "\n", node["end"], true) or (#text + 1)
+    local lines = {}
+    for i, l in string.split(entry, "\n") do table.insert(lines, if i == 1 then l else indent .. l) end
+    local below = if apart and spot < #text and at(text, spot + 1) ~= "\n" then "\n" else ""
+    return { start = spot, ["end"] = spot, text = "\n" .. (if apart then "\n" else "") .. indent .. table.concat(lines, "\n") .. below }
+end
+
+-- A new top-level entry at the end of a file.
+function M.appending(text: string, entry: string): any
+    local tail = if #text == 0 or string.sub(text, -1) == "\n" then "" else "\n"
+    return { start = #text + 1, ["end"] = #text + 1, text = tail .. "\n" .. entry .. "\n" }
+end
+
+-- A file as niri would read it on its own, its includes left out: what is
+-- validated before it is written (an include names a path relative to the
+-- file, and the copy handed to `niri validate` is not where the file is).
+function M.standalone(text: string): string
+    local edits = {}
+    for _, node in M.parse_nodes(M.tokenize(text), 1, false) do
+        if node.name == "include" and not node.dropped then
+            table.insert(edits, { start = node.start, ["end"] = node["end"], text = "" })
+        end
+    end
+    return M.spliced(text, edits)
+end
+
+-- The quoted strings in a span that say `value`: a workspace's name where a
+-- bind or a rule names it.
+function M.naming(text: string, from: number, to: number, value: string): { any }
+    local out = {}
+    for _, token in M.tokenize(string.sub(text, from, to - 1)) do
+        if token.type == "string" and token.value == value then
+            table.insert(out, { start = from + token.start - 1, ["end"] = from + token["end"] - 1 })
+        end
+    end
+    return out
 end
 
 return M

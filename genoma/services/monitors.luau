@@ -1,10 +1,10 @@
 --!strict
 -- The monitors, as niri lays them out (services/Monitors.qml): where each
 -- output is and what it runs, and which is primary. Moving them, switching
--- them on and off, variable refresh and making one primary are written by
--- Bioma on Quickshell while the two run side by side (`qs ipc call
--- monitors …`): Genoma chooses, Quickshell writes and validates niri's
--- configuration (genoma/PORT.md, "Who acts on the desktop").
+-- them on and off, variable refresh and making one primary are written into
+-- niri's configuration once niri has validated them: by Bioma on Genoma
+-- alone (M6 step 7a), by Bioma on Quickshell while the two run side by side
+-- (genoma/PORT.md, "Who acts on the desktop").
 --
 -- Two sources, because neither says everything. niri answers where each
 -- output is (`niri msg --json outputs`, asked again whenever its
@@ -15,6 +15,7 @@ local g = require("@genoma")
 local niri_config = require("services/niri_config")
 local kdl = require("services/niri_kdl")
 local paths = require("core/paths")
+local runtime = require("core/runtime")
 
 local M = {}
 
@@ -138,17 +139,25 @@ function M.games_rule(): boolean
     return false
 end
 
--- ---- Writing, through Quickshell ----------------------------------------------
+-- ---- Writing ----------------------------------------------------------------
+--
+-- Bioma on Genoma alone writes niri's output sections itself, through
+-- `niri validate` (M6 step 7a); beside Quickshell it asks Quickshell, which
+-- acts on them while the two run side by side.
 
--- While a write is still being handed over; and the last answer that was a
--- refusal, said where the page says anything.
 local writing = g.signal(0)
 local said = g.signal("")
-function M.busy(): boolean return writing.value > 0 end
-function M.error(): string return said.value end
+function M.busy(): boolean
+    if runtime.alone() then return niri_config.busy() end
+    return writing.value > 0
+end
+function M.error(): string
+    if runtime.alone() then return niri_config.error() end
+    return said.value
+end
 
 local function ask(args: { string }, on_answer: ((string) -> ())?)
-    local command = { "qs", "-p", paths.root .. "/shell.qml", "ipc", "call", "monitors" }
+    local command = { paths.script("ipc"), "monitors" }
     for _, a in args do table.insert(command, a) end
     local lines = {}
     writing.value += 1
@@ -162,29 +171,166 @@ local function ask(args: { string }, on_answer: ((string) -> ())?)
             -- niri's refusal comes once Quickshell has validated the file.
             g.after(1.5, function()
                 g.process {
-                    command = { "qs", "-p", paths.root .. "/shell.qml", "ipc", "call", "monitors", "error" },
+                    command = { paths.script("ipc"), "monitors", "error" },
                     on_line = function(line: string) if line ~= "" then said.value = line end end,
                 }
             end)
         end,
     }
 end
+local function alone(): boolean return g.untracked(runtime.alone) end
 
--- Positions in logical units, `{ ["DP-1"] = { x = 0, y = 0 }, … }`.
+-- Every section of one output in one file, rewritten by `edit`, one at a
+-- time and scanned again after each: an edit moves every offset after it.
+local function rewrite(text: string, output: any, edit: (string, any) -> string): string
+    local index = 1
+    while true do
+        local found = {}
+        for _, item in kdl.scan(text).items do
+            if item.kind == "output" and kdl.names(item, output.name, output.description) then table.insert(found, item) end
+        end
+        if index > #found then return text end
+        text = edit(text, found[index])
+        index += 1
+    end
+end
+
+-- Where a section for an output that has none goes: beside the last
+-- section there is, or into niri's own file.
+local function home_for_new(): string
+    local list = g.untracked(sections)
+    return if #list > 0 then list[#list].file else niri_config.main
+end
+
+-- A change applied to every output that needs it, one write per file:
+-- change(text, output) → text.
+local function apply(change: (string, any) -> string)
+    local files, order = {}, {}
+    for _, output in g.untracked(M.outputs) do
+        local touched = {}
+        if #output.sections > 0 then
+            for _, section in output.sections do
+                if not table.find(touched, section.file) then table.insert(touched, section.file) end
+            end
+        else
+            touched = { home_for_new() }
+        end
+        for _, file in touched do
+            if files[file] == nil then
+                local text = niri_config.text_of(file)
+                if not text then
+                    niri_config.set_error("niri's configuration could not be read.")
+                    return
+                end
+                files[file] = text
+                table.insert(order, file)
+            end
+            files[file] = change(files[file], output)
+        end
+    end
+    for _, file in order do
+        if files[file] ~= niri_config.text_of(file) then
+            niri_config.write(file, files[file], kdl.outputs_text(files[file]))
+        end
+    end
+end
+
+-- The section just added for an output that had none.
+local function last_output(text: string): any
+    local last = nil
+    for _, item in kdl.scan(text).items do if item.kind == "output" then last = item end end
+    return last
+end
+
+-- Positions in logical units, `{ ["DP-1"] = { x = 0, y = 0 }, … }`. Only
+-- the outputs named are written.
 function M.place(positions: { [string]: { x: number, y: number } })
-    ask({ "place", g.to_json(positions) })
+    if not alone() then ask({ "place", g.to_json(positions) }) return end
+    apply(function(text: string, output: any): string
+        local wanted = positions[output.name]
+        if not wanted or (wanted.x == output.x and wanted.y == output.y) then return text end
+        if #output.sections == 0 then return kdl.with_output(text, output.name, wanted.x, wanted.y) end
+        return rewrite(text, output, function(t: string, section: any) return kdl.with_position(t, section, wanted.x, wanted.y) end)
+    end)
 end
 
 -- Answered false when refused: the last monitor on stays on.
+local switching = false
 function M.power(name: string, on: boolean): boolean
     if not on and g.untracked(M.count) <= 1 then return false end
-    ask({ "power", name, if on then "true" else "false" }, function() M.refresh() end)
+    if not alone() then
+        ask({ "power", name, if on then "true" else "false" }, function() M.refresh() end)
+        return true
+    end
+    local output = M.output_of(name)
+    if not output or output.on == on or switching then return true end
+    switching = true
+    g.process {
+        command = { "niri", "msg", "output", name, if on then "on" else "off" },
+        on_exit = function()
+            switching = false
+            M.refresh()
+        end,
+    }
     return true
 end
 
-function M.make_primary(name: string) ask({ "primary", name }) end
-function M.set_vrr(name: string, mode: string) ask({ "vrr", name, mode }) end
-function M.set_games(on: boolean) ask({ "games", if on then "true" else "false" }) end
+function M.make_primary(name: string)
+    if not alone() then ask({ "primary", name }) return end
+    apply(function(text: string, output: any): string
+        local on = output.name == name
+        if #output.sections == 0 then
+            if not on then return text end
+            local added = kdl.with_output(text, output.name, output.x, output.y)
+            return kdl.with_flag(added, last_output(added), "focus-at-startup", true)
+        end
+        return rewrite(text, output, function(t: string, section: any) return kdl.with_flag(t, section, "focus-at-startup", on) end)
+    end)
+end
+
+-- `off`, `on` or `demand`, for one output.
+function M.set_vrr(name: string, mode: string)
+    if not alone() then ask({ "vrr", name, mode }) return end
+    apply(function(text: string, output: any): string
+        if output.name ~= name or output.vrr == mode then return text end
+        if #output.sections == 0 then
+            if mode == "off" then return text end
+            local added = kdl.with_output(text, output.name, output.x, output.y)
+            return kdl.with_vrr(added, last_output(added), mode)
+        end
+        return rewrite(text, output, function(t: string, section: any) return kdl.with_vrr(t, section, mode) end)
+    end)
+end
+
+-- Bioma's own rule turning variable refresh on for games, written as
+-- `bioma-vrr.kdl`; switched off, the file says so and holds no rule.
+local games_writing = false
+function M.set_games(on: boolean)
+    if not alone() then ask({ "games", if on then "true" else "false" }) return end
+    if on == g.untracked(M.games_rule) or games_writing then return end
+    games_writing = true
+    local body = if on
+        then "// Written by Bioma's settings cell (MONITORS). Variable refresh set to on demand\n"
+            .. "// turns on for these windows; switching Games off there empties this file.\n"
+            .. "window-rule {\n"
+            .. '    match app-id=r#"^steam_app_"#\n'
+            .. '    match app-id="^gamescope$"\n'
+            .. "    variable-refresh-rate true\n"
+            .. "}"
+        else "// Written by Bioma's settings cell (MONITORS). Games is off: no rule here."
+    local complaint = {}
+    local p = g.process {
+        command = { paths.script("niri-include"), "vrr" },
+        on_error_line = function(line: string) table.insert(complaint, line) end,
+        on_exit = function()
+            games_writing = false
+            local reason = string.match(table.concat(complaint, "\n"), "^%s*(.-)%s*$") or ""
+            if reason ~= "" then niri_config.set_error("niri refused it: " .. reason) end
+        end,
+    }
+    p:write(body)
+    p:close_input()
+end
 
 -- ---- Asking niri --------------------------------------------------------------
 
