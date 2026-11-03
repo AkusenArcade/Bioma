@@ -144,6 +144,9 @@ function M.node(output: string, size: { width: number, height: number }, backdro
             attach = "corner",
             width = size.width,
             height = size.height,
+            -- The screen's own corners: a capsule left to itself is a pill,
+            -- and that is what showed while a picture was being decoded.
+            radius = 0,
             fill = "#000000",
             rim_top = "#00000000",
             rim_bottom = "#00000000",
