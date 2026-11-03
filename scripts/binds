@@ -160,12 +160,23 @@ def key_of(name):
     return "+".join(mods + [parts[-1].lower()])
 
 
+# A call into the shell, as binds wrote it before `scripts/ipc` (M6 step 7a):
+# Quickshell's own client, which reaches nothing once Bioma runs on Genoma.
+QS_CALL = r'"qs"\s+"-p"\s+"([^"]*)/shell\.qml"\s+"ipc"\s+"call"'
+
+
+def normal(action):
+    """The same deed written the same way: an old call into the shell is the
+    call through `scripts/ipc` it became."""
+    return re.sub(r'"qs" "-p" "@BIOMA@/shell\.qml" "ipc" "call"', '"@BIOMA@/scripts/ipc"', action)
+
+
 def action_of(text, node):
     """What a bind does, wherever Bioma lives and however it is spaced."""
     body = text[node["body"]:node["body_end"]]
     body = re.sub(r"//[^\n]*", "", body)
     body = re.sub(r'"[^"]*/(shell\.qml|scripts/[A-Za-z0-9_-]+)"', r'"@BIOMA@/\1"', body)
-    return re.sub(r"\s+", " ", body).strip().rstrip(";").strip()
+    return normal(re.sub(r"\s+", " ", body).strip().rstrip(";").strip())
 
 
 def title_of(node):
@@ -231,7 +242,7 @@ def template():
 
 def offered():
     try:
-        return set(line.rstrip("\n") for line in open(OFFERED, encoding="utf-8"))
+        return set(normal(line.rstrip("\n")) for line in open(OFFERED, encoding="utf-8"))
     except FileNotFoundError:
         return set()
 
@@ -259,6 +270,40 @@ def accepted(text):
     return done.returncode == 0, re.sub(r"\x1b\[[0-9;]*m", "", done.stderr + done.stdout)
 
 
+def write(path, text):
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path), prefix=".bioma-binds.")
+    with os.fdopen(fd, "w", encoding="utf-8") as out:
+        out.write(text)
+    shutil.copymode(path, tmp)
+    os.replace(tmp, path)
+
+
+def migrate(path):
+    """This Bioma's calls in bioma-binds.kdl through `scripts/ipc`, which
+    reaches the shell on either runtime: a key written as a Quickshell call
+    would do nothing after the switch to Genoma. Another program's calls,
+    and a copy of Bioma elsewhere, are left as they are."""
+    text = open(path, encoding="utf-8").read()
+    moved = []
+
+    def ours(m):
+        if os.path.realpath(m.group(1)) != HERE:
+            return m.group(0)
+        moved.append(m)
+        return f'"{HERE}/scripts/ipc"'
+
+    result = re.sub(QS_CALL, ours, text)
+    if not moved:
+        return []
+    ok, refusal = accepted(result)
+    if not ok:
+        print(f"niri refused the keys through scripts/ipc, so {path} is as it was:", file=sys.stderr)
+        print("\n".join(refusal.strip().splitlines()[-5:]), file=sys.stderr)
+        return []
+    write(path, result)
+    return [f"moved     {len(moved)} keys to scripts/ipc"]
+
+
 def main(args):
     config = os.environ.get("NIRI_CONFIG") or os.path.join(CONFIG_HOME, "niri", "config.kdl")
     if not os.path.isfile(config):
@@ -273,6 +318,7 @@ def main(args):
     if not os.path.isfile(path):
         return 0     # nothing to add to: the installer writes the whole file
 
+    said = migrate(path)
     files = config_files(config)
     if path not in (f for f, _ in files):
         files.append((path, open(path, encoding="utf-8").read()))
@@ -284,7 +330,7 @@ def main(args):
                 taken[bind["key"]] = (bind, file)
 
     before = offered()
-    adding, said = [], []
+    adding = []
     for bind in wanted:
         if bind["action"] in before or bind["action"] in present:
             continue
@@ -313,11 +359,7 @@ def main(args):
             print(f"niri refused the new keys, so {path} is as it was:", file=sys.stderr)
             print("\n".join(refusal.strip().splitlines()[-5:]), file=sys.stderr)
             return 1
-        fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path), prefix=".bioma-binds.")
-        with os.fdopen(fd, "w", encoding="utf-8") as out:
-            out.write(result)
-        shutil.copymode(path, tmp)
-        os.replace(tmp, path)
+        write(path, result)
         for bind in adding:
             said.append(f"added     {bind['name']} ({bind['title'] or bind['action']})")
 

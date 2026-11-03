@@ -207,8 +207,9 @@ function M.new(t: { [string]: any }): any
 
     -- ---- The picker's choices --------------------------------------------------
 
+    -- Through `scripts/ipc`, which reaches the shell on either runtime.
     local function shell_call(args: { string }): { name: string, args: { string } }
-        local out = { "qs", "-p", paths.root .. "/shell.qml", "ipc", "call" }
+        local out = { paths.root .. "/scripts/ipc" }
         for _, a in args do table.insert(out, a) end
         return { name = "spawn", args = out }
     end

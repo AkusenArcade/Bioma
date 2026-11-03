@@ -988,7 +988,7 @@ Item {
                           ? `The first ${Actions.ringSize} are in the ring, in this order; the rest run from a key of their own.`
                           : root.macros.length === Actions.ringSize
                           ? `The ring is full: ${Actions.ringSize}, clockwise from the top. Delete one to write another.`
-                          : "In the ring in this order, clockwise from the top. Each also runs from a key of its own: qs ipc call actions run and its name."
+                          : "In the ring in this order, clockwise from the top. Each also runs from a key of its own: scripts/ipc actions run and its name."
                 }
             }
 

@@ -753,8 +753,7 @@ Item {
                 "title": "Bioma: " + label.toLowerCase(),
                 "action": {
                     "name": "spawn",
-                    "args": ["qs", "-p", Quickshell.shellPath("shell.qml"),
-                             "ipc", "call", "cell", "toggle", type]
+                    "args": [Quickshell.shellPath("scripts/ipc"), "cell", "toggle", type]
                 }
             });
         }
@@ -768,8 +767,7 @@ Item {
                 "title": "Bioma: timer",
                 "action": {
                     "name": "spawn",
-                    "args": ["qs", "-p", Quickshell.shellPath("shell.qml"),
-                             "ipc", "call", "timer", "toggle"]
+                    "args": [Quickshell.shellPath("scripts/ipc"), "timer", "toggle"]
                 }
             });
 
@@ -782,8 +780,7 @@ Item {
                 "title": "Bioma: performance mode",
                 "action": {
                     "name": "spawn",
-                    "args": ["qs", "-p", Quickshell.shellPath("shell.qml"),
-                             "ipc", "call", "performance", "toggle"]
+                    "args": [Quickshell.shellPath("scripts/ipc"), "performance", "toggle"]
                 }
             });
 

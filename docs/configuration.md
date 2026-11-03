@@ -322,7 +322,7 @@ forgotten.
 
 A preset names monitors the way the layout does, so one made with a screen that
 is not connected keeps that screen's blocks, and they appear when it returns.
-The same three things answer a key: `ipc call presets apply <name>`,
+The same three things answer a key: `scripts/ipc presets apply <name>`,
 `presets save <name>`, `presets create` (an empty layout), `presets list` and
 `presets current`.
 
@@ -331,7 +331,7 @@ The same three things answer a key: `ipc call presets apply <name>`,
 Quick actions (CELLS.md §20), written by the Settings cell's ACTIONS page. The
 page makes at most eight, as many as the ring at the pointer holds, clockwise
 from the top; a longer list written by hand is kept, and the ring shows its
-first eight. Every one also runs from a key of its own: `ipc call actions run <name>`. `actions list`
+first eight. Every one also runs from a key of its own: `scripts/ipc actions run <name>`. `actions list`
 names them, `actions ring` brings the ring, as `cell toggle actions` does.
 
 | Key | Meaning |
@@ -373,7 +373,7 @@ The first-run walk-through (docs/design/SETUP.md), written by the shell.
 | Key | Meaning |
 |---|---|
 | `pending` | `true` from the first start until the walk-through is done or skipped: it opens again at every start meanwhile |
-| `done` | `true` once DONE or SKIP SETUP was pressed. After that it opens only by `ipc call setup open` |
+| `done` | `true` once DONE or SKIP SETUP was pressed. After that it opens only by `scripts/ipc setup open` |
 
 It opens by itself only when the shell starts with no override file at all, so
 an existing configuration never sees it.
@@ -521,7 +521,7 @@ what a cell displays. A cell's own settings live in its `options`.
 | `sleep.idle_minutes` | Suspend after this many minutes without input (0, never). It runs `session.suspend`, so with `lock.before_sleep` the session locks first; an application that inhibits idle holds it off, as it holds off the lock. Set from the settings cell's Session page. |
 | `sounds.login` / `sounds.notifications` / `sounds.cells` / `sounds.alerts` | Bioma's sound effects, one switch per kind of event (all true): a chord when the desktop first appears in a session (a mark in `$XDG_RUNTIME_DIR` keeps a shell restart from playing it again); two droplets when a notification appears — one whose sender asks for its own sound (`sound-file`, `sound-name`) plays that instead, and `suppress-sound` plays nothing; a bubble when a cell's panel opens and closes on request; a low note when a CPU, memory or GPU load, or a battery running on itself, crosses into the alert colour. Set from the settings cell's Sounds page. The sounds are synthesised by `tools/sounds` into `assets/sounds` and played with `pw-play`; `qs ipc call sounds play <name>` plays one. |
 | `sounds.volume` | The effects' volume, 0 to 1 under the system's (0.6). `0` silences all of them. |
-| `performance.manual` | Performance mode switched on by hand (false): the key (`qs ipc call performance toggle`, Mod+Alt+G as shipped), the performance cell or the Settings page write it, and it stays across a restart. CELLS §21. |
+| `performance.manual` | Performance mode switched on by hand (false): the key (`scripts/ipc performance toggle`, Mod+Alt+G as shipped), the performance cell or the Settings page write it, and it stays across a restart. CELLS §21. |
 | `performance.gamemode` | Performance mode comes on by itself while a game is registered with GameMode (true), and goes when it leaves. |
 | `performance.apps` | App-ids that bring performance mode on while one of their windows is open (empty). `*` stands for anything; case does not count. Steam's games are `steam_app_*` under XWayland and `steam_proton` under Proton's Wayland driver. Written by the Settings page, which offers the windows open now. |
 | `performance.suspend.motion` / `organisms` / `wallpaper` / `blur` / `transitions` / `polling` | What performance mode quietens, each true by default: the live indicators held still, the organisms put away, the overview's backdrop put away and one picture kept, no blur and no shadows, every movement in one frame, the vitals sampled every `vitals_interval`. |

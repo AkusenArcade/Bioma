@@ -52,6 +52,21 @@ scripts and `core/runtime.luau` for the shell. Until the rest of step 7a is
 done, Quickshell still acts for Genoma (below), so the key is not for daily
 use yet.
 
+## The way in from outside
+
+Keybinds and scripts reach the shell through `scripts/ipc <target>
+<function> [argument…]`, never `qs ipc call` (M6 step 7a): it sends the call
+to Bioma on Genoma when the configuration makes the whole shell Genoma's and
+its socket is there, and to Quickshell otherwise. Genoma answers the
+targets a key can reach as shell.qml does, the same functions and replies
+(`genoma/ipc.luau`, and `cell`, `organisms`, `setup` in shell.luau):
+`actions`, `audio`, `media`, `timer`, `performance`, `capture`; not yet
+`brightness` (with the OSD). The keybinds template, `scripts/key`, both
+Keybinds pages and the documentation use it; `scripts/binds` moves an
+existing bioma-binds.kdl over (this Bioma's calls only, checked by
+`niri validate`) and counts an old call as the bind it became, so nothing
+is offered twice.
+
 ## Who acts on the desktop
 
 Until the switch (M6 step 7) the two run side by side, and some services

@@ -224,6 +224,9 @@ g.ipc("cell", {
     list = function(): string return table.concat(focus.domains(), "\n") end,
 })
 
+-- The rest of what Quickshell's shell.qml answers (genoma/ipc.luau).
+require("ipc").register()
+
 -- The walk-through, as Quickshell's `setup` target has it: opened on a
 -- screen, moved to a step, its state read.
 g.ipc("setup", {

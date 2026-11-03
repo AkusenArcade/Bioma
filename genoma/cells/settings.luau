@@ -64,8 +64,17 @@ local PAGES = {
 -- BIOMA_GENOMA_SETTINGS=<key> opens on that category, to look at a page
 -- without pressing anything on a desktop someone is using.
 local place = { category = g.env("BIOMA_GENOMA_SETTINGS") :: string? }
+-- A category asked for from outside (`actions write`): every settings cell
+-- turns to it, open or not.
+local asked = g.signal("")
 
 return {
+    -- The next time settings is looked at, it is on this category.
+    open_on = function(category: string)
+        place.category = category
+        asked.value = ""
+        asked.value = category
+    end,
     new = function(cell: any)
         local function m(): any return cell.metrics() end
         local function f(): number return m().factor end
@@ -110,6 +119,10 @@ return {
             end)
             g.after(0, function() redrawing.value = false end)
         end
+        -- Asked from outside: the page is turned before the cell opens.
+        g.watch(function() return asked.value end, function(key: string)
+            if key ~= "" and not g.untracked(in_setup) then chosen.value = key end
+        end)
         -- The setup's BACK and NEXT draw the thread out again as a press does.
         g.watch(setup.step, function()
             if not g.untracked(in_setup) then return end

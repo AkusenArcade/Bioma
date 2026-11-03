@@ -149,7 +149,7 @@ captured earlier, switch a monitor on or off, apply a saved layout, wear a
 favourite wallpaper, do not disturb, the power profile, performance mode, a
 timer, a wait, a command. A step that cannot run stops the macro and says why.
 Macros are made on the settings cell's Actions page, which an empty ring opens.
-`qs -p /path/to/Bioma/shell.qml ipc call actions run Work` runs the one called
+`/path/to/Bioma/scripts/ipc actions run Work` runs the one called
 *Work* from anywhere.
 
 <p align="center">
@@ -278,7 +278,7 @@ to be dragged to its place, or onto another monitor. The wheel makes the
 squares larger or smaller. Done, or Escape, puts them back under the windows
 and writes where they stand. Each kind has a size of its own in grid units (2 × 1,
 2 × 2, 1 × 2 and a few more), so organisms of different kinds fall into tidy clusters.
-`qs -p /path/to/Bioma/shell.qml ipc call organisms arrange` enters the mode
+`/path/to/Bioma/scripts/ipc organisms arrange` enters the mode
 from a key.
 
 ### Settings, in the shell
@@ -450,16 +450,16 @@ Then start it with `scripts/shell bioma`, or log in again. After an update,
 | `Mod+Alt+B` | switch between Bioma and the other shell |
 
 The volume, brightness and media keys go to Bioma too. Every other cell also
-answers `qs -p /path/to/Bioma/shell.qml ipc call cell toggle <name>`, so any
+answers `/path/to/Bioma/scripts/ipc cell toggle <name>`, so any
 key can be given to any cell from the Keybinds page. Escape, or a press
 anywhere else, closes what is open.
 
-The timer answers keys of its own: `ipc call timer start 25` starts twenty-five
+The timer answers keys of its own: `scripts/ipc timer start 25` starts twenty-five
 minutes (`start 0` the length last set), `timer toggle` pauses or resumes it,
 `timer stop` ends it. The Keybinds page offers *Timer: start or pause*; the
 timer cell is there while one runs.
 
-Layouts saved on the Structure page answer keys too: `ipc call presets apply
+Layouts saved on the Structure page answer keys too: `scripts/ipc presets apply
 Work` puts the one called *Work* back, membranes, floating tissues and
 organisms on every monitor at once.
 
@@ -469,7 +469,7 @@ Speech to text, in the utility cell: under **Text** the middle button is
 DICTATION, or `Mod+Alt+D` from anywhere. The first press listens, and the cell
 shows the open microphone, its level and the seconds spoken. The second press
 transcribes, locally, with whisper.cpp, and the text lands in the window that
-has the focus. `qs -p shell.qml ipc call capture cancel` drops a take.
+has the focus. `scripts/ipc capture cancel` drops a take.
 
 The text is **pasted**, not typed. A typed keymap is ignored by Electron
 applications, Teams, Obsidian and VS Code among them, and accented letters

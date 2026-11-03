@@ -618,7 +618,7 @@ function M.new(t: { [string]: any }): any
             if n == 0 then return "None yet. A quick action is a list of steps run one after the other, from a ring that comes to the pointer on Mod+Alt+Space." end
             if n > size then return "The first " .. size .. " are in the ring, in this order; the rest run from a key of their own." end
             if n == size then return "The ring is full: " .. size .. ", clockwise from the top. Delete one to write another." end
-            return "In the ring in this order, clockwise from the top. Each also runs from a key of its own: qs ipc call actions run and its name."
+            return "In the ring in this order, clockwise from the top. Each also runs from a key of its own: scripts/ipc actions run and its name."
         end),
     })
 

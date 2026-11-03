@@ -12,16 +12,16 @@
 #     key brightness-up [percent]                 key media-previous
 #     key brightness-down [percent]               key media-stop
 #
-# Under Bioma each one is an IPC call into the running shell; under the other
-# one it is that shell's own message. Neither running is not an error worth
-# printing on a keypress.
+# Under Bioma each one is an IPC call into the running shell, on either
+# runtime (`scripts/ipc`); under the other one it is that shell's own
+# message. Neither running is not an error worth printing on a keypress.
 set -eu
 
 here="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
 step="${2:-}"
 
 bioma() {
-    qs -p "$here/shell.qml" ipc call "$@" >/dev/null 2>&1 || true
+    "$here/scripts/ipc" "$@" >/dev/null 2>&1 || true
 }
 
 other() {
@@ -29,7 +29,11 @@ other() {
     noctalia msg "$@" >/dev/null 2>&1 || true
 }
 
-running_bioma() { pgrep -f -- "qs -p $here/shell.qml" >/dev/null 2>&1; }
+# On either runtime: Bioma on Genoma is the directory as the command's last
+# argument (`scripts/shell`).
+running_bioma() {
+    pgrep -f -- "qs -p $here/shell.qml" >/dev/null 2>&1 || pgrep -f -- "$here/genoma\$" >/dev/null 2>&1
+}
 
 case "${1-}" in
     volume-up)

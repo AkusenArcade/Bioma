@@ -1,8 +1,9 @@
 // Bioma — the keys that ask for a cell.
 //
 // The compositor holds the keys and the shell holds the cells, and the whole
-// of the connection is one IPC call: `qs ipc call cell toggle <domain>` asks
-// the register for a cell of that domain and toggles it. There is no second
+// of the connection is one IPC call: `scripts/ipc cell toggle <domain>` asks
+// the register for a cell of that domain and toggles it, on whichever
+// runtime draws the shell. There is no second
 // model for invoked surfaces — a launcher, a session menu and a settings page
 // are cells whose visibility is `invoked`, and they arrive the same way the
 // always-visible ones open (PRD §5).
@@ -12,7 +13,7 @@
 // placed nowhere on the monitor it comes up in the middle. Ask the running
 // shell which domains it knows:
 //
-//     qs -p /path/to/Bioma/shell.qml ipc call cell list
+//     /path/to/Bioma/scripts/ipc cell list
 //
 // **This is a template.** `scripts/install` writes it out as
 // `bioma-binds.kdl` beside niri's `config.kdl`, with `@BIOMA@` replaced by
@@ -34,15 +35,15 @@
 
 binds {
     Mod+Alt+V hotkey-overlay-title="Bioma: vitals" {
-        spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "cell" "toggle" "vitals"
+        spawn "@BIOMA@/scripts/ipc" "cell" "toggle" "vitals"
     }
 
     Mod+Alt+P hotkey-overlay-title="Bioma: capture" {
-        spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "cell" "toggle" "utility"
+        spawn "@BIOMA@/scripts/ipc" "cell" "toggle" "utility"
     }
 
     Mod+Alt+K hotkey-overlay-title="Bioma: keyboard" {
-        spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "cell" "toggle" "keyboard"
+        spawn "@BIOMA@/scripts/ipc" "cell" "toggle" "keyboard"
     }
 
     // The next layout, straight from niri: the keyboard cell shows which one
@@ -50,19 +51,19 @@ binds {
     Mod+Shift+Space hotkey-overlay-title="Next keyboard layout" { switch-layout "next"; }
 
     Mod+Alt+T hotkey-overlay-title="Bioma: theme" {
-        spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "cell" "toggle" "theme"
+        spawn "@BIOMA@/scripts/ipc" "cell" "toggle" "theme"
     }
 
     Mod+Alt+A hotkey-overlay-title="Bioma: audio" {
-        spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "cell" "toggle" "audio"
+        spawn "@BIOMA@/scripts/ipc" "cell" "toggle" "audio"
     }
 
     Mod+Alt+S hotkey-overlay-title="Bioma: settings" {
-        spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "cell" "toggle" "settings"
+        spawn "@BIOMA@/scripts/ipc" "cell" "toggle" "settings"
     }
 
     Mod+Alt+Escape hotkey-overlay-title="Bioma: system" {
-        spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "cell" "toggle" "system"
+        spawn "@BIOMA@/scripts/ipc" "cell" "toggle" "system"
     }
 
     // ---- The keys that are not cells ------------------------------------
@@ -121,63 +122,63 @@ binds {
     // own `Print { screenshot; }` and `Alt+Print { screenshot-window; }`,
     // because this file is included after them.
     Print hotkey-overlay-title="Bioma: screenshot of a region" {
-        spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "capture" "region"
+        spawn "@BIOMA@/scripts/ipc" "capture" "region"
     }
 
     Mod+Print hotkey-overlay-title="Bioma: screenshot of the screen" {
-        spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "capture" "screen"
+        spawn "@BIOMA@/scripts/ipc" "capture" "screen"
     }
 
     Alt+Print hotkey-overlay-title="Bioma: screenshot of the window" {
-        spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "capture" "window"
+        spawn "@BIOMA@/scripts/ipc" "capture" "window"
     }
 
     // A colour from anywhere on the screen, its hex on the clipboard.
     Mod+Alt+C repeat=false hotkey-overlay-title="Bioma: pick a colour" {
-        spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "capture" "colour"
+        spawn "@BIOMA@/scripts/ipc" "capture" "colour"
     }
 
     // A recording can be stopped without finding the utility cell: it may be
     // crowded off a narrow membrane, or on another monitor. Stopped, it still
     // asks whether to keep the file.
     Shift+Print hotkey-overlay-title="Bioma: stop recording" {
-        spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "capture" "stop"
+        spawn "@BIOMA@/scripts/ipc" "capture" "stop"
     }
 
     // Dictation: the first press listens, the second types what was said
     // into the window that has the focus.
     Mod+Alt+D repeat=false hotkey-overlay-title="Bioma: dictation" {
-        spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "capture" "dictate"
+        spawn "@BIOMA@/scripts/ipc" "capture" "dictate"
     }
 
     // The launcher has no place of its own: asked for, it is built in the
     // middle of the screen the keyboard is pointed at.
     Mod+Space hotkey-overlay-title="Bioma: launcher" {
-        spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "cell" "toggle" "launcher"
+        spawn "@BIOMA@/scripts/ipc" "cell" "toggle" "launcher"
     }
 
     // Quick actions: a ring of macros around the pointer, on the monitor the
     // pointer is on. The middle button with the same modifiers brings it too,
     // for a hand that is already on the mouse.
     Mod+Alt+Space hotkey-overlay-title="Bioma: quick actions" {
-        spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "cell" "toggle" "actions"
+        spawn "@BIOMA@/scripts/ipc" "cell" "toggle" "actions"
     }
 
     Mod+Alt+MouseMiddle hotkey-overlay-title="Bioma: quick actions" {
-        spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "actions" "ring"
+        spawn "@BIOMA@/scripts/ipc" "actions" "ring"
     }
 
     // Emoji, pasted into the window that had the focus. Mod+Period would be
     // the key, and niri's own default gives it to expel-window-from-column.
     Mod+Alt+Period hotkey-overlay-title="Bioma: emoji" {
-        spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "cell" "toggle" "emoji"
+        spawn "@BIOMA@/scripts/ipc" "cell" "toggle" "emoji"
     }
 
     // Performance mode, on or off: the shell steps back for a game or a heavy
     // job. It also comes on by itself while GameMode has a game, or a listed
     // application is open — Settings, under Performance.
     Mod+Alt+G repeat=false hotkey-overlay-title="Bioma: performance mode" {
-        spawn "qs" "-p" "@BIOMA@/shell.qml" "ipc" "call" "performance" "toggle"
+        spawn "@BIOMA@/scripts/ipc" "performance" "toggle"
     }
 
     // Not a cell either: the lock screen, which is a process of its own.
