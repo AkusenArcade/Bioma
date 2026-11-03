@@ -235,6 +235,8 @@ if runtime.alone() then
     require("services/templates").start()
     require("services/looks").start()
     require("services/proxy").start()
+    require("services/locker").start()
+    require("services/session").start()
 end
 
 -- The walk-through, as Quickshell's `setup` target has it: opened on a

@@ -2,10 +2,12 @@
 -- The session: who is logged in, the machine's end-of-session actions, and
 -- whether a restart is due (services/Session.qml at 11bb81e).
 --
--- Not here, on purpose: suspending after idle minutes. It acts on the
--- machine and stays Bioma on Quickshell's while both run (genoma/PORT.md,
--- "Who acts on the desktop"); an action pressed here is a choice, and runs.
+-- Suspending after idle minutes acts on the machine: `start` runs it once
+-- the switch is made (M6 step 7a); beside Quickshell it is Quickshell's
+-- (genoma/PORT.md, "Who acts on the desktop"). An action pressed here is a
+-- choice, and runs.
 local g = require("@genoma")
+local idle = require("@genoma/idle")
 local config = require("core/config")
 
 local M = {}
@@ -149,5 +151,29 @@ function M.confirm()
     if p ~= "" then M.run(p) end
 end
 function M.cancel() pending.value = "" end
+
+-- ---- Sleep after a time idle -------------------------------------------------
+--
+-- Minutes without input before the machine suspends, `sleep.idle_minutes`,
+-- with the same suspend command the System cell runs, so a machine whose
+-- suspend is not `systemctl` sleeps its own way; the lock before a suspend
+-- (services/locker.luau) covers it like any other. Respecting inhibitors:
+-- a video playing full screen is not somebody who walked away.
+local started = false
+function M.start()
+    if started then return end
+    started = true
+    g.effect(function()
+        local minutes = config.get("sleep.idle_minutes", 0)
+        local seconds = if minutes > 0 and M.available("suspend") then math.max(1, minutes) * 60 else 0
+        g.untracked(function() idle:watch("sleep", seconds) end)
+    end)
+    local was = false
+    g.watch(function() return idle:is_idle("sleep") end, function(on: boolean)
+        local began = on and not was
+        was = on
+        if began then g.process { command = { "setsid", "-f", table.unpack(commands.suspend()) } } end
+    end)
+end
 
 return M

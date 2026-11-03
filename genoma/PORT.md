@@ -99,6 +99,17 @@ choosing code asks Quickshell only while Quickshell is the shell:
   when the last profile goes (`services/proxy.luau`, from Proxy.qml).
   Checked alone: an HTTP profile wrote mode, host, port and ignore-hosts
   into the scratch dconf; removing it wrote mode none.
+- the Locker (2026-11-03, `services/locker.luau` from Locker.qml): logind's
+  `Lock` on this session, the delay inhibitor held until the lock is up
+  before a suspend (a `systemd-inhibit … cat` on a pipe that closes with
+  the shell), the idle lock on its own named ext-idle-notify timeout
+  (`idle:watch`, new in Genoma); and suspending after idle minutes in
+  `services/session.luau`, as Session.qml has it. Every lock is started
+  with `setsid -f`, so it outlives the shell. Checked alone in a nested
+  niri: the inhibitor was taken beside Quickshell's, and a one-minute idle
+  lock started Bioma's lock on the nested niri at 61 s. Not tried, since
+  they act on the real session: the `Lock` signal, PrepareForSleep, and
+  the idle suspend.
 
 ## Parity
 
