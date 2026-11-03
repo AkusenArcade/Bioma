@@ -165,9 +165,15 @@ function M.new(cell: any): { [string]: any }
     end
 
     local function identity(): any
+        -- From the left, the portrait concentric with the capsule's round
+        -- end: the panel's content box centres what it holds, and a centred
+        -- row left a gap before the portrait wider than its margin.
         return g.box {
+            width = function() return capsule_width() - 20 * f() end,
+            padding_left = function() return math.max(0, (capsule_height() - avatar()) / 2 - 10 * f()) end,
             direction = "row",
             align = "center",
+            justify = "start",
             gap = function() return 18 * f() end,
             g.box {
                 width = avatar,
