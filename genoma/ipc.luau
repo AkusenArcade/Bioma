@@ -270,6 +270,26 @@ function M.register()
         end,
     })
 
+    g.ipc("brightness", {
+        up = function(step: string?): string
+            local brightness = require("services/brightness")
+            local n = tonumber(step or "") or 0
+            brightness.step((if n > 0 then n else 5) / 100)
+            return math.round(g.untracked(brightness.brightness) * 100) .. "%"
+        end,
+        down = function(step: string?): string
+            local brightness = require("services/brightness")
+            local n = tonumber(step or "") or 0
+            brightness.step(-(if n > 0 then n else 5) / 100)
+            return math.round(g.untracked(brightness.brightness) * 100) .. "%"
+        end,
+        set = function(percent: string): string
+            local brightness = require("services/brightness")
+            brightness.set(math.max(0, tonumber(percent) or 0) / 100)
+            return math.round(g.untracked(brightness.brightness) * 100) .. "%"
+        end,
+    })
+
     g.ipc("media", {
         toggle = function(): string
             local media = require("services/media")

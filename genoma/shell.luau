@@ -242,6 +242,21 @@ if runtime.alone() then
     require("services/sounds").start()
     require("services/power").start()
     require("services/printers").start()
+    require("services/osd").start()
+    -- The on-screen display, over everything and taking nothing.
+    local osd_surface = require("structure/osd")
+    table.insert(surfaces, g.surface {
+        full = true,
+        anchor = { "top", "bottom", "left", "right" },
+        outputs = "all",
+        reserve = false,
+        above_zones = true,
+        layer = "overlay",
+        namespace = "bioma-osd",
+        function(output: string, size: any)
+            return osd_surface.node(output, size or { width = 1920, height = 1080 })
+        end,
+    })
 end
 
 -- The walk-through, as Quickshell's `setup` target has it: opened on a

@@ -22,6 +22,7 @@
 local g = require("@genoma")
 local config = require("core/config")
 local paths = require("core/paths")
+local runtime = require("core/runtime")
 local presets = require("core/presets")
 local timing = require("core/timing")
 local monitors = require("services/monitors")
@@ -180,7 +181,7 @@ function M.enable_error(unit: string): string return (progress.value.enableError
 
 local refresh: () -> ()
 local function quickshell(args: { string }, on_line: ((string) -> ())?, on_exit: (() -> ())?)
-    local command = { "qs", "-p", paths.root .. "/shell.qml", "ipc", "call", "setup" }
+    local command = { paths.script("ipc"), "setup" }
     for _, a in args do table.insert(command, a) end
     g.process { command = command, on_line = on_line, on_exit = on_exit }
 end
@@ -215,14 +216,127 @@ local function act(args: { string })
     quickshell(args, nil, follow)
 end
 
-function M.set_up_niri(autostart: boolean) act({ "niri", tostring(autostart) }) end
+-- ---- Acting itself, once the switch is made (Setup.qml at 8ed8892) -----------
+
+local function alone(): boolean return g.untracked(runtime.alone) end
+-- One field of the progress at a time; tables copied, as a signal holds them.
+local function mark(key: string, value: any)
+    local next = table.clone(g.untracked(function() return progress.value end))
+    next[key] = value
+    progress.value = next
+end
+local function mark_in(key: string, item: string, value: any)
+    local next_list = table.clone(g.untracked(function() return progress.value end)[key] or {})
+    if type(value) == "boolean" then
+        local at = table.find(next_list, item)
+        if value and not at then table.insert(next_list, item) end
+        if not value and at then table.remove(next_list, at) end
+    else
+        next_list[item] = value
+    end
+    mark(key, next_list)
+end
+-- A program run for the setup: its error lines kept, its end answered.
+local function run(command: { string }, done: (number, { string }) -> ())
+    local said = {}
+    g.process {
+        command = command,
+        on_error_line = function(line: string) table.insert(said, line) end,
+        on_exit = function(code: number) done(code, said) end,
+    }
+end
+local function last_line(lines: { string }, otherwise: string): string
+    for i = #lines, 1, -1 do
+        local l = string.match(lines[i], "^%s*(.-)%s*$") or ""
+        if l ~= "" then return l end
+    end
+    return otherwise
+end
+
+function M.set_up_niri(autostart: boolean)
+    if not alone() then act({ "niri", tostring(autostart) }) return end
+    if g.untracked(M.niri_busy) then return end
+    mark("niriError", "")
+    mark("niriBusy", true)
+    local command = { paths.script("install"), "--niri-only" }
+    if autostart then table.insert(command, "--autostart") end
+    run(command, function(code: number, said: { string })
+        mark("niriBusy", false)
+        if code ~= 0 then
+            -- The first line niri refused, under the script's own sentence.
+            local first = nil
+            for _, line in said do
+                local l = string.match(line, "^%s*(.-)%s*$") or ""
+                if l ~= "" and string.sub(l, 1, 12) ~= "niri refused" then first = l break end
+            end
+            mark("niriError", first or "niri refused the configuration.")
+        end
+        refresh()
+    end)
+end
+
 function M.set_greeter(enable: boolean)
     if enable == g.untracked(function() return bioma_greeter.value end) then return end
-    act({ "greeter", tostring(enable) })
+    if not alone() then act({ "greeter", tostring(enable) }) return end
+    if g.untracked(M.login_busy) then return end
+    mark("loginError", "")
+    mark("loginBusy", true)
+    run({ "pkexec", paths.script("greeter-setup"), if enable then "enable" else "disable" }, function(code: number, said: { string })
+        mark("loginBusy", false)
+        -- pkexec: 126 when the password was not given, 127 when nothing
+        -- could ask for it.
+        if code == 126 then
+            mark("loginError", "The password was not given, so nothing changed.")
+        elseif code == 127 then
+            mark("loginError", "Nothing could ask for the password. Run the command below in a terminal.")
+        elseif code ~= 0 then
+            mark("loginError", last_line(said, "It did not complete."))
+        end
+        refresh()
+    end)
 end
-function M.stop(conflict: any) act({ "stop", conflict.pid, conflict.name, conflict.from }) end
-function M.enable_service(unit: string) act({ "enable", unit }) end
-function M.use_bioma_agent() act({ "takeover" }) end
+
+function M.stop(conflict: any)
+    if not alone() then act({ "stop", conflict.pid, conflict.name, conflict.from }) return end
+    if g.untracked(function() return M.stopping(conflict.pid) end) then return end
+    mark_in("stopping", conflict.pid, true)
+    if conflict.what == "notifications" then mark("restartAtEnd", true) end
+    run({ paths.script("setup-scan"), "stop", conflict.pid, conflict.name, conflict.from }, function(code: number, said: { string })
+        mark_in("stopping", conflict.pid, false)
+        mark_in("stopErrors", conflict.pid, if code ~= 0 then last_line(said, "It could not be stopped.") else nil)
+        refresh()
+    end)
+end
+
+function M.enable_service(unit: string)
+    if not alone() then act({ "enable", unit }) return end
+    if g.untracked(function() return M.enabling(unit) end) then return end
+    mark_in("enabling", unit, true)
+    run({ "pkexec", "systemctl", "enable", "--now", unit }, function(code: number)
+        mark_in("enabling", unit, false)
+        mark_in("enableErrors", unit, if code == 126 then "not given" elseif code == 127 then "no agent"
+            elseif code ~= 0 then "failed" else nil)
+        refresh()
+    end)
+end
+
+function M.use_bioma_agent()
+    if not alone() then act({ "takeover" }) return end
+    if g.untracked(M.handing_over) then return end
+    mark("handingOver", true)
+    mark("handOverError", "")
+    run({ paths.script("polkit-agent"), "takeover" }, function(_: number, said: { string })
+        local reason = ""
+        for _, line in said do
+            if string.sub(line, 1, 6) == "error\t" then reason = string.sub(line, 7) break end
+        end
+        mark("handingOver", false)
+        mark("handOverError", reason)
+        -- The other agent has let go of the session: Bioma's asks again.
+        require("services/polkit").retry()
+        refresh()
+    end)
+end
 function M.keep_other_agent() config.set("polkit.agent", false) end
 
 -- The command a person runs when nothing can ask for the password.

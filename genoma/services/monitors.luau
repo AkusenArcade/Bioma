@@ -256,6 +256,8 @@ end
 
 -- Answered false when refused: the last monitor on stays on.
 local switching = false
+-- A monitor being switched on or off, until niri has done it.
+function M.switching(): boolean return switching end
 function M.power(name: string, on: boolean): boolean
     if not on and g.untracked(M.count) <= 1 then return false end
     if not alone() then

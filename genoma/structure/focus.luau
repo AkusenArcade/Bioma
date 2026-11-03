@@ -111,6 +111,16 @@ function M.cell_for(domain: string, output: string?): any
     return best
 end
 
+-- Whether a cell of that domain is declared on that monitor, anywhere but
+-- in the middle of it as a summoned copy: what already says that domain
+-- there (the OSD stays quiet where it does).
+function M.declared(domain: string, output: string): boolean
+    for _, c in cells do
+        if c.domain == domain and c.output == output and g.untracked(c.visibility.type) ~= "invoked" then return true end
+    end
+    return false
+end
+
 -- Where a cell with no place of its own appears: one host per monitor.
 local hosts: { [string]: any } = {}
 

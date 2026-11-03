@@ -141,6 +141,24 @@ choosing code asks Quickshell only while Quickshell is the shell:
   removed; a duplicate key refused in niri's words. Monitors: a position,
   the primary and variable refresh written for the nested output, the
   games rule on and off.
+- the rest of settings (2026-11-03): quick actions run by Genoma
+  (`actions.luau`, every kind of step from Actions.qml, a step that waits
+  polled only while it waits, a failure said in a notification), the
+  setup's machine actions (`setup.luau`: niri set up, the greeter through
+  pkexec, other shells stopped, services enabled, the polkit agent taken
+  over and registered again with `polkit:retry`, new in Genoma), and
+  organisms all Genoma's under the switch. Checked alone: a macro turning
+  performance mode on, waiting, starting a timer and turning it off; one
+  naming a monitor that is not there stopping at its step and saying so.
+  The setup's actions were not run, as each acts on the machine.
+- the OSD and brightness (2026-11-03): `services/brightness.luau` (backlight
+  or DDC/CI, detected once, each display read once, writes coalesced to the
+  latest), `services/osd.luau` (what is said and where, quiet where a cell
+  already says it) and `structure/osd.luau` (the capsule growing from its
+  centre, low in the middle, taking no input, glass; no shadow, as
+  Genoma's summoned capsules have none); Genoma answers `brightness`.
+  Checked alone: performance mode on and off said in it. The brightness
+  was not moved, as it acts on the monitors.
 
 ## Parity
 
@@ -746,7 +764,7 @@ category kept across a reload.
 |---|---|---|
 | Wallpaper, and its blurred backdrop for niri's overview | §9.7 | checked 2026-10-30 (`structure/wallpaper.luau`, from WallpaperSurface.qml and WallpaperImage.qml at 11bb81e); seen by Akusen 2026-11-02 with the key in his override, Quickshell stepping aside and running matugen on the new picture |
 | Floating tissues, and the host float for invoked cells | §4 | |
-| OSD (volume, brightness, keyboard layout) | §11, an open question then, adopted since | |
+| OSD (volume, brightness, keyboard layout) | §11, an open question then, adopted since | written 2026-11-03 for Genoma alone (`structure/osd.luau`, from OsdSurface.qml at 8ed8892); checked with performance mode |
 | Selection surface (Bioma's own region picker) | §9.6 | checked 2026-10-29 with the utility (`structure/selection.luau`) |
 | Organisms, and their arrange mode | *beyond the PRD* | in progress 2026-11-02: the surface, the frame and arranging checked with the clock (`structure/organisms.luau`, `structure/arranging.luau`) |
 | Lock screen (`lock.qml`, its guard, hyprlock as the fallback) | *beyond the PRD* | written 2026-11-03 (`genoma/lock.luau` from lock.qml at 92cd36c, the photograph in `components/gate.luau`), started by `scripts/lock` when `"lock": { "runtime": "genoma" }`; checked in a nested niri, then on his session by Akusen 2026-11-03 (the key in his override, `genoma` on his PATH) |

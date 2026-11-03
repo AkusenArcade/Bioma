@@ -96,6 +96,10 @@ if not fake then
     end
 end
 
+-- Registered again, after another agent has let the session go (the
+-- setup hands it over).
+function M.retry() if agent then agent:retry() end end
+
 -- Summoned where the keyboard is, and taken away from the same screen even
 -- if the keyboard has moved on meanwhile. Required by the shell at start,
 -- so the agent is there before anything asks.

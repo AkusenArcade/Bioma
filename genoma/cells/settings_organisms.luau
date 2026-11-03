@@ -20,6 +20,7 @@ local colour = require("core/colour")
 local config = require("core/config")
 local metrics_mod = require("core/metrics")
 local paths = require("core/paths")
+local runtime = require("core/runtime")
 local theme = require("core/theme")
 local typography = require("core/typography")
 local page = require("components/page")
@@ -52,7 +53,7 @@ local function name_of(kind: string): string
 end
 
 local function quickshell(args: { string }, on_line: ((string) -> ())?)
-    local command = { "qs", "-p", paths.root .. "/shell.qml", "ipc", "call", "organisms" }
+    local command = { paths.script("ipc"), "organisms" }
     for _, a in args do table.insert(command, a) end
     g.process { command = command, on_line = on_line }
 end
@@ -116,11 +117,11 @@ function M.new(t: { [string]: any }): any
     end
 
     -- Placing is done on the desktop, so the settings step out of the way.
-    local function genoma(index: number): boolean return (g.untracked(organisms)[index] or {}).runtime == "genoma" end
+    local function genoma(index: number): boolean return runtime.ours(g.untracked(organisms)[index]) end
     local function arrange()
         focus.dismiss()
         for _, e in g.untracked(organisms) do
-            if type(e) == "table" and e.runtime == "genoma" then
+            if runtime.ours(e) then
                 arranging.start()
                 return
             end

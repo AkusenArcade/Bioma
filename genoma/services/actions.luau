@@ -2,14 +2,15 @@
 -- Quick actions: macros somebody writes on the Settings page and runs from
 -- the ring that comes to the pointer (services/Actions.qml at 11bb81e).
 --
--- The macros are read here, as the ring needs them; running one is the
--- Quickshell shell's while the two run side by side (genoma/PORT.md, "Who
--- acts on the desktop"): a step changes the volume, the settings, a
--- monitor, and those are its. So a chosen macro is handed to it by name,
--- `actions run`, exactly as a key of its own would hand it.
+-- Bioma on Genoma alone runs a macro itself (M6 step 7a). Beside
+-- Quickshell, running one is Quickshell's (genoma/PORT.md, "Who acts on the
+-- desktop"): a step changes the volume, the settings, a monitor, and those
+-- are its. So a chosen macro is handed to it by name, `actions run`,
+-- exactly as a key of its own would hand it.
 local g = require("@genoma")
 local config = require("core/config")
 local paths = require("core/paths")
+local runtime = require("core/runtime")
 local apps = require("core/apps")
 
 local M = {}
@@ -133,7 +134,7 @@ local function last_part(path: string?): string
 end
 
 -- The kinds of step: how the page names each, the step a press on it adds,
--- and the line it reads as. Running them stays Quickshell's.
+-- and the line it reads as. What each does is `RUNS`, below.
 M.kinds = {
     launch = { label = "LAUNCH", fresh = function() return { type = "launch", app = "" } end,
         describe = function(step: any)
@@ -186,13 +187,201 @@ function M.describe(step: any): string
 end
 
 local function ask(...: string)
-    g.process { command = { "qs", "-p", paths.root .. "/shell.qml", "ipc", "call", "actions", ... } }
+    g.process { command = { paths.script("ipc"), "actions", ... } }
 end
 
-function M.run(name: string) ask("run", name) end
+local function expand(path: string): string
+    local home = g.env("HOME") or ""
+    local out = string.gsub(path, "^~(/?)", home .. "%1")
+    out = string.gsub(out, "^%$HOME(/?)", home .. "%1")
+    return out
+end
+
+local function entry_of(id: string?): any
+    if not id or id == "" then return nil end
+    return apps.entry_for(id)
+end
+
+-- What each kind of step does. Nothing returned when it is done, a reason
+-- when it could not be, or { until, timeout } when the next step waits.
+local RUNS: { [string]: (any) -> any } = {
+    launch = function(step: any): any
+        local entry = entry_of(step.app)
+        if not entry then return 'no application "' .. tostring(step.app or "") .. '"' end
+        apps.run(entry, require("services/proxy").environment())
+        return nil
+    end,
+    open = function(step: any): any
+        if not step.path or step.path == "" then return "no file to open" end
+        require("services/files").open(expand(step.path))
+        return nil
+    end,
+    volume = function(step: any): any
+        local audio = require("services/audio")
+        if not g.untracked(audio.sink) then return "no output to set" end
+        audio.set_volume(math.clamp(step.percent or 50, 0, 100) / 100)
+        return nil
+    end,
+    brightness = function(step: any): any
+        require("services/brightness").set(math.clamp(step.percent or 70, 1, 100) / 100)
+        return nil
+    end,
+    settings = function(step: any): any
+        local pairs_ = {}
+        for path, value in step.values or {} do table.insert(pairs_, { path, value }) end
+        if #pairs_ == 0 then return "nothing captured" end
+        config.set_many(pairs_)
+        return nil
+    end,
+    monitor = function(step: any): any
+        local monitors = require("services/monitors")
+        if not g.untracked(function() return monitors.output_of(step.output or "") end) then
+            return 'no monitor "' .. tostring(step.output or "") .. '"'
+        end
+        if not monitors.power(step.output, step.on == true) then return tostring(step.output) .. " is the last monitor on" end
+        return { until_ = function() return not monitors.switching() end, timeout = 5 }
+    end,
+    preset = function(step: any): any
+        if not require("core/presets").apply(step.name or "") then return 'no preset "' .. tostring(step.name or "") .. '"' end
+        return nil
+    end,
+    wallpaper = function(step: any): any
+        if not step.path or step.path == "" then return "no wallpaper chosen" end
+        require("services/wallpaper").set_path(step.path)
+        return nil
+    end,
+    quiet = function(step: any): any
+        require("services/notifications").set_quiet(step.on == true)
+        return nil
+    end,
+    profile = function(step: any): any
+        local power = require("services/power")
+        if not g.untracked(power.present) then return "no power profiles on this machine" end
+        power.set(step.profile or "balanced")
+        return nil
+    end,
+    -- The shell's own mode, the same the key and the cell turn on; off by a
+    -- step, it stays off while a game holds it, as off by hand does.
+    performance = function(step: any): any
+        local performance = require("core/performance")
+        if step.on == true then performance.on() else performance.off() end
+        return nil
+    end,
+    timer = function(step: any): any
+        local time = require("services/time")
+        local minutes = math.max(1, math.round(step.minutes or 25))
+        time.reset()
+        time.set_length(minutes * 60)
+        time.start()
+        return nil
+    end,
+    wait = function(step: any): any
+        local until_at = g.now() + math.max(0, step.seconds or 2)
+        return { until_ = function() return g.now() >= until_at end, timeout = 600 }
+    end,
+    -- A user service of its own, like an application: the command neither
+    -- inherits the shell's nice nor dies with it.
+    command = function(step: any): any
+        local line = string.match(step.command or "", "^%s*(.-)%s*$") or ""
+        if line == "" then return "no command" end
+        g.process { command = { paths.script("launch"), "--id", "bioma-action", "--", "sh", "-c", step.command } }
+        return nil
+    end,
+}
+
+-- ---- Running -----------------------------------------------------------------
+
+local running = g.signal("")
+function M.running(): string return running.value end
+local queue: { any } = {}
+local index = 0
+local holding: (() -> boolean)? = nil
+local deadline = 0
+local ticker: any = nil
+
+local function stop_ticking()
+    if ticker then ticker:stop() end
+    ticker = nil
+end
+
+-- Said, because a macro that stops halfway looks exactly like one that did
+-- all it was asked: the desktop is in some state either way.
+local function fail(reason: string)
+    local name = g.untracked(function() return running.value end)
+    stop_ticking()
+    holding = nil
+    queue = {}
+    running.value = ""
+    print('Bioma: the quick action "' .. name .. '" stopped — ' .. reason)
+    g.process { command = { "notify-send", "--app-name=Bioma", "--icon=dialog-warning", name .. " stopped",
+        string.upper(string.sub(reason, 1, 1)) .. string.sub(reason, 2) } }
+end
+
+local advance: () -> ()
+advance = function()
+    if holding then
+        if not (holding :: () -> boolean)() then
+            if g.now() > deadline then fail("step " .. index .. " took too long") end
+            return
+        end
+        holding = nil
+        stop_ticking()
+    end
+    while index < #queue do
+        index += 1
+        local step = queue[index]
+        local run = step and RUNS[step.type]
+        if not run then
+            fail("step " .. index .. " is of a kind this Bioma does not know")
+            return
+        end
+        local ok, answer = pcall(run, step)
+        if not ok then answer = tostring(answer) end
+        if type(answer) == "string" then
+            fail("step " .. index .. ": " .. answer)
+            return
+        end
+        if type(answer) == "table" and answer.until_ then
+            holding = answer.until_
+            deadline = g.now() + (answer.timeout or 10)
+            -- Only while a step waits: a pause, a monitor being switched.
+            ticker = g.timer { every = 0.05, on_tick = advance }
+            return
+        end
+    end
+    queue = {}
+    running.value = ""
+end
+
+-- A macro asked for while another runs takes its place: the second press is
+-- the newer wish. True when there is one by that name.
+function M.run(name: string): boolean
+    if not g.untracked(runtime.alone) then
+        ask("run", name)
+        return true
+    end
+    local macro = nil
+    for _, m in g.untracked(M.macros) do if m.name == name then macro = m end end
+    if not macro then return false end
+    print('Bioma: running the quick action "' .. name .. '"')
+    stop_ticking()
+    holding = nil
+    queue = {}
+    for _, step in macro.steps or {} do table.insert(queue, table.clone(step)) end
+    index = 0
+    running.value = name
+    advance()
+    return true
+end
 
 -- With nothing written yet, the ring's one capsule opens Settings on the
--- page where macros are written; Settings is still the Quickshell shell's.
-function M.write() ask("write") end
+-- page where macros are written.
+function M.write()
+    if not g.untracked(runtime.alone) then ask("write") return end
+    require("cells/settings").open_on("actions")
+    local niri = require("services/niri")
+    local focused = g.untracked(niri.focused_output)
+    require("structure/focus").invoke("settings", if focused ~= "" then focused else nil)
+end
 
 return M
