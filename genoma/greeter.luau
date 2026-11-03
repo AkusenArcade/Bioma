@@ -64,28 +64,9 @@ end
 
 -- ---- What it shows ------------------------------------------------------------
 
--- The density the Appearance page sets on every membrane at once.
-local function density(): string
-    for _, membrane in config.get("membranes", {}) do
-        if type(membrane) == "table" and membrane.scale then return membrane.scale end
-    end
-    return "normal"
-end
--- The clock says the time the way the clock cell does, wherever it is.
-local function twenty_four(): boolean
-    for _, list in { config.get("membranes", {}), config.get("floating", {}) } do
-        for _, block in list do
-            for _, group in (block.tissues or { block }) do
-                for _, cell in (group.cells or {}) do
-                    if cell.type == "clock" and type(cell.options) == "table" and cell.options.format then
-                        return cell.options.format == "24h"
-                    end
-                end
-            end
-        end
-    end
-    return true
-end
+-- The density and the clock's format, as the shell has them.
+local density = gate_mod.density
+local twenty_four = gate_mod.twenty_four
 
 -- The screen the keyboard is on, asked of niri once: niri hands the keys to
 -- the focused output, at a greeter the one marked focus-at-startup.

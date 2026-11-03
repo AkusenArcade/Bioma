@@ -23,12 +23,34 @@ set -u
 
 here="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
 lock_pattern="qs -p $here/lock.qml"
+genoma_pattern="$here/genoma lock.luau"
 
 # One lock at a time: a second press of the key while locked is not a second
 # lock screen.
-if pgrep -f -- "$lock_pattern" >/dev/null 2>&1 || pgrep -x hyprlock >/dev/null 2>&1 \
-        || pgrep -x swaylock >/dev/null 2>&1; then
+if pgrep -f -- "$lock_pattern" >/dev/null 2>&1 || pgrep -f -- "$genoma_pattern" >/dev/null 2>&1 \
+        || pgrep -x hyprlock >/dev/null 2>&1 || pgrep -x swaylock >/dev/null 2>&1; then
     exit 0
+fi
+
+# Bioma on Genoma's lock (genoma/lock.luau), when the configuration gives it
+# the lock (`"lock": { "runtime": "genoma" }`) and its runtime is there:
+# $GENOMA_BIN, else `genoma` on the PATH. Otherwise Quickshell's.
+config="${XDG_CONFIG_HOME:-$HOME/.config}"
+runtime="$(python3 - "$config/bioma/override.json" "$here/config/default.json" <<'PY' 2>/dev/null || echo quickshell
+import json, sys
+value = "quickshell"
+for path in reversed(sys.argv[1:]):
+    try:
+        value = json.load(open(path)).get("lock", {}).get("runtime", value)
+    except (OSError, ValueError, AttributeError):
+        pass
+print(value)
+PY
+)"
+genoma_bin=""
+if [ "$runtime" = genoma ] && [ -d "$here/genoma" ]; then
+    genoma_bin="${GENOMA_BIN:-$(command -v genoma || true)}"
+    [ -x "$genoma_bin" ] || genoma_bin=""
 fi
 
 fallback() {
@@ -62,21 +84,28 @@ set_hint false
 # The shell's graphics backend, chosen the same way (see `scripts/bioma`). A
 # lock started from the shell would inherit it and one started by niri's key
 # would not; this makes both the same. If Vulkan fails here anyway, the
-# fallback below still answers.
-if [ -n "${BIOMA_RHI_BACKEND:-}" ]; then
-    export QSG_RHI_BACKEND="$BIOMA_RHI_BACKEND"
-elif "$here/scripts/vulkan" 2>/dev/null; then
-    export QSG_RHI_BACKEND=vulkan
-else
-    export QSG_RHI_BACKEND=opengl
-fi
-# And presented without waiting for the display, as the shell is: a monitor
-# unplugged under a waiting lock froze it (see `scripts/bioma`).
-if [ "$QSG_RHI_BACKEND" = vulkan ]; then
-    export QSG_NO_VSYNC=1
+# fallback below still answers. Genoma's lock chooses its own GPU.
+if [ -z "$genoma_bin" ]; then
+    if [ -n "${BIOMA_RHI_BACKEND:-}" ]; then
+        export QSG_RHI_BACKEND="$BIOMA_RHI_BACKEND"
+    elif "$here/scripts/vulkan" 2>/dev/null; then
+        export QSG_RHI_BACKEND=vulkan
+    else
+        export QSG_RHI_BACKEND=opengl
+    fi
+    # And presented without waiting for the display, as the shell is: a
+    # monitor unplugged under a waiting lock froze it (see `scripts/bioma`).
+    if [ "$QSG_RHI_BACKEND" = vulkan ]; then
+        export QSG_NO_VSYNC=1
+    fi
 fi
 
-qs -p "$here/lock.qml" >/dev/null 2>&1 &
+if [ -n "$genoma_bin" ]; then
+    # Its own IPC socket, never the shell's.
+    GENOMA_IPC=bioma-lock "$genoma_bin" "$here/genoma" lock.luau >/dev/null 2>&1 &
+else
+    qs -p "$here/lock.qml" >/dev/null 2>&1 &
+fi
 pid=$!
 
 # Without logind there is no flag to wait for; the lock is trusted to have

@@ -14,8 +14,10 @@
 -- sharp, blurring into the veiled picture, and the composition follows, one
 -- element after the next. Between the two the only change is the minute.
 --
--- Not yet, for the lock: arriving from a photograph of the desktop, and
--- leaving back to it.
+-- The lock arrives from a photograph of the desktop instead (`capture`),
+-- which dissolves into the veiled picture, and leaves back to it: the
+-- composition goes quickly, then the picture clears to the desktop it came
+-- from, and the session unlocks onto that.
 --
 -- The greeter leaves differently (`welcomes`): the person stays, the
 -- portrait and the name, while the rest goes; "Welcome to" and the logotype
@@ -34,6 +36,8 @@
 --   entered()                optional: once a welcome has gone dark, called
 --                            by every screen, the owner acting on the first
 --   set_active(output)       optional: a press brings the field here (the lock)
+--   capture(output)          optional: a photograph of the screen to start
+--                            from, and to leave back to (the lock)
 local g = require("@genoma")
 local clock = require("@genoma/clock")
 local colour = require("core/colour")
@@ -63,6 +67,29 @@ local KEYPAD = {
     KP_Delete = ".",
 }
 
+-- The density the Appearance page sets on every membrane at once.
+function M.density(): string
+    for _, membrane in config.get("membranes", {}) do
+        if type(membrane) == "table" and membrane.scale then return membrane.scale end
+    end
+    return "normal"
+end
+-- The clock says the time the way the clock cell does, wherever it is.
+function M.twenty_four(): boolean
+    for _, list in { config.get("membranes", {}), config.get("floating", {}) } do
+        for _, block in list do
+            for _, group in (block.tissues or { block }) do
+                for _, cell in (group.cells or {}) do
+                    if cell.type == "clock" and type(cell.options) == "table" and cell.options.format then
+                        return cell.options.format == "24h"
+                    end
+                end
+            end
+        end
+    end
+    return true
+end
+
 -- `t`: gate (above), output, size { width, height }, welcomes (the
 -- greeter's leaving). Returns the node and a handle: key(name, text, mods).
 function M.new(t: { [string]: any }): (any, any)
@@ -76,13 +103,24 @@ function M.new(t: { [string]: any }): (any, any)
     local function welcoming(): boolean return t.welcomes == true and leaving() end
 
     -- Here from the first turn on: the picture dissolves and the
-    -- composition follows, each by its own timing.
+    -- composition follows, each by its own timing. From a photograph, only
+    -- once it is on screen, or the dissolve would begin under a frame still
+    -- waiting for it; never later than the opening time, in case it never
+    -- comes.
     local here = g.signal(false)
-    g.after(0, function() here.value = true end)
+    local photograph = if gate.capture then gate.capture(output) else ""
+    local function arrive() here.value = true end
+    if photograph == "" then
+        g.after(0, arrive)
+    else
+        g.after(timing.seconds.open, arrive)
+    end
     local function dissolved(): boolean
         if leaving() and not t.welcomes then return false end
         return here.value
     end
+    -- Leaving, the picture clears once the composition has gone.
+    local function clearing(): string return if leaving() then "gate_clear" else "gate_dissolve" end
 
     -- ---- Behind ------------------------------------------------------------------
 
@@ -96,8 +134,22 @@ function M.new(t: { [string]: any }): (any, any)
             overlay = true,
             attach = "corner",
             opacity = function() return if dissolved() then 1 else 0.004 end,
-            transition = { opacity = "gate_dissolve" },
+            transition = { opacity = clearing },
             wallpaper.node(output, size, true),
+        },
+        -- The desktop as it was, over the picture until the dissolve takes
+        -- it, and back over it before the session opens.
+        g.image {
+            overlay = true,
+            attach = "corner",
+            present = photograph ~= "",
+            src = photograph,
+            width = size.width,
+            height = size.height,
+            fit = "fill",
+            opacity = function() return if dissolved() then 0 else 1 end,
+            transition = { opacity = clearing },
+            on_ready = arrive,
         },
         -- The veil: the picture is a place, not something to look at, and
         -- the text on it has to hold on any image.
@@ -111,7 +163,7 @@ function M.new(t: { [string]: any }): (any, any)
             rim_top = "#00000000",
             rim_bottom = "#00000000",
             opacity = function() return if dissolved() then 1 else 0 end,
-            transition = { opacity = "gate_dissolve" },
+            transition = { opacity = clearing },
         },
     }
 

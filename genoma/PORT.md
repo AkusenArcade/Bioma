@@ -656,8 +656,8 @@ category kept across a reload.
 | OSD (volume, brightness, keyboard layout) | §11, an open question then, adopted since | |
 | Selection surface (Bioma's own region picker) | §9.6 | checked 2026-10-29 with the utility (`structure/selection.luau`) |
 | Organisms, and their arrange mode | *beyond the PRD* | in progress 2026-11-02: the surface, the frame and arranging checked with the clock (`structure/organisms.luau`, `structure/arranging.luau`) |
-| Lock screen (`lock.qml`, its guard, hyprlock as the fallback) | *beyond the PRD* | |
-| Greeter (`greeter.qml`, agreety as the fallback) | *beyond the PRD* | written 2026-11-02 (`genoma/greeter.luau`, `components/gate.luau` from Gate.qml at 2cafc17), with the machine's commands Quickshell's greeter does not have; checked in its test mode, not yet under greetd |
+| Lock screen (`lock.qml`, its guard, hyprlock as the fallback) | *beyond the PRD* | written 2026-11-03 (`genoma/lock.luau` from lock.qml at 92cd36c, the photograph in `components/gate.luau`), started by `scripts/lock` when `"lock": { "runtime": "genoma" }`; checked in a nested niri, not yet on his session |
+| Greeter (`greeter.qml`, agreety as the fallback) | *beyond the PRD* | written 2026-11-02 (`genoma/greeter.luau`, `components/gate.luau` from Gate.qml at 2cafc17), with the machine's commands Quickshell's greeter does not have; checked in its test mode, then under greetd by Akusen 2026-11-02 (a wrong password, then in) |
 
 The wallpaper, checked 2026-10-30 with `wallpaper.runtime` set in a test
 configuration (his own untouched), its own `wallpaper.json` there: a
@@ -676,6 +676,28 @@ redraw. Not yet: decoding only this screen's slice of a spanned picture
 (the whole box is decoded per screen); the backdrop's blur set beside
 Quickshell's by eye; letting the hidden picture go in performance mode
 (it goes once covered anyway).
+
+The lock screen, 2026-11-03, a third entry point (`genoma <genoma/>
+lock.luau`) on Genoma's new `@genoma/lock` (`ext-session-lock`: a surface
+with `layer = "lock"` is a lock surface on every output while the lock is
+held, `lock:lock()` / `lock:unlock()`, `locked`, `finished`). As lock.qml:
+grim photographs each screen into `$XDG_RUNTIME_DIR/bioma-lock`, the lock
+is asked for (never later than the opening time), the gate arrives from the
+photograph, logind's LockedHint is set once the compositor says locked and
+cleared at the end, PAM is `assets/pam/bioma-lock`, and leaving the
+composition goes, the picture clears back to the photograph and the session
+unlocks onto it; exit 0 only after an unlock, 1 when the compositor refused.
+Its state is in `g.state`, since Genoma evaluates the interface again when
+the lock surfaces are made. `scripts/lock` keeps its guard around either
+runtime. Checked in a nested niri, frames sampled with grim: the desktop
+stays until the lock's first frame is whole (Genoma holds a lock surface's
+first frame for its pictures, at most 750 ms; here 0.3 s from start), then
+dissolves; a wrong password through the real PAM file (red rim, the
+sentence, the text selected); success through a scratch `pam_permit` copy:
+unlocked, photographs removed, hint false; the guard with the key in a
+scratch configuration, the lock killed with SIGKILL: hyprlock took over.
+Not yet: the photograph blurring as it goes (it fades over the blurred
+wallpaper), and a run on his session with his password.
 
 ### Organisms
 
