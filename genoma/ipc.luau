@@ -290,6 +290,36 @@ function M.register()
         end,
     })
 
+    -- The Structure page's layouts.
+    g.ipc("presets", {
+        list = function(): string
+            local presets = require("core/presets")
+            local active = g.untracked(presets.active)
+            local out = {}
+            for _, preset in g.untracked(presets.all) do
+                table.insert(out, (if preset.name == active then "* " else "  ") .. preset.name)
+            end
+            return table.concat(out, "\n")
+        end,
+        current = function(): string
+            local presets = require("core/presets")
+            local active = g.untracked(presets.active)
+            if active ~= "" then return active .. (if g.untracked(presets.changed) then " (changed)" else "") end
+            return if g.untracked(presets.empty) then "(empty)" else "(unsaved)"
+        end,
+        apply = function(name: string): string
+            return if require("core/presets").apply(name or "") then "applied " .. name else 'no preset "' .. tostring(name) .. '"'
+        end,
+        save = function(name: string): string
+            local trimmed = string.match(name or "", "^%s*(.-)%s*$") or ""
+            return if require("core/presets").save_as(name or "") then "saved " .. trimmed else "a preset needs a name"
+        end,
+        create = function(): string
+            require("core/presets").blank()
+            return "empty"
+        end,
+    })
+
     g.ipc("media", {
         toggle = function(): string
             local media = require("services/media")

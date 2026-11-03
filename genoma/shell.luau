@@ -150,6 +150,19 @@ g.ipc("organisms", {
         arranging.toggle()
         return if g.untracked(arranging.active) then "arranging" else "done"
     end,
+    done = function(): string
+        require("structure/arranging").finish()
+        return "done"
+    end,
+    state = function(): string
+        return if g.untracked(require("structure/arranging").active) then "arranging" else "at rest"
+    end,
+    -- Where each one is: the list being edited while the mode lasts.
+    list = function(): string
+        local arranging = require("structure/arranging")
+        local list = if g.untracked(arranging.active) then g.untracked(arranging.working) else config.get("organisms", {})
+        return g.to_json(g.array(table.clone(list)))
+    end,
 })
 local blocks = #surfaces - wallpapers - organism_surfaces
 
