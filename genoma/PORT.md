@@ -476,7 +476,12 @@ the cell, the capsule's slider, choosing another device. Not yet: the
 keyboard's travel through the rows. Found on the way: a cell's middle
 button opened it (only the left one does now, the middle one is the
 cell's: `on_middle`), and adding or removing a cell in the configuration
-takes a reload, where Quickshell follows it live — settings will need it.
+took a reload, where Quickshell follows it live. Followed live since
+2026-11-03: a membrane surface per edge on every output, asleep where no
+block names it (`present`), its strip from `reserve` as a function, its
+size `fluid`; tissues kept by their place and cells by their domain with
+`g.map` (Membrane.qml and Tissue.qml's rules); auto-hide ported with its
+reveal strip and halo (Genoma's `halo`).
 
 connectivity, in progress 2026-10-29 (`cells/connectivity.luau`,
 `cells/connectivity_expansion.luau`; services `network`, `bluetooth`,

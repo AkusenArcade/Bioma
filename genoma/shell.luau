@@ -36,57 +36,137 @@ local function outputs_of(block: { [string]: any }): any
     return { monitor }
 end
 
--- One surface per membrane block marked as Genoma's, on each output it
--- belongs to.
-local surfaces = {}
-for i, entry in config.get("membranes", {}) do
-    if runtime.ours(entry) then
-        local index = i
-        local function block() return config.get("membranes", {})[index] or entry end
-        local edge = entry.edge or "top"
-        local horizontal = edge == "top" or edge == "bottom"
-        local strip = metrics.step(entry.scale or "normal")
-        local reserving = entry.reserve_space == true and horizontal and entry.auto_hide ~= true
-        local anchor = {}
-        for _, side in { "top", "bottom", "left", "right" } do
-            local opposite = ({ top = "bottom", bottom = "top", left = "right", right = "left" })[edge]
-            if side ~= opposite then table.insert(anchor, side) end
-        end
-        table.insert(surfaces, g.surface {
-            full = true,
-            anchor = anchor,
-            outputs = outputs_of(entry),
-            reserve = if reserving then math.floor(strip.margin_edge + strip.cell_height + strip.tissue_padding * 2 + 0.5) else false,
-            -- Bioma's own name for the edge: niri's rule for it turns blur
-            -- xray off (config/niri/bioma.kdl).
-            namespace = "bioma-membrane-" .. edge,
-            function(output: string, size: any)
-                local s = size or { width = 1920, height = 1080 }
-                return membrane.new(block, output, s).tree
-            end,
-        })
-    end
+-- Whether a block belongs on `output`: by name, `all`, or `primary`.
+local function on_output(block: { [string]: any }, output: string): boolean
+    local where = outputs_of(block)
+    if where == "all" then return true end
+    return table.find(where, output) ~= nil
 end
-local membranes = #surfaces
 
--- The tissues with no edge, declared in `floating` the same way.
-for i, entry in config.get("floating", {}) do
-    if runtime.ours(entry) then
-        local index = i
-        local function block() return config.get("floating", {})[index] or entry end
-        table.insert(surfaces, g.surface {
-            full = true,
-            anchor = { "top", "bottom", "left", "right" },
-            outputs = outputs_of(entry),
-            reserve = false,
-            namespace = "bioma-float",
-            function(output: string, size: any)
-                return float.new(block, output, size or { width = 1920, height = 1080 })
-            end,
-        })
+-- The membranes: a surface for each edge on every output, asleep where no
+-- block of Genoma's names that edge of that output, and the block read by
+-- the pair (Membrane.qml, the Variants keyed by edge). A block that appears,
+-- goes or changes is followed as it happens: a tissue copied to the other
+-- monitor did not appear until a reload, and Fixed/Auto-hide did nothing
+-- (Akusen, 2026-11-03).
+local function membrane_for(output: string, edge: string): { [string]: any }?
+    for _, entry in config.get("membranes", {}) do
+        if type(entry) == "table" and runtime.ours(entry) and (entry.edge or "top") == edge and on_output(entry, output) then
+            return entry
+        end
     end
+    return nil
 end
-print(string.format("Bioma on Genoma: %d membranes, %d floating", membranes, #surfaces - membranes))
+local surfaces = {}
+for _, side in { "top", "bottom", "left", "right" } do
+    local edge = side
+    local horizontal = edge == "top" or edge == "bottom"
+    local anchor = {}
+    for _, s in { "top", "bottom", "left", "right" } do
+        local opposite = ({ top = "bottom", bottom = "top", left = "right", right = "left" })[edge]
+        if s ~= opposite then table.insert(anchor, s) end
+    end
+    table.insert(surfaces, g.surface {
+        full = true,
+        anchor = anchor,
+        outputs = "all",
+        present = function(output: string) return membrane_for(output, edge) ~= nil end,
+        -- Only a horizontal edge keeps its strip, and only while Fixed.
+        reserve = function(output: string): any
+            local entry = membrane_for(output, edge)
+            if not entry or not horizontal or entry.reserve_space ~= true or entry.auto_hide == true then return false end
+            local strip = metrics.step(entry.scale or "normal")
+            return math.floor(strip.margin_edge + strip.cell_height + strip.tissue_padding * 2 + 0.5)
+        end,
+        -- Keeping no strip, it lies over every zone, as the floats do: its
+        -- place is measured from the output's edge, whoever else keeps one.
+        above_zones = true,
+        -- Bioma's own name for the edge: niri's rule for it turns blur
+        -- xray off (config/niri/bioma.kdl).
+        namespace = "bioma-membrane-" .. edge,
+        -- Its size followed, not built again for: another membrane taking
+        -- or letting go of its strip changes this one's area, and rebuilding
+        -- closed whatever was open on it.
+        fluid = true,
+        function(output: string, size: any)
+            local s = size or { width = 1920, height = 1080 }
+            local current = g.computed(function() return membrane_for(output, edge) end)
+            local function block(): { [string]: any } return current.value or { edge = edge } end
+            return membrane.new(block, output, s).tree
+        end,
+    })
+end
+
+-- The tissues with no edge, declared in `floating` the same way: all of an
+-- output's on one surface, asleep while it has none. Each is kept by its
+-- place in that output's list and its anchor, and reads its block by its
+-- place (Membrane.qml keeps its tissues so): one that changes keeps its
+-- cells, and only what it gained or lost is built or let go.
+local function floats_on(output: string): { any }
+    local out = {}
+    for _, entry in config.get("floating", {}) do
+        if type(entry) == "table" and runtime.ours(entry) and on_output(entry, output) then table.insert(out, entry) end
+    end
+    return out
+end
+table.insert(surfaces, g.surface {
+    full = true,
+    anchor = { "top", "bottom", "left", "right" },
+    outputs = "all",
+    present = function(output: string) return #floats_on(output) > 0 end,
+    reserve = false,
+    -- The whole output, every zone included: a floating tissue's place is
+    -- measured from the screen's edge (float.luau, `margin`), so a strip
+    -- another surface keeps must not move its origin.
+    above_zones = true,
+    namespace = "bioma-float",
+    -- Its size followed: a membrane taking or letting go of its strip must
+    -- not rebuild the floating tissues under it, and close what is open.
+    fluid = true,
+    function(output: string, size: any)
+        local s = size or { width = 1920, height = 1080 }
+        local list = g.computed(function() return floats_on(output) end)
+        return g.box {
+            width = function() return s.width end,
+            height = function() return s.height end,
+            g.each {
+                overlay = true,
+                attach = "corner",
+                width = function() return s.width end,
+                height = function() return s.height end,
+                items = function()
+                    local out = {}
+                    for i, entry in list.value do table.insert(out, { place = i, anchor = entry.anchor or "centre" }) end
+                    return out
+                end,
+                key = function(item: any) return item.place .. "|" .. item.anchor end,
+                row = function(item: () -> any)
+                    local place = g.untracked(item).place
+                    local first = list.value[place]
+                    local function block(): { [string]: any } return list.value[place] or first end
+                    return g.box {
+                        overlay = true,
+                        attach = "corner",
+                        width = function() return s.width end,
+                        height = function() return s.height end,
+                        float.new(block, output, s),
+                    }
+                end,
+            },
+        }
+    end,
+})
+-- What Genoma has to hold now: while every surface is Quickshell's, the
+-- host, the input catcher and the polkit agent below stay Quickshell's too.
+local function holds_blocks(): boolean
+    if runtime.alone() then return true end
+    for _, key in { "membranes", "floating" } do
+        for _, entry in config.get(key, {}) do
+            if runtime.ours(entry) then return true end
+        end
+    end
+    return false
+end
 
 -- The wallpaper, and its blurred copy behind niri's overview, when
 -- `wallpaper.runtime` or the switch gives them to Genoma (Quickshell then
@@ -164,9 +244,7 @@ g.ipc("organisms", {
         return g.to_json(g.array(table.clone(list)))
     end,
 })
-local blocks = #surfaces - wallpapers - organism_surfaces
-
-if blocks > 0 then
+if holds_blocks() then
     -- Where a cell with no place of its own appears when it is asked for:
     -- the middle of each monitor, empty until then.
     table.insert(surfaces, g.surface {
@@ -174,7 +252,11 @@ if blocks > 0 then
         anchor = { "top", "bottom", "left", "right" },
         outputs = "all",
         reserve = false,
+        above_zones = true,
         namespace = "bioma-float",
+        -- Followed, not built again: a summoned cell outlives a membrane
+        -- taking or letting go of its strip.
+        fluid = true,
         function(output: string, size: any)
             return float.host(output, size or { width = 1920, height = 1080 })
         end,
@@ -190,6 +272,8 @@ if blocks > 0 then
         anchor = { "top", "bottom", "left", "right" },
         outputs = "all",
         reserve = false,
+        -- A press anywhere on the screen, a membrane's strip included.
+        above_zones = true,
         namespace = "bioma-input",
         function(output: string, size: any)
             return input_surface.node(output, size or { width = 1920, height = 1080 })

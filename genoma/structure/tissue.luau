@@ -28,27 +28,46 @@ function M.new(ctx: { [string]: any })
     t.padding = ctx.padding
     t.horizontal = ctx.horizontal
 
-    -- The cells, built once per load from the block's list. A cell whose
-    -- type is not ported yet is left out, as QML leaves out a block it
-    -- cannot build.
-    t.cells = {}
-    for index, entry in g.untracked(ctx.block).cells or {} do
-        if entry.enabled ~= false then
-            local kind = registry.type_of(entry.type)
-            if kind then
-                local i = index
-                local c = cell_mod.new(kind, {
-                    block = function() return (ctx.block().cells or {})[i] or entry end,
-                    metrics = ctx.metrics,
-                    output = ctx.output,
-                    edge = ctx.edge,
-                    floating = ctx.floating,
-                    output_width = ctx.output_width,
-                })
-                table.insert(t.cells, c)
+    -- The cells, kept by their domain (Tissue.qml, `build`): a cell whose
+    -- block is still in the list keeps its instance and reads the new block,
+    -- only what arrived is built and only what left is let go. Adding a cell
+    -- to a band must not close the settings cell that added it. Keyed by
+    -- the domain and how many of it came before, so two of a kind stay two.
+    -- A cell whose type is not ported yet is left out, as QML leaves out a
+    -- block it cannot build.
+    local function entries(): { any }
+        local out, seen = {}, {}
+        for _, entry in ctx.block().cells or {} do
+            if type(entry) == "table" and entry.enabled ~= false and registry.type_of(entry.type) then
+                local domain = registry.canonical(entry.type)
+                seen[domain] = (seen[domain] or 0) + 1
+                table.insert(out, { key = domain .. "#" .. seen[domain], entry = entry })
             end
         end
+        return out
     end
+    local mapped = g.map(entries, function(item: any) return item.key end, function(item: () -> any)
+        local first = g.untracked(item)
+        local key = first.key
+        -- The last block it was handed: a timer of a cell already let go
+        -- may still ask once.
+        local last = first.entry
+        local c = cell_mod.new(registry.type_of(first.entry.type), {
+            block = function()
+                local now = item()
+                if now then last = now.entry end
+                return last
+            end,
+            metrics = ctx.metrics,
+            output = ctx.output,
+            edge = ctx.edge,
+            floating = ctx.floating,
+            output_width = ctx.output_width,
+        })
+        c.key = key
+        return c
+    end)
+    function t.cells(): { any } return mapped() end
 
     -- A cell counts for what the tissue measures while it is shown or open.
     local function counts(c: any): boolean
@@ -59,7 +78,7 @@ function M.new(ctx: { [string]: any })
 
     function t.tallest(): number
         local out = ctx.metrics().cell_height
-        for _, c in t.cells do
+        for _, c in t.cells() do
             if counts(c) then out = math.max(out, c.contracted_height()) end
         end
         return out
@@ -67,7 +86,7 @@ function M.new(ctx: { [string]: any })
 
     function t.widest(): number
         local out = ctx.metrics().cell_height
-        for _, c in t.cells do
+        for _, c in t.cells() do
             if counts(c) then out = math.max(out, c.contracted_width()) end
         end
         return out
@@ -83,7 +102,7 @@ function M.new(ctx: { [string]: any })
         local slot = ctx.slot_length()
         if slot <= 0 then return HUGE end
         local fixed, counted, elastic = 0, 0, {}
-        for _, c in t.cells do
+        for _, c in t.cells() do
             if counts(c) then
                 counted += 1
                 if c.elastic() then table.insert(elastic, c.contracted_width()) else fixed += c.contracted_width() end
@@ -118,9 +137,10 @@ function M.new(ctx: { [string]: any })
         local ceiling = if slot > 0 then slot - ctx.padding() * 2 else HUGE
         local order = {}
         if ctx.anchor_side() == "end" then
-            for i = #t.cells, 1, -1 do table.insert(order, t.cells[i]) end
+            local list = t.cells()
+            for i = #list, 1, -1 do table.insert(order, list[i]) end
         else
-            for _, c in t.cells do table.insert(order, c) end
+            for _, c in t.cells() do table.insert(order, c) end
         end
         local placed, used = {}, 0
         for _, level in { 2, 1, 0 } do
@@ -155,7 +175,7 @@ function M.new(ctx: { [string]: any })
     -- How far its open cells reach past it.
     function t.reach(): number
         local out = 0
-        for _, c in t.cells do out = math.max(out, c.reach()) end
+        for _, c in t.cells() do out = math.max(out, c.reach()) end
         return out
     end
 
@@ -172,7 +192,7 @@ function M.new(ctx: { [string]: any })
     -- the tissue's start.
     local offsets = g.computed(function(): { [any]: number }
         local out, offset = {}, ctx.padding()
-        for _, c in t.cells do
+        for _, c in t.cells() do
             out[c] = offset
             if placement.value.cells[c] then offset += axis_for(c) + gap() end
         end
@@ -194,16 +214,24 @@ function M.new(ctx: { [string]: any })
 
     local function place_of(c: any, position: { [string]: any }): { [string]: any }
         return {
-            -- On whole pixels, as the tissue is (membrane.luau).
+            -- On whole pixels, as the tissue is (membrane.luau). Centred
+            -- across the tissue as it would be with this cell in it: one not
+            -- placed was centred on a column that no longer counted it, so the
+            -- launcher alone in a floating column came in from the left and
+            -- left that way, sliding between the two (Tissue.qml leaves such a
+            -- cell where it stands).
             x = function(): number
                 local along = offsets.value[c] or ctx.padding()
                 if ctx.horizontal() then return math.floor(along + 0.5) end
-                -- Centred across the column.
-                return math.floor(ctx.padding() + (t.widest() - c.contracted_width()) / 2 + 0.5)
+                local across = math.max(t.widest(), c.contracted_width())
+                return math.floor(ctx.padding() + (across - c.contracted_width()) / 2 + 0.5)
             end,
             y = function(): number
                 local along = offsets.value[c] or ctx.padding()
-                if ctx.horizontal() then return math.floor(ctx.padding() + (t.tallest() - c.contracted_height()) / 2 + 0.5) end
+                if ctx.horizontal() then
+                    local across = math.max(t.tallest(), c.contracted_height())
+                    return math.floor(ctx.padding() + (across - c.contracted_height()) / 2 + 0.5)
+                end
                 return math.floor(along + 0.5)
             end,
             width = function(): number return t.grant_for(c) end,
@@ -222,7 +250,7 @@ function M.new(ctx: { [string]: any })
     -- (a summoned cell, the quick actions' ring going home).
     local function lingering(): boolean
         if not ctx.floating then return false end
-        for _, c in t.cells do
+        for _, c in t.cells() do
             if c.drawn and c.drawn() then return true end
         end
         return false
@@ -257,9 +285,18 @@ function M.new(ctx: { [string]: any })
                 offset_x = moving, offset_y = moving, width = moving, height = moving,
             },
         }
-        for _, c in t.cells do
-            table.insert(band, c.node(place_of(c, position)))
-        end
+        table.insert(band, g.each {
+            overlay = true,
+            attach = "corner",
+            width = t.width,
+            height = t.height,
+            items = t.cells,
+            key = function(c: any) return c.key end,
+            row = function(item: () -> any)
+                local c = g.untracked(item)
+                return c.node(place_of(c, position))
+            end,
+        })
         return g.capsule(band)
     end
 

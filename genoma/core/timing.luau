@@ -64,6 +64,9 @@ g.effect(function()
         open = { duration = s.open, curve = c.open },
         open_flat = { duration = s.open, curve = c.open_flat },
         close = { duration = s.close, curve = c.close },
+        -- An auto-hiding membrane sliding out of the edge or back into it,
+        -- and its halo fading with it (Membrane.qml, Timing.open InOutQuad).
+        reveal = { duration = s.open, curve = c.in_out_quad },
         -- A cell summoned into the middle of the screen leaving, once its
         -- content has gone: it shrinks about its centre over the opening
         -- time, and fades only in the second half, ending with the shrink,

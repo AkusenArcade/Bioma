@@ -83,7 +83,7 @@ local function build(block: () -> { [string]: any }, output: string, size: { wid
     -- the ring off the screen.
     local function surround(axis: string): number
         local out = 0
-        for _, c in t.cells do
+        for _, c in t.cells() do
             local s = c.spec.surround
             if s then out = math.max(out, s()[axis]) end
         end
@@ -128,7 +128,7 @@ end
 
 function M.new(block: () -> { [string]: any }, output: string, size: { width: number, height: number }): any
     local tree = build(block, output, size)
-    return g.box { width = size.width, height = size.height, tree }
+    return g.box { width = function() return size.width end, height = function() return size.height end, tree }
 end
 
 -- The host on `output`: the middle of the screen, empty until something is
@@ -175,7 +175,7 @@ function M.host(output: string, size: { width: number, height: number }): any
             cells = { { type = domain, enabled = true, visibility = { type = "invoked" } } },
         }
         local tree, t = build(function() return block end, output, size, point)
-        local c = t.cells[1]
+        local c = t.cells()[1]
         current = c
         -- In the middle of the screen it grows into place; at the pointer
         -- the ring spreads out of its pill instead.
@@ -202,13 +202,13 @@ function M.host(output: string, size: { width: number, height: number }): any
     end
 
     return g.box {
-        width = size.width,
-        height = size.height,
+        width = function() return size.width end,
+        height = function() return size.height end,
         g.each {
             overlay = true,
             attach = "corner",
-            width = size.width,
-            height = size.height,
+            width = function() return size.width end,
+            height = function() return size.height end,
             items = function() return if summoned.value ~= "" then { summoned.value } else {} end,
             key = function(domain: string) return domain end,
             row = row,

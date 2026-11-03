@@ -319,6 +319,9 @@ function M.new(kind: any, ctx: { [string]: any })
     -- What is only shown under the pointer claims nothing, until it is
     -- asked for.
     c.focus_id = focus.offer(c)
+    -- Let go with its tissue's list, not only with the load: a cell taken
+    -- out of a band while the shell runs is no longer one to open.
+    g.cleanup(function() focus.withdraw(c) end)
     g.watch(function() return c.open.value and claims() end, function(claiming: boolean)
         if claiming then
             focus.opened(c)
