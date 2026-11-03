@@ -2,11 +2,13 @@
 -- The power profile (services/Power.qml at 11bb81e), on Genoma's
 -- power-profiles domain.
 --
--- Not here, on purpose: following the mains (a profile on battery, another
--- on the plug). It acts on the machine and stays Bioma on Quickshell's while
--- both run (genoma/PORT.md, "Who acts on the desktop"); a profile chosen by
--- hand here is a choice, and is set.
+-- Following the mains (a profile on battery, another on the plug) acts on
+-- the machine: `start` runs it once the switch is made (M6 step 7a);
+-- beside Quickshell it is Quickshell's (genoma/PORT.md, "Who acts on the
+-- desktop"). A profile chosen by hand here is a choice, and is set.
+local g = require("@genoma")
 local power = require("@genoma/power")
+local config = require("core/config")
 
 local M = {}
 
@@ -38,6 +40,31 @@ function M.set(key: string)
     if key == "saver" then power:set_profile("power-saver")
     elseif key == "performance" and M.performance_available() then power:set_profile("performance")
     elseif key == "balanced" then power:set_profile("balanced") end
+end
+
+-- ---- Following the power source ------------------------------------------
+--
+-- On a machine with a battery, `power.on_battery` and `power.on_mains`, each
+-- a profile or `keep`. A moment after the source changes: short enough that
+-- nobody waits for it, long enough to let UPower finish answering, and a
+-- plug that is wiggled sets the profile once, not four times.
+local started = false
+function M.start()
+    if started then return end
+    started = true
+    local follow: any = nil
+    g.watch(function(): string
+        local b = power.battery
+        local settled = M.present() and b.laptop and b.present
+        if not settled then return "" end
+        return if power.on_battery then config.get("power.on_battery", "keep") else config.get("power.on_mains", "keep")
+    end, function(wanted: string)
+        if follow then follow:stop() end
+        follow = g.after(0.4, function()
+            follow = nil
+            if wanted ~= "" and wanted ~= "keep" then M.set(wanted) end
+        end)
+    end)
 end
 
 return M

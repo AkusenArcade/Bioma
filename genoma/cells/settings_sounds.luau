@@ -21,9 +21,7 @@ local page = require("components/page")
 
 local M = {}
 
-local function play(name: string)
-    g.process { command = { "qs", "-p", paths.root .. "/shell.qml", "ipc", "call", "sounds", "play", name } }
-end
+local function play(name: string) require("services/sounds").play(name) end
 
 -- `t`: metrics(), width(), height().
 function M.new(t: { [string]: any }): any

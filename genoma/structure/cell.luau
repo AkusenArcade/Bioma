@@ -326,6 +326,14 @@ function M.new(kind: any, ctx: { [string]: any })
             focus.released(c)
         end
     end)
+    -- Heard as well as seen, when it was asked for: a body that opened
+    -- because the pointer brushed it has not been, and stays silent.
+    local was_open = false
+    g.watch(function() return c.open.value end, function(open: boolean)
+        local changed = open ~= was_open
+        was_open = open
+        if changed and c.has_panel and g.untracked(claims) then require("services/sounds").cell(open) end
+    end)
     g.watch(function() return c.open.value end, function(open: boolean)
         if open then return end
         focus.released(c)

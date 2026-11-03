@@ -237,6 +237,11 @@ if runtime.alone() then
     require("services/proxy").start()
     require("services/locker").start()
     require("services/session").start()
+    require("services/clipboard").start()
+    require("services/greeter_sync").start()
+    require("services/sounds").start()
+    require("services/power").start()
+    require("services/printers").start()
 end
 
 -- The walk-through, as Quickshell's `setup` target has it: opened on a

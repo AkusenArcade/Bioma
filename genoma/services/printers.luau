@@ -191,4 +191,25 @@ function M.make_default(p: any)
     if p and not p.is_default then act(p.queue, { script, "default", p.queue }) end
 end
 
+-- With one printer and no default, the one printer is the default: there
+-- is no choice to leave open, and without a default `lp` refuses outright.
+-- Asked once per queue, so a refusal is shown rather than repeated. Acts on
+-- the machine: `start` runs it once the switch is made (M6 step 7a);
+-- beside Quickshell it is Quickshell's.
+local started = false
+function M.start()
+    if started then return end
+    started = true
+    local asked = ""
+    g.watch(function(): string
+        local list = M.printers()
+        if #list ~= 1 or M.default_queue() ~= "" or M.working() ~= "" then return "" end
+        return list[1].queue
+    end, function(only: string)
+        if only == "" or only == asked then return end
+        asked = only
+        M.make_default(g.untracked(M.printers)[1])
+    end)
+end
+
 return M

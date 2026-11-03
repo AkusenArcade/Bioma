@@ -347,6 +347,7 @@ local function receive(n: any)
         local u = table.clone(g.untracked(function() return urgent.value end))
         table.insert(u, n.id)
         urgent.value = u
+        require("services/sounds").notification(n)
         return
     end
     if g.untracked(M.quiet) then return end
@@ -360,6 +361,7 @@ local function receive(n: any)
     table.insert(q, n.id)
     queue.value = q
     if #q == 1 then begin() end
+    require("services/sounds").notification(n)
 end
 
 -- New ids are arrivals; ids gone are notifications closed, by the user, by

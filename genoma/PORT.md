@@ -110,6 +110,19 @@ choosing code asks Quickshell only while Quickshell is the shell:
   lock started Bioma's lock on the nested niri at 61 s. Not tried, since
   they act on the real session: the `Lock` signal, PrepareForSleep, and
   the idle suspend.
+- the rest (2026-11-03): the clipboard's history (`wl-paste --watch` into
+  `scripts/clip`, the list kept, a copy made again moved up, orphans swept,
+  the directory private; `clipboard.luau`), the greeter's copy kept current
+  (`greeter_sync.luau`), the sounds (`sounds.luau`: cells opening and
+  closing, notifications with the sender's hints, the login once a
+  session, values turning red; `sounds play` answered), the power profile
+  following the mains (`power.luau`) and the only printer made the default
+  (`printers.luau`). Checked alone in a nested niri, cache and greeter copy
+  in scratch and a pw-play that only logs: three copies kept as two, clear
+  emptied the list and the files; a cell opened and closed played open and
+  close; a plain notification played Bioma's, a suppressed one nothing, a
+  named one the freedesktop sound; the greeter's copy was made. The mains
+  await the laptop; the printer a machine with one queue and no default.
 
 ## Parity
 

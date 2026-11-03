@@ -77,6 +77,24 @@ function M.register()
         end,
     })
 
+    -- What the clipboard keeps (`hash`, as history.json names it).
+    g.ipc("clipboard", {
+        remove = function(hash: string): string
+            local clipboard = require("services/clipboard")
+            for _, e in g.untracked(clipboard.entries) do
+                if tostring(e.hash) == hash then
+                    clipboard.remove(e)
+                    return "removed"
+                end
+            end
+            return "no entry"
+        end,
+        clear = function(): string
+            require("services/clipboard").clear()
+            return "cleared"
+        end,
+    })
+
     g.ipc("looks", {
         icons = function(id: string): string
             local looks = require("services/looks")
@@ -109,6 +127,14 @@ function M.register()
         next = function(): string require("services/media").next() return "next" end,
         previous = function(): string require("services/media").previous() return "previous" end,
         stop = function(): string require("services/media").pause() return "paused" end,
+    })
+
+    -- A sound by name, at the volume set: `play alert`.
+    g.ipc("sounds", {
+        play = function(name: string): string
+            require("services/sounds").play(name or "")
+            return "playing " .. tostring(name) .. " at " .. tostring(config.get("sounds.volume", 0.6))
+        end,
     })
 
     g.ipc("timer", {
