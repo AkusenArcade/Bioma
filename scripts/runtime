@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Which runtime draws a part of Bioma: `genoma` or `quickshell`.
+#
+#     runtime            the shell as a whole
+#     runtime <part>     lock, greeter, wallpaper: their own key, unless the
+#                        shell as a whole is Genoma's
+#
+# A top-level `"runtime": "genoma"` in the configuration is the switch to
+# Bioma on Genoma (Akusen, 2026-11-03): every part is then Genoma's. Before
+# it, a part is Genoma's when its own block says so. The override file wins
+# over config/default.json, as in core/Config.qml. genoma/core/runtime.luau
+# is the same rule inside the shell.
+set -u
+here="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
+config="${XDG_CONFIG_HOME:-$HOME/.config}"
+python3 - "${1:-}" "$here/config/default.json" "$config/bioma/override.json" <<'PY' 2>/dev/null || echo quickshell
+import json, sys
+part, layers = sys.argv[1], sys.argv[2:]
+whole, own = "quickshell", "quickshell"
+for path in layers:
+    try:
+        data = json.load(open(path))
+    except (OSError, ValueError):
+        continue
+    if not isinstance(data, dict):
+        continue
+    whole = data.get("runtime", whole)
+    block = data.get(part) if part else None
+    if isinstance(block, dict):
+        own = block.get("runtime", own)
+print("genoma" if whole == "genoma" or (part and own == "genoma") else "quickshell")
+PY

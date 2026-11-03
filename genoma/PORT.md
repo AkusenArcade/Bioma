@@ -30,12 +30,27 @@ the configuration marked
 "runtime": "genoma"
 ```
 
-is drawn by Bioma on Genoma, and Bioma on Quickshell leaves it out. Today
-that key is read on membranes and floating tissues; the surfaces that are
-not configuration blocks get their own when they are ported: the wallpaper
-and its backdrop are `"wallpaper": { "runtime": "genoma" }`; the
-organisms and the OSD are to come. Notifications move last: the session's
-notification name has one owner.
+is drawn by Bioma on Genoma, and Bioma on Quickshell leaves it out. The
+key is read on membranes, floating tissues and organisms; the parts that
+are not configuration blocks have their own: `"wallpaper": { "runtime":
+"genoma" }` for the wallpaper and its backdrop, `"lock"` and `"greeter"`
+the same. Notifications move last: the session's notification name has one
+owner.
+
+**The switch** (M6 step 7, Akusen 2026-11-03) is the same key at the top
+of the configuration:
+
+```json
+{ "runtime": "genoma", … }
+```
+
+Every block and part is then Genoma's, `scripts/bioma` starts Bioma on
+Genoma alone (Quickshell only when Genoma's runtime is missing), and
+`scripts/shell` finds it to stop and restart. Bioma on Quickshell, started
+anyway, draws nothing. The rule lives twice, `scripts/runtime` for the
+scripts and `core/runtime.luau` for the shell. Until the rest of step 7a is
+done, Quickshell still acts for Genoma (below), so the key is not for daily
+use yet.
 
 ## Who acts on the desktop
 

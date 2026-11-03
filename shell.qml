@@ -62,9 +62,13 @@ ShellRoot {
     //
     // A block marked `"runtime": "genoma"` is drawn by Bioma on Genoma
     // (genoma/PORT.md) and not here: the two run side by side while the port
-    // goes surface by surface.
+    // goes surface by surface. A top-level `"runtime": "genoma"` gives Genoma
+    // everything (`scripts/runtime`); started anyway, this shell draws
+    // nothing.
+    readonly property bool genomaAlone: Config.get("runtime", "quickshell") === "genoma"
+
     function membraneMatches(entry, screen) {
-        return entry.runtime !== "genoma" && Strips.belongs(entry, screen);
+        return !root.genomaAlone && entry.runtime !== "genoma" && Strips.belongs(entry, screen);
     }
 
     Variants {
@@ -79,7 +83,7 @@ ShellRoot {
             // draws it instead when `wallpaper.runtime` says so
             // (genoma/PORT.md).
             LazyLoader {
-                active: Config.get("wallpaper.runtime", "quickshell") !== "genoma"
+                active: !root.genomaAlone && Config.get("wallpaper.runtime", "quickshell") !== "genoma"
 
                 WallpaperSurface {
                     screen: perScreen.modelData
@@ -92,7 +96,7 @@ ShellRoot {
             // a game does not open (core/Performance.qml).
             LazyLoader {
                 active: !Performance.leanWallpaper
-                        && Config.get("wallpaper.runtime", "quickshell") !== "genoma"
+                        && !root.genomaAlone && Config.get("wallpaper.runtime", "quickshell") !== "genoma"
 
                 WallpaperSurface {
                     screen: perScreen.modelData

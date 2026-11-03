@@ -64,22 +64,13 @@ cp -r "$here/config/palettes" "$next/shell/config/"
 cp "$here/scripts/greeter-session" "$next/shell/scripts/"
 
 # Bioma on Genoma's greeter, when the configuration gives it the greeter
-# (`"greeter": { "runtime": "genoma" }`): its Luau, and Genoma's runtime,
+# (`"greeter": { "runtime": "genoma" }`, or the whole shell; see
+# `scripts/runtime`): its Luau, and Genoma's runtime,
 # stripped, under bin/. The runtime is $GENOMA_BIN or `genoma` on the PATH;
 # with neither, the one the last copy carried is kept, so a sync from a
 # shell that does not know where Genoma is never takes it away. Without a
 # runtime at all the greeter stays Quickshell's.
-runtime="$(python3 - "$config/bioma/override.json" "$here/config/default.json" <<'PY' 2>/dev/null || echo quickshell
-import json, sys
-value = "quickshell"
-for path in reversed(sys.argv[1:]):
-    try:
-        value = json.load(open(path)).get("greeter", {}).get("runtime", value)
-    except (OSError, ValueError, AttributeError):
-        pass
-print(value)
-PY
-)"
+runtime="$("$here/scripts/runtime" greeter)"
 # The package leaves genoma/ out until it ships, so there is nothing to copy.
 if [ "$runtime" = genoma ] && [ -d "$here/genoma" ]; then
     mkdir -p "$next/bin"

@@ -16,6 +16,18 @@ set -eu
 
 here="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
 
+# Bioma on Genoma, once the configuration says the whole shell is Genoma's
+# (a top-level `"runtime": "genoma"`, see `scripts/runtime`) and Genoma's
+# runtime is there: it alone, and nothing below, which is Quickshell's.
+# Without the runtime the shell stays on Quickshell rather than not starting.
+if [ "$("$here/scripts/runtime")" = genoma ] && [ -d "$here/genoma" ]; then
+    genoma_bin="${GENOMA_BIN:-$(command -v genoma || true)}"
+    if [ -n "$genoma_bin" ] && [ -x "$genoma_bin" ]; then
+        exec "$here/scripts/genoma" "$@"
+    fi
+    echo "bioma: the configuration asks for Genoma, and there is no runtime; starting on Quickshell" >&2
+fi
+
 # What the session had is kept beside it: the shell's children inherit its
 # environment, and an application started from the launcher is one of the
 # "every other" above. `scripts/launch` puts it back.

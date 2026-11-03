@@ -21,6 +21,7 @@ local config = require("core/config")
 local metrics_mod = require("core/metrics")
 local performance = require("core/performance")
 local theme = require("core/theme")
+local runtime = require("core/runtime")
 local monitors = require("services/monitors")
 local niri = require("services/niri")
 local arranging = require("structure/arranging")
@@ -112,13 +113,13 @@ end
 function M.list(): { any }
     local out = {}
     for i, entry in config.get("organisms", {}) do
-        if type(entry) == "table" and entry.runtime == "genoma" then table.insert(out, { index = i, entry = entry }) end
+        if type(entry) == "table" and runtime.ours(entry) then table.insert(out, { index = i, entry = entry }) end
     end
     return out
 end
 function M.any(): boolean
     for _, entry in config.get("organisms", {}) do
-        if type(entry) == "table" and entry.runtime == "genoma" then return true end
+        if type(entry) == "table" and runtime.ours(entry) then return true end
     end
     return false
 end
@@ -580,7 +581,7 @@ local function rows_for(output: string, list: () -> { any }): () -> { any }
     return function()
         local out = {}
         for i, entry in list() do
-            if type(entry) == "table" and entry.runtime == "genoma" and belongs(entry, output) then
+            if type(entry) == "table" and runtime.ours(entry) and belongs(entry, output) then
                 table.insert(out, { index = i, entry = entry })
             end
         end

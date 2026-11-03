@@ -1,7 +1,8 @@
 --!strict
 -- Bioma on Genoma (genoma/PORT.md): the core, and a surface for every
--- membrane block marked `"runtime": "genoma"`, laid out by the structure
--- engine (genoma/structure/).
+-- membrane block that is Genoma's (core/runtime.luau: marked
+-- `"runtime": "genoma"`, or every one once the switch is made), laid out by
+-- the structure engine (genoma/structure/).
 local g = require("@genoma")
 local config = require("core/config")
 local theme = require("core/theme")
@@ -18,6 +19,7 @@ local registry = require("cells/registry")
 
 local monitors = require("services/monitors")
 local paths = require("core/paths")
+local runtime = require("core/runtime")
 
 -- The shell's own glyphs, by name: assets/icons, the runtime copy.
 g.icon_dir(paths.root .. "/assets/icons")
@@ -38,7 +40,7 @@ end
 -- belongs to.
 local surfaces = {}
 for i, entry in config.get("membranes", {}) do
-    if entry.runtime == "genoma" then
+    if runtime.ours(entry) then
         local index = i
         local function block() return config.get("membranes", {})[index] or entry end
         local edge = entry.edge or "top"
@@ -69,7 +71,7 @@ local membranes = #surfaces
 
 -- The tissues with no edge, declared in `floating` the same way.
 for i, entry in config.get("floating", {}) do
-    if entry.runtime == "genoma" then
+    if runtime.ours(entry) then
         local index = i
         local function block() return config.get("floating", {})[index] or entry end
         table.insert(surfaces, g.surface {
@@ -87,11 +89,11 @@ end
 print(string.format("Bioma on Genoma: %d membranes, %d floating", membranes, #surfaces - membranes))
 
 -- The wallpaper, and its blurred copy behind niri's overview, when
--- `wallpaper.runtime` gives them to Genoma (Quickshell then leaves its own
--- out). Below everything, one of each per monitor, over every zone.
+-- `wallpaper.runtime` or the switch gives them to Genoma (Quickshell then
+-- leaves its own out). Below everything, one of each per monitor, over every zone.
 local wallpaper_surface = require("structure/wallpaper")
 local wallpapers = 0
-if config.get("wallpaper.runtime", "quickshell") == "genoma" then
+if runtime.part("wallpaper") then
     for _, backdrop in { false, true } do
         local blurred = backdrop
         table.insert(surfaces, g.surface {

@@ -17,6 +17,7 @@
 -- nothing written about the user, while no rings organism holds it.
 local g = require("@genoma")
 local config = require("core/config")
+local runtime = require("core/runtime")
 
 local M = {}
 
@@ -33,7 +34,7 @@ end
 local function counting(): boolean
     if holders.value <= 0 then return false end
     for _, entry in config.get("organisms", {}) do
-        if type(entry) == "table" and entry.type == "rings" and entry.runtime ~= "genoma" then return false end
+        if type(entry) == "table" and entry.type == "rings" and not runtime.ours(entry) then return false end
     end
     return true
 end

@@ -33,20 +33,10 @@ if pgrep -f -- "$lock_pattern" >/dev/null 2>&1 || pgrep -f -- "$genoma_pattern" 
 fi
 
 # Bioma on Genoma's lock (genoma/lock.luau), when the configuration gives it
-# the lock (`"lock": { "runtime": "genoma" }`) and its runtime is there:
-# $GENOMA_BIN, else `genoma` on the PATH. Otherwise Quickshell's.
-config="${XDG_CONFIG_HOME:-$HOME/.config}"
-runtime="$(python3 - "$config/bioma/override.json" "$here/config/default.json" <<'PY' 2>/dev/null || echo quickshell
-import json, sys
-value = "quickshell"
-for path in reversed(sys.argv[1:]):
-    try:
-        value = json.load(open(path)).get("lock", {}).get("runtime", value)
-    except (OSError, ValueError, AttributeError):
-        pass
-print(value)
-PY
-)"
+# the lock (`"lock": { "runtime": "genoma" }`, or the whole shell; see
+# `scripts/runtime`) and its runtime is there: $GENOMA_BIN, else `genoma` on
+# the PATH. Otherwise Quickshell's.
+runtime="$("$here/scripts/runtime" lock)"
 genoma_bin=""
 if [ "$runtime" = genoma ] && [ -d "$here/genoma" ]; then
     genoma_bin="${GENOMA_BIN:-$(command -v genoma || true)}"

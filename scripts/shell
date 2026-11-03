@@ -25,12 +25,16 @@ state_dir="${XDG_CONFIG_HOME:-$HOME/.config}/bioma"
 state="$state_dir/shell"
 
 bioma_pattern="qs -p $here/shell.qml"
+# Bioma on Genoma, the shell itself: the directory as its last argument. The
+# lock and the greeter name their own entry file after it.
+genoma_pattern="$here/genoma\$"
 
 # Every live process running Bioma's shell. Quickshell's own list is asked
 # first, by config path, because it is the only thing that knows an instance
 # its crash handler relaunched: that one runs as a bare `/usr/bin/quickshell`,
 # with no arguments for a pattern to find. The lock screen and the greeter run
-# other files and are never among them.
+# other files and are never among them. Bioma on Genoma is found by its
+# command line alone.
 bioma_pids() {
     {
         qs list --all 2>/dev/null | awk -v want="$here/shell.qml" '
@@ -38,6 +42,7 @@ bioma_pids() {
             /Process ID:/   { pid = $3 }
             /Config path:/  { sub(/^[ \t]*Config path:[ \t]*/, ""); if ($0 == want && pid != "") print pid }'
         pgrep -f -- "$bioma_pattern" 2>/dev/null || true
+        pgrep -f -- "$genoma_pattern" 2>/dev/null || true
     } | sort -u | while read -r pid; do
         stat="$(ps -o stat= -p "$pid" 2>/dev/null | cut -c1)"
         if [ -n "$stat" ] && [ "$stat" != Z ]; then echo "$pid"; fi
