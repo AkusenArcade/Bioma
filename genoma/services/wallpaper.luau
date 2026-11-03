@@ -5,16 +5,16 @@
 -- kept out of the configuration layers on purpose: the theme cell rewrites
 -- it every time an image is tried, and that churn does not belong in a
 -- file a human edits. It lives in `wallpaper.json`, which Bioma on
--- Quickshell watches too: until the switch (genoma/PORT.md, "Who acts on
--- the desktop") a choice made here is written there, and Quickshell is the
--- one that draws it and runs matugen on it.
+-- Quickshell watches too: beside it, a choice made here is written there and
+-- Quickshell draws it and runs matugen on it; after the switch Genoma does
+-- both (structure/wallpaper.luau, services/matugen.luau).
 --
--- Not yet: making thumbnails. The ones
--- Quickshell has made are read, by the same name; without one the image
--- itself is shown, which an image node fits off the frame anyway.
+-- Thumbnails are made by `magick` into the cache, by the same name Bioma on
+-- Quickshell gives them; without one the image itself is shown.
 local g = require("@genoma")
 local config = require("core/config")
 local paths = require("core/paths")
+local runtime = require("core/runtime")
 
 local M = {}
 
@@ -258,11 +258,59 @@ local cached = g.computed(function(): { [string]: boolean }
     return out
 end)
 
--- The thumbnail where Quickshell made one, the image itself where not.
+-- Made one at a time (fifty converters at once would take the machine away
+-- from whatever it was doing), by Bioma on Genoma alone (M6 step 7a);
+-- beside Quickshell, Quickshell makes them. Without ImageMagick there are
+-- none, and the carousel reads the images themselves.
+local queue: { string } = {}
+local converting = ""
+local failures = 0
+local directory_made = false
+local function pump()
+    if converting ~= "" or #queue == 0 or failures > 2 then return end
+    if not directory_made then
+        directory_made = true
+        g.process {
+            command = { "mkdir", "-p", M.cache_folder },
+            on_exit = function(code: number)
+                if code ~= 0 then failures = 3 end
+                pump()
+            end,
+        }
+        return
+    end
+    local image = table.remove(queue, 1)
+    converting = image
+    g.process {
+        command = { "magick", image, "-auto-orient", "-strip", "-thumbnail", "640x640>", "-quality", "82",
+            M.cache_folder .. "/" .. fingerprint(image) .. ".jpg" },
+        on_exit = function(code: number)
+            if code == 0 then
+                failures = 0
+            else
+                failures += 1
+                if failures > 2 then print("Wallpaper: no thumbnails — `magick` failed on " .. image) end
+            end
+            converting = ""
+            pump()
+        end,
+    }
+end
+local function request(path: string)
+    if failures > 2 or converting == path or table.find(queue, path) then return end
+    table.insert(queue, path)
+    pump()
+end
+
+-- The thumbnail where there is one, the image itself where not: the
+-- carousel never shows a hole. One missing is asked for, a turn later, so
+-- the lookup does not change what it is reading.
 function M.thumbnail(path: string): string
     if path == "" or not config.get("wallpaper.thumbnails", true) then return path end
     local name = fingerprint(path) .. ".jpg"
-    return if cached.value[name] then M.cache_folder .. "/" .. name else path
+    if cached.value[name] then return M.cache_folder .. "/" .. name end
+    if runtime.alone() then g.after(0, function() request(path) end) end
+    return path
 end
 
 return M

@@ -159,6 +159,10 @@ choosing code asks Quickshell only while Quickshell is the shell:
   Genoma's summoned capsules have none); Genoma answers `brightness`.
   Checked alone: performance mode on and off said in it. The brightness
   was not moved, as it acts on the monitors.
+- the wallpaper's thumbnails (2026-11-03, `wallpaper.luau`): made by
+  `magick` one at a time into the cache, by the same fingerprint Bioma on
+  Quickshell names them with. Checked alone: the theme cell opened, and
+  every name made was one Quickshell had already made in his own cache.
 
 ## Parity
 
