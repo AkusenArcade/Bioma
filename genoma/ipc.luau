@@ -77,6 +77,29 @@ function M.register()
         end,
     })
 
+    g.ipc("looks", {
+        icons = function(id: string): string
+            local looks = require("services/looks")
+            looks.set_icons(id or "")
+            return g.untracked(looks.icon_theme)
+        end,
+        cursor = function(id: string, size: string?): string
+            local looks = require("services/looks")
+            looks.set_cursor(id or "", tonumber(size or "") or 0)
+            return g.untracked(looks.cursor_theme) .. " " .. g.untracked(looks.cursor_size)
+        end,
+        template = function(id: string, on: string): string
+            local templates = require("services/templates")
+            templates.set_on(id or "", on == "true")
+            return if g.untracked(function() return templates.is_on(id) end) then "on" else "off"
+        end,
+        -- The glass's strength, a step written into niri's configuration.
+        blur = function(strength: string): string
+            require("services/looks").set_blur(tonumber(strength) or 0)
+            return tostring(g.untracked(require("core/metrics").blur_strength))
+        end,
+    })
+
     g.ipc("media", {
         toggle = function(): string
             local media = require("services/media")

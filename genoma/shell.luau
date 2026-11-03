@@ -227,6 +227,15 @@ g.ipc("cell", {
 -- The rest of what Quickshell's shell.qml answers (genoma/ipc.luau).
 require("ipc").register()
 
+-- What Bioma on Quickshell does to the desktop, done here once the switch
+-- is made (M6 step 7a; genoma/PORT.md, "Who acts on the desktop"): beside
+-- Quickshell, it acts and these only choose.
+if runtime.alone() then
+    require("services/matugen").start()
+    require("services/templates").start()
+    require("services/looks").start()
+end
+
 -- The walk-through, as Quickshell's `setup` target has it: opened on a
 -- screen, moved to a step, its state read.
 g.ipc("setup", {

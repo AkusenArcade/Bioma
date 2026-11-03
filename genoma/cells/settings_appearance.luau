@@ -16,7 +16,6 @@ local g = require("@genoma")
 local colour = require("core/colour")
 local config = require("core/config")
 local metrics_mod = require("core/metrics")
-local paths = require("core/paths")
 local theme = require("core/theme")
 local typography = require("core/typography")
 local page = require("components/page")
@@ -130,11 +129,11 @@ function M.new(t: { [string]: any }): any
         config.set_many({ { "membranes", membranes }, { "floating", floats } })
     end
 
-    -- The glass's strength is a step written into niri's configuration,
-    -- which Quickshell writes while the two run side by side.
+    -- The glass's strength is a step written into niri's configuration
+    -- (services/looks.luau).
     local function glass(): boolean return config.get("cell.blur", true) == true end
     local blur_value, blur_set = p.live("cell.blurStrength", 5, function(step: any)
-        g.process { command = { "qs", "-p", paths.root .. "/shell.qml", "ipc", "call", "looks", "blur", tostring(step) } }
+        require("services/looks").set_blur(step)
     end)
     local steps = #metrics_mod.blur_steps
     local function strength(): number return math.clamp(math.floor(blur_value() + 0.5), 1, steps) end

@@ -79,6 +79,22 @@ configuration and state (`override.json`, `wallpaper.json`); Bioma on
 Quickshell, which follows those files already, is the one that runs the
 effects. At the switch the effects move to Genoma.
 
+With the switch's key (M6 step 7a) Bioma on Genoma acts itself, and the
+choosing code asks Quickshell only while Quickshell is the shell:
+- the look (2026-11-03): matugen on the wallpaper (`services/matugen.luau`),
+  the templates rendered through `scripts/themes`
+  (`services/templates.luau`), the icon theme and cursor set on the desktop
+  with their `.a`/`.b` slots, Bioma's cursor and icon themes built in the
+  palette, the first adoption of them, the cursor and the blur written as
+  niri includes (`services/looks.luau`); Genoma answers `looks` too.
+  Checked alone on a scratch copy of Akusen's configuration: every
+  template's file came out byte for byte as Quickshell had written it
+  (`colour.qt_mix` reproduces Qt's 32-bit float channels where a mix lands
+  exactly between two bytes, and `colour.format` its sixteen-bit rounding),
+  neither theme was rebuilt (the requests matched), and blur, cursor,
+  template on and off, and matugen on a new scheme each wrote what
+  Quickshell writes.
+
 ## Parity
 
 A surface is ported when its checklist is ticked from a side-by-side

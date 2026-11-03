@@ -12,9 +12,14 @@ function M.parse(hex: string): RGB
     return { r = at(2), g = at(4), b = at(6), a = if #hex >= 9 then at(8) else 1 }
 end
 
+-- Rounded as Qt rounds: a channel is kept in sixteen bits and named in
+-- eight by QColor's division by 257, so a value exactly between two bytes
+-- falls the way Qt's does (a palette mixed half and half for GTK differed
+-- by one there).
 function M.format(c: RGB): string
     local function byte(v: number): string
-        return string.format("%02x", math.floor(math.clamp(v, 0, 1) * 255 + 0.5))
+        local wide = math.floor(math.clamp(v, 0, 1) * 65535 + 0.5)
+        return string.format("%02x", bit32.rshift(wide - bit32.rshift(wide, 8) + 0x80, 8))
     end
     return "#" .. byte(c.r) .. byte(c.g) .. byte(c.b) .. byte(c.a)
 end
@@ -92,8 +97,25 @@ end
 -- Between two colours, `t` of the way from `a` to `b`, alpha included.
 function M.mix(a: string, b: string, t: number): string
     local x, y = M.parse(a), M.parse(b)
-    local function lerp(p: number, q: number): number return p + (q - p) * t end
+    -- Qt's own arithmetic, a·(1−t) + b·t: on a value exactly between two
+    -- bytes the last bit of the sum decides the rounding.
+    local function lerp(p: number, q: number): number return p * (1 - t) + q * t end
     return M.format({ r = lerp(x.r, y.r), g = lerp(x.g, y.g), b = lerp(x.b, y.b), a = lerp(x.a, y.a) })
+end
+
+-- A mix computed as QML computes `Qt.rgba(a.r * (1 - t) + b.r * t, …)`, to
+-- the byte: Qt 6 hands channels out as 32-bit floats (QColor::redF), JS
+-- mixes them in doubles, and setRgbF takes a float again and keeps sixteen
+-- bits. Where the files written for other applications must say what Bioma
+-- on Quickshell said (services/templates.luau), not where colours move.
+local function f32(x: number): number return (string.unpack("f", string.pack("f", x))) end
+function M.qt_mix(a: RGB, b: RGB, t: number): string
+    local function channel(p: number, q: number): string
+        local v = f32(p) * (1 - t) + f32(q) * t
+        local wide = math.floor(f32(f32(f32(math.clamp(v, 0, 1)) * 65535) + 0.5))
+        return string.format("%02x", bit32.rshift(wide - bit32.rshift(wide, 8) + 0x80, 8))
+    end
+    return "#" .. channel(a.r, b.r) .. channel(a.g, b.g) .. channel(a.b, b.b)
 end
 
 function M.luminance(hex: string): number
