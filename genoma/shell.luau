@@ -234,6 +234,7 @@ if runtime.alone() then
     require("services/matugen").start()
     require("services/templates").start()
     require("services/looks").start()
+    require("services/proxy").start()
 end
 
 -- The walk-through, as Quickshell's `setup` target has it: opened on a

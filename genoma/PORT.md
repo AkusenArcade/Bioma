@@ -94,6 +94,11 @@ choosing code asks Quickshell only while Quickshell is the shell:
   neither theme was rebuilt (the requests matched), and blur, cursor,
   template on and off, and matugen on a new scheme each wrote what
   Quickshell writes.
+- the proxy (2026-11-03): the desktop's gsettings written from the profile
+  in force, after the shell settles and on each change, and undone once
+  when the last profile goes (`services/proxy.luau`, from Proxy.qml).
+  Checked alone: an HTTP profile wrote mode, host, port and ignore-hosts
+  into the scratch dconf; removing it wrote mode none.
 
 ## Parity
 
@@ -945,7 +950,7 @@ configuration with nothing of Genoma's in it:
       credentials through `scripts/vpn`.
 - [x] Proxy, the choice (`proxy.luau`): profiles, triggers (a VPN, a Wi-Fi
       network, the cable), the environment, the profiles written. The
-      desktop's gsettings stays Quickshell's until the switch.
+      desktop's gsettings is written by Genoma alone (step 7a).
 - [x] Printers (`printers.luau`): CUPS's queues, default and jobs through
       `scripts/printers`, followed by its D-Bus notifications; search, add,
       remove, default. Making the only queue the default stays Quickshell's.

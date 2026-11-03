@@ -4,12 +4,13 @@
 -- network, a cable), and the environment a program reaching the network is
 -- given.
 --
--- Not here, on purpose: writing the desktop's own proxy setting
--- (`gsettings`). It stays Bioma on Quickshell's while both run, or the two
--- would write it in turn (genoma/PORT.md, "Who acts on the desktop"); it
--- follows the same configuration this writes.
+-- The desktop's own proxy setting (`gsettings`) is written by `start`,
+-- once the switch is made (M6 step 7a); beside Quickshell, Quickshell
+-- writes it, or the two would write it in turn (genoma/PORT.md, "Who acts
+-- on the desktop").
 local g = require("@genoma")
 local config = require("core/config")
+local timing = require("core/timing")
 local network = require("services/network")
 local vpn = require("services/vpn")
 
@@ -128,6 +129,103 @@ function M.describe(trigger: any): string
     if trigger.kind == "wifi" then return trigger.ssid or "" end
     if trigger.kind == "wired" then return "Wired" end
     return ""
+end
+
+-- ---- The desktop's setting ---------------------------------------------------
+--
+-- Written when what is on changes, and not while the shell is starting: the
+-- networks fill in a moment after start, and writing "none" for that moment
+-- would drop a proxy somebody's browser is using. With no profiles the
+-- desktop's setting is somebody else's, unless the shell set it and then
+-- lost its last profile: then it undoes what it did, once.
+local touched = false
+local writing, again = false, false
+
+local function clean(text: string): string return (string.gsub(text, "['\"\\$`]", "")) end
+
+local function apply()
+    local empty = #g.untracked(profiles) == 0
+    if empty and not touched then return end
+    touched = not empty
+    if writing then
+        again = true
+        return
+    end
+    local schema = "org.gnome.system.proxy"
+    local sets: { { string } } = {}
+    local function set(key: string, name: string, value: string) table.insert(sets, { key, name, value }) end
+    local profile = if empty then nil else g.untracked(M.current)
+    if not profile then
+        set(schema, "mode", "none")
+    else
+        -- A string, as GVariant wants it: `'proxy.example'`.
+        local host = "'" .. clean(tostring(profile.host or "")) .. "'"
+        local port = tostring(math.max(0, math.floor(tonumber(profile.port) or 0)))
+        local ignored = {}
+        for h in string.gmatch(g.untracked(M.exceptions), "[^,]+") do
+            local trimmed = string.match(h, "^%s*(.-)%s*$") or ""
+            if trimmed ~= "" then table.insert(ignored, "'" .. clean(trimmed) .. "'") end
+        end
+        set(schema, "ignore-hosts", "[" .. table.concat(ignored, ", ") .. "]")
+        if profile.type == "socks5" then
+            set(schema .. ".socks", "host", host)
+            set(schema .. ".socks", "port", port)
+            set(schema .. ".http", "host", "''")
+            set(schema .. ".https", "host", "''")
+        else
+            set(schema .. ".http", "host", host)
+            set(schema .. ".http", "port", port)
+            set(schema .. ".https", "host", host)
+            set(schema .. ".https", "port", port)
+            set(schema .. ".socks", "host", "''")
+        end
+        set(schema, "mode", "manual")
+    end
+    -- One after the other, as one change: no shell between them, so nothing
+    -- is quoted twice.
+    writing = true
+    local i = 0
+    local function next_set()
+        i += 1
+        local s = sets[i]
+        if not s then
+            writing = false
+            if again then
+                again = false
+                apply()
+            end
+            return
+        end
+        local said = {}
+        g.process {
+            command = { "gsettings", "set", s[1], s[2], s[3] },
+            on_error_line = function(line: string) table.insert(said, line) end,
+            on_exit = function(code: number)
+                if code ~= 0 then print("Bioma: the proxy setting was not written — " .. table.concat(said, " ")) end
+                next_set()
+            end,
+        }
+    end
+    next_set()
+end
+
+local started = false
+function M.start()
+    if started then return end
+    started = true
+    local settled = false
+    g.after(timing.seconds.settle, function()
+        settled = true
+        apply()
+    end)
+    g.watch(function(): string
+        local p = M.current()
+        if not p then return "none" end
+        return table.concat({ tostring(p.type), tostring(p.host), tostring(p.port), M.exceptions() }, "\n")
+    end, function() if settled then apply() end end)
+    g.watch(function() return #profiles() end, function(count: number)
+        if settled and count == 0 and touched then apply() end
+    end)
 end
 
 return M
