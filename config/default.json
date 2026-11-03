@@ -91,6 +91,7 @@
     "video_folder": "$HOME/Videos/Recordings",
     "clipboard": true,
     "notify": true,
+    "freeze": true,
     "ocr_language": "eng",
     "what": "image",
     "from": "screen",

@@ -34,14 +34,16 @@ function M.new(cell: any, t: { [string]: any }): { [string]: any }
     local function for_text(): boolean return t.what() == "text" end
     local function for_colour(): boolean return t.what() == "colour" end
 
-    -- One of the three places. Under Text the row reads OCR SCREEN ·
-    -- DICTATION · OCR REGION: text is never read from a window here, so the
-    -- middle place is dictation's (PRD §9.6), its key still `window`. Under
+    -- One of the three places. Under Text the row reads OCR SCREEN · OCR
+    -- REGION · DICTATION: text is never read from a window here, so that
+    -- place is dictation's (PRD §9.6), its key still `window`, and last, so
+    -- the two readings sit side by side (Akusen, 2026-11-03). Under
     -- Colour it reads PICK · the last colour · the one before: a colour has
     -- no place to choose, so the places are the colours already taken.
     local function source(slot: number): any
         local function key(): string
             if for_colour() then return ({ "pick", "recent0", "recent1" })[slot] end
+            if for_text() then return ({ "screen", "region", "window" })[slot] end
             return ({ "screen", "window", "region" })[slot]
         end
         local function holds_colour(): boolean return for_colour() and slot > 1 end
@@ -52,13 +54,13 @@ function M.new(cell: any, t: { [string]: any }): { [string]: any }
                 return if s ~= "" then s else "NONE"
             end
             if for_colour() then return "PICK" end
-            if for_text() then return ({ "OCR SCREEN", "DICTATION", "OCR REGION" })[slot] end
+            if for_text() then return ({ "OCR SCREEN", "OCR REGION", "DICTATION" })[slot] end
             return ({ "SCREEN", "WINDOW", "REGION" })[slot]
         end
         local function icon(): string
             if for_colour() then return "picker" end
-            if slot == 2 then return if for_text() then "microphone" else "window" end
-            return ({ "screen", "window", "region" })[slot]
+            if key() == "window" and for_text() then return "microphone" end
+            return key()
         end
         -- Under Colour nothing is remembered as a place: the pick is the
         -- control, the colours beside it wells.

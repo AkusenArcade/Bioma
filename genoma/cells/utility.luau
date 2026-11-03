@@ -99,7 +99,8 @@ return {
             -- is on the screen being photographed.
             cell.open.value = false
             if place == "region" then
-                capture.select_region()
+                -- Frozen once the cell has gone from the picture.
+                capture.select_region(true)
             elseif w == "text" and place == "window" then
                 -- Closing gives the focus back to the window the text is for.
                 dictation.start()
@@ -109,7 +110,8 @@ return {
             elseif w == "video" then
                 capture.record_output(cell.output)
             elseif w == "text" then
-                capture.recognise_region(capture.output_region(cell.output))
+                -- Which screen is read is chosen, over the screens frozen.
+                capture.select_screen(true)
             else
                 capture.capture_output(cell.output)
             end

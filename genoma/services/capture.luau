@@ -34,6 +34,9 @@ local last_path = g.signal("")
 local last_text = g.signal("")
 local last_error = g.signal("")
 local selecting = g.signal(false)
+-- What is being chosen while selecting: "region", a rectangle drawn; or
+-- "screen", a whole monitor picked by a click.
+local choosing = g.signal("region")
 local recording = g.signal(false)
 local pending_video = g.signal("")
 local elapsed = g.signal(0)
@@ -43,6 +46,7 @@ function M.last_path(): string return last_path.value end
 function M.last_text(): string return last_text.value end
 function M.last_error(): string return last_error.value end
 function M.selecting(): boolean return selecting.value end
+function M.choosing(): string return choosing.value end
 function M.recording(): boolean return recording.value end
 function M.pending_video(): string return pending_video.value end
 function M.elapsed(): number return elapsed.value end
@@ -90,6 +94,25 @@ local function announce(path: string, video: boolean)
         if not video and copies() then name .. " — also on the clipboard" else name,
     }
     g.process { command = args }
+end
+
+-- Text read off the screen goes to the clipboard and is said: copied in
+-- silence, a reading looked like a press that did nothing (Akusen,
+-- 2026-11-03). Its first lines, so it can be seen what was read.
+local function announce_text(text: string)
+    if config.get("capture.notify", true) ~= true then return end
+    local title, body
+    if text == "" then
+        title, body = "No legible text", "Nothing could be read there."
+    else
+        local flat = string.gsub(text, "%s+", " ")
+        -- Cut on a character, not a byte: an accented letter is two.
+        local cut = utf8.offset(flat, 141)
+        local excerpt = if cut then string.sub(flat, 1, cut - 1) .. "…" else flat
+        title = if copies() then "Text copied" else "Text read"
+        body = excerpt
+    end
+    g.process { command = { "notify-send", "--app-name=Bioma", "--icon=edit-copy", title, body } }
 end
 
 -- Seconds are not fine enough: two captures inside one second (a held
@@ -164,16 +187,113 @@ local function settle_then(action: () -> ())
     end)
 end
 
+-- ---- Freezing ---------------------------------------------------------------
+--
+-- A region is chosen on the desktop as it was when it was asked for, not as
+-- it goes on moving: every screen is photographed first, the selection is
+-- drawn over that picture, and the region is cut out of it. Chosen over the
+-- live desktop, what was being photographed changed under the hand — an
+-- auto-hiding membrane went away as the pointer left it (Akusen,
+-- 2026-11-03). A recording is of what moves, so it is chosen live.
+-- `capture.freeze: false` chooses every region live.
+
+local frozen = g.signal({} :: { [string]: string })
+local freezes = 0
+
+-- The picture a screen was frozen as, while a region is chosen on it.
+function M.frozen(output: string): string? return frozen.value[output] end
+
+local function thaw()
+    local pictures = g.untracked(function() return frozen.value end)
+    frozen.value = {}
+    local paths = {}
+    for _, path in pictures do table.insert(paths, path) end
+    if #paths > 0 then
+        local command = { "rm", "-f" }
+        for _, path in paths do table.insert(command, path) end
+        g.process { command = command }
+    end
+end
+
+-- Every screen, uncompressed in the runtime directory (fast to write and to
+-- read back), each under a name of its own: the image cache knows a picture
+-- by its path.
+local function freeze_then(done: () -> ())
+    thaw()
+    local screens = g.untracked(monitors.outputs)
+    if config.get("capture.freeze", true) ~= true or #screens == 0 then
+        done()
+        return
+    end
+    freezes += 1
+    local serial = freezes
+    local left, pictures = #screens, {}
+    for _, o in screens do
+        local name = o.name
+        local path = string.format("%s/bioma-freeze-%d-%s.png", runtime, serial, name)
+        g.process {
+            command = { "grim", "-l", "0", "-o", name, path },
+            on_exit = function(code: number)
+                if code == 0 then pictures[name] = path end
+                left -= 1
+                if left == 0 and serial == freezes then
+                    frozen.value = pictures
+                    done()
+                end
+            end,
+        }
+    end
+end
+
+-- The frozen picture a region lies on, and the region in that picture's
+-- pixels (`WxH+X+Y`, physical): nil when the screen was not frozen.
+local function frozen_crop(region: string): (string?, string?)
+    local x, y, w, h = parse(region)
+    if not x or not y or not w or not h then return nil, nil end
+    for _, o in g.untracked(monitors.outputs) do
+        if x >= o.x and x < o.x + o.width and y >= o.y and y < o.y + o.height then
+            local path = g.untracked(function() return frozen.value[o.name] end)
+            if not path then return nil, nil end
+            local scale = o.scale or 1
+            local function px(v: number): number return math.floor(v * scale + 0.5) end
+            return path, string.format("%dx%d+%d+%d", px(w), px(h), px(x - o.x), px(y - o.y))
+        end
+    end
+    return nil, nil
+end
+
 -- ---- Selection --------------------------------------------------------------
 
-function M.select_region()
+-- `after_close`: asked from a cell, which is still on the screen and closing.
+function M.select_region(after_close: boolean?)
     last_error.value = ""
-    selecting.value = true
+    choosing.value = "region"
+    if M.pending_action == "record" then
+        thaw()
+        selecting.value = true
+        return
+    end
+    local function begin() freeze_then(function() selecting.value = true end) end
+    if after_close then settle_then(begin) else begin() end
+end
+
+-- A whole monitor, picked by a click on it over its frozen picture: the
+-- screen to read, of two or more (Akusen, 2026-11-03).
+function M.select_screen(after_close: boolean?)
+    last_error.value = ""
+    choosing.value = "screen"
+    local function begin() freeze_then(function() selecting.value = true end) end
+    if after_close then settle_then(begin) else begin() end
+end
+
+function M.screen_chosen(output: string)
+    M.region_chosen(M.output_region(output))
 end
 
 function M.region_chosen(region: string)
     selecting.value = false
     if region == "" then
+        thaw()
         emit("cancelled", nil)
         return
     end
@@ -189,6 +309,7 @@ end
 -- Escape is a normal way to finish with a screenshot tool: not a failure.
 function M.cancel_selection()
     selecting.value = false
+    thaw()
     emit("cancelled", nil)
 end
 
@@ -230,7 +351,30 @@ end
 
 function M.capture_region(region: string)
     local target = still_path()
-    shoot({ "grim", "-g", region, target }, target)
+    local picture, crop = frozen_crop(region)
+    if not picture or not crop then
+        shoot({ "grim", "-g", region, target }, target)
+        return
+    end
+    -- Cut out of the frozen picture: nothing to wait for, the screen
+    -- underneath no longer matters.
+    last_error.value = ""
+    busy.value = true
+    g.process {
+        command = { "magick", picture, "-crop", crop, "+repage", target },
+        on_exit = function(code: number)
+            thaw()
+            if code ~= 0 then
+                fail("capture failed (" .. code .. ")")
+                return
+            end
+            last_path.value = target
+            busy.value = false
+            if copies() then copy_image(target) end
+            emit("captured", target)
+            announce(target, false)
+        end,
+    }
 end
 
 function M.capture_output(output: string?)
@@ -281,17 +425,24 @@ function M.recognise_region(region: string)
     last_error.value = ""
     busy.value = true
     local language = config.get("capture.ocr_language", "eng")
-    settle_then(function()
+    -- Read off the frozen picture when there is one, the screen otherwise.
+    local picture, crop = frozen_crop(region)
+    local source = if picture and crop
+        then { 'magick "$3" -crop "$4" +repage png:-', picture, crop }
+        else { 'grim -g "$1" -', "", "" }
+    local run = if picture then function(f: () -> ()) f() end else settle_then
+    run(function()
         local lines = {}
         g.process {
             command = { "sh", "-c",
-                'grim -g "$1" - | { command -v magick >/dev/null 2>&1 '
+                source[1] .. ' | { command -v magick >/dev/null 2>&1 '
                 .. '&& magick - -resize 300% -colorspace Gray -sharpen 0x1 - || cat; } | '
                 .. 'tesseract - stdout -l "$2" 2>/dev/null',
-                "ocr", region, language },
+                "ocr", region, language, source[2], source[3] },
             on_line = function(line: string) table.insert(lines, line) end,
             on_exit = function(code: number)
                 busy.value = false
+                thaw()
                 if code ~= 0 then
                     fail("recognition failed (" .. code .. ")")
                     return
@@ -305,6 +456,7 @@ function M.recognise_region(region: string)
                 else
                     print("Capture: nothing legible in that region")
                 end
+                announce_text(text)
                 emit("recognised", text)
             end,
         }

@@ -3,8 +3,9 @@
 -- (structure/SelectionSurface.qml at 11bb81e). PRD §9.6 asks for it rather
 -- than slurp: the selector covers the whole desktop, the largest surface
 -- Bioma ever draws, and another program's rectangle there is another shell
--- for as long as it is up. Only the selection is drawn here; grim and the
--- recorder still take the picture.
+-- for as long as it is up. Only the selection is drawn here, over the
+-- screen as the capture service froze it; grim took the picture, and the
+-- recorder still takes its own.
 --
 -- It is there only while the capture service asks for a region, and holds
 -- the keyboard for exactly that long, because Escape has to mean cancel.
@@ -43,6 +44,12 @@ function M.node(output: string, size: { width: number, height: number }): any
         drawing.value = false
     end)
 
+    -- Choosing a whole screen instead of drawing: the one under the pointer
+    -- lights whole, a press picks it.
+    local function picking(): boolean return capture.choosing() == "screen" end
+    local hovered = g.signal(false)
+    local function screen_lit(): boolean return picking() and hovered.value end
+
     local function sel(): (number, number, number, number)
         local a, p = anchor.value, pointer.value
         return math.min(a.x, p.x), math.min(a.y, p.y), math.abs(p.x - a.x), math.abs(p.y - a.y)
@@ -71,6 +78,10 @@ function M.node(output: string, size: { width: number, height: number }): any
 
     local veil_values = g.computed(function(): { number }
         local c = colour.parse(colour.alpha(theme.background(), 0.45))
+        if picking() then
+            if hovered.value then return { 0, 0, size.width, size.height, 0, c.r, c.g, c.b, c.a } end
+            return { 0, 0, 0, 0, 0, c.r, c.g, c.b, c.a }
+        end
         local x, y, w, h = sel()
         if not drawing.value then w, h = 0, 0 end
         return { x, y, w, h, corner(), c.r, c.g, c.b, c.a }
@@ -101,13 +112,18 @@ function M.node(output: string, size: { width: number, height: number }): any
             height = size.height,
             present = capture.selecting,
             catch = capture.selecting,
-            cursor = "crosshair",
+            cursor = function() return if picking() then "pointer" else "crosshair" end,
+            on_hover = function(on: boolean) hovered.value = on end,
             on_press = function(button: number, x: number, y: number)
                 if button == RIGHT then
                     capture.cancel_selection()
                     return
                 end
                 if button ~= LEFT then return end
+                if g.untracked(picking) then
+                    capture.screen_chosen(output)
+                    return
+                end
                 anchor.value = { x = x, y = y }
                 pointer.value = { x = x, y = y }
                 drawing.value = true
@@ -130,6 +146,18 @@ function M.node(output: string, size: { width: number, height: number }): any
             on_key = function(name: string)
                 if name == "Escape" then capture.cancel_selection() end
             end,
+
+            -- The screen as it was when the region was asked for: nothing
+            -- under the selection moves, or goes, while it is drawn.
+            g.image {
+                overlay = true,
+                attach = "corner",
+                width = size.width,
+                height = size.height,
+                present = function() return capture.frozen(output) ~= nil end,
+                src = function() return capture.frozen(output) or "" end,
+                fit = "fill",
+            },
 
             g.shader {
                 overlay = true,
@@ -155,6 +183,48 @@ function M.node(output: string, size: { width: number, height: number }): any
                 fill = "#00000000",
                 rim_top = theme.rim,
                 rim_bottom = theme.line,
+            },
+            -- A screen picked whole: its edge lit, and its name and size in
+            -- the middle of it.
+            g.capsule {
+                overlay = true,
+                attach = "corner",
+                present = screen_lit,
+                width = size.width,
+                height = size.height,
+                radius = 0,
+                fill = "#00000000",
+                rim_top = theme.rim,
+                rim_bottom = theme.line,
+            },
+            g.box {
+                overlay = true,
+                attach = "corner",
+                present = screen_lit,
+                width = size.width,
+                height = size.height,
+                align = "center",
+                justify = "center",
+                g.capsule {
+                    height = readout_height,
+                    padding_x = readout_pad * 1.5,
+                    radius = function() return metrics_mod.radius_for(readout_height, m) end,
+                    fill = function() return colour.alpha(theme.cell(), config.get("cell.opacity", 0.72)) end,
+                    rim_top = "#00000000",
+                    rim_bottom = "#00000000",
+                    align = "center",
+                    justify = "center",
+                    g.text {
+                        text = function()
+                            return string.format("%s · %d × %d", output, math.floor(size.width + 0.5), math.floor(size.height + 0.5))
+                        end,
+                        font = typography.technical,
+                        size = m.font_meta,
+                        weight = typography.weight_secondary,
+                        tabular = true,
+                        color = theme.text,
+                    },
+                },
             },
 
             -- What the region is, in the technical voice, tabular so it does
