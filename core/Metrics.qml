@@ -20,6 +20,7 @@ Singleton {
 
     readonly property real cellHeight: 40      // every contracted cell
     readonly property real rowHeight: 30       // list rows: icon 20, name, value
+    readonly property real gapRow: 12          // between the rows of controls in a well
     readonly property real fieldHeight: 40     // search and text fields
 
     // The three margins the settings cell offers, and the only geometry in the
@@ -136,6 +137,7 @@ Singleton {
             "marginEdge": root.marginEdge * f,
             "tissuePadding": root.marginTissue * f,
             "gap": root.gapShape * f,
+            "gapRow": root.gapRow * f,
 
             "radiusPanel": root.shaped(root.radiusPanel * f),
             "radiusWell": root.shaped(root.radiusWell * f),

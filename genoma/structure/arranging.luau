@@ -148,14 +148,11 @@ end
 
 -- ---- A note's file ---------------------------------------------------------
 
--- Chosen with zenity, from here rather than from the settings page: the
--- picker is a window, a press on it lands outside the settings and closes
--- them, and a picker owned by the page would die with it.
+-- Chosen through the desktop's own chooser (services/picker.luau), from
+-- here rather than from the settings page: the settings step aside while
+-- it is up, and a picker owned by the page would die with it.
 local home = g.env("HOME") or ""
-local picker_error = g.signal("")
 local picking = false
-
-function M.picker_error(): string return picker_error.value end
 
 -- Written with the home as `~`, so the block reads the same on a machine
 -- with another user name.
@@ -172,9 +169,14 @@ function M.set_file(index: number, path: string): { any }?
     return next
 end
 
-function M.choose_file(index: number)
+-- `done(back)` once the picker has answered: false when the note is being
+-- placed, so whoever opened the picker does not come back over it.
+function M.choose_file(index: number, done: ((back: boolean?) -> ())?)
     local list = config.get("organisms", {})
-    if picking or not list[index] then return end
+    if picking or not list[index] or require("services/picker").busy() then
+        if done then done() end
+        return
+    end
     local current = list[index].file or ""
     -- A note that had no file yet has never been on the desktop, so once
     -- it has one the mode begins and it can be put where it belongs.
@@ -183,22 +185,22 @@ function M.choose_file(index: number)
         elseif string.sub(current, 1, 1) == "~" then home .. string.sub(current, 2)
         else current
     picking = true
-    local picked = ""
-    g.process {
-        -- 127 is the shell's own answer for a command it cannot find, so a
-        -- missing zenity is told apart from a picker that was cancelled (1).
-        command = { "sh", "-c", 'command -v zenity >/dev/null || exit 127; '
-            .. 'exec zenity --file-selection --title="Note" '
-            .. '--file-filter="Markdown | *.md *.markdown" --file-filter="All files | *" '
-            .. '--filename="$1"', "sh", start },
-        on_line = function(line: string) picked = line end,
-        on_exit = function(code: number)
+    require("services/picker").choose {
+        title = "Note",
+        filters = { { "Markdown", { "*.md", "*.markdown" } }, { "All files", { "*" } } },
+        -- The folder the current file is in; a note without one starts home.
+        folder = if current == "" then home else (string.match(start, "^(.*)/[^/]*$") or home),
+        on_chosen = function(picked: string?)
             picking = false
-            picker_error.value = if code == 127 then "zenity is not installed, so there is no file picker." else ""
-            if code == 0 then
+            local placing = false
+            if picked and picked ~= "" then
                 local next = M.set_file(index, picked)
-                if next and place_after then M.start(next) end
+                if next and place_after then
+                    placing = true
+                    M.start(next)
+                end
             end
+            if done then done(not placing) end
         end,
     }
 end

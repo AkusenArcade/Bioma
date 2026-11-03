@@ -424,6 +424,17 @@ function M.new(t: { [string]: any }): any
                     },
                 },
             },
+            -- The trash, under the hand, as on the other pages' rows: the
+            -- cross a listening field shows was the only way to remove a
+            -- bind, and nobody looks for a removal behind a pencil
+            -- (Akusen, 2026-11-03). It asks before it removes.
+            g.box {
+                present = function() return not live() and not is_new() end,
+                p.remove(function()
+                    if g.untracked(function() return picking.value end) or g.untracked(keybinds.busy) then return end
+                    drop(g.untracked(r).id)
+                end, function() return hovered.value end, "REMOVE?"),
+            },
             -- The pencil, or (listening) the cross that removes it.
             g.box {
                 role = "button",

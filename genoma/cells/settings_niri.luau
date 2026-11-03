@@ -238,7 +238,7 @@ function M.new(t: { [string]: any }): any
                 opacity = function() return if hovered.value or a.open() then 1 else 0 end,
                 table.unpack(a.tools or {}),
             },
-            a.trailing or g.box {},
+            a.trailing,
         }
     end
 
@@ -350,7 +350,7 @@ function M.new(t: { [string]: any }): any
     local function app_picker(which: string): any
         return g.box {
             direction = "column",
-            gap = function() return 8 * f() end,
+            gap = function() return m().gap_row end,
             g.capsule {
                 role = "button",
                 width = p.inner,
@@ -454,7 +454,7 @@ function M.new(t: { [string]: any }): any
         local outputs: { [any]: any } = { direction = "row", gap = function() return 6 * f() end }
         return g.box {
             direction = "column",
-            gap = function() return 8 * f() end,
+            gap = function() return m().gap_row end,
             headline {
                 open = open,
                 openable = true,
@@ -470,7 +470,7 @@ function M.new(t: { [string]: any }): any
             g.box {
                 present = open,
                 direction = "column",
-                gap = function() return 8 * f() end,
+                gap = function() return m().gap_row end,
                 padding_left = function() return 34 * f() end,
                 g.capsule {
                     role = "button",
@@ -586,7 +586,7 @@ function M.new(t: { [string]: any }): any
         g.box {
             present = function() return adding_startup.value == "command" end,
             direction = "column",
-            gap = function() return 8 * f() end,
+            gap = function() return m().gap_row end,
             g.capsule {
                 role = "button",
                 width = p.inner,
@@ -647,7 +647,7 @@ function M.new(t: { [string]: any }): any
         end
         return g.box {
             direction = "column",
-            gap = function() return 8 * f() end,
+            gap = function() return m().gap_row end,
             headline {
                 open = open,
                 openable = true,

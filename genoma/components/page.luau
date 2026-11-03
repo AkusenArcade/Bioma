@@ -74,7 +74,7 @@ function M.new(t: { [string]: any }): any
             padding = p.inset,
             direction = "column",
             align = "start",
-            gap = function() return 6 * f() end,
+            gap = function() return m().gap_row end,
             radius = function() return metrics_mod.inner_radius(m().radius_panel, 10 * f()) end,
             fill = function() return colour.alpha(theme.lift(theme.background(), -0.01), 0.8) end,
             rim_top = "#00000000",
@@ -92,7 +92,7 @@ function M.new(t: { [string]: any }): any
                     size = function() return m().font_secondary end,
                     tracking = typography.label_tracking,
                 },
-                trailing or g.box {},
+                trailing,
             },
         }
         for _, node in body do table.insert(well, node) end
@@ -349,8 +349,8 @@ function M.new(t: { [string]: any }): any
 
     -- Chips that go on to the next line when the row is full (Qt's Flow):
     -- `items()`, `key(item)`, `width_of(item)` measured as drawn, and
-    -- `chip(item)` building one from a getter. `gap` between chips and
-    -- rows.
+    -- `chip(item)` building one from a getter. `gap` between chips; the
+    -- lines are a row of controls apart (`gap_row`), as the rows of a well.
     function p.flow(a: { [string]: any }): any
         local function gap(): number return if a.gap then a.gap() else 6 * f() end
         local rows = g.computed(function(): { any }
@@ -371,7 +371,7 @@ function M.new(t: { [string]: any }): any
         return g.each {
             direction = "column",
             align = "start",
-            gap = gap,
+            gap = function() return m().gap_row end,
             items = function()
                 local out = {}
                 for i, line in rows.value do table.insert(out, { index = i, line = line }) end
@@ -439,7 +439,9 @@ function M.new(t: { [string]: any }): any
                 max_width = function() return p.inner() - 7 * f() - 150 * f() - 24 * f() - trailing_room() end,
             },
             g.box { grow = 1 },
-            a.trailing or g.box {},
+            -- Nothing when there is nothing: an empty box takes a gap,
+            -- and what ends the row no longer meets the right edge.
+            a.trailing,
         }
     end
 

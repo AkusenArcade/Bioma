@@ -26,6 +26,7 @@ local theme = require("core/theme")
 local timing = require("core/timing")
 local typography = require("core/typography")
 local wallpaper = require("services/wallpaper")
+local focus = require("structure/focus")
 local looks = require("services/looks")
 local templates = require("services/templates")
 local segmented = require("components/segmented")
@@ -757,11 +758,11 @@ function M.new(cell: any): any
         justify = "between",
         padding_x = function() return 12 * f() end,
         on_hover = function(on: boolean) folder_hovered.value = on end,
-        -- The cell closes first: while it is open the shell holds the
+        -- The cell steps aside: while it is open the shell holds the
         -- keyboard and the picker would be a window nobody can type into.
+        -- It comes back with the folder's pictures once it is chosen.
         on_click = function()
-            cell.open.value = false
-            wallpaper.pick_folder()
+            focus.aside(cell, function(done) wallpaper.pick_folder(done) end)
         end,
         control_text {
             text = function() return short_path(wallpaper.folder()) end,

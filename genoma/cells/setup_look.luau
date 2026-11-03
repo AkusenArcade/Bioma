@@ -18,6 +18,7 @@ local segmented = require("components/segmented")
 local choice = require("components/choice")
 local switch = require("components/switch")
 local wallpaper = require("services/wallpaper")
+local focus = require("structure/focus")
 local templates = require("services/templates")
 local setup = require("services/setup")
 
@@ -127,7 +128,12 @@ function M.new(t: { [string]: any }): any
             metrics = m,
             label = function() return if wallpaper.picking() then "CHOOSING" else "FOLDER" end,
             dimmed = wallpaper.picking,
-            on_click = wallpaper.pick_folder,
+            -- The settings step aside for the chooser and come back to
+            -- show the folder's pictures.
+            on_click = function()
+                local c = focus.open_cell()
+                if c then focus.aside(c, function(done) wallpaper.pick_folder(done) end) else wallpaper.pick_folder() end
+            end,
         }, {
             -- The folder's pictures, the one on screen in the middle. A
             -- press on another puts it on the desktop.

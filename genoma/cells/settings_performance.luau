@@ -216,11 +216,11 @@ function M.new(t: { [string]: any }): any
             g.box {
                 present = function() return adding.value end,
                 direction = "column",
-                gap = function() return 8 * f() end,
+                gap = function() return t.metrics().gap_row end,
                 search_node,
                 g.each {
                     direction = "column",
-                    gap = function() return 8 * f() end,
+                    gap = function() return t.metrics().gap_row end,
                     items = function() return matches.value end,
                     key = function(item: any) return item.app_id end,
                     row = offered,

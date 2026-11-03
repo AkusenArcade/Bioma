@@ -243,6 +243,13 @@ capsule at 372 × 88, category capsules at 240 × 64. A **panel** is a rectangul
 20, for lists and anything with rectangular content. Inside a panel, **wells** hold rows: radius
 10 (concentric), flat darker fill `rgba(16,19,13,.8)`.
 
+A well's rows share one right edge. A control set to the right and an element that takes the
+whole width (a field, a list) end on the same line; a row with nothing on its right leaves no
+empty slot there, and no gap for it (Akusen, 2026-11-03).
+Rows of controls in a well stand `--gap-row` (12 px) apart, and so do the lines of chips that
+wrap: closer, the controls read as one block and a press lands on the wrong one (Akusen,
+2026-11-04; it was 6 to 8). A label and its own line of text stay tight.
+
 ### Vertical capsules
 
 The interface's pills are normally horizontal, but the mark is a vertical pill and it is a rare

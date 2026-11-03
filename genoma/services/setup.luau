@@ -33,10 +33,21 @@ local M = {}
 
 -- ---- Where it is ----------------------------------------------------------------
 
-local active = g.signal(false)
-local output = g.signal("")
-local step = g.signal("welcome")
-local outcomes = g.signal({} :: { [string]: string })
+-- Kept across reloads: choosing a layout rewrites the membranes, every
+-- surface is built again, and a walk-through held in this load's signals
+-- closed half done with all it had chosen (Akusen, 2026-11-04). A table
+-- does not outlive its load, so what each step chose is kept as JSON.
+local active = g.state("setup.active", false)
+local output = g.state("setup.output", "")
+local step = g.state("setup.step", "welcome")
+local kept_outcomes = g.state("setup.outcomes", "{}")
+local outcomes = g.signal((function(): { [string]: string }
+    local ok, t = pcall(g.parse_json, g.untracked(function() return kept_outcomes.value end))
+    return if ok and type(t) == "table" then t else {}
+end)())
+g.watch(function() return outcomes.value end, function(t: { [string]: string })
+    kept_outcomes.value = g.to_json(t)
+end)
 
 function M.active(): boolean return active.value end
 function M.output(): string return output.value end
@@ -141,16 +152,20 @@ function M.last(): boolean return M.step_index() == #steps.value end
 
 -- A step that stops existing while it is shown (the last conflict stopped)
 -- hands over to the one that came after it.
-local shown_index = 1
+-- Kept too: a reload reads the report again, and until it has, a step that
+-- depends on it (SYSTEM) is not in the list yet.
+local shown_index = g.state("setup.shown_index", 1)
 g.watch(function() return steps.value end, function(list: { any })
     local now = g.untracked(function() return step.value end)
     for i, s in list do
         if s.key == now then
-            shown_index = i
+            shown_index.value = i
             return
         end
     end
-    step.value = list[math.min(shown_index, #list)].key
+    if g.untracked(function() return report_read.value end) or not g.untracked(function() return active.value end) then
+        step.value = list[math.min(g.untracked(function() return shown_index.value end), #list)].key
+    end
 end)
 
 -- What each visited step chose, said in its capsule's line.
@@ -438,6 +453,9 @@ refresh = function()
     end)
 end
 M.refresh = refresh
+-- A walk-through still under way when this load began (a layout was just
+-- chosen): what it reports on is read again, as opening it would.
+if g.untracked(function() return active.value end) then refresh() end
 
 -- ---- Moving through it -----------------------------------------------------------
 

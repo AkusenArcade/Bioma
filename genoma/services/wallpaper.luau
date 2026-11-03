@@ -177,9 +177,10 @@ end
 
 -- ---- The folder ---------------------------------------------------------------
 --
--- Chosen in a GTK folder picker rather than typed: a path is found by
--- looking, and a picker cannot return a folder that is not there. Written
--- the short way, `~/…`. `folder_error` names what went wrong.
+-- Chosen in the desktop's own chooser (services/picker.luau) rather than
+-- typed: a path is found by looking, and a picker cannot return a folder
+-- that is not there. Written the short way, `~/…`. `folder_error` names
+-- what went wrong.
 
 local folder_error = g.signal("")
 local picking = g.signal(false)
@@ -197,22 +198,23 @@ function M.set_folder(path: string)
     config.set("wallpaper.folder", wanted)
 end
 
-function M.pick_folder()
-    if g.untracked(function() return picking.value end) then return end
+-- `done()` once the chooser has answered, for a cell that stepped aside.
+function M.pick_folder(done: (() -> ())?)
+    local picker = require("services/picker")
+    if g.untracked(function() return picking.value end) or picker.busy() then
+        if done then done() end
+        return
+    end
     folder_error.value = ""
     picking.value = true
-    local chosen = ""
-    -- 127 is the shell's answer for a command it cannot find, told apart
-    -- from a picker that was cancelled (1).
-    g.process {
-        command = { "sh", "-c", 'command -v zenity >/dev/null || exit 127; '
-            .. 'exec zenity --file-selection --directory --title="Wallpaper folder" --filename="$1/"',
-            "sh", g.untracked(M.folder) },
-        on_line = function(line: string) chosen = line end,
-        on_exit = function(code: number)
+    picker.choose {
+        title = "Wallpaper folder",
+        directory = true,
+        folder = g.untracked(M.folder),
+        on_chosen = function(chosen: string?)
             picking.value = false
-            if code == 0 then M.set_folder(chosen)
-            elseif code == 127 then folder_error.value = "ZENITY MISSING" end
+            if chosen and chosen ~= "" then M.set_folder(chosen) end
+            if done then done() end
         end,
     }
 end

@@ -19,6 +19,15 @@ local cells: { [number]: any } = {}
 local count = 0
 local open_id = g.signal(0)
 
+-- The open cell outlives the interface it was opened in. A monitor that
+-- comes or goes, or a saved file, builds every surface again, and a
+-- settings page being worked through closed under the hand while a
+-- monitor was switched off in it (Akusen, 2026-11-03). What was open is
+-- kept as "domain\noutput", read once as this load starts, and asked for
+-- again once its surfaces are mounted.
+local kept = g.state("focus.kept", "")
+local reopen = g.untracked(function() return kept.value end)
+
 local function current(): number
     return g.untracked(function() return open_id.value end)
 end
@@ -54,12 +63,19 @@ end
 -- the dialog has answered, chosen or cancelled (Akusen, 2026-10-29: open
 -- over the chooser, it covered it). `show(done)` opens the dialog and calls
 -- `done` when it answers. While aside, `c.aside` is true, so the cell's
--- expansion keeps its state through the close.
-function M.aside(c: any, show: (done: () -> ()) -> ())
+-- expansion keeps its state through the close. Every file chooser a cell
+-- opens goes through here: what was chosen is seen where it was asked for
+-- (Akusen, 2026-11-03). `done(false)` when what was chosen leads elsewhere
+-- (a new note placed on the desktop): the cell stays closed and goes.
+function M.aside(c: any, show: (done: (back: boolean?) -> ()) -> ())
     c.aside = true
     c.open.value = false
-    show(function()
+    show(function(back: boolean?)
         c.aside = false
+        if back == false then
+            c.visibility.set_invoked(false)
+            return
+        end
         c.open.value = true
     end)
 end
@@ -159,6 +175,30 @@ function M.invoke(domain: string, output: string?): boolean
         return true
     end
     return h.summon(domain)
+end
+
+-- The open cell, written down whenever it changes.
+g.watch(function() return open_id.value end, function(id: number)
+    local c = cells[id]
+    -- One that comes to the pointer was asked for at a place, not a monitor.
+    if c and c.has_panel and not registry.comes_to_pointer(c.domain) then
+        kept.value = c.domain .. "\n" .. tostring(c.output)
+    elseif id == 0 then
+        kept.value = ""
+    end
+end)
+
+-- What was open before this load, asked for again after the mount: on its
+-- monitor if that is still there, otherwise where it would be summoned.
+if reopen ~= "" then
+    local domain, output = string.match(reopen, "^(.-)\n(.*)$")
+    if domain then
+        g.after(0, function()
+            if current() ~= 0 then return end
+            local here = M.cell_for(domain, output) ~= nil or hosts[output] ~= nil
+            M.invoke(domain, if here then output else nil)
+        end)
+    end
 end
 
 -- ---- At the pointer -------------------------------------------------------

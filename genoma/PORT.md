@@ -873,8 +873,9 @@ and the timer cell's figure, which was plain text before.
 The Settings page acts with Genoma, 2026-11-02: an organism added there
 is Genoma's (`"runtime": "genoma"`) and the arrange mode begins round it;
 one taken away leaves, content and then shape, before the list is written
-without it; a note's file is chosen with zenity from
-`structure/arranging.luau`, so the picker outlives the settings it closes;
+without it; a note's file is chosen from `structure/arranging.luau`
+through the desktop's portal (zenity until 2026-11-03), so the picker
+outlives the settings, which step aside for it and come back;
 ARRANGE is Genoma's while any organism is. One still drawn by Quickshell is
 handed to Quickshell as before. The organisms' two surfaces are always
 there, empty while no organism is Genoma's, so the first one added appears

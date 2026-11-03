@@ -49,7 +49,8 @@ function M.path_of(uri: string): string
 end
 
 -- `t`: title, directory (a folder rather than a file), filters
--- ({ { name, { "*.ovpn", … } }, … }), on_chosen(path or nil when cancelled).
+-- ({ { name, { "*.ovpn", … } }, … }), folder (where the chooser starts,
+-- an absolute path), on_chosen(path or nil when cancelled).
 function M.choose(t: { [string]: any })
     if next(waiting) then return end
     listen()
@@ -59,6 +60,12 @@ function M.choose(t: { [string]: any })
         modal = g.dbus.variant("b", true),
     }
     if t.directory then options.directory = g.dbus.variant("b", true) end
+    if t.folder and t.folder ~= "" then
+        -- A byte string ending in a nul, as the portal wants a path.
+        local bytes = { string.byte(t.folder, 1, #t.folder) }
+        table.insert(bytes, 0)
+        options.current_folder = g.dbus.variant("ay", bytes)
+    end
     if t.filters then
         local list = {}
         for _, filter in t.filters do

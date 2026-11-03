@@ -27,6 +27,7 @@ local actions = require("services/actions")
 local monitors = require("services/monitors")
 local wallpaper = require("services/wallpaper")
 local picker = require("services/picker")
+local focus = require("structure/focus")
 
 local M = {}
 
@@ -388,7 +389,7 @@ function M.new(t: { [string]: any }): any
         end)
         return g.box {
             direction = "column",
-            gap = function() return 8 * f() end,
+            gap = function() return m().gap_row end,
             outlined("search", function() return "" end, function() return false end, function() return p.inner() - 44 * f() end),
             g.each {
                 direction = "column",
@@ -412,7 +413,7 @@ function M.new(t: { [string]: any }): any
         local function path(): string local s = steps()[index()] return if s then tostring(s.path or "") else "" end
         return g.box {
             direction = "column",
-            gap = function() return 8 * f() end,
+            gap = function() return m().gap_row end,
             g.box {
                 direction = "row",
                 align = "center",
@@ -423,14 +424,22 @@ function M.new(t: { [string]: any }): any
                     metrics = m,
                     dimmed = function() return choosing.value end,
                     on_click = function()
+                        if picker.busy() then return end
                         choosing.value = true
-                        picker.choose {
-                            title = "A file to open",
-                            on_chosen = function(chosen: string?)
-                                choosing.value = false
-                                if chosen and chosen ~= "" then set_step(g.untracked(index), { path = chosen }) end
-                            end,
-                        }
+                        -- The chooser is a window under the settings: they
+                        -- step aside and come back to show the path.
+                        local function choose(done: (() -> ())?)
+                            picker.choose {
+                                title = "A file to open",
+                                on_chosen = function(chosen: string?)
+                                    choosing.value = false
+                                    if chosen and chosen ~= "" then set_step(g.untracked(index), { path = chosen }) end
+                                    if done then done() end
+                                end,
+                            }
+                        end
+                        local c = focus.open_cell()
+                        if c then focus.aside(c, choose) else choose(nil) end
                     end,
                 },
             },
@@ -490,7 +499,7 @@ function M.new(t: { [string]: any }): any
         })
         return g.box {
             direction = "column",
-            gap = function() return 8 * f() end,
+            gap = function() return m().gap_row end,
             g.box(row),
             line(function()
                 if #groups() == 0 then return "Nothing is kept: choose what this step puts back." end
@@ -504,7 +513,7 @@ function M.new(t: { [string]: any }): any
         local function entry(): any return steps()[index()] or {} end
         return g.box {
             direction = "column",
-            gap = function() return 8 * f() end,
+            gap = function() return m().gap_row end,
             segmented.new {
                 metrics = m,
                 options = function()
@@ -542,7 +551,7 @@ function M.new(t: { [string]: any }): any
     editors.wallpaper = function(index)
         return g.box {
             direction = "column",
-            gap = function() return 8 * f() end,
+            gap = function() return m().gap_row end,
             p.flow {
                 items = wallpaper.favourites,
                 key = function(path: string) return path end,
@@ -582,7 +591,7 @@ function M.new(t: { [string]: any }): any
         local function command(): string local s = steps()[index()] return if s then tostring(s.command or "") else "" end
         return g.box {
             direction = "column",
-            gap = function() return 8 * f() end,
+            gap = function() return m().gap_row end,
             outlined("command", command, function() return false end, function() return p.inner() - 44 * f() end),
             muted(function() return "Run by sh, in the background. Enter keeps it." end),
         }
@@ -672,7 +681,7 @@ function M.new(t: { [string]: any }): any
         local function step(): any return steps()[index()] or {} end
         return g.box {
             direction = "column",
-            gap = function() return 8 * f() end,
+            gap = function() return m().gap_row end,
             g.capsule {
                 role = "button",
                 width = p.inner,
@@ -733,7 +742,7 @@ function M.new(t: { [string]: any }): any
         },
         g.each {
             direction = "column",
-            gap = function() return 8 * f() end,
+            gap = function() return m().gap_row end,
             items = function()
                 local out = {}
                 for i, s in steps() do table.insert(out, { index = i, type = s.type }) end

@@ -48,6 +48,7 @@
   --margin-edge:    12px;   /* screen edge */
   --margin-tissue:  2px;    /* tissue to cell */
   --gap-shape:      24px;   /* between shapes of an open cell */
+  --gap-row:        12px;   /* between the rows of controls in a well */
   --radius-panel:   20px;
   --radius-well:    10px;   /* concentric: panel radius minus padding */
   --pill-ceiling:   110px;  /* up to here radius 100%, above it --radius-panel */

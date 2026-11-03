@@ -15,7 +15,7 @@ local M = {}
 -- `t`: viewport() and content() (heights, logical units), step() (a wheel
 -- notch, a row), factor(). Returns `offset()`, `wheel(dx, dy)` for the
 -- well's on_wheel, `reveal(top, height)` to bring a stretch into view,
--- `to(y)`, and `bar(x)`, the mark to place in the well at that x.
+-- `to(y)`, `home()` (the top, quietly), and `bar(x)`, the mark to place in the well at that x.
 function M.new(t: { [string]: any }): any
     local offset = g.signal(0)
     local moving = g.signal(false)
@@ -31,6 +31,11 @@ function M.new(t: { [string]: any }): any
         moving.value = true
         if rest then rest:stop() end
         rest = g.after(timing.seconds.reflow + timing.seconds.content_fade * 2, function() moving.value = false end)
+    end
+
+    -- Back to the top without the mark: another list in the same well.
+    local function home()
+        offset.value = 0
     end
 
     -- A notch is a row; a touchpad's movement is followed as it comes.
@@ -86,6 +91,7 @@ function M.new(t: { [string]: any }): any
         wheel = wheel,
         reveal = reveal,
         to = to,
+        home = home,
         bar = bar,
     }
 end

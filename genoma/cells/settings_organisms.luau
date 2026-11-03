@@ -26,6 +26,7 @@ local typography = require("core/typography")
 local page = require("components/page")
 local segmented = require("components/segmented")
 local choice_mod = require("components/choice")
+local field_mod = require("components/field")
 local switch = require("components/switch")
 local monitors = require("services/monitors")
 local weather = require("services/weather")
@@ -155,13 +156,24 @@ function M.new(t: { [string]: any }): any
     local typing = g.signal("") -- "file", "city" or ""
     local file_text = g.signal("")
     local city_text = g.signal("")
-    local file_node, file_field = p.field {
+    -- Bare fields: each types inside its row's own capsule, as wide as what
+    -- the capsule leaves inside its padding (measured, since the row's
+    -- label and offer take what they need). A field with a capsule of its
+    -- own sat inside the row's, the page's width, and ran out of it.
+    local room = { file = g.signal(0), city = g.signal(0) }
+    local file_node, file_field = field_mod.new {
         text = file_text,
+        width = function() return room.file.value end,
+        font = typography.expressive,
+        size = function() return m().font_secondary end,
         placeholder = "~/Notes/To-do.md",
         taking = function() return typing.value == "file" end,
     }
-    local city_node, city_field = p.field {
+    local city_node, city_field = field_mod.new {
         text = city_text,
+        width = function() return room.city.value end,
+        font = typography.expressive,
+        size = function() return m().font_secondary end,
         placeholder = "A city",
         taking = function() return typing.value == "city" end,
     }
@@ -388,9 +400,16 @@ function M.new(t: { [string]: any }): any
                     rim_top = edge(wrong, which),
                     rim_bottom = edge(wrong, which),
                     on_click = function() start_typing(which) end,
+                    -- Another screen's well, not shown, measures nothing.
+                    on_size = function(w: number)
+                        if w > 0 then room[which].value = math.max(0, w - 28 * g.untracked(f)) end
+                    end,
                     node,
                 },
-                extra or g.box {},
+                -- Nothing in place of a missing offer: an empty box still
+                -- takes its gap, and the capsule stopped short of the right
+                -- edge the controls above it hold.
+                extra,
             }
         end
 
@@ -479,7 +498,7 @@ function M.new(t: { [string]: any }): any
             g.box {
                 present = function() local o = open() return o > 0 and entry(o).type == "note" end,
                 direction = "column",
-                gap = function() return 8 * f() end,
+                gap = function() return m().gap_row end,
                 field_row("FILE", g.box {
                     g.text {
                         present = function() return typing.value ~= "file" end,
@@ -491,21 +510,24 @@ function M.new(t: { [string]: any }): any
                     },
                     g.box { present = function() return typing.value == "file" end, file_node },
                 }, "file", file_wrong, p.offer("CHOOSE", function()
-                    -- The picker is a window: the settings step out of its way.
+                    -- The picker is a window: the settings step out of its
+                    -- way, and come back to show what was chosen.
                     local o = g.untracked(open)
-                    focus.dismiss()
-                    if genoma(o) then arranging.choose_file(o) else quickshell({ "chooseFile", tostring(o - 1) }) end
+                    local c = focus.open_cell()
+                    if genoma(o) and c then
+                        focus.aside(c, function(done) arranging.choose_file(o, done) end)
+                    else
+                        focus.dismiss()
+                        if genoma(o) then arranging.choose_file(o) else quickshell({ "chooseFile", tostring(o - 1) }) end
+                    end
                 end)),
                 g.box {
-                    present = function() return file_wrong() or arranging.picker_error() ~= "" end,
+                    present = file_wrong,
                     direction = "row",
                     align = "center",
                     gap = function() return 8 * f() end,
                     g.icon { width = function() return 14 * f() end, height = function() return 14 * f() end, icon = "error", color = theme.alert },
-                    line(function()
-                        return if arranging.picker_error() ~= "" then arranging.picker_error()
-                            else "This file cannot be read, so the note is not shown."
-                    end, theme.alert),
+                    line(function() return "This file cannot be read, so the note is not shown." end, theme.alert),
                 },
             },
             -- A weather organism's city: one place for every weather
@@ -513,7 +535,7 @@ function M.new(t: { [string]: any }): any
             g.box {
                 present = function() local o = open() return o > 0 and is("weather", "photoperiod")(entry(o)) end,
                 direction = "column",
-                gap = function() return 8 * f() end,
+                gap = function() return m().gap_row end,
                 field_row("CITY", g.box {
                     g.text {
                         present = function() return typing.value ~= "city" end,

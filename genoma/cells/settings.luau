@@ -63,7 +63,9 @@ local PAGES = {
 -- screen (cells/SettingsPlace.qml).
 -- BIOMA_GENOMA_SETTINGS=<key> opens on that category, to look at a page
 -- without pressing anything on a desktop someone is using.
-local place = { category = g.env("BIOMA_GENOMA_SETTINGS") :: string? }
+-- Kept across reloads too, so a settings cell opened again after a monitor
+-- came or went is on the page it was left on (structure/focus.luau).
+local place = g.state("settings.category", g.env("BIOMA_GENOMA_SETTINGS") or "")
 -- A category asked for from outside (`actions write`): every settings cell
 -- turns to it, open or not.
 local asked = g.signal("")
@@ -71,7 +73,7 @@ local asked = g.signal("")
 return {
     -- The next time settings is looked at, it is on this category.
     open_on = function(category: string)
-        place.category = category
+        place.value = category
         asked.value = ""
         asked.value = category
     end,
@@ -85,7 +87,10 @@ return {
         local function glyph_size(): number return 26 * f() end
         local function padding(): number return 14 * f() end
 
-        local chosen = g.signal(place.category or CATEGORIES[1].key)
+        local chosen = g.signal((function()
+            local kept = g.untracked(function() return place.value end)
+            return if kept ~= "" then kept else CATEGORIES[1].key
+        end)())
         -- While the setup is under way on this screen the same composition
         -- holds its steps instead (SettingsExpansion.qml): the capsules are
         -- the steps, each line saying what was chosen once it is, and the
@@ -94,9 +99,13 @@ return {
         local function in_setup(): boolean return setup.active() and setup.output() == cell.output end
         local function entries(): { any } return if in_setup() then setup.steps() else CATEGORIES end
         local function current(): string return if in_setup() then setup.step() else chosen.value end
-        -- Closed under the setup (Escape, a press outside): later.
+        -- Closed under the setup (Escape, a press outside): later. Only a
+        -- close counts: a cell built closed (a reload, reopening it next)
+        -- is not one.
+        local was_open = false
         g.watch(function() return cell.open.value end, function(open: boolean)
-            if not open and g.untracked(in_setup) then setup.closed() end
+            if not open and was_open and not cell.aside and g.untracked(in_setup) then setup.closed() end
+            was_open = open
         end)
         -- A new choice draws the thread out again from its origin, at the
         -- new capsule, rather than moving it there whole (Akusen, 2026-11-02):
@@ -111,7 +120,7 @@ return {
         local function choose(key: string)
             local setting_up = g.untracked(in_setup)
             if g.untracked(current) == key then return end
-            if not setting_up then place.category = key end
+            if not setting_up then place.value = key end
             g.batch(function()
                 redrawing.value = true
                 rechosen.value = true
@@ -168,8 +177,8 @@ return {
         end
         local function page_key(): string return if in_setup() then "setup:" .. setup.step() else chosen.value end
 
-        -- The page scrolls inside the fixed height if a scale or a font ever
-        -- makes it taller.
+        -- The page scrolls inside the fixed height when it is taller: its
+        -- height is the layout's, told through on_size.
         local content_height = g.signal(0)
         local skip_hovered = g.signal(false)
         -- In the setup the page ends in its way through.
@@ -183,6 +192,8 @@ return {
             step = function() return 40 * f() end,
             factor = f,
         }
+        -- Each page is read from its top, as each had its own list.
+        g.watch(page_key, function() scroll.home() end)
 
         local function body(): any
             return g.box {
@@ -213,6 +224,7 @@ return {
                             return if page_of(page_key()) then { page_key() } else {}
                         end,
                         key = function(k: string) return k end,
+                        on_size = function(_: number, h: number) content_height.value = h end,
                         row = function(k: () -> string)
                             local key = g.untracked(k)
                             local page = page_of(key)
@@ -241,7 +253,9 @@ return {
                             }
                         end,
                     },
-                    scroll.bar(function() return inner_width() - 7 * f() end),
+                    -- On the page's right edge, as Scroller.qml: the rows
+                    -- end 8 short of it, so it stands clear of them.
+                    scroll.bar(function() return inner_width() - 3 * f() end),
                 },
                 -- The setup's way through: SKIP SETUP at the start, BACK and
                 -- NEXT at the end, DONE in NEXT's place on the last step. The

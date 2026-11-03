@@ -9,6 +9,9 @@ local M = {}
 
 M.cell_height = 40
 M.row_height = 30
+-- Between the rows of controls in a well: room enough that each reads as
+-- its own thing to press (Akusen, 2026-11-04; it was 6 to 8).
+M.gap_row = 12
 M.field_height = 40
 M.radius_panel = 20
 M.radius_well = 10
@@ -63,6 +66,7 @@ function M.step(name: string?): { [string]: any }
         margin_edge = M.margin_edge() * f,
         tissue_padding = M.margin_tissue() * f,
         gap = M.gap_shape() * f,
+        gap_row = M.gap_row * f,
         radius_panel = M.shaped(M.radius_panel * f),
         radius_well = M.shaped(M.radius_well * f),
         pill_ceiling = M.pill_ceiling * f,
