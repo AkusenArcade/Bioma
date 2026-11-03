@@ -51,7 +51,10 @@ M.immediate = g.state("theme.immediate", false)
 
 -- ---- Light or dark -------------------------------------------------------
 
-function M.is_dark(): boolean return colour.luminance(M.background()) < 0.5 end
+-- Worked out once per step of a crossing, not once per binding that asks:
+-- every derived colour below is a memo of the four roles.
+local dark = g.computed(function(): boolean return colour.luminance(M.background()) < 0.5 end)
+function M.is_dark(): boolean return dark.value end
 
 -- ---- State roles (fixed, never from the theme source) ------------------------
 
@@ -79,27 +82,37 @@ end
 -- ---- Derived surfaces -------------------------------------------------------
 
 -- Moves a colour away from the background's side, keeping hue and saturation.
-function M.lift_away(hex: string, amount: number, dark: boolean): string
+local function lifted(hex: string, amount: number, dark_side: boolean): string
     local c = colour.parse(hex)
     local h, s, l = colour.hsl(c)
-    local step = if dark then amount else -amount
+    local step = if dark_side then amount else -amount
     return colour.format(colour.hsla(math.max(0, h), s, math.clamp(l + step, 0, 1), c.a))
+end
+local lift_dark = colour.remembered(function(hex: string, amount: number) return lifted(hex, amount, true) end)
+local lift_light = colour.remembered(function(hex: string, amount: number) return lifted(hex, amount, false) end)
+function M.lift_away(hex: string, amount: number, dark_side: boolean): string
+    return if dark_side then lift_dark(hex, amount) else lift_light(hex, amount)
 end
 function M.lift(hex: string, amount: number): string return M.lift_away(hex, amount, M.is_dark()) end
 
-function M.surface(): string return M.lift(M.background(), 0.045) end
-function M.elevated(): string return M.lift(M.background(), 0.045) end
-function M.cell(): string return M.lift(M.background(), 0.075) end
-function M.well_surface(): string return M.lift(M.background(), 0.02) end
+local function memo(f: () -> string): () -> string
+    local m = g.computed(f)
+    return function(): string return m.value end
+end
+
+M.surface = memo(function() return M.lift(M.background(), 0.045) end)
+M.elevated = M.surface
+M.cell = memo(function() return M.lift(M.background(), 0.075) end)
+M.well_surface = memo(function() return M.lift(M.background(), 0.02) end)
 
 -- Only for a secondary label nobody presses, or an option not chosen.
-function M.text_muted(): string return colour.alpha(M.text(), 0.56) end
-function M.text_faint(): string return colour.alpha(M.text(), 0.38) end
-function M.border(): string return colour.alpha(M.text(), if M.is_dark() then 0.09 else 0.14) end
+M.text_muted = memo(function() return colour.alpha(M.text(), 0.56) end)
+M.text_faint = memo(function() return colour.alpha(M.text(), 0.38) end)
+M.border = memo(function() return colour.alpha(M.text(), if M.is_dark() then 0.09 else 0.14) end)
 
-function M.shadow_of(dark: boolean): string return colour.alpha("#000000", if dark then 0.45 else 0.22) end
-function M.shadow(): string return M.shadow_of(M.is_dark()) end
-function M.shadow_float(): string return colour.alpha("#000000", if M.is_dark() then 0.60 else 0.30) end
+function M.shadow_of(dark_side: boolean): string return colour.alpha("#000000", if dark_side then 0.45 else 0.22) end
+M.shadow = memo(function() return M.shadow_of(M.is_dark()) end)
+M.shadow_float = memo(function() return colour.alpha("#000000", if M.is_dark() then 0.60 else 0.30) end)
 
 -- ---- The outline family ------------------------------------------------------
 --
@@ -121,11 +134,24 @@ end
 function M.structural_with(bg: string, accent: string, lightness: number): string
     return colour.format(colour.hsla(hue_of(bg, accent), saturation_of(bg, accent), lightness, 1))
 end
-function M.structural(lightness: number): string return M.structural_with(M.background(), M.primary(), lightness) end
+-- The hue and saturation of the family, once per step.
+local family = g.computed(function(): { number }
+    local bg, accent = M.background(), M.primary()
+    return { hue_of(bg, accent), saturation_of(bg, accent) }
+end)
+local structural_at = colour.remembered(function(key: string, lightness: number): string
+    local f = family.value
+    return colour.format(colour.hsla(f[1], f[2], lightness, 1))
+end)
+function M.structural(lightness: number): string
+    -- Keyed by the roles it is made of, so a step's answer is not the last one's.
+    local _ = family.value
+    return structural_at(M.background() .. M.primary(), lightness)
+end
 
-function M.line(): string return M.structural(if M.is_dark() then 0.32 else 0.72) end
-function M.node(): string return M.structural(if M.is_dark() then 0.43 else 0.62) end
-function M.rim(): string return M.structural(if M.is_dark() then 0.55 else 0.50) end
+M.line = memo(function() return M.structural(if M.is_dark() then 0.32 else 0.72) end)
+M.node = memo(function() return M.structural(if M.is_dark() then 0.43 else 0.62) end)
+M.rim = memo(function() return M.structural(if M.is_dark() then 0.55 else 0.50) end)
 
 -- ---- Gradients -----------------------------------------------------------------
 --
@@ -134,17 +160,17 @@ function M.rim(): string return M.structural(if M.is_dark() then 0.55 else 0.50)
 
 M.gradient_angle = 165
 
-function M.gradient_top(hex: string): string
+M.gradient_top = colour.remembered(function(hex: string, _: nil): string
     local c = colour.parse(hex)
     local h, s, l = colour.hsl(c)
     return colour.format(colour.hsla(math.max(0, h), math.min(1, s + 0.14), math.min(1, l + 0.16), c.a))
-end
+end) :: (string) -> string
 
-function M.gradient_bottom(hex: string): string
+M.gradient_bottom = colour.remembered(function(hex: string, _: nil): string
     local c = colour.parse(hex)
     local h, s, l = colour.hsl(c)
     return colour.format(colour.hsla(math.max(0, h), math.max(0, s - 0.15), math.max(0, l - 0.15), c.a))
-end
+end) :: (string) -> string
 
 -- ---- The source ----------------------------------------------------------------
 
@@ -160,9 +186,20 @@ local function apply(text: string?)
     if not text then return end
     local ok, palette = pcall(g.parse_json, text)
     if not ok or type(palette) ~= "table" then return end
-    local how = if M.immediate.value then nil else "theme"
-    for role, value in roles do
-        if type(palette[role]) == "string" then value:set(palette[role], how) end
+    local function put()
+        for role, value in roles do
+            if type(palette[role]) == "string" then value:set(palette[role]) end
+        end
+    end
+    -- The roles go to the new palette at once, and every colour drawn from
+    -- them crosses there in the scene, over the theme's timing: each binding
+    -- runs once, not once a step (Akusen, 2026-11-03, a palette change
+    -- stuttered). Being edited, it follows the hand. A turn later, so the
+    -- crossing is not inside this effect's wave.
+    if M.immediate.value then
+        put()
+    else
+        g.after(0, function() g.crossing("theme", put) end)
     end
     g.untracked(function()
         local next_targets = {}

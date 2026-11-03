@@ -85,16 +85,57 @@ function M.base_values(): any
     return base_values.value or {}
 end
 
+local function lookup(path: string): any
+    local node = merged.value
+    for key in string.gmatch(path, "[^%.]+") do
+        if type(node) ~= "table" then return nil end
+        node = node[key]
+        if node == nil then return nil end
+    end
+    return node
+end
+
+local function same(a: any, b: any): boolean
+    if a == b then return true end
+    if type(a) ~= "table" or type(b) ~= "table" then return false end
+    for k, v in a do
+        if not same(v, b[k]) then return false end
+    end
+    for k in b do
+        if a[k] == nil then return false end
+    end
+    return true
+end
+
+-- One memo per path, made the first time it is asked for and kept by the
+-- load: a binding follows its own key, and a write that leaves that key as
+-- it was wakes nothing. Read straight from the merged files, every write
+-- to the override (a palette, a slider) ran every binding that read any key
+-- (Akusen, 2026-11-03). A table equal to the last is handed back as the
+-- last, so a list nobody changed does not count as changed.
+local memos: { [string]: any } = {}
+local function memo_for(path: string): any
+    local m = memos[path]
+    if m then return m end
+    m = g.lasting(function()
+        local last: any = nil
+        return g.computed(function(): any
+            local now = lookup(path)
+            if type(now) == "table" and same(now, last) then return last end
+            last = now
+            return now
+        end)
+    end)
+    memos[path] = m
+    return m
+end
+
 -- `config.get("timing.open", 250)`: the merged value at that path, or the
 -- fallback. Read inside a binding, it follows the files.
 function M.get(path: string, fallback: any): any
-    local node = merged.value
-    for key in string.gmatch(path, "[^%.]+") do
-        if type(node) ~= "table" then return fallback end
-        node = node[key]
-        if node == nil then return fallback end
-    end
-    return node
+    local value = memo_for(path).value
+    if value == nil then return fallback end
+    return value
 end
 
 -- Writing back: into the override, never the base, and only the keys

@@ -87,11 +87,33 @@ function M.hsva(h: number, s: number, v: number, a: number): RGB
     return { r = r, g = g, b = b, a = a }
 end
 
-function M.alpha(hex: string, a: number): string
+-- A pure function of two values, remembered: during a palette's crossing
+-- every binding asks for the same few colours each step, and working each
+-- out again (parse, HSL, format) for every one of them filled the frame
+-- (Akusen, 2026-11-03: "the theme change stutters"). Bounded: emptied when
+-- it grows past what a few steps ask for.
+function M.remembered<A, B>(f: (A, B) -> string): (A, B) -> string
+    local store: { [string]: string } = {}
+    local count = 0
+    return function(a: A, b: B): string
+        local key = tostring(a) .. "|" .. tostring(b)
+        local hit = store[key]
+        if hit then return hit end
+        if count >= 1024 then
+            store, count = {}, 0
+        end
+        local value = f(a, b)
+        store[key] = value
+        count += 1
+        return value
+    end
+end
+
+M.alpha = M.remembered(function(hex: string, a: number): string
     local c = M.parse(hex)
     c.a = a
     return M.format(c)
-end
+end)
 
 -- Rec. 709 relative luminance, good enough to pick a side.
 -- Between two colours, `t` of the way from `a` to `b`, alpha included.
