@@ -329,7 +329,7 @@ the whole shell. Only the second table is left to you.
 | Required | Package | For |
 |---|---|---|
 | niri 26.04 or later | `niri` | the compositor; 26.04 is the first with `ext-background-effect` blur |
-| Genoma 0.1.0 | AUR `genoma` | the shell runtime, drawing through Vulkan: it needs a Vulkan driver (`vulkan-radeon`, `vulkan-intel`, `nvidia-utils`) |
+| Genoma 0.1.1 | AUR `genoma` | the shell runtime, drawing through Vulkan: it needs a Vulkan driver (`vulkan-radeon`, `vulkan-intel`, `nvidia-utils`) |
 | Python 3, dateutil | `python`, `python-dateutil` | the helper scripts in `scripts/`; the calendars' recurring events |
 | libsecret | `libsecret` | the calendars' passwords and tokens, kept in the keyring |
 | gsettings | `glib2` | the desktop's settings: palette, icons, cursor, proxy |
