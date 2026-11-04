@@ -48,17 +48,28 @@ end
 -- a profile or `keep`. A moment after the source changes: short enough that
 -- nobody waits for it, long enough to let UPower finish answering, and a
 -- plug that is wiggled sets the profile once, not four times.
+--
+-- The source reads the profile itself (through `present`) and the whole
+-- battery, so it re-runs when a profile is chosen by hand and each time the
+-- charge moves. g.watch calls the handler on every re-run, not only on a
+-- change, so the handler acts only when what is wanted is different —
+-- otherwise the hand-chosen profile is put straight back.
 local started = false
 function M.start()
     if started then return end
     started = true
     local follow: any = nil
+    local last = ""
     g.watch(function(): string
         local b = power.battery
         local settled = M.present() and b.laptop and b.present
         if not settled then return "" end
-        return if power.on_battery then config.get("power.on_battery", "keep") else config.get("power.on_mains", "keep")
-    end, function(wanted: string)
+        local source = if power.on_battery then "battery" else "mains"
+        return source .. ":" .. config.get("power.on_" .. source, "keep")
+    end, function(key: string)
+        if key == last then return end
+        last = key
+        local wanted = string.match(key, ":(.*)$") or ""
         if follow then follow:stop() end
         follow = g.after(0.4, function()
             follow = nil
