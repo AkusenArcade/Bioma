@@ -48,9 +48,17 @@ Every block and part is then Genoma's, `scripts/bioma` starts Bioma on
 Genoma alone (Quickshell only when Genoma's runtime is missing), and
 `scripts/shell` finds it to stop and restart. Bioma on Quickshell, started
 anyway, draws nothing. The rule lives twice, `scripts/runtime` for the
-scripts and `core/runtime.luau` for the shell. Until the rest of step 7a is
-done, Quickshell still acts for Genoma (below), so the key is not for daily
-use yet.
+scripts and `core/runtime.luau` for the shell.
+
+**The package** (M6 step 7b, 1.0.0-beta.61): the key is in
+`config/default.json`, so it holds for everyone. The Quickshell version moved
+to `quickshell/` (its `shell.qml`, `lock.qml`, `greeter.qml` and their
+directories, with `assets`, `config`, `scripts` and `tools` as symlinks to the
+shared ones) and leaves the package, which ships `genoma/` and depends on
+`genoma` at the version it was made against. Without Quickshell the lock
+falls back to hyprlock (or swaylock) and the greeter to agreety: a greeter
+that fails leaves `$XDG_RUNTIME_DIR/bioma-greeter-failed`, and
+`scripts/greeter-session` hands the login to agreety when niri ends.
 
 ## The way in from outside
 

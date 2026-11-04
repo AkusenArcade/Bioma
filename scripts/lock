@@ -10,7 +10,7 @@
 # A lock screen that fails shuts its owner out of their own session, so this
 # script is its guard. It watches two ways of failing:
 #
-#   - the lock never takes: `lock.qml` did not load, or the compositor
+#   - the lock never takes: `genoma/lock.luau` did not load, or the compositor
 #     refused it. logind's LockedHint, which the lock sets once every screen is
 #     covered, is not set within five seconds;
 #   - the lock dies while it holds the screens: niri keeps the outputs locked
@@ -22,7 +22,7 @@
 set -u
 
 here="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
-lock_pattern="qs -p $here/lock.qml"
+lock_pattern="qs -p $here/quickshell/lock.qml"
 genoma_pattern="$here/genoma lock.luau"
 
 # One lock at a time: a second press of the key while locked is not a second
@@ -33,14 +33,23 @@ if pgrep -f -- "$lock_pattern" >/dev/null 2>&1 || pgrep -f -- "$genoma_pattern" 
 fi
 
 # Bioma on Genoma's lock (genoma/lock.luau), when the configuration gives it
-# the lock (`"lock": { "runtime": "genoma" }`, or the whole shell; see
+# the lock (the whole shell is Genoma's in config/default.json; see
 # `scripts/runtime`) and its runtime is there: $GENOMA_BIN, else `genoma` on
-# the PATH. Otherwise Quickshell's.
+# the PATH. The Quickshell version's lock.qml only from a checkout that still
+# has it (quickshell/, the backup) and an override asking for it. With
+# neither, the fallback below locks.
 runtime="$("$here/scripts/runtime" lock)"
 genoma_bin=""
-if [ "$runtime" = genoma ] && [ -d "$here/genoma" ]; then
+if [ -d "$here/genoma" ]; then
     genoma_bin="${GENOMA_BIN:-$(command -v genoma || true)}"
-    [ -x "$genoma_bin" ] || genoma_bin=""
+    [ -n "$genoma_bin" ] && [ -x "$genoma_bin" ] || genoma_bin=""
+fi
+qs_lock=""
+if [ -f "$here/quickshell/lock.qml" ] && command -v qs >/dev/null 2>&1; then
+    qs_lock="$here/quickshell/lock.qml"
+fi
+if [ "$runtime" != genoma ] && [ -n "$qs_lock" ]; then
+    genoma_bin=""
 fi
 
 fallback() {
@@ -75,6 +84,9 @@ set_hint false
 # lock started from the shell would inherit it and one started by niri's key
 # would not; this makes both the same. If Vulkan fails here anyway, the
 # fallback below still answers. Genoma's lock chooses its own GPU.
+if [ -z "$genoma_bin" ] && [ -z "$qs_lock" ]; then
+    fallback
+fi
 if [ -z "$genoma_bin" ]; then
     if [ -n "${BIOMA_RHI_BACKEND:-}" ]; then
         export QSG_RHI_BACKEND="$BIOMA_RHI_BACKEND"
@@ -94,7 +106,7 @@ if [ -n "$genoma_bin" ]; then
     # Its own IPC socket, never the shell's; named for what it is.
     (GENOMA_IPC=bioma-lock exec -a bioma-lock "$genoma_bin" "$here/genoma" lock.luau) >/dev/null 2>&1 &
 else
-    qs -p "$here/lock.qml" >/dev/null 2>&1 &
+    qs -p "$qs_lock" >/dev/null 2>&1 &
 fi
 pid=$!
 

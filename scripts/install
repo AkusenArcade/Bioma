@@ -112,15 +112,11 @@ if $niri_only; then exec 3>&1 1>/dev/null; fi
 
 $report || echo "Required:"
 need niri       niri            "the compositor, 26.04 or later"
-need qs         quickshell      "the shell runtime, 0.3.1 or later"
+need genoma     genoma          "the shell runtime"
 need python3    python          "the helper scripts"
 need gsettings  glib2           "desktop settings: theme, icons, cursor, proxy"
 need wl-paste   wl-clipboard    "the clipboard cell"
 need magick     imagemagick     "wallpaper thumbnails"
-# A QML module rather than a program: Quickshell does not bring it, and the
-# cells that mask a picture through it do not load without it.
-need_part "$([ -d /usr/lib/qt6/qml/Qt5Compat/GraphicalEffects ] && echo yes)" \
-    "Qt5Compat" "picture masks (QML module)" "qt6-5compat"
 need fc-list    fontconfig      "the fonts"
 need_part "$(font Spectral)" "Spectral" "the expressive voice" "AUR ttf-spectral"
 need_part "$(font Orbitron)" "Orbitron" "the technical voice" "AUR ttf-orbitron"

@@ -34,7 +34,7 @@ other() {
 # a checkout rather than the package was taken for none, and every key went
 # to Noctalia (2026-11-04).
 running_bioma() {
-    pgrep -x bioma >/dev/null 2>&1 || pgrep -f -- "qs -p $here/shell.qml" >/dev/null 2>&1
+    pgrep -x bioma >/dev/null 2>&1 || pgrep -f -- "qs -p $here/(quickshell/)?shell.qml" >/dev/null 2>&1
 }
 
 case "${1-}" in

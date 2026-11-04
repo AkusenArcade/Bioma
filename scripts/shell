@@ -24,7 +24,10 @@ here="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
 state_dir="${XDG_CONFIG_HOME:-$HOME/.config}/bioma"
 state="$state_dir/shell"
 
-bioma_pattern="qs -p $here/shell.qml"
+bioma_pattern="qs -p $here/quickshell/shell.qml"
+# Where the Quickshell version lived before it moved to quickshell/: the
+# shell an update from it leaves running, which its restart has to stop.
+legacy_pattern="qs -p $here/shell.qml"
 # Bioma on Genoma, the shell itself: the directory as its last argument. The
 # lock and the greeter name their own entry file after it.
 genoma_pattern="$here/genoma\$"
@@ -37,11 +40,12 @@ genoma_pattern="$here/genoma\$"
 # command line alone.
 bioma_pids() {
     {
-        qs list --all 2>/dev/null | awk -v want="$here/shell.qml" '
+        qs list --all 2>/dev/null | awk -v want="$here/quickshell/shell.qml" -v old="$here/shell.qml" '
             /^Instance/     { pid = "" }
             /Process ID:/   { pid = $3 }
-            /Config path:/  { sub(/^[ \t]*Config path:[ \t]*/, ""); if ($0 == want && pid != "") print pid }'
+            /Config path:/  { sub(/^[ \t]*Config path:[ \t]*/, ""); if (($0 == want || $0 == old) && pid != "") print pid }'
         pgrep -f -- "$bioma_pattern" 2>/dev/null || true
+        pgrep -f -- "$legacy_pattern" 2>/dev/null || true
         pgrep -f -- "$genoma_pattern" 2>/dev/null || true
     } | sort -u | while read -r pid; do
         stat="$(ps -o stat= -p "$pid" 2>/dev/null | cut -c1)"

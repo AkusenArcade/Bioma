@@ -9,7 +9,7 @@ they have something to say, animate in proportion to what they measure, and go
 quiet when nothing is happening.
 
 - **Compositor**: Niri
-- **Toolkit**: Quickshell (Qt/QML)
+- **Toolkit**: [Genoma](https://github.com/AkusenArcade/Genoma) (Rust, Luau); Quickshell until 1.0.0-beta.61
 - **Status**: **1.0 beta**. Every cell of the first version is built and in
   daily use, with the settings cell, the launcher, the organisms on the
   desktop, a lock screen and a greeter of its own. See `PROGRESS.md` for
@@ -320,8 +320,8 @@ Every change applies as it is made, and every cell follows it at once.
 
 ## Requirements
 
-Bioma is written for **niri** and **Quickshell 0.3.1 or later** (0.3.2 in daily
-use), and it is tested on Arch Linux (CachyOS). Package names below are Arch's.
+Bioma is written for **niri** and runs on **Genoma**, and it is tested on
+Arch Linux (CachyOS). Package names below are Arch's.
 
 The AUR package depends on all of the first table, so installing it installs
 the whole shell. Only the second table is left to you.
@@ -329,8 +329,7 @@ the whole shell. Only the second table is left to you.
 | Required | Package | For |
 |---|---|---|
 | niri 26.04 or later | `niri` | the compositor; 26.04 is the first with `ext-background-effect` blur |
-| Quickshell 0.3.1 or later | `quickshell` | the shell runtime |
-| Qt 5 Compat | `qt6-5compat` | the masks the wallpaper tiles and faces are drawn through (`Qt5Compat.GraphicalEffects`), which Quickshell does not bring |
+| Genoma 0.1.0 | AUR `genoma` | the shell runtime, drawing through Vulkan: it needs a Vulkan driver (`vulkan-radeon`, `vulkan-intel`, `nvidia-utils`) |
 | Python 3, dateutil | `python`, `python-dateutil` | the helper scripts in `scripts/`; the calendars' recurring events |
 | libsecret | `libsecret` | the calendars' passwords and tokens, kept in the keyring |
 | gsettings | `glib2` | the desktop's settings: palette, icons, cursor, proxy |
@@ -499,7 +498,7 @@ and the terminals that paste with Ctrl+Shift+V.
 
 ### The lock screen
 
-Bioma's lock screen is `lock.qml`, a process of its own, so a shell that
+Bioma's lock screen is `genoma/lock.luau`, a process of its own, so a shell that
 falls over does not take the lock with it. It shows the wallpaper blurred, the
 time and date, who is logged in and the password field, on the screen the
 keyboard is on. It locks when asked — `Mod+Alt+L`, the System cell's LOCK, or
@@ -595,36 +594,26 @@ sudo systemctl restart greetd
 scripts/bioma
 ```
 
-Quickshell also loads a configuration by directory name, and that works too:
+It starts Bioma on [Genoma](https://github.com/AkusenArcade/Genoma): the
+runtime is `$GENOMA_BIN` if set, else `genoma` on the PATH, which the AUR
+package depends on. From a checkout, point `GENOMA_BIN` at a build of Genoma
+(`…/Genoma/target/release/genoma`). The process is named `bioma`, the lock
+screen `bioma-lock` and the greeter `bioma-greeter`, and every save under
+`genoma/` reloads the running shell. `GENOMA_LOG=info` logs what Genoma does;
+`GENOMA_PROFILE=1` logs, every two seconds, the Luau bindings that took
+longer than 20 ms, by file and line.
 
-```sh
-ln -s "$PWD" ~/.config/quickshell/bioma
-quickshell -c bioma
-```
+`scripts/ipc <target> <function> …` reaches the running shell from outside,
+as the keybinds do: `scripts/ipc cell toggle vitals`.
 
-The script sets three things for this process. The first is `QT_QPA_PLATFORMTHEME`,
-set to `xdgdesktopportal`. Bioma draws every pixel it shows, so a
-platform theme has nothing to style here — except the file picker the system
-cell opens, which is Qt's own `FileDialog`. Qt asks the platform theme for a
-native dialog and draws its own when there is none, and `qt6ct`, a common
-choice for everything else on a machine, provides none. Started any other way
-the shell still works and the picker is Qt's, which looks like nothing else on
-the screen. Set `BIOMA_PLATFORMTHEME` to override it.
+## The Quickshell version
 
-The second is `QS_ICON_THEME`, read from the desktop's icon theme
-(`org.gnome.desktop.interface icon-theme`). That platform theme does not pass
-the icon theme on, and without it Qt looks only in hicolor. An application's
-own icon is still found there, but a themed icon, such as a folder or a
-device, is not. Quickshell reads the variable once, at start: an icon theme
-chosen in the theme cell reaches the shell's own icons at its next start.
-
-The third is `QSG_RHI_BACKEND`, set to `vulkan`. Qt Quick draws through
-OpenGL by default, and through Vulkan the same desktop at rest costs about a
-third less CPU and 70 MB less memory. Qt does not fall back by itself when
-Vulkan fails, so `scripts/vulkan` first asks the Vulkan loader for an instance
-and a hardware device. A machine without a Vulkan driver keeps OpenGL. The
-lock screen chooses the same way. Applications started from the shell get the
-session's value back. Set `BIOMA_RHI_BACKEND=opengl` to override it.
+Until 1.0.0-beta.61 Bioma ran on Quickshell. That version is kept in
+`quickshell/` as a backup: it is no longer packaged and no longer developed.
+From a checkout, with Quickshell 0.3.1 or later and `qt6-5compat` installed,
+a top-level `"runtime": "quickshell"` in `~/.config/bioma/override.json`
+followed by `scripts/shell restart` starts it again; `qs -p
+"$PWD/quickshell/probe.qml"` still verifies its services without a UI.
 
 ## Two shells, one session
 
@@ -678,29 +667,20 @@ systemctl --user restart xdg-desktop-portal
 
 A screen cast or a camera shared through the portal is dropped by the restart.
 
-## Verifying a service without a UI
-
-```sh
-qs -p "$PWD/probe.qml"
-```
-
-Creates no surfaces. It binds each service the way a cell would, waits for the
-data to arrive, prints what came back, and exits. Every service is verified
-through this before a cell is built on it.
-
 ## Layout
 
 ```
-shell.qml          entry point
-probe.qml          headless service verification
-core/              Config, Theme, Timing, Metrics — global singletons
-lock.qml           the lock screen, a process of its own (with lock/)
-greeter.qml        the greeter, run by greetd (with greeter/)
-structure/         Membrane, Tissue, Cell — the layout engine
-components/        shared primitives
-services/          one singleton per system domain
-cells/<name>/      one directory per cell
-organisms/<name>/  one directory per organism
+genoma/            the shell on Genoma: shell.luau the entry point,
+                   lock.luau the lock screen, greeter.luau the greeter,
+                   ipc.luau what answers from outside; PORT.md, how it
+                   was ported
+  core/            config, theme, timing, metrics, typography
+  structure/       membrane, tissue, cell — the layout engine
+  components/      shared primitives
+  services/        one per system domain
+  cells/           one file per cell, and its panels
+  organisms/       one file per organism
+quickshell/        the Quickshell version, kept as a backup (not packaged)
 config/            default.json, palettes/, niri/ (the keys and layer rules)
 scripts/           the installer, the shell switch, the lock, and helpers
 assets/            the 84 glyphs, the sounds, wallpapers, cursor and
@@ -728,7 +708,7 @@ on a monitor the other shell does not occupy in `~/.config/bioma/override.json`,
 then
 
 ```sh
-qs -p "$PWD/shell.qml"
+scripts/bioma
 ```
 
 ## Documentation

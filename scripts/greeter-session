@@ -24,8 +24,14 @@ if [ ! -f "$live/niri.kdl" ]; then
     live="${BIOMA_GREETER_DIR:-/var/lib/bioma-greeter}/live"
 fi
 
-if [ ! -f "$live/niri.kdl" ] || ! command -v niri >/dev/null 2>&1 \
-        || ! command -v qs >/dev/null 2>&1; then
+# A copy runs Genoma's greeter (bin/genoma) or, from a checkout that still
+# has the Quickshell version, greeter.qml.
+runnable() {
+    [ -x "$live/bin/genoma" ] && return 0
+    [ -f "$live/shell/greeter.qml" ] && command -v qs >/dev/null 2>&1
+}
+
+if [ ! -f "$live/niri.kdl" ] || ! command -v niri >/dev/null 2>&1 || ! runnable; then
     echo "=== bioma greeter $(date -Iseconds): no copy at $live, agreety instead ===" \
         >>/tmp/bioma-greeter.log 2>&1 || true
     exec agreety --cmd niri-session
@@ -48,10 +54,25 @@ mkdir -p "$XDG_RUNTIME_DIR" "$XDG_CACHE_HOME" "$XDG_STATE_HOME"
 chmod 700 "$XDG_RUNTIME_DIR"
 unset WAYLAND_DISPLAY
 
+# The terminal greetd gave, kept for agreety should the greeter fail.
+exec 3>&1 4>&2
 exec >>/tmp/bioma-greeter.log 2>&1
 echo "=== bioma greeter $(date -Iseconds) from $live ==="
 
+# The greeter that failed leaves this mark behind (scripts/greeter-sync), and
+# the login then goes to agreety: a login screen must never be empty, nor
+# start again and again on its own failure.
+failed="$XDG_RUNTIME_DIR/bioma-greeter-failed"
+rm -f "$failed"
+
 if command -v dbus-run-session >/dev/null 2>&1; then
-    exec dbus-run-session -- niri -c "$live/niri.kdl"
+    dbus-run-session -- niri -c "$live/niri.kdl" 3>&- 4>&- || true
+else
+    niri -c "$live/niri.kdl" 3>&- 4>&- || true
 fi
-exec niri -c "$live/niri.kdl"
+
+if [ -e "$failed" ]; then
+    rm -f "$failed"
+    echo "=== bioma greeter $(date -Iseconds): the greeter failed, agreety instead ==="
+    exec agreety --cmd niri-session >&3 2>&4
+fi

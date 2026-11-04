@@ -1,6 +1,8 @@
 # Bioma
 
-A Wayland desktop shell for **Niri**, built with **Quickshell** (Qt/QML).
+A Wayland desktop shell for **Niri**, running on **Genoma** (Rust + Luau,
+`~/Documents/Development/Genoma`) since 1.0.0-beta.61. The Quickshell (Qt/QML)
+version it was first written in is kept in `quickshell/` as a backup.
 
 **Bioma is not a bar.** It is a set of independent surfaces that appear when they
 have something to say and go quiet when nothing is happening. If a change makes
@@ -118,30 +120,30 @@ before iterating.
 ## Layout
 
 ```
-shell.qml          Quickshell entry point
-core/              Config, Theme, Timing, Metrics — global singletons
-structure/         Membrane, Tissue, Cell — the layout engine
-components/        Shared primitives (capsules, threads, indicators)
-services/          One singleton per system domain (ported from Prisma)
-cells/<name>/      One directory per cell: contracted, expanded, logic
-organisms/<name>/  One directory per organism: read-only desktop surfaces
-genoma/            Bioma on Genoma, the port in progress (genoma/PORT.md)
+genoma/            Bioma on Genoma, the shell that ships (genoma/PORT.md)
+quickshell/        The Quickshell version, a backup: shell.qml, core/,
+                   structure/, components/, services/, cells/, organisms/,
+                   lock.qml, greeter.qml; assets, config, scripts, tools
+                   are symlinks to the shared ones
 config/            default.json (base layer) + palettes/
 assets/            icons, fonts
+scripts/           start, lock, greeter, ipc, niri's include
 docs/              PRD and design material
 ```
 
 ## Bioma on Genoma
 
-`genoma/` is Bioma written on Genoma, the Rust + Luau toolkit meant to
-replace Quickshell (`~/Documents/Development/Genoma`, its `docs/m6-plan.md`).
-It shares `docs/`, `config/`, `assets/` and `scripts/` with the Quickshell
-version, which stays feature complete and keeps being refined. The port goes
-surface by surface: a block marked `"runtime": "genoma"` is drawn by
-`scripts/genoma` and skipped by the Quickshell shell. A change to a cell
-already ported must be carried to its Luau version: `genoma/PORT.md` records
-the commit each was ported from. The AUR package leaves `genoma/` out until
-it ships.
+`genoma/` is Bioma written on Genoma, the Rust + Luau toolkit that replaced
+Quickshell (`~/Documents/Development/Genoma`, its `docs/m6-plan.md`). Since
+1.0.0-beta.61 it is the shell: `config/default.json` has a top-level
+`"runtime": "genoma"`, the package ships `genoma/` and depends on the
+`genoma` package at a precise version, and work happens here. The lock
+falls back to hyprlock (or swaylock), the greeter to agreety.
+
+`quickshell/` is the Quickshell version, frozen at the switch: not packaged,
+not developed. The scripts still start it from a checkout when an override
+sets `"runtime": "quickshell"`. The Quickshell notes above describe it, and
+remain the reference when a behaviour has to be compared with the original.
 
 ## Configuration
 

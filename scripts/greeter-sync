@@ -12,9 +12,11 @@
 #
 # The copy holds, under `live/`:
 #
-#   shell/         greeter.qml and the parts of Bioma it imports, and genoma/
-#                  when Bioma on Genoma has the greeter
-#   bin/           Genoma's runtime then
+#   shell/         genoma/, Bioma on Genoma's greeter among it, and the
+#                  assets and configuration it reads; the Quickshell
+#                  version's greeter.qml too, from a checkout that still has
+#                  it (quickshell/, the backup)
+#   bin/           Genoma's runtime
 #   config/bioma/  the configuration layers, the wallpaper's state, the
 #                  palette and the user's own palettes — XDG_CONFIG_HOME points
 #                  here, so the greeter reads the user's own appearance through
@@ -55,10 +57,15 @@ mkdir -p "$next"/{shell,config/bioma/generated,wallpapers,data/fonts,niri}
 
 # ---- The shell ----------------------------------------------------------------
 
-mkdir -p "$next/shell/cells" "$next/shell/config" "$next/shell/scripts"
-cp -r "$here/core" "$here/components" "$here/greeter" "$here/assets" "$next/shell/"
-cp "$here/greeter.qml" "$next/shell/"
-cp "$here/cells/Registry.qml" "$next/shell/cells/"
+mkdir -p "$next/shell/config" "$next/shell/scripts"
+cp -r "$here/assets" "$next/shell/"
+qs="$here/quickshell"
+if [ -f "$qs/greeter.qml" ] && command -v qs >/dev/null 2>&1; then
+    mkdir -p "$next/shell/cells"
+    cp -r "$qs/core" "$qs/components" "$qs/greeter" "$next/shell/"
+    cp "$qs/greeter.qml" "$next/shell/"
+    cp "$qs/cells/Registry.qml" "$next/shell/cells/"
+fi
 cp "$here/config/default.json" "$next/shell/config/"
 cp -r "$here/config/palettes" "$next/shell/config/"
 cp "$here/scripts/greeter-session" "$next/shell/scripts/"
@@ -69,10 +76,10 @@ cp "$here/scripts/greeter-session" "$next/shell/scripts/"
 # stripped, under bin/. The runtime is $GENOMA_BIN or `genoma` on the PATH;
 # with neither, the one the last copy carried is kept, so a sync from a
 # shell that does not know where Genoma is never takes it away. Without a
-# runtime at all the greeter stays Quickshell's.
+# runtime at all there is the Quickshell greeter from a checkout, and
+# greetd's plain agreety otherwise (scripts/greeter-session).
 runtime="$("$here/scripts/runtime" greeter)"
-# The package leaves genoma/ out until it ships, so there is nothing to copy.
-if [ "$runtime" = genoma ] && [ -d "$here/genoma" ]; then
+if { [ "$runtime" = genoma ] || [ ! -f "$next/shell/greeter.qml" ]; } && [ -d "$here/genoma" ]; then
     mkdir -p "$next/bin"
     cp -r "$here/genoma" "$next/shell/"
     bin="${GENOMA_BIN:-$(command -v genoma || true)}"
@@ -175,9 +182,17 @@ for part in outputs.kdl bioma-keyboard.kdl bioma-cursor.kdl; do
 done
 
 # What the greeter's niri starts: Bioma on Genoma when the copy carries its
-# runtime, falling back to the Quickshell greeter if it ends in an error;
-# otherwise the Quickshell greeter. Either way niri ends with it.
-start="BIOMA_GREETER_DIR=$live qs -p $live/shell/greeter.qml"
+# runtime, then the Quickshell greeter if the copy has one, each taking over
+# when the one before ends in an error. When the last of them fails it leaves
+# a mark, and scripts/greeter-session hands the login to agreety once niri
+# has ended. Either way niri ends with it.
+# Unquoted: the line goes inside a KDL string. The runtime directory is
+# scripts/greeter-session's, with no spaces in it.
+failed='touch $XDG_RUNTIME_DIR/bioma-greeter-failed'
+start="$failed"
+if [ -f "$next/shell/greeter.qml" ]; then
+    start="BIOMA_GREETER_DIR=$live qs -p $live/shell/greeter.qml || $start"
+fi
 if [ -x "$next/bin/genoma" ]; then
     # Run under the greeter's own name: the process takes the name it is
     # started by, and Genoma is only the toolkit.

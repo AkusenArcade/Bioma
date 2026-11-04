@@ -81,6 +81,15 @@ names and leaves the rest of the section where the user set it.
 
 ## Keys
 
+### `runtime`
+
+What draws Bioma: `"genoma"`, the default, runs the shell, the lock screen
+and the greeter on [Genoma](https://github.com/AkusenArcade/Genoma), the
+`genoma` package. The Quickshell version that came before it is kept in the
+repository's `quickshell/` folder as a backup and is not packaged; from a
+checkout with Quickshell installed, a top-level `"runtime": "quickshell"` in
+the override starts it again.
+
 ### `appearance`
 
 | Key | Meaning |
@@ -519,7 +528,7 @@ what a cell displays. A cell's own settings live in its `options`.
 | `greeter.directory` | Where the greeter's copy of the desktop is kept (`/var/lib/bioma-greeter`). The shell refreshes it whenever the configuration, the wallpaper, the palette, the monitors, the keyboard layout, the cursor or the avatar change. Without the directory nothing is copied. |
 | `lock.before_sleep` | Lock before a suspend, holding the suspend back until the screens are covered (true). |
 | `sleep.idle_minutes` | Suspend after this many minutes without input (0, never). It runs `session.suspend`, so with `lock.before_sleep` the session locks first; an application that inhibits idle holds it off, as it holds off the lock. Set from the settings cell's Session page. |
-| `sounds.login` / `sounds.notifications` / `sounds.cells` / `sounds.alerts` | Bioma's sound effects, one switch per kind of event (all true): a chord when the desktop first appears in a session (a mark in `$XDG_RUNTIME_DIR` keeps a shell restart from playing it again); two droplets when a notification appears — one whose sender asks for its own sound (`sound-file`, `sound-name`) plays that instead, and `suppress-sound` plays nothing; a bubble when a cell's panel opens and closes on request; a low note when a CPU, memory or GPU load, or a battery running on itself, crosses into the alert colour. Set from the settings cell's Sounds page. The sounds are synthesised by `tools/sounds` into `assets/sounds` and played with `pw-play`; `qs ipc call sounds play <name>` plays one. |
+| `sounds.login` / `sounds.notifications` / `sounds.cells` / `sounds.alerts` | Bioma's sound effects, one switch per kind of event (all true): a chord when the desktop first appears in a session (a mark in `$XDG_RUNTIME_DIR` keeps a shell restart from playing it again); two droplets when a notification appears — one whose sender asks for its own sound (`sound-file`, `sound-name`) plays that instead, and `suppress-sound` plays nothing; a bubble when a cell's panel opens and closes on request; a low note when a CPU, memory or GPU load, or a battery running on itself, crosses into the alert colour. Set from the settings cell's Sounds page. The sounds are synthesised by `tools/sounds` into `assets/sounds` and played with `pw-play`; `scripts/ipc sounds play <name>` plays one. |
 | `sounds.volume` | The effects' volume, 0 to 1 under the system's (0.6). `0` silences all of them. |
 | `performance.manual` | Performance mode switched on by hand (false): the key (`scripts/ipc performance toggle`, Mod+Alt+G as shipped), the performance cell or the Settings page write it, and it stays across a restart. CELLS §21. |
 | `performance.gamemode` | Performance mode comes on by itself while a game is registered with GameMode (true), and goes when it leaves. |

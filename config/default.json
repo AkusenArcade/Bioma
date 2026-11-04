@@ -1,6 +1,8 @@
 {
   "$comment": "Bioma base layer. Hand-written, version-controlled. The settings UI writes an override file which is loaded last and wins. Structural terms are biological: membrane (an edge of a monitor), tissue (a container on it), cell (a unit of content, never a grid cell). Each key is explained in docs/configuration.md, because JSON has no comments.",
 
+  "runtime": "genoma",
+
   "appearance": {
     "radius": 100,
     "edge": 12,

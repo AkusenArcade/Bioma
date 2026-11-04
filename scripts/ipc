@@ -3,8 +3,8 @@
 #
 #     ipc <target> <function> [argument…]      e.g.  ipc cell toggle vitals
 #
-# The targets and functions are shell.qml's IpcHandlers, which Bioma on
-# Genoma answers the same (genoma/ipc.luau). Keybinds, `scripts/key` and the
+# The targets and functions are genoma/ipc.luau's, the same the Quickshell
+# version's shell.qml answers (quickshell/, the backup). Keybinds, `scripts/key` and the
 # settings' Keybinds page call this rather than `qs ipc call`, so a key keeps
 # working across the switch to Genoma (M6 step 7a). The configuration says
 # which runtime is the shell (`scripts/runtime`); Genoma answers on its
@@ -12,8 +12,8 @@
 set -u
 here="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
 
-if [ "$("$here/scripts/runtime")" = genoma ] \
-        && [ -S "${XDG_RUNTIME_DIR:-/tmp}/genoma/${GENOMA_IPC:-bioma}.sock" ]; then
+if [ -S "${XDG_RUNTIME_DIR:-/tmp}/genoma/${GENOMA_IPC:-bioma}.sock" ] \
+        || [ ! -f "$here/quickshell/shell.qml" ] || ! command -v qs >/dev/null 2>&1; then
     exec "$here/scripts/genoma" ipc "$@"
 fi
-exec qs -p "$here/shell.qml" ipc call "$@"
+exec qs -p "$here/quickshell/shell.qml" ipc call "$@"
