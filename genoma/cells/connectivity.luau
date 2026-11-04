@@ -128,10 +128,12 @@ return {
             header_mark_size = glyph_size,
             header_mark = function(mark: () -> number) return glyph(lead, none, mark) end,
             contracted = function()
+                -- No gap of its own: the list keeps its glyphs apart, and a
+                -- gap here stood between the empty list and the resting
+                -- mark, pushing the mark a pitch past the cell's edge.
                 return g.box {
                     direction = "row",
                     align = "center",
-                    gap = pitch,
                     g.each {
                         direction = "row",
                         align = "center",
