@@ -3,7 +3,7 @@
 pkgname=bioma-shell
 _tag=v1.0.0-beta.61
 pkgver=1.0.0beta61
-pkgrel=1
+pkgrel=2
 pkgdesc="A desktop shell for niri, built on Genoma: living surfaces rather than a bar"
 arch=('x86_64' 'aarch64')
 url="https://github.com/AkusenArcade/Bioma"
@@ -16,7 +16,7 @@ depends=(
     'niri'
     # The runtime the shell, the lock screen and the greeter run on, at the
     # version this release was made against.
-    'genoma=0.1.0'
+    'genoma=0.1.1'
     'python'
     # The calendar's recurrences, and the feed addresses it keeps in the
     # keyring (scripts/calendar, secret-tool).
