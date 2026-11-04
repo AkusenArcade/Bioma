@@ -229,7 +229,7 @@ local function simple(cell: any): any
                 gap = function() return 14 * f() end,
                 radius = function() return metrics_mod.shaped(14 * f()) end,
                 fill = function()
-                    if picked() then return colour.alpha(theme.primary(), 0.12) end
+                    if picked() then return theme.selection() end
                     return if hovered.value then colour.alpha(theme.text(), 0.06) else CLEAR
                 end,
                 rim_top = CLEAR,
@@ -351,6 +351,7 @@ local function simple(cell: any): any
                     height = list_height,
                     clip = true,
                     scroll_y = scroll.offset,
+                    fade_bottom = scroll.fade,
                     transition = { scroll_y = "reflow" },
                     on_wheel = scroll.wheel,
                     g.each {

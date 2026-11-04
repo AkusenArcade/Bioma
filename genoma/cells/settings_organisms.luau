@@ -24,6 +24,7 @@ local runtime = require("core/runtime")
 local theme = require("core/theme")
 local typography = require("core/typography")
 local page = require("components/page")
+local hint_mod = require("components/hint")
 local segmented = require("components/segmented")
 local choice_mod = require("components/choice")
 local field_mod = require("components/field")
@@ -248,6 +249,7 @@ function M.new(t: { [string]: any }): any
             local function index(): number return item().index end
             local function lit(): boolean return chosen.value == index() end
             local cross_hovered = g.signal(false)
+            local asking = g.signal(false)
             return g.capsule {
                 height = chip_height,
                 direction = "row",
@@ -257,8 +259,14 @@ function M.new(t: { [string]: any }): any
                 gap = function() return 4 * f() end,
                 radius = function() return metrics_mod.radius_for(chip_height(), m()) end,
                 fill = function() return colour.alpha(theme.lift(theme.background(), if lit() then 0.05 else 0.02), 0.9) end,
-                rim_top = function() return if lit() then theme.primary() else theme.line() end,
-                rim_bottom = function() return if lit() then theme.primary() else theme.line() end,
+                rim_top = function()
+                    if asking.value then return theme.alert() end
+                    return if lit() then theme.primary() else theme.control_edge()
+                end,
+                rim_bottom = function()
+                    if asking.value then return theme.alert() end
+                    return if lit() then theme.primary() else theme.control_edge()
+                end,
                 -- The name opens its options; the cross beside it takes it
                 -- away. Two places that do not overlap.
                 g.box {
@@ -271,20 +279,65 @@ function M.new(t: { [string]: any }): any
                     end,
                     chip_text(function() return string.upper(name_of(entry(index()).type or "")) end, theme.text),
                 },
+                -- Taking one away loses its options (a note's file), so the
+                -- cross asks first, as the other pages' trash does: the
+                -- first press grows REMOVE? out of it, the second answers,
+                -- leaving takes the question back (Akusen, 2026-11-04,
+                -- Piano UI 9).
                 g.box {
                     role = "button",
                     name = "Take away",
-                    width = function() return 18 * f() end,
+                    width = function()
+                        if not asking.value then return 18 * f() end
+                        return 18 * f() + 6 * f() + g.text_width {
+                            text = "REMOVE?", font = typography.technical(), size = m().font_meta,
+                            weight = typography.weight_label, tracking = typography.label_tracking,
+                        }
+                    end,
                     height = chip_height,
+                    direction = "row",
                     align = "center",
-                    justify = "center",
-                    on_hover = function(on: boolean) cross_hovered.value = on end,
-                    on_click = function() remove(g.untracked(index)) end,
-                    g.icon {
-                        width = function() return 9 * f() end,
-                        height = function() return 9 * f() end,
-                        icon = "close",
-                        color = function() return if cross_hovered.value then theme.alert() else theme.text() end,
+                    justify = "end",
+                    gap = function() return 6 * f() end,
+                    transition = { width = "transition" },
+                    on_hover = function(on: boolean)
+                        cross_hovered.value = on
+                        if not on then asking.value = false end
+                    end,
+                    on_click = function()
+                        if not g.untracked(function() return asking.value end) then
+                            asking.value = true
+                            return
+                        end
+                        asking.value = false
+                        remove(g.untracked(index))
+                    end,
+                    g.text {
+                        present = function() return asking.value end,
+                        text = "REMOVE?",
+                        color = theme.alert,
+                        font = typography.technical,
+                        size = function() return m().font_meta end,
+                        weight = typography.weight_label,
+                        tracking = typography.label_tracking,
+                    },
+                    g.box {
+                        width = function() return 18 * f() end,
+                        height = chip_height,
+                        align = "center",
+                        justify = "center",
+                        g.icon {
+                            width = function() return 9 * f() end,
+                            height = function() return 9 * f() end,
+                            icon = "close",
+                            color = function() return if cross_hovered.value or asking.value then theme.alert() else theme.text() end,
+                        },
+                    },
+                    hint_mod.new {
+                        text = "Take away",
+                        over = function() return cross_hovered.value end,
+                        quiet = function() return asking.value end,
+                        factor = f,
                     },
                 },
             }
@@ -329,8 +382,8 @@ function M.new(t: { [string]: any }): any
                 justify = "center",
                 radius = function() return metrics_mod.radius_for(chip_height(), m()) end,
                 fill = CLEAR,
-                rim_top = function() return if hovered.value then theme.primary() else theme.line() end,
-                rim_bottom = function() return if hovered.value then theme.primary() else theme.line() end,
+                rim_top = function() return if hovered.value then theme.primary() else theme.control_edge() end,
+                rim_bottom = function() return if hovered.value then theme.primary() else theme.control_edge() end,
                 on_hover = function(on: boolean) hovered.value = on end,
                 on_click = function() add(g.untracked(item).kind, screen) end,
                 chip_text(function() return string.upper(item().name) end, ink),
@@ -376,7 +429,7 @@ function M.new(t: { [string]: any }): any
         local function edge(wrong: () -> boolean, which: string): () -> string
             return function()
                 if wrong() then return theme.alert() end
-                return if typing.value == which then theme.primary() else theme.line()
+                return if typing.value == which then theme.primary() else theme.control_edge()
             end
         end
         local function field_row(label: string, node: any, which: string, wrong: () -> boolean, extra: any?): any

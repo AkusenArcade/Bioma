@@ -228,7 +228,7 @@ function M.new(t: { [string]: any }): (any, any)
 
     local function rim(): string
         if gate.failed() then return theme.alert() end
-        return if active() then theme.primary() else theme.line()
+        return if active() then theme.primary() else theme.control_edge()
     end
 
     local field_shape = g.capsule {

@@ -321,7 +321,7 @@ function M.new(cell: any, twenty_four: () -> boolean)
             width = inner(calendar_width),
             justify = "center",
             present = function() return not agenda_shown() end,
-            add_chip(function() return "+ Calendar" end, function() return false end,
+            add_chip(function() return "+ CALENDAR" end, function() return false end,
                 function() adding_calendar.value = true end),
         })
         return g.box(column)
@@ -437,7 +437,7 @@ function M.new(cell: any, twenty_four: () -> boolean)
                     height = function() return 16 * f() end,
                     justify = "center",
                     align = "center",
-                    opacity = function() return if hovered.value then 1 else 0 end,
+                    opacity = function() return if hovered.value then 1 else theme.tool_rest end,
                     on_click = function() time.remove_zone(g.untracked(zone)) end,
                     g.icon {
                         width = function() return 9 * f() end,
@@ -535,7 +535,7 @@ function M.new(cell: any, twenty_four: () -> boolean)
                 width = inner(side_width),
                 justify = "center",
                 present = function() return adding.value or #time.zones() < 5 end,
-                add_chip(function() return if adding.value then "Cancel" else "+ Place" end,
+                add_chip(function() return if adding.value then "CANCEL" else "+ PLACE" end,
                     function() return adding.value end,
                     function() adding.value = not g.untracked(function() return adding.value end) end),
             },
@@ -891,7 +891,7 @@ function M.new(cell: any, twenty_four: () -> boolean)
                         weight = typography.weight_title,
                         color = theme.text,
                     },
-                    add_chip(function() return if adding_calendar.value then "Done" else "+ Calendar" end,
+                    add_chip(function() return if adding_calendar.value then "DONE" else "+ CALENDAR" end,
                         function() return adding_calendar.value end,
                         function() adding_calendar.value = not g.untracked(function() return adding_calendar.value end) end),
                 },

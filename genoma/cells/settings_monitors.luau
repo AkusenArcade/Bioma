@@ -316,8 +316,8 @@ function M.new(t: { [string]: any }): any
                     if not lit() then return CLEAR end
                     return colour.alpha(theme.lift(theme.background(), if is_chosen() then 0.06 else 0.02), 0.9)
                 end,
-                rim_top = function() return if is_chosen() then theme.primary() else theme.line() end,
-                rim_bottom = function() return if is_chosen() then theme.primary() else theme.line() end,
+                rim_top = function() return if is_chosen() then theme.primary() else theme.control_edge() end,
+                rim_bottom = function() return if is_chosen() then theme.primary() else theme.control_edge() end,
                 stroke = function() return if is_chosen() then 1.5 else 1 end,
                 transition = { fill = "transition", rim_top = "transition", rim_bottom = "transition" },
             },

@@ -102,7 +102,7 @@ function M.new(t: { [string]: any }): (any, any)
 
     local function edge(): string
         if open.value then return theme.primary() end
-        return if hovered.value then theme.text() else theme.line()
+        return if hovered.value then theme.text() else theme.control_edge()
     end
 
     local node = g.capsule {

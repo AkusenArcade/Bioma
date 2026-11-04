@@ -87,11 +87,12 @@ function M.new(cell: any): any
     local function step(glyph: string, enabled: () -> boolean, act: () -> ()): any
         return g.capsule {
             role = "button",
+            name = if glyph == "skip-previous" then "Previous" else "Next",
             width = function() return 36 * f() end,
             height = function() return 36 * f() end,
             fill = "#00000000",
-            rim_top = theme.line,
-            rim_bottom = theme.line,
+            rim_top = theme.control_edge,
+            rim_bottom = theme.control_edge,
             align = "center",
             justify = "center",
             opacity = function() return if enabled() then 1 else 0.38 end,
@@ -114,6 +115,7 @@ function M.new(cell: any): any
         step("skip-previous", media.can_go_previous, media.previous),
         g.capsule {
             role = "button",
+            name = "Play or pause",
             width = function() return 44 * f() end,
             height = function() return 44 * f() end,
             fill = function() return theme.gradient_top(theme.primary()) end,

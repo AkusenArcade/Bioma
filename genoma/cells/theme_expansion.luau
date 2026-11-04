@@ -481,6 +481,7 @@ function M.new(cell: any): any
         opacity = function() return if grid() then 1 else 0 end,
         transition = { opacity = "content_fade", scroll_y = "reflow" },
         scroll_y = scroll.offset,
+        fade_bottom = scroll.fade,
         on_wheel = scroll.wheel,
         g.each {
             overlay = true,
@@ -970,6 +971,7 @@ function M.new(cell: any): any
             height = list_view,
             clip = true,
             scroll_y = list_scroll.offset,
+            fade_bottom = list_scroll.fade,
             transition = { scroll_y = "reflow" },
             on_wheel = list_scroll.wheel,
             opacity = function() return if list_growing() then 1 else 0 end,

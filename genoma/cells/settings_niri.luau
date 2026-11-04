@@ -170,26 +170,10 @@ function M.new(t: { [string]: any }): any
     end
 
     -- A small press on a row.
+    -- A small press on a row: move (components/page.luau, p.tool).
+    local TOOL_NAMES = { ["chevron-up"] = "Move up", ["chevron-down"] = "Move down", ["chevron-left"] = "Move earlier", ["chevron-right"] = "Move later" }
     local function tool(icon: string, dimmed: () -> boolean, on_click: () -> ()): any
-        local hovered = g.signal(false)
-        return g.box {
-            role = "button",
-            width = function() return 22 * f() end,
-            height = function() return 22 * f() end,
-            align = "center",
-            justify = "center",
-            on_hover = function(on: boolean) hovered.value = on end,
-            on_click = function() if not g.untracked(dimmed) and not g.untracked(busy) then on_click() end end,
-            g.icon {
-                width = function() return 11 * f() end,
-                height = function() return 11 * f() end,
-                icon = icon,
-                color = function()
-                    local c = if hovered.value and not dimmed() then theme.primary() else theme.text()
-                    return colour.alpha(c, if dimmed() then 0.3 else 1)
-                end,
-            },
-        }
+        return p.tool(icon, TOOL_NAMES[icon] or icon, dimmed, on_click, busy)
     end
 
     -- A row that opens on what it holds: its icon, its name, a summary, and
@@ -235,7 +219,7 @@ function M.new(t: { [string]: any }): any
                 direction = "row",
                 align = "center",
                 gap = function() return 2 * f() end,
-                opacity = function() return if hovered.value or a.open() then 1 else 0 end,
+                opacity = function() return if hovered.value or a.open() then 1 else theme.tool_rest end,
                 table.unpack(a.tools or {}),
             },
             a.trailing,
@@ -360,8 +344,8 @@ function M.new(t: { [string]: any }): any
                 align = "center",
                 radius = function() return metrics_mod.radius_for(28 * f(), m()) end,
                 fill = CLEAR,
-                rim_top = function() return if typing.value == which then theme.primary() else theme.line() end,
-                rim_bottom = function() return if typing.value == which then theme.primary() else theme.line() end,
+                rim_top = function() return if typing.value == which then theme.primary() else theme.control_edge() end,
+                rim_bottom = function() return if typing.value == which then theme.primary() else theme.control_edge() end,
                 on_click = function() start(which, g.untracked(function() return texts[which].value end)) end,
                 nodes[which],
             },
@@ -483,11 +467,11 @@ function M.new(t: { [string]: any }): any
                     fill = CLEAR,
                     rim_top = function()
                         if workspace_problem() ~= "" then return theme.alert() end
-                        return if typing.value == "workspace" then theme.primary() else theme.line()
+                        return if typing.value == "workspace" then theme.primary() else theme.control_edge()
                     end,
                     rim_bottom = function()
                         if workspace_problem() ~= "" then return theme.alert() end
-                        return if typing.value == "workspace" then theme.primary() else theme.line()
+                        return if typing.value == "workspace" then theme.primary() else theme.control_edge()
                     end,
                     on_click = function() start("workspace", g.untracked(ws).name) end,
                     g.text {
@@ -596,8 +580,8 @@ function M.new(t: { [string]: any }): any
                 align = "center",
                 radius = function() return metrics_mod.radius_for(28 * f(), m()) end,
                 fill = CLEAR,
-                rim_top = function() return if typing.value == "command" then theme.primary() else theme.line() end,
-                rim_bottom = function() return if typing.value == "command" then theme.primary() else theme.line() end,
+                rim_top = function() return if typing.value == "command" then theme.primary() else theme.control_edge() end,
+                rim_bottom = function() return if typing.value == "command" then theme.primary() else theme.control_edge() end,
                 on_click = function() start("command", "") end,
                 nodes.command,
             },

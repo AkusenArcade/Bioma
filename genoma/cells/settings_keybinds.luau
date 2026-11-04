@@ -22,6 +22,7 @@ local paths = require("core/paths")
 local theme = require("core/theme")
 local typography = require("core/typography")
 local page = require("components/page")
+local hint_mod = require("components/hint")
 local field_mod = require("components/field")
 local thread_mod = require("components/thread")
 local keybinds = require("services/keybinds")
@@ -459,6 +460,11 @@ function M.new(t: { [string]: any }): any
                         return theme.text_faint()
                     end,
                 },
+                hint_mod.new {
+                    text = function() return if live() then (if is_new() then "Cancel" else "Remove") else "Edit" end,
+                    over = function() return slot_hovered.value end,
+                    factor = f,
+                },
             },
         }
     end
@@ -560,7 +566,7 @@ function M.new(t: { [string]: any }): any
         return if home ~= "" and string.sub(path, 1, #home) == home then "~" .. string.sub(path, #home + 1) else path
     end
     local function adder_width(): number
-        return g.text_width { text = "+ Shortcut", font = typography.technical(), size = m().font_meta, tracking = typography.label_tracking } + 28 * f()
+        return g.text_width { text = "+ SHORTCUT", font = typography.technical(), size = m().font_meta, tracking = typography.label_tracking } + 28 * f()
     end
     local function groups(): number
         local seen = {}
@@ -651,8 +657,8 @@ function M.new(t: { [string]: any }): any
             align = "center",
             radius = function() return metrics_mod.radius_for(34 * f(), m()) end,
             fill = CLEAR,
-            rim_top = function() return if picking.value then theme.primary() else theme.line() end,
-            rim_bottom = function() return if picking.value then theme.primary() else theme.line() end,
+            rim_top = function() return if picking.value then theme.primary() else theme.control_edge() end,
+            rim_bottom = function() return if picking.value then theme.primary() else theme.control_edge() end,
             filter_node,
         },
         g.box {
@@ -700,7 +706,7 @@ function M.new(t: { [string]: any }): any
             on_click = function()
                 if not g.untracked(keybinds.busy) then pick(not g.untracked(function() return picking.value end)) end
             end,
-            meta("+ Shortcut", function() return if picking.value then theme.primary() else theme.text() end),
+            meta("+ SHORTCUT", function() return if picking.value then theme.primary() else theme.text() end),
             picker,
         },
         thread_mod.new {

@@ -131,8 +131,8 @@ function M.new(t: { [string]: any }): any
             height = h,
             radius = function() return 6 * f() end,
             fill = CLEAR,
-            rim_top = theme.line,
-            rim_bottom = theme.line,
+            rim_top = theme.control_edge,
+            rim_bottom = theme.control_edge,
             g.each {
                 overlay = true,
                 attach = "corner",

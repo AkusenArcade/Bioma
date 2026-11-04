@@ -12,6 +12,7 @@ local metrics_mod = require("core/metrics")
 local theme = require("core/theme")
 local typography = require("core/typography")
 local field_mod = require("components/field")
+local hint_mod = require("components/hint")
 local config = require("core/config")
 local timing = require("core/timing")
 
@@ -114,7 +115,7 @@ function M.new(t: { [string]: any }): any
     function p.offer(label: string, on_click: () -> ()): any
         local hovered = g.signal(false)
         local function ink(): string return if hovered.value then theme.primary() else theme.text() end
-        local function edge(): string return if hovered.value then theme.primary() else colour.alpha(theme.line(), 0.7) end
+        local function edge(): string return if hovered.value then theme.primary() else colour.alpha(theme.control_edge(), 0.7) end
         return g.capsule {
             role = "button",
             name = label,
@@ -157,7 +158,7 @@ function M.new(t: { [string]: any }): any
             name = "Remove",
             opacity = function()
                 if visible == nil or asking.value or hovered.value then return 1 end
-                return if visible() then 1 else 0
+                return if visible() then 1 else theme.tool_rest
             end,
             width = function() return if asking.value then side() + word_width() + 12 * f() else side() end,
             height = side,
@@ -206,6 +207,43 @@ function M.new(t: { [string]: any }): any
                     end,
                 },
             },
+            -- Its name under the hand; quiet while it asks.
+            hint_mod.new {
+                text = "Remove",
+                over = function() return hovered.value end,
+                quiet = function() return asking.value end,
+                factor = f,
+            },
+        }
+    end
+
+    -- A small press on a row, with no words: an icon, its name under the
+    -- hand (components/hint.luau), dimmed where it cannot act (the first
+    -- row's step up). `busy()` holds it while something is being written.
+    function p.tool(icon: string, name: string, dimmed: () -> boolean, on_click: () -> (), busy: (() -> boolean)?): any
+        local hovered = g.signal(false)
+        return g.box {
+            role = "button",
+            name = name,
+            width = function() return 22 * f() end,
+            height = function() return 22 * f() end,
+            align = "center",
+            justify = "center",
+            on_hover = function(on: boolean) hovered.value = on end,
+            on_click = function()
+                if g.untracked(dimmed) or (busy and g.untracked(busy)) then return end
+                on_click()
+            end,
+            g.icon {
+                width = function() return 11 * f() end,
+                height = function() return 11 * f() end,
+                icon = icon,
+                color = function()
+                    local c = if hovered.value and not dimmed() then theme.primary() else theme.text()
+                    return colour.alpha(c, if dimmed() then 0.3 else 1)
+                end,
+            },
+            hint_mod.new { text = name, over = function() return hovered.value and not dimmed() end, factor = f },
         }
     end
 
@@ -273,8 +311,8 @@ function M.new(t: { [string]: any }): any
             justify = "center",
             radius = function() return 6 * f() end,
             fill = "#00000000",
-            rim_top = theme.line,
-            rim_bottom = theme.line,
+            rim_top = theme.control_edge,
+            rim_bottom = theme.control_edge,
             g.text {
                 text = label,
                 color = ink,
@@ -297,7 +335,7 @@ function M.new(t: { [string]: any }): any
             placeholder = a.placeholder,
             taking = a.taking,
         }
-        local function edge(): string return if a.taking() then theme.primary() else theme.line() end
+        local function edge(): string return if a.taking() then theme.primary() else theme.control_edge() end
         return g.capsule {
             width = p.inner,
             height = chip_height,
@@ -451,7 +489,7 @@ function M.new(t: { [string]: any }): any
     function p.option(a: { [string]: any }): any
         local hovered = g.signal(false)
         local function ring(): number return 12 * f() end
-        local function edge(): string return if a.chosen() then theme.primary() else colour.alpha(theme.line(), 0.7) end
+        local function edge(): string return if a.chosen() then theme.primary() else colour.alpha(theme.control_edge(), 0.7) end
         local sweep = require("components/sweep")
         return g.capsule {
             role = "button",

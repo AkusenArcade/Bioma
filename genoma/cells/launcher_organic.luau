@@ -517,7 +517,7 @@ function M.new(cell: any): any
                 gap = function() return 10 * f() end,
                 radius = function() return metrics_mod.shaped(10 * f()) end,
                 fill = function()
-                    if picked() then return colour.alpha(theme.primary(), 0.12) end
+                    if picked() then return theme.selection() end
                     return if over.value then colour.alpha(theme.text(), 0.06) else CLEAR
                 end,
                 rim_top = CLEAR,
@@ -531,18 +531,35 @@ function M.new(cell: any): any
                 on_click = function(button: number)
                     if button == 272 then launch(g.untracked(key), false) end
                 end,
-                g.icon {
-                    present = function() return source() ~= "" end,
+                -- The row reached: its icon ringed in the primary as well
+                -- as the fill (theme.selection), as the simple launcher's.
+                g.box {
                     width = portrait,
                     height = portrait,
-                    icon = source,
-                },
-                g.icon {
-                    present = function() return source() == "" end,
-                    width = function() return portrait() * 0.85 end,
-                    height = function() return portrait() * 0.85 end,
-                    icon = "app-fallback",
-                    color = theme.text_muted,
+                    align = "center",
+                    justify = "center",
+                    g.capsule {
+                        overlay = true,
+                        present = picked,
+                        width = function() return portrait() + 6 * f() end,
+                        height = function() return portrait() + 6 * f() end,
+                        stroke = function() return 1.5 * f() end,
+                        rim_top = theme.primary,
+                        rim_bottom = theme.primary,
+                    },
+                    g.icon {
+                        present = function() return source() ~= "" end,
+                        width = portrait,
+                        height = portrait,
+                        icon = source,
+                    },
+                    g.icon {
+                        present = function() return source() == "" end,
+                        width = function() return portrait() * 0.85 end,
+                        height = function() return portrait() * 0.85 end,
+                        icon = "app-fallback",
+                        color = theme.text_muted,
+                    },
                 },
                 g.text {
                     text = function() return item().name end,

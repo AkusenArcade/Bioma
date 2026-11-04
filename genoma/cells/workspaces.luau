@@ -156,7 +156,7 @@ return {
                 radius = function() return metrics_mod.shaped(math.min(row_height() / 2, 14 * f())) end,
                 -- The keyboard's mark (KeyMark.qml): shown once a key moved it.
                 fill = function()
-                    return if marked.value == index() then colour.alpha(theme.primary(), 0.12) else "#00000000"
+                    return if marked.value == index() then theme.selection() else "#00000000"
                 end,
                 justify = "start",
                 align = "center",

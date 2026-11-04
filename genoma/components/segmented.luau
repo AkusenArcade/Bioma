@@ -68,8 +68,8 @@ function M.new(t: { [string]: any }): any
         height = track_height,
         radius = function() return metrics_mod.radius_for(track_height(), t.metrics()) end,
         fill = function() return colour.alpha(theme.lift(theme.background(), -0.01), 0.8) end,
-        rim_top = theme.line,
-        rim_bottom = theme.line,
+        rim_top = theme.control_edge,
+        rim_bottom = theme.control_edge,
         g.capsule {
             overlay = true,
             attach = "corner",

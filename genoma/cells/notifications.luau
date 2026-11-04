@@ -517,6 +517,7 @@ return {
                         height = list_height,
                         clip = true,
                         scroll_y = scroll.offset,
+                        fade_bottom = scroll.fade,
                         transition = { scroll_y = "reflow" },
                         on_wheel = scroll.wheel,
                         g.each {

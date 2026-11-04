@@ -17,9 +17,11 @@
   --bg-elevated:    #1d2418;
   --cell-bg:        #252d1f;
   --text:           #eaf1e6;
-  --text-muted:     rgba(234, 241, 230, 0.56);
+  --text-muted:     rgba(234, 241, 230, 0.70);  /* ~7:1 on the glass */
+  --text-faint:     rgba(234, 241, 230, 0.54);  /* ~4.5:1, the floor for small text */
   --line:           #4f643f;   /* outlines and threads */
   --node:           #6a8755;
+  --control-edge:   var(--node);  /* outline of a field, chip, outlined button, track: 3:1 or more */
   --rim:            #88a772;   /* light on the top edge */
   --primary:        #b9de6b;
   --secondary:      #3fbfa0;

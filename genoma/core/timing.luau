@@ -49,6 +49,9 @@ local fixed = {
     -- A particle's travel along a thread: its rate is the value, this only
     -- how long one takes to cross.
     flow = 600,
+    -- How long the pointer rests on a button with no words before its name
+    -- comes (components/hint.luau): long enough not to flicker past.
+    hint = 600,
 }
 
 g.effect(function()

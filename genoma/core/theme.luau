@@ -106,8 +106,28 @@ M.cell = memo(function() return M.lift(M.background(), 0.075) end)
 M.well_surface = memo(function() return M.lift(M.background(), 0.02) end)
 
 -- Only for a secondary label nobody presses, or an option not chosen.
-M.text_muted = memo(function() return colour.alpha(M.text(), 0.56) end)
-M.text_faint = memo(function() return colour.alpha(M.text(), 0.38) end)
+-- Three steps a person can still read: muted about 7:1 on the glass,
+-- faint about 4.5:1, the floor for small text (WCAG 2.2). Faint was 0.38,
+-- 3.1:1, and most of it was labels that say what a row is for (Akusen,
+-- 2026-11-04, Piano UI 1); muted moved up with it to stay a step apart.
+M.text_muted = memo(function() return colour.alpha(M.text(), 0.70) end)
+M.text_faint = memo(function() return colour.alpha(M.text(), 0.54) end)
+-- The outline of something that is pressed or typed into: a field, a chip,
+-- an outlined button, a segmented or switch track. `node`, which reads at
+-- 3.5:1 on the glass where `line` read at 2.2:1, under the 3:1 a control's
+-- edge needs (Akusen, 2026-11-04, Piano UI 2). Threads, separators and
+-- surfaces keep `line`. One place to take it back.
+M.control_edge = memo(function() return M.node() end)
+-- What the keyboard has reached, or what is the chosen one in a list: a
+-- fill, never an outline. At 12% it was 1.3:1 against the glass, too faint
+-- to find; 22% keeps text on it at 7:1, and a row with an icon also rings
+-- the icon in the primary (Akusen, 2026-11-04, Piano UI 3).
+M.selection = memo(function() return colour.alpha(M.primary(), 0.22) end)
+-- A row's tools (the trash, a cross, a row's pencil) at rest: there to be
+-- found and reached, quieter than under the pointer. They were 0, so they
+-- could be neither discovered nor reached without a pointer (Akusen,
+-- 2026-11-04, Piano UI 5). An opacity, the same for every tool.
+M.tool_rest = 0.45
 M.border = memo(function() return colour.alpha(M.text(), if M.is_dark() then 0.09 else 0.14) end)
 
 function M.shadow_of(dark_side: boolean): string return colour.alpha("#000000", if dark_side then 0.45 else 0.22) end

@@ -30,7 +30,22 @@ function M.lever(name: string): boolean
 end
 function M.still(): boolean return M.lever("motion") end
 function M.flat(): boolean return M.lever("blur") end
-function M.instant(): boolean return M.lever("transitions") end
+-- The desktop's own "reduce animations": GNOME's enable-animations, which
+-- GTK, the accessibility panels and most settings tools write. Off, every
+-- transition is instant, as the performance lever makes them, springs
+-- included; an indicator whose motion is a value keeps moving, since that
+-- motion is the reading (Akusen, 2026-11-04, Piano UI 11). Read once and
+-- then followed, never polled.
+local animations = g.signal(true)
+local function heard(line: string)
+    if string.find(line, "true") then animations.value = true
+    elseif string.find(line, "false") then animations.value = false end
+end
+g.process { command = { "gsettings", "get", "org.gnome.desktop.interface", "enable-animations" }, on_line = heard }
+g.process { command = { "gsettings", "monitor", "org.gnome.desktop.interface", "enable-animations" }, on_line = heard }
+function M.reduced(): boolean return not animations.value end
+
+function M.instant(): boolean return M.lever("transitions") or M.reduced() end
 function M.sparse(): boolean return M.lever("polling") end
 -- What a shape blurs behind it: the configuration's choice, unless the
 -- blur lever is pulled.

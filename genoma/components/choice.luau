@@ -35,11 +35,11 @@ function M.new(t: { [string]: any }): any
         justify = "center",
         fill = function()
             if filled() then return theme.gradient_top(base()) end
-            return if t.marked and t.marked() then colour.alpha(theme.primary(), 0.12) else "#00000000"
+            return if t.marked and t.marked() then theme.selection() else "#00000000"
         end,
         fill_bottom = function() return if filled() then theme.gradient_bottom(base()) else "#00000000" end,
-        rim_top = function() return if filled() then "#00000000" else theme.line() end,
-        rim_bottom = function() return if filled() then "#00000000" else theme.line() end,
+        rim_top = function() return if filled() then "#00000000" else theme.control_edge() end,
+        rim_bottom = function() return if filled() then "#00000000" else theme.control_edge() end,
         -- Dimmed: shown, so what it would do is seen, but deaf.
         opacity = function() return if t.dimmed and t.dimmed() then 0.45 else 1 end,
         on_click = function()
@@ -47,7 +47,13 @@ function M.new(t: { [string]: any }): any
             if t.on_click then t.on_click() end
         end,
         g.text {
-            text = t.label,
+            -- A command, so upper case, whoever wrote it: "Arrange" beside
+            -- SAVE AS read as two kinds of button (Akusen, 2026-11-04,
+            -- Piano UI 8). Options in a segmented control keep theirs.
+            text = function()
+                local label = if type(t.label) == "function" then t.label() else t.label
+                return string.upper(label or "")
+            end,
             font = typography.technical,
             size = size,
             weight = function() return if filled() then typography.weight_title else typography.weight_label end,

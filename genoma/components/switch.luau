@@ -34,8 +34,8 @@ function M.new(t: { [string]: any }): any
             return if t.on() then theme.gradient_bottom(theme.primary())
                 else colour.alpha(theme.lift(theme.background(), -0.01), 0.9)
         end,
-        rim_top = function() return if t.on() then "#00000000" else theme.line() end,
-        rim_bottom = function() return if t.on() then "#00000000" else theme.line() end,
+        rim_top = function() return if t.on() then "#00000000" else theme.control_edge() end,
+        rim_bottom = function() return if t.on() then "#00000000" else theme.control_edge() end,
         opacity = function()
             if t.dimmed and t.dimmed() then return 0.45 end
             return if t.settling and t.settling() then 0.6 else 1

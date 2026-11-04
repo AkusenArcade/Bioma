@@ -103,7 +103,7 @@ return {
                 width = function() return inner() - 18 * f() end,
                 height = row_height,
                 radius = function() return metrics_mod.shaped(8 * f()) end,
-                fill = function() return if highlighted() then colour.alpha(theme.primary(), 0.1) else "#00000000" end,
+                fill = function() return if highlighted() then theme.selection() else "#00000000" end,
                 rim_top = "#00000000",
                 rim_bottom = "#00000000",
                 on_hover = function(on: boolean) hovered.value = on end,
@@ -165,7 +165,7 @@ return {
                             height = function() return 18 * f() end,
                             align = "center",
                             justify = "center",
-                            opacity = function() return if hovered.value then 1 else 0 end,
+                            opacity = function() return if hovered.value then 1 else theme.tool_rest end,
                             on_click = function() keyboard.remove(g.untracked(index)) end,
                             g.icon {
                                 width = function() return 9 * f() end,
@@ -226,6 +226,7 @@ return {
                         height = function() return list_height() - 12 * f() end,
                         clip = true,
                         scroll_y = scroll.offset,
+                        fade_bottom = scroll.fade,
                         transition = { scroll_y = "reflow" },
                         on_wheel = scroll.wheel,
                         g.each {

@@ -432,7 +432,7 @@ function M.new(cell: any)
             height = function() return m().row_height end,
             width = function() return panel_width() - 32 * f() end,
             radius = function() return metrics_mod.shaped(math.min(m().row_height / 2, 14 * f())) end,
-            fill = function() return if marked.value == index() then colour.alpha(theme.primary(), 0.12) else "#00000000" end,
+            fill = function() return if marked.value == index() then theme.selection() else "#00000000" end,
             direction = "row",
             align = "center",
             justify = "between",

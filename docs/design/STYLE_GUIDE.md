@@ -77,10 +77,12 @@ it is what matugen generates and what thin line icons use.
 | `elevated` | `#1d2418` | raised surface |
 | `cell` | `#252d1f` | cell fill before glass |
 | `text` | `#eaf1e6` | content, titles, the names and values of settings, every enabled control |
-| `text-muted` | `rgba(234,241,230,.56)` | secondary labels nobody presses, and options not chosen |
+| `text-muted` | `rgba(234,241,230,.70)` | secondary labels nobody presses, and options not chosen |
+| `text-faint` | `rgba(234,241,230,.54)` | the quietest text that is still read: a row's label, a count, a hint |
 | `border` | `rgba(255,255,255,.09)` | documentation borders, not shell surfaces |
-| `line` | `#4f643f` | outlines and threads |
+| `line` | `#4f643f` | threads, separators and the outlines of surfaces |
 | `node` | `#6a8755` | thread ends, running marks |
+| `control-edge` | `node` | the outline of what is pressed or typed into: field, chip, outlined button, segmented and switch track (3:1 on the glass; `line` is 2.2:1) |
 | `rim` | `#88a772` | light on the top edge |
 | `primary` | `#b9de6b` | icons, controls, selections, stateless indicators |
 | `secondary` | `#3fbfa0` | supporting accents |

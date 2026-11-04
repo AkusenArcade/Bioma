@@ -955,7 +955,7 @@ function M.new(t: { [string]: any }): any
             end,
         }
         for _, face in faces(slot_width, slot_height, lit,
-            function() return if is_chosen() or source() then theme.primary() else theme.line() end,
+            function() return if is_chosen() or source() then theme.primary() else theme.control_edge() end,
             lit_fill(is_chosen), dashed_colour(target)) do
             table.insert(node, face)
         end
@@ -1046,7 +1046,7 @@ function M.new(t: { [string]: any }): any
             end,
         }
         for _, face in faces(slot_width, h, lit,
-            function() return if is_chosen() or source() then theme.primary() else theme.line() end,
+            function() return if is_chosen() or source() then theme.primary() else theme.control_edge() end,
             lit_fill(is_chosen), dashed_colour(target)) do
             table.insert(node, face)
         end
@@ -1281,7 +1281,7 @@ function M.new(t: { [string]: any }): any
     local function drop_edge(): string
         if presets_open.value then return theme.primary() end
         if not usable() then return colour.alpha(theme.line(), 0.5) end
-        return if drop_hovered.value then theme.text() else theme.line()
+        return if drop_hovered.value then theme.text() else theme.control_edge()
     end
     -- Always the same width and in the same place: only what it says
     -- changes. The name is elided here; the list shows it whole.
@@ -1353,6 +1353,7 @@ function M.new(t: { [string]: any }): any
                 height = function() return list_height() - list_padding() * 2 end,
                 clip = true,
                 scroll_y = list_scroll.offset,
+                fade_bottom = list_scroll.fade,
                 on_wheel = list_scroll.wheel,
                 opacity = function() return if presets_open.value then 1 else 0 end,
                 transition = { opacity = function() return if presets_open.value then "content_enter" else "content_leave" end },

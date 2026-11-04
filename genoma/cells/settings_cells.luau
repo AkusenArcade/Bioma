@@ -256,11 +256,11 @@ function M.new(t: { [string]: any }): any
                 fill = function() return if open() then colour.alpha(theme.primary(), 0.16) else CLEAR end,
                 rim_top = function()
                     if open() then return theme.primary() end
-                    return if help_hovered.value then theme.text() else theme.line()
+                    return if help_hovered.value then theme.text() else theme.control_edge()
                 end,
                 rim_bottom = function()
                     if open() then return theme.primary() end
-                    return if help_hovered.value then theme.text() else theme.line()
+                    return if help_hovered.value then theme.text() else theme.control_edge()
                 end,
                 on_hover = function(on: boolean) help_hovered.value = on end,
                 on_click = function()

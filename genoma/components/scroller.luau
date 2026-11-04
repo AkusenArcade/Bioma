@@ -15,7 +15,8 @@ local M = {}
 -- `t`: viewport() and content() (heights, logical units), step() (a wheel
 -- notch, a row), factor(). Returns `offset()`, `wheel(dx, dy)` for the
 -- well's on_wheel, `reveal(top, height)` to bring a stretch into view,
--- `to(y)`, `home()` (the top, quietly), and `bar(x)`, the mark to place in the well at that x.
+-- `to(y)`, `home()` (the top, quietly), `fade()` for the well's
+-- `fade_bottom`, and `bar(x)`, the mark to place in the well at that x.
 function M.new(t: { [string]: any }): any
     local offset = g.signal(0)
     local moving = g.signal(false)
@@ -31,6 +32,15 @@ function M.new(t: { [string]: any }): any
         moving.value = true
         if rest then rest:stop() end
         rest = g.after(timing.seconds.reflow + timing.seconds.content_fade * 2, function() moving.value = false end)
+    end
+
+    -- More below: the well lets its content fade out over its foot, so a
+    -- list that goes on says so without a figure, and stops fading at its
+    -- end (Akusen, 2026-11-04, Piano UI 7). The mark only shows while it
+    -- moves; this is what says it can.
+    local function fade(): number
+        if room() - offset.value <= 0.5 then return 0 end
+        return 28 * t.factor()
     end
 
     -- Back to the top without the mark: another list in the same well.
@@ -92,6 +102,7 @@ function M.new(t: { [string]: any }): any
         reveal = reveal,
         to = to,
         home = home,
+        fade = fade,
         bar = bar,
     }
 end

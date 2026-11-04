@@ -157,7 +157,7 @@ return {
                     height = function() return 18 * f() end,
                     align = "center",
                     justify = "center",
-                    opacity = function() return if hovered.value then 1 else 0 end,
+                    opacity = function() return if hovered.value then 1 else theme.tool_rest end,
                     on_click = function() clipboard.remove(g.untracked(e)) end,
                     g.icon {
                         width = function() return 9 * f() end,
@@ -258,6 +258,7 @@ return {
                         height = function() return list_height() - 12 * f() end,
                         clip = true,
                         scroll_y = scroll.offset,
+                        fade_bottom = scroll.fade,
                         transition = { scroll_y = "reflow" },
                         on_wheel = scroll.wheel,
                         g.each {

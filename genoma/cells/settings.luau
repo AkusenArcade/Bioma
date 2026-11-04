@@ -196,10 +196,30 @@ return {
         -- Each page is read from its top, as each had its own list.
         g.watch(page_key, function() scroll.home() end)
 
+        -- ---- The keyboard's way through (Akusen, 2026-11-04, Piano UI 6) --
+        --
+        -- Tab and Shift+Tab go through the open page's buttons and the
+        -- categories (Genoma's g.focus_move, in the order the page draws
+        -- them); Enter or Space presses the one reached; Up and Down change
+        -- the category when the page has no use for them. The one reached
+        -- carries the selection's fill and a node beside it: an outline lit
+        -- would say "surface" (STYLE_GUIDE §5). The page's well draws it,
+        -- where Genoma says the button is, and scrolls it into view.
+        local reached = g.signal(nil :: any) -- { x, y, w, h } in the page
+        local function let_go()
+            reached.value = nil
+            g.focus_clear()
+        end
+        g.watch(page_key, let_go)
+        g.watch(function() return cell.open.value end, function(open: boolean) if not open then let_go() end end)
+
         local function body(): any
             return g.box {
                 width = inner_width,
                 height = inner_height,
+                -- Reached outside the well (the setup's way through): the
+                -- well's mark goes, as it does for the categories.
+                on_focus_within = function() reached.value = nil end,
                 g.text {
                     overlay = true,
                     present = function() return page_of(page_key()) == nil end,
@@ -215,8 +235,14 @@ return {
                     height = page_area,
                     clip = true,
                     scroll_y = scroll.offset,
+                    fade_bottom = scroll.fade,
                     transition = { scroll_y = "reflow" },
                     on_wheel = scroll.wheel,
+                    on_focus_within = function(x: number, y: number, w: number, h: number)
+                        local top = y + g.untracked(scroll.offset)
+                        reached.value = { x = x, y = top, w = w, h = h }
+                        scroll.reveal(top - 8 * g.untracked(f), h + 16 * g.untracked(f))
+                    end,
                     g.each {
                         overlay = true,
                         attach = "corner",
@@ -256,6 +282,42 @@ return {
                     },
                     -- On the page's right edge, as Scroller.qml: the rows
                     -- end 8 short of it, so it stands clear of them.
+                    -- The one the keyboard reached: the selection's fill over
+                    -- it, and a node at its left.
+                    g.capsule {
+                        overlay = true,
+                        attach = "corner",
+                        present = function() return reached.value ~= nil end,
+                        offset_x = function() return if reached.value then reached.value.x else 0 end,
+                        offset_y = function() return if reached.value then reached.value.y else 0 end,
+                        width = function() return if reached.value then reached.value.w else 0 end,
+                        height = function() return if reached.value then reached.value.h else 0 end,
+                        radius = function()
+                            local h = if reached.value then reached.value.h else 0
+                            return math.min(h / 2, m().radius_well)
+                        end,
+                        fill = theme.selection,
+                        rim_top = "#00000000",
+                        rim_bottom = "#00000000",
+                        transition = { offset_x = "transition", offset_y = "transition", width = "transition", height = "transition" },
+                    },
+                    g.capsule {
+                        overlay = true,
+                        attach = "corner",
+                        present = function() return reached.value ~= nil end,
+                        offset_x = function() return if reached.value then math.max(1 * f(), reached.value.x - 9 * f()) else 0 end,
+                        offset_y = function()
+                            if not reached.value then return 0 end
+                            return reached.value.y + reached.value.h / 2 - 3 * f()
+                        end,
+                        width = function() return 6 * f() end,
+                        height = function() return 6 * f() end,
+                        radius = function() return 3 * f() end,
+                        fill = theme.node,
+                        rim_top = "#00000000",
+                        rim_bottom = "#00000000",
+                        transition = { offset_x = "transition", offset_y = "transition" },
+                    },
                     scroll.bar(function() return inner_width() - 3 * f() end),
                 },
                 -- The setup's way through: SKIP SETUP at the start, BACK and
@@ -332,6 +394,7 @@ return {
                 return if cell.open.value then "cascade_" .. math.min(index, 12) else "cascade_close"
             end
             local hovered = g.signal(false)
+            local keyed = g.signal(false) -- the keyboard's focus is on it
             -- Glyph and words once the capsule is at size, and first to go.
             local function shown(): number return if cell.open.value then 1 else 0 end
             local function content_curve(): string
@@ -359,8 +422,13 @@ return {
                 padding_right = function() return 20 * f() end,
                 gap = function() return 16 * f() end,
                 fill = function()
-                    local base = if hovered.value and not is_chosen() then theme.lift(theme.cell(), 0.05) else theme.cell()
+                    local base = if (hovered.value or keyed.value) and not is_chosen() then theme.lift(theme.cell(), 0.05) else theme.cell()
                     return colour.alpha(base, require("core/config").get("cell.opacity", 0.72))
+                end,
+                -- The well's mark goes when the keyboard leaves the page.
+                on_focus = function(on: boolean)
+                    keyed.value = on
+                    if on then reached.value = nil end
                 end,
                 rim_top = theme.rim,
                 rim_bottom = theme.line,
@@ -377,6 +445,19 @@ return {
                         return timing.motion("cascade_land_" .. i, "cascade_" .. i)
                     end,
                     fill = "colour",
+                },
+                -- Reached by the keyboard: a node at its left.
+                g.capsule {
+                    overlay = true,
+                    attach = "left",
+                    present = function() return keyed.value end,
+                    offset_x = function() return -10 * f() end,
+                    width = function() return 6 * f() end,
+                    height = function() return 6 * f() end,
+                    radius = function() return 3 * f() end,
+                    fill = theme.node,
+                    rim_top = "#00000000",
+                    rim_bottom = "#00000000",
                 },
                 -- The chosen one carries more light: the glyph the primary
                 -- gradient, the name the primary.
@@ -468,7 +549,28 @@ return {
             contracted = function() return mark(mark_size) end,
             on_key = function(name: string, typed: string?, mods: { [string]: boolean }): boolean
                 local handler = page_keys[g.untracked(page_key)]
-                return if handler then handler(name, typed, mods) == true else false
+                if handler and handler(name, typed, mods) == true then return true end
+                if name == "Tab" or name == "ISO_Left_Tab" then
+                    g.focus_move(if name == "ISO_Left_Tab" or mods.shift then -1 else 1)
+                    return true
+                end
+                if (name == "Return" or name == "KP_Enter" or name == "space") and g.has_focus() then
+                    g.focus_press()
+                    return true
+                end
+                if name == "Up" or name == "Down" then
+                    local list = g.untracked(entries)
+                    local now = g.untracked(current)
+                    for i, e in list do
+                        if e.key == now then
+                            local next = list[(i - 1 + (if name == "Down" then 1 else -1)) % #list + 1]
+                            if next then choose(next.key) end
+                            break
+                        end
+                    end
+                    return true
+                end
+                return false
             end,
         }
     end,

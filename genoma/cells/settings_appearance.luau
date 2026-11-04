@@ -19,6 +19,7 @@ local metrics_mod = require("core/metrics")
 local theme = require("core/theme")
 local typography = require("core/typography")
 local page = require("components/page")
+local hint_mod = require("components/hint")
 local segmented = require("components/segmented")
 local slider = require("components/slider")
 local switch = require("components/switch")
@@ -229,7 +230,7 @@ function M.new(t: { [string]: any }): any
         local function chosen(): boolean local c = palettes.current() return c ~= nil and c.file == item().file end
         local function edge(): string
             if chosen() then return theme.primary() end
-            return if hovered.value then theme.text() else theme.line()
+            return if hovered.value then theme.text() else theme.control_edge()
         end
         local dots: { [any]: any } = { direction = "row", gap = function() return -3 * f() end }
         for _, role in palettes.roles do
@@ -247,7 +248,7 @@ function M.new(t: { [string]: any }): any
             padding_left = function() return 10 * f() end,
             padding_right = function() return 12 * f() end,
             radius = function() return metrics_mod.radius_for(chip_height(), m()) end,
-            fill = function() return if chosen() then colour.alpha(theme.primary(), 0.14) else CLEAR end,
+            fill = function() return if chosen() then theme.selection() else CLEAR end,
             rim_top = edge,
             rim_bottom = edge,
             on_hover = function(on: boolean) hovered.value = on end,
@@ -345,7 +346,7 @@ function M.new(t: { [string]: any }): any
     local function outlined(node: any, width: () -> number, which: string, wrong: () -> boolean): any
         local function edge(): string
             if wrong() then return theme.alert() end
-            return if typing.value == which then theme.primary() else theme.line()
+            return if typing.value == which then theme.primary() else theme.control_edge()
         end
         return g.capsule {
             role = "button",
@@ -435,6 +436,7 @@ function M.new(t: { [string]: any }): any
                     icon = "picker",
                     color = function() return if tool_hovered.value or palettes.picking() == r then theme.primary() else theme.text() end,
                 },
+                hint_mod.new { text = "Pick from the screen", over = function() return tool_hovered.value end, factor = f },
             },
         }
     end

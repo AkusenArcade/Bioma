@@ -98,8 +98,10 @@ Singleton {
     // Only for a secondary label nobody presses, or an option not chosen.
     // Never for an enabled control, a title, or a setting's name or value:
     // muted, those read as disabled (STYLE_GUIDE.md, Interface).
-    readonly property color textMuted: Qt.alpha(text, 0.56)
-    readonly property color textFaint: Qt.alpha(text, 0.38)
+    // Three readable steps: muted ~7:1 on the glass, faint ~4.5:1 (WCAG 2.2
+    // small text). Faint was 0.38 (3.1:1); muted moved up to stay a step apart.
+    readonly property color textMuted: Qt.alpha(text, 0.70)
+    readonly property color textFaint: Qt.alpha(text, 0.54)
     readonly property color border: Qt.alpha(text, isDark ? 0.09 : 0.14)
 
     // The shadow of an invoked or expanded cell. A function too, because

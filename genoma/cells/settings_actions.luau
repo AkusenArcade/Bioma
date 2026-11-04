@@ -230,7 +230,7 @@ function M.new(t: { [string]: any }): any
         local hovered = g.signal(false)
         local function edge(): string
             if chosen() then return theme.primary() end
-            return if hovered.value then theme.text() else theme.line()
+            return if hovered.value then theme.text() else theme.control_edge()
         end
         return g.capsule {
             role = "button",
@@ -239,7 +239,7 @@ function M.new(t: { [string]: any }): any
             radius = function() return size() / 2 end,
             align = "center",
             justify = "center",
-            fill = function() return if chosen() then colour.alpha(theme.primary(), 0.14) else CLEAR end,
+            fill = function() return if chosen() then theme.selection() else CLEAR end,
             rim_top = edge,
             rim_bottom = edge,
             on_hover = function(on: boolean) hovered.value = on end,
@@ -256,32 +256,16 @@ function M.new(t: { [string]: any }): any
     end
 
     -- A small press on a row: move.
+    -- A small press on a row: move (components/page.luau, p.tool).
+    local TOOL_NAMES = { ["chevron-up"] = "Move up", ["chevron-down"] = "Move down", ["chevron-left"] = "Move earlier", ["chevron-right"] = "Move later" }
     local function tool(icon: string, dimmed: () -> boolean, on_click: () -> ()): any
-        local hovered = g.signal(false)
-        return g.box {
-            role = "button",
-            width = function() return 22 * f() end,
-            height = function() return 22 * f() end,
-            align = "center",
-            justify = "center",
-            on_hover = function(on: boolean) hovered.value = on end,
-            on_click = function() if not g.untracked(dimmed) then on_click() end end,
-            g.icon {
-                width = function() return 11 * f() end,
-                height = function() return 11 * f() end,
-                icon = icon,
-                color = function()
-                    local c = if hovered.value and not dimmed() then theme.primary() else theme.text()
-                    return colour.alpha(c, if dimmed() then 0.3 else 1)
-                end,
-            },
-        }
+        return p.tool(icon, TOOL_NAMES[icon] or icon, dimmed, on_click)
     end
 
     local function outlined(which: string, shown: () -> string, wrong: () -> boolean, width: (() -> number)?): any
         local function edge(): string
             if wrong() then return theme.alert() end
-            return if typing.value == which then theme.primary() else theme.line()
+            return if typing.value == which then theme.primary() else theme.control_edge()
         end
         return g.capsule {
             role = "button",
@@ -712,7 +696,7 @@ function M.new(t: { [string]: any }): any
                 g.box {
                     direction = "row",
                     gap = function() return 2 * f() end,
-                    opacity = function() return if hovered.value or open() then 1 else 0 end,
+                    opacity = function() return if hovered.value or open() then 1 else theme.tool_rest end,
                     tool("chevron-up", function() return index() == 1 end, function() move_step(g.untracked(index), -1) end),
                     tool("chevron-down", function() return index() == #steps() end, function() move_step(g.untracked(index), 1) end),
                     p.remove(function() remove_step(g.untracked(index)) end),
