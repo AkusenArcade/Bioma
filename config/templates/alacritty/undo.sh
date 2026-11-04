@@ -8,7 +8,8 @@ theme_file="$config_dir/themes/bioma.toml"
 if [ -f "$config_file" ]; then
     tmp_file="$(mktemp "${config_file}.tmp.XXXXXX")"
     trap 'rm -f "$tmp_file"' EXIT
-    awk '!/bioma\.toml/' "$config_file" >"$tmp_file"
+    # The import goes, and the tables apply.sh hid come back.
+    awk '!/bioma\.toml/ { sub(/^#bioma# /, ""); print }' "$config_file" >"$tmp_file"
     if ! cmp -s "$config_file" "$tmp_file"; then
         cat "$tmp_file" >"$config_file"
     fi
