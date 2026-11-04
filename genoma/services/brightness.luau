@@ -90,18 +90,32 @@ end
 
 -- ---- Probing ---------------------------------------------------------------------
 
--- A machine can expose more than one backlight, typically a native driver
--- beside `acpi_video0`, the generic fallback and the worse of the two.
+-- A machine can expose more than one backlight, and only one of them
+-- drives the panel. The kernel hangs that one under the panel's own DRM
+-- connector (…/card2-eDP-2/amdgpu_bl2), and that connector says it is
+-- connected; one beside it may drive nothing at all — a hybrid laptop's
+-- `nvidia_0`, last in the listing, took every write while the panel stayed
+-- where it was (2026-11-04). So: a backlight of a connected connector, else
+-- any other, else `acpi_video`, the generic fallback and the worse of them
+-- all; the first found among equals.
+local function rank(device: string, connected: boolean): number
+    if connected then return 3 end
+    if string.sub(device, 1, 10) == "acpi_video" then return 1 end
+    return 2
+end
+local chosen_rank = 0
 g.process {
     command = { "sh", "-c", "for d in /sys/class/backlight/*/; do "
         .. '[ -e "$d/brightness" ] || continue; '
-        .. 'printf \'%s %s %s\\n\' "$(basename "$d")" "$(cat "$d/brightness")" "$(cat "$d/max_brightness")"; '
+        .. 'status="$(cat "$(readlink -f "$d")/../status" 2>/dev/null)"; '
+        .. 'printf \'%s %s %s %s\\n\' "$(basename "$d")" "$(cat "$d/brightness")" "$(cat "$d/max_brightness")" "${status:-none}"; '
         .. "done" },
     on_line = function(line: string)
-        local device, value, max = string.match(line, "^(%S+)%s+(%d+)%s+(%d+)")
+        local device, value, max, status = string.match(line, "^(%S+)%s+(%d+)%s+(%d+)%s+(%S+)")
         if not device or tonumber(max) == 0 then return end
-        local now = g.untracked(function() return backlight.value end)
-        if now and string.sub(device, 1, 10) == "acpi_video" then return end
+        local r = rank(device, status == "connected")
+        if r <= chosen_rank then return end
+        chosen_rank = r
         backlight.value = { device = device, value = tonumber(value) :: number, max = tonumber(max) :: number }
     end,
 }
