@@ -659,23 +659,70 @@ function M.new(cell: any): any
             table.insert(glasses, glass)
         end
         for _, glass in glasses do table.insert(frame, glass) end
-        -- Nothing found is one line under the pill, and only once the home
-        -- has been walked: "nothing" said before the files are back would
-        -- be taken back.
-        table.insert(frame, g.box {
+        -- Nothing found is a glass of its own under the pill, grown from the
+        -- pill's lower edge as a cluster is and gone back into it when
+        -- something answers: a line of text alone hung in the void. Only
+        -- once the home has been walked: "nothing" said before the files
+        -- are back would be taken back.
+        local function nothing(): boolean
+            return cell.placed.value and query.value ~= "" and #results.value == 0 and not searching()
+        end
+        local NOTHING = "Nothing answers to that"
+        local function note_height(): number return 38 * f() end
+        local function note_width(): number
+            return g.text_width { text = NOTHING, font = typography.expressive(), size = m().font_title } + 36 * f()
+        end
+        local function growing(): string return if nothing() then "open_flat" else "retract" end
+        -- Tied to the pill as a cluster is, by a thread from its lower edge
+        -- hanging a little to one side; half a cluster's distance, since it
+        -- carries nothing.
+        local function note_gap(): number return gap_y() / 2 end
+        local function lower_edge(): number return cy() + pill_height() / 2 end
+        local function note_top(): number return lower_edge() + (if nothing() then note_gap() else 0) end
+        table.insert(frame, g.thread {
             overlay = true,
             attach = "corner",
-            present = function()
-                return cell.placed.value and query.value ~= "" and #results.value == 0 and not searching()
-            end,
             width = frame_width,
-            offset_y = function() return cy() + pill_height() / 2 + 18 * f() end,
+            height = frame_height,
+            from_x = cx,
+            from_y = lower_edge,
+            to_x = cx,
+            to_y = note_top,
+            bend_x = function() return cx() - (if nothing() then note_gap() * 0.12 else 0) end,
+            bend_y = function() return (lower_edge() + note_top()) / 2 end,
+            stroke = metrics_mod.thread,
+            crisp = true,
+            node = metrics_mod.node_size * 2,
+            fill = theme.line,
+            color = theme.node,
+            growth = function() return if nothing() then 1 else 0 end,
+            transition = {
+                to_y = growing, bend_x = growing, bend_y = growing,
+                growth = function() return if nothing() then "grow" else "retract" end,
+            },
+        })
+        table.insert(frame, g.capsule {
+            overlay = true,
+            attach = "corner",
+            width = function() return if nothing() then note_width() else 0 end,
+            height = function() return if nothing() then note_height() else 0 end,
+            offset_x = function() return cx() - (if nothing() then note_width() / 2 else 0) end,
+            offset_y = note_top,
+            radius = function() return metrics_mod.radius_for(note_height(), m()) end,
             align = "center",
+            justify = "center",
+            blur = performance.blurred,
+            fill = function() return colour.alpha(theme.cell(), config.get("cell.opacity", 0.72)) end,
+            rim_top = theme.rim,
+            rim_bottom = theme.line,
+            transition = { width = growing, height = growing, offset_x = growing, offset_y = growing },
             g.text {
-                text = "Nothing answers to that",
+                text = NOTHING,
                 color = theme.text_muted,
                 font = typography.expressive,
                 size = function() return m().font_title end,
+                opacity = function() return if nothing() then 1 else 0 end,
+                transition = { opacity = function() return if nothing() then "ring_content" else "content_leave" end },
             },
         })
         return g.box(frame)
