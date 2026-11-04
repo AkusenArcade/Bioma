@@ -29,10 +29,12 @@ other() {
     noctalia msg "$@" >/dev/null 2>&1 || true
 }
 
-# On either runtime: Bioma on Genoma is the directory as the command's last
-# argument (`scripts/shell`).
+# On either runtime. Bioma on Genoma is the process `scripts/genoma` names
+# `bioma`, wherever its directory is: matched by path, a shell started from
+# a checkout rather than the package was taken for none, and every key went
+# to Noctalia (2026-11-04).
 running_bioma() {
-    pgrep -f -- "qs -p $here/shell.qml" >/dev/null 2>&1 || pgrep -f -- "$here/genoma\$" >/dev/null 2>&1
+    pgrep -x bioma >/dev/null 2>&1 || pgrep -f -- "qs -p $here/shell.qml" >/dev/null 2>&1
 }
 
 case "${1-}" in
