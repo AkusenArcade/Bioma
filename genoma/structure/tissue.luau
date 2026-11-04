@@ -214,7 +214,10 @@ function M.new(ctx: { [string]: any })
 
     local function place_of(c: any, position: { [string]: any }): { [string]: any }
         return {
-            -- On whole pixels, as the tissue is (membrane.luau). Centred
+            -- Exact, never rounded here: Genoma lands the drawing on the
+            -- screen's physical pixels and keeps a centred cell centred,
+            -- which a whole logical unit at scale 1.5 does not (a 1.7 margin
+            -- rounded to 2 left 3 pixels above a cell and 2 below). Centred
             -- across the tissue as it would be with this cell in it: one not
             -- placed was centred on a column that no longer counted it, so the
             -- launcher alone in a floating column came in from the left and
@@ -222,17 +225,17 @@ function M.new(ctx: { [string]: any })
             -- cell where it stands).
             x = function(): number
                 local along = offsets.value[c] or ctx.padding()
-                if ctx.horizontal() then return math.floor(along + 0.5) end
+                if ctx.horizontal() then return along end
                 local across = math.max(t.widest(), c.contracted_width())
-                return math.floor(ctx.padding() + (across - c.contracted_width()) / 2 + 0.5)
+                return ctx.padding() + (across - c.contracted_width()) / 2
             end,
             y = function(): number
                 local along = offsets.value[c] or ctx.padding()
                 if ctx.horizontal() then
                     local across = math.max(t.tallest(), c.contracted_height())
-                    return math.floor(ctx.padding() + (across - c.contracted_height()) / 2 + 0.5)
+                    return ctx.padding() + (across - c.contracted_height()) / 2
                 end
-                return math.floor(along + 0.5)
+                return along
             end,
             width = function(): number return t.grant_for(c) end,
             placed = function(): boolean return t.placed(c) end,
