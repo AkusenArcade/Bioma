@@ -63,7 +63,25 @@ becomes a small process manager, where the indicators double as the sort control
 composition changes with the hardware: three indicators on a desktop, four on a laptop.
 
 **At rest** — CPU ring with a beating dot, RAM ring filling with liquid, GPU ring with an
-orbiting satellite, battery where one exists. 26 px each, 10 px apart.
+orbiting satellite, battery where one exists: the **nucleus** (ORGANISMS §14) in small. 26 px
+each, 10 px apart.
+
+**The battery** — since 2026-11-05, at Akusen's request, the nucleus organism at the size of a
+vital, in place of the charge that filled sideways. Inside the ring, which keeps the family, the
+mass is the nucleus's tissue (`genoma/components/nucleus.wgsl`, the cytoplasm's field): its
+**area** is the charge's share of the inside of the ring, over the envelope's faint fill.
+Charging, **drops** are born against the inside of the ring and fall onto the mass and melt into
+it, as often as watts go in. Discharging it **swells**, as fast as watts go out. Full on the
+mains it is still, and a **bolt** is cut out of it — a hole, showing whatever the indicator sits
+on. Colour is `stateFor(1 − level)`, ring and mass alike. Performance mode stops the drops and
+the swell; the bolt stays.
+
+| Battery | Value | Note |
+|---|---|---|
+| mass | radius 0.86 × inside of the ring × √level, at least 3 grid units | 0.86, not the organism's 0.92, so a drop near full still has a wall to come from |
+| drops | radius 0.13 × the ring's; 0.3 to 2.5 a second, 1 per 20 W in | three in flight; falling at 260 / 70 envelopes a second², taken in where they touch (0.25 s) |
+| swell | 0.2 to 2 a second, 1 per 12 W out | 4 % of the radius and 2 grid units, the first half of each turn |
+| bolt | the 64-grid bolt of the Quickshell vital | full on the mains: not discharging, plug in, level ≥ 99.5 % |
 
 **Expanded, desktop (three domains)** — three horizontal pods 236 × 108 in a column, each hung
 on its own thread, and a 372 px list panel to the right. Pod bottoms align with the panel.
@@ -83,10 +101,12 @@ cell into a tall strip.
   shortcut.
 - The search field is the launcher's: lens in the primary, Spectral, no well.
 
-**Why** — the battery fills **horizontally**, left to right, precisely so it cannot be confused
-with the RAM liquid, which rises from the bottom. At 100% the RAM ring becomes a full disc
-pulsing in the alert colour — never a dot inside a ring, or it would look like a critical CPU
-exactly when the two need telling apart.
+**Why** — at 100% the RAM ring becomes a full disc pulsing in the alert colour — never a dot
+inside a ring, or it would look like a critical CPU exactly when the two need telling apart. The
+battery's nucleus is a mass inside a ring too, and is told from the processor's heart by its
+tissue (soft-edged and lit, the heart a flat lit disc), its size (the charge, where the heart's
+is fixed) and its motion (a slow swell, the heart a sharp beat and a wait). Near empty the two
+come closest in size; that is the case to watch on the laptop.
 
 | Measure | Value | Note |
 |---|---|---|

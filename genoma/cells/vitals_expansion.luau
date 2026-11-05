@@ -262,7 +262,9 @@ function M.new(cell: any)
             align = "center",
             gap = function() return 14 * f() end,
             vital.new { kind = key, size = function() return 62 * f() end, load = function() return load_of(key) end,
-                rate = function() return rate_of(key) end, level = function() return level_of(key) end },
+                rate = function() return rate_of(key) end, level = function() return level_of(key) end,
+                inflow = system.battery_inflow, outflow = system.battery_outflow,
+                mains_full = system.battery_mains_full, active = function() return cell.open.value end },
             g.box {
                 direction = "column",
                 gap = function() return 2 * f() end,
@@ -276,7 +278,9 @@ function M.new(cell: any)
             align = "center",
             gap = function() return 3 * f() end,
             vital.new { kind = key, size = function() return 56 * f() end, load = function() return load_of(key) end,
-                rate = function() return rate_of(key) end, level = function() return level_of(key) end },
+                rate = function() return rate_of(key) end, level = function() return level_of(key) end,
+                inflow = system.battery_inflow, outflow = system.battery_outflow,
+                mains_full = system.battery_mains_full, active = function() return cell.open.value end },
             g.box { height = function() return 10 * f() end },
         }
         for _, node in figures(key, function() return m().font_meta end) do table.insert(vertical, node) end

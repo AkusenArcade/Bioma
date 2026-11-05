@@ -350,6 +350,15 @@ expansion (the pods, the process list and its sort, its filter, which
 waits for Genoma's text field), the battery's drops and bolt (on the
 laptop), performance mode's resting poses.
 
+The battery vital became the nucleus in small on 2026-11-05 (Akusen's
+request, after noticing the Genoma vital had neither the drops nor the
+bolt): `components/nucleus.wgsl`, one application of the cytoplasm's
+tissue plus the bolt cut out, stepped as `organisms/nucleus.luau` is.
+Checked on HDMI-A-1 with a harness (scratch root, six forced states at 26
+and 62 beside the nucleus organism): mass by area, drops falling from the
+ring and melting, the swell in discharge, the bolt full on the mains. Not
+yet against a real battery: the laptop.
+
 The vitals' expansion, checked 2026-10-29 on HDMI-A-1 (an empty workspace,
 `cells/vitals_expansion.luau`, `components/choice.luau`): the list's panel
 buds out of the cell and the pods out of the panel's edge, a stagger

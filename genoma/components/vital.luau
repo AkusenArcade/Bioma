@@ -14,20 +14,174 @@
 -- field does (measured on the satellite, 2026-10-28): a pixel more of
 -- diameter draws Bioma's disc.
 --
--- Not yet: the battery's drops while it charges and the bolt cut out of it
--- full on the mains (they wait for a battery to be checked against, on the
--- laptop); performance mode's resting poses, with its service.
+-- The battery is the nucleus organism in small (organisms/nucleus.luau,
+-- ORGANISMS §14), Akusen's choice of 2026-11-05 over the charge that
+-- filled sideways: a mass whose area is the charge's share of the inside
+-- of the ring. Charging, drops come in from the ring and melt into it, as
+-- often as watts go in; discharging, it swells, as fast as watts go out;
+-- full on the mains it is still, and a bolt is cut out of it.
 local g = require("@genoma")
+local colour = require("core/colour")
+local paths = require("core/paths")
 local performance = require("core/performance")
 local theme = require("core/theme")
+local stepper = require("components/stepper")
 
 local M = {}
 
 local QT_AA = 1
 
+local NUCLEUS = paths.root .. "/genoma/components/nucleus.wgsl"
+-- The nucleus organism's constants. Its fall, 260 px/s² over a 70 px
+-- envelope, is taken in envelopes; its mass fills a little less of the
+-- room, so that a drop near the full charge still has a wall to come from;
+-- its swell, 4 % and 2.5 px at that scale, would be a third of a pixel
+-- here, so the fixed part is two units of the 64 grid.
+local N = {
+    drops_per_watt = 1 / 20, fewest = 0.3, most = 2.5,
+    beats_per_watt = 1 / 12, slowest = 0.2, fastest = 2.0,
+    mass = 0.86, drop = 0.13, fall = 260 / 70, absorb = 0.25,
+    swell = 0.04, swell_grid = 2,
+}
+
+-- The battery's nucleus: a shader the size of the ring, inside it.
+local function nucleus(t: { [string]: any }, unit: () -> number, radius: () -> number, stroke: () -> number,
+    vessel: () -> number, base: () -> string, shown: () -> boolean, level: () -> number): any
+    local function size(): number return 2 * radius() + stroke() end
+    local function envelope(): number return vessel() / 2 end
+    local function mass(): number return math.max(3 * unit(), envelope() * N.mass * math.sqrt(level())) end
+    local function drop_radius(): number return radius() * N.drop end
+    local function active(): boolean return shown() and (t.active == nil or t.active()) end
+    local function inflow(): number return if t.inflow then t.inflow() else 0 end
+    local function outflow(): number return if t.outflow then t.outflow() else 0 end
+    local function mains_full(): boolean return t.mains_full ~= nil and t.mains_full() end
+    local function drop_rate(): number
+        if not active() or performance.still() or inflow() <= 0.5 then return 0 end
+        return math.clamp(inflow() * N.drops_per_watt, N.fewest, N.most)
+    end
+    local function beat_rate(): number
+        if not active() or performance.still() or outflow() <= 0.5 then return 0 end
+        return math.clamp(outflow() * N.beats_per_watt, N.slowest, N.fastest)
+    end
+
+    -- Three drops in flight at most, each keeping its slot.
+    local drops: { any } = { false, false, false }
+    local phase = 0
+    local until_next = 0
+    local function wait(): number
+        local r = g.untracked(drop_rate)
+        return if r > 0 then -math.log(1 - math.random()) / r else 0
+    end
+    local shapes = g.signal({} :: { number })
+    local function draw()
+        local c = g.untracked(size) / 2
+        local beat = math.max(0, math.sin(phase))
+        local m = g.untracked(mass)
+        local r = m * (1 + N.swell * beat) + N.swell_grid * g.untracked(unit) * beat
+        local out = { c, c, r, 0 }
+        local dr = g.untracked(drop_radius)
+        for i = 1, 3 do
+            local d = drops[i]
+            if d then
+                local k = if d.absorbing >= 0 then 1 - d.absorbing / N.absorb else 1
+                table.insert(out, c + math.cos(d.angle) * d.distance)
+                table.insert(out, c + math.sin(d.angle) * d.distance)
+                table.insert(out, math.max(0, dr * k))
+                table.insert(out, 0)
+            else
+                table.insert(out, c); table.insert(out, c); table.insert(out, 0); table.insert(out, 0)
+            end
+        end
+        shapes.value = out
+    end
+    g.effect(function()
+        local _ = mass(), size()
+        g.untracked(draw)
+    end)
+    g.watch(drop_rate, function(r: number) if r > 0 and until_next <= 0 then until_next = wait() end end)
+
+    local settling = g.signal(false)
+    local function step(dt: number)
+        local beat = g.untracked(beat_rate)
+        if beat > 0 then
+            phase = (phase + dt * beat * math.pi * 2) % (math.pi * 2)
+        elseif phase ~= 0 then
+            -- A beat that stops finishes going back to rest.
+            phase += dt * N.slowest * math.pi * 2
+            if phase >= math.pi then phase = 0 end
+        end
+        local m = g.untracked(mass)
+        local env = g.untracked(envelope)
+        local dr = g.untracked(drop_radius)
+        local busy = phase ~= 0
+        for i = 1, 3 do
+            local d = drops[i]
+            if d then
+                busy = true
+                if d.absorbing >= 0 then
+                    d.absorbing += dt
+                    if d.absorbing >= N.absorb then drops[i] = false end
+                else
+                    d.speed += N.fall * env * dt
+                    d.distance -= d.speed * dt
+                    local touching = m + dr * 0.2
+                    if d.distance <= touching then
+                        d.distance = touching
+                        d.absorbing = 0
+                    end
+                end
+            end
+        end
+        if g.untracked(drop_rate) > 0 then
+            until_next -= dt
+            if until_next <= 0 then
+                for i = 1, 3 do
+                    if not drops[i] then
+                        -- Born against the inside of the ring: nothing is
+                        -- drawn outside it.
+                        drops[i] = { angle = math.random() * math.pi * 2, distance = env - dr, speed = 0, absorbing = -1 }
+                        break
+                    end
+                end
+                until_next = wait()
+            end
+        end
+        settling.value = busy
+        draw()
+    end
+    stepper.new {
+        running = function() return drop_rate() > 0 or beat_rate() > 0 or settling.value end,
+        step = step,
+    }
+
+    local function push(out: { number }, hex: string)
+        local c = colour.parse(hex)
+        table.insert(out, c.r); table.insert(out, c.g); table.insert(out, c.b); table.insert(out, c.a)
+    end
+    return g.shader {
+        src = NUCLEUS,
+        width = size,
+        height = size,
+        values = function(): { number }
+            if not shown() then return {} end
+            -- The cytoplasm's unit is its panel over 360; the nucleus's
+            -- envelope is 70 of a 160 well, so its unit is the envelope
+            -- over 157.5.
+            local out = { envelope() / 157.5, if mains_full() then 1 else 0, unit(), envelope() }
+            push(out, theme.text())
+            push(out, base())
+            for _, v in shapes.value do table.insert(out, v) end
+            return out
+        end,
+        follow = stepper.follow,
+    }
+end
+
 -- `t`: kind ("cpu" | "ram" | "gpu" | "battery"), size(), load() (0…1, the
 -- colour and nothing else), rate() (0…1, the rhythm), level() (0…1, how
--- full), present().
+-- full), present(); for the battery, inflow() and outflow() (watts going
+-- in and out), mains_full(), and active() (false while it is not seen: a
+-- closed expansion's pod steps nothing).
 function M.new(t: { [string]: any }): any
     local kind = t.kind
     local function unit(): number return t.size() / 64 end
@@ -93,16 +247,7 @@ function M.new(t: { [string]: any }): any
             transition = { fill = "theme", fill_bottom = "theme" },
         })
     elseif kind == "battery" then
-        -- Left to right, so it cannot be taken for the memory's liquid,
-        -- which rises from the bottom.
-        table.insert(inner, g.capsule {
-            width = vessel,
-            height = vessel,
-            fill = base,
-            level = level,
-            level_left = true,
-            transition = { level = "reflow", fill = "theme" },
-        })
+        table.insert(inner, nucleus(t, unit, radius, stroke, vessel, base, shown, level))
     end
 
     -- Past the threshold the ring emits a wave: it expands and fades.
