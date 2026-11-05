@@ -263,7 +263,7 @@ function M.new(cell: any)
             gap = function() return 14 * f() end,
             vital.new { kind = key, size = function() return 62 * f() end, load = function() return load_of(key) end,
                 rate = function() return rate_of(key) end, level = function() return level_of(key) end,
-                inflow = system.battery_inflow, outflow = system.battery_outflow,
+                inflow = system.battery_inflow,
                 mains_full = system.battery_mains_full, active = function() return cell.open.value end },
             g.box {
                 direction = "column",
@@ -279,7 +279,7 @@ function M.new(cell: any)
             gap = function() return 3 * f() end,
             vital.new { kind = key, size = function() return 56 * f() end, load = function() return load_of(key) end,
                 rate = function() return rate_of(key) end, level = function() return level_of(key) end,
-                inflow = system.battery_inflow, outflow = system.battery_outflow,
+                inflow = system.battery_inflow,
                 mains_full = system.battery_mains_full, active = function() return cell.open.value end },
             g.box { height = function() return 10 * f() end },
         }

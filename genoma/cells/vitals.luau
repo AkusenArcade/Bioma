@@ -63,7 +63,7 @@ return {
                     -- The battery, where there is one.
                     vital.new { kind = "battery", size = indicator, load = function() return 1 - battery() end,
                         level = battery, present = shows_battery, inflow = system.battery_inflow,
-                        outflow = system.battery_outflow, mains_full = system.battery_mains_full,
+                        mains_full = system.battery_mains_full,
                         active = function() return not cell.open.value end },
                 }
             end,

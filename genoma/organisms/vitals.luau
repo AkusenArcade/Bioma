@@ -79,7 +79,6 @@ return {
                         rate = function() return rate_of(key()) end,
                         level = function() return level_of(key()) end,
                         inflow = system.battery_inflow,
-                        outflow = system.battery_outflow,
                         mains_full = system.battery_mains_full,
                     },
                 },

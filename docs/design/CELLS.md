@@ -71,16 +71,16 @@ vital, in place of the charge that filled sideways. Inside the ring, which keeps
 mass is the nucleus's tissue (`genoma/components/nucleus.wgsl`, the cytoplasm's field): its
 **area** is the charge's share of the inside of the ring, over the envelope's faint fill.
 Charging, **drops** are born against the inside of the ring and fall onto the mass and melt into
-it, as often as watts go in. Discharging it **swells**, as fast as watts go out. Full on the
+it, as often as watts go in. Discharging it is **still** and only shrinks with the charge — a
+swell, tried first, beat like the processor's heart (Akusen, 2026-11-05). Full on the
 mains it is still, and a **bolt** is cut out of it — a hole, showing whatever the indicator sits
-on. Colour is `stateFor(1 − level)`, ring and mass alike. Performance mode stops the drops and
-the swell; the bolt stays.
+on. Colour is `stateFor(1 − level)`, ring and mass alike. Performance mode stops the
+drops; the bolt stays.
 
 | Battery | Value | Note |
 |---|---|---|
 | mass | radius 0.86 × inside of the ring × √level, at least 3 grid units | 0.86, not the organism's 0.92, so a drop near full still has a wall to come from |
 | drops | radius 0.13 × the ring's; 0.3 to 2.5 a second, 1 per 20 W in | three in flight; falling at 260 / 70 envelopes a second², taken in where they touch (0.25 s) |
-| swell | 0.2 to 2 a second, 1 per 12 W out | 4 % of the radius and 2 grid units, the first half of each turn |
 | bolt | the 64-grid bolt of the Quickshell vital | full on the mains: not discharging, plug in, level ≥ 99.5 % |
 
 **Expanded, desktop (three domains)** — three horizontal pods 236 × 108 in a column, each hung
@@ -105,7 +105,8 @@ cell into a tall strip.
 inside a ring, or it would look like a critical CPU exactly when the two need telling apart. The
 battery's nucleus is a mass inside a ring too, and is told from the processor's heart by its
 tissue (soft-edged and lit, the heart a flat lit disc), its size (the charge, where the heart's
-is fixed) and its motion (a slow swell, the heart a sharp beat and a wait). Near empty the two
+is fixed) and its motion (still in discharge, drops falling in while charging; the heart a sharp
+beat and a wait). Near empty the two
 come closest in size; that is the case to watch on the laptop.
 
 | Measure | Value | Note |

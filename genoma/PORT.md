@@ -359,6 +359,12 @@ and 62 beside the nucleus organism): mass by area, drops falling from the
 ring and melting, the swell in discharge, the bolt full on the mains. Not
 yet against a real battery: the laptop.
 
+Seen on the laptop the same day: the swell in discharge beat like the
+processor's heart, so Akusen took it out. Discharging, the nucleus is
+still and only shrinks with the charge; the drops and the bolt stay.
+Checked on HDMI-A-1 with the harness: three forced states at 26 and 62,
+and only the charging one changes between frames.
+
 The vitals' expansion, checked 2026-10-29 on HDMI-A-1 (an empty workspace,
 `cells/vitals_expansion.luau`, `components/choice.luau`): the list's panel
 buds out of the cell and the pods out of the panel's edge, a stagger

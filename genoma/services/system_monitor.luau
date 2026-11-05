@@ -446,7 +446,6 @@ function M.battery_mains_full(): boolean
 end
 function M.battery_watts(): number return battery().energy_rate end
 function M.battery_inflow(): number return if M.charging() then M.battery_watts() else 0 end
-function M.battery_outflow(): number return if M.discharging() then M.battery_watts() else 0 end
 
 -- ---- Processes -------------------------------------------------------------------------------
 --

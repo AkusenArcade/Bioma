@@ -18,8 +18,10 @@
 -- ORGANISMS §14), Akusen's choice of 2026-11-05 over the charge that
 -- filled sideways: a mass whose area is the charge's share of the inside
 -- of the ring. Charging, drops come in from the ring and melt into it, as
--- often as watts go in; discharging, it swells, as fast as watts go out;
--- full on the mains it is still, and a bolt is cut out of it.
+-- often as watts go in; discharging, it is still, and only shrinks with
+-- the charge: a swell would beat like the processor's heart (Akusen,
+-- 2026-11-05, on the laptop); full on the mains it is still, and a bolt is
+-- cut out of it.
 local g = require("@genoma")
 local colour = require("core/colour")
 local paths = require("core/paths")
@@ -34,14 +36,11 @@ local QT_AA = 1
 local NUCLEUS = paths.root .. "/genoma/components/nucleus.wgsl"
 -- The nucleus organism's constants. Its fall, 260 px/s² over a 70 px
 -- envelope, is taken in envelopes; its mass fills a little less of the
--- room, so that a drop near the full charge still has a wall to come from;
--- its swell, 4 % and 2.5 px at that scale, would be a third of a pixel
--- here, so the fixed part is two units of the 64 grid.
+-- room, so that a drop near the full charge still has a wall to come from.
+-- The organism's swell is not carried: at this size it reads as a beat.
 local N = {
     drops_per_watt = 1 / 20, fewest = 0.3, most = 2.5,
-    beats_per_watt = 1 / 12, slowest = 0.2, fastest = 2.0,
     mass = 0.86, drop = 0.13, fall = 260 / 70, absorb = 0.25,
-    swell = 0.04, swell_grid = 2,
 }
 
 -- The battery's nucleus: a shader the size of the ring, inside it.
@@ -53,20 +52,14 @@ local function nucleus(t: { [string]: any }, unit: () -> number, radius: () -> n
     local function drop_radius(): number return radius() * N.drop end
     local function active(): boolean return shown() and (t.active == nil or t.active()) end
     local function inflow(): number return if t.inflow then t.inflow() else 0 end
-    local function outflow(): number return if t.outflow then t.outflow() else 0 end
     local function mains_full(): boolean return t.mains_full ~= nil and t.mains_full() end
     local function drop_rate(): number
         if not active() or performance.still() or inflow() <= 0.5 then return 0 end
         return math.clamp(inflow() * N.drops_per_watt, N.fewest, N.most)
     end
-    local function beat_rate(): number
-        if not active() or performance.still() or outflow() <= 0.5 then return 0 end
-        return math.clamp(outflow() * N.beats_per_watt, N.slowest, N.fastest)
-    end
 
     -- Three drops in flight at most, each keeping its slot.
     local drops: { any } = { false, false, false }
-    local phase = 0
     local until_next = 0
     local function wait(): number
         local r = g.untracked(drop_rate)
@@ -75,10 +68,7 @@ local function nucleus(t: { [string]: any }, unit: () -> number, radius: () -> n
     local shapes = g.signal({} :: { number })
     local function draw()
         local c = g.untracked(size) / 2
-        local beat = math.max(0, math.sin(phase))
-        local m = g.untracked(mass)
-        local r = m * (1 + N.swell * beat) + N.swell_grid * g.untracked(unit) * beat
-        local out = { c, c, r, 0 }
+        local out = { c, c, g.untracked(mass), 0 }
         local dr = g.untracked(drop_radius)
         for i = 1, 3 do
             local d = drops[i]
@@ -102,18 +92,10 @@ local function nucleus(t: { [string]: any }, unit: () -> number, radius: () -> n
 
     local settling = g.signal(false)
     local function step(dt: number)
-        local beat = g.untracked(beat_rate)
-        if beat > 0 then
-            phase = (phase + dt * beat * math.pi * 2) % (math.pi * 2)
-        elseif phase ~= 0 then
-            -- A beat that stops finishes going back to rest.
-            phase += dt * N.slowest * math.pi * 2
-            if phase >= math.pi then phase = 0 end
-        end
         local m = g.untracked(mass)
         local env = g.untracked(envelope)
         local dr = g.untracked(drop_radius)
-        local busy = phase ~= 0
+        local busy = false
         for i = 1, 3 do
             local d = drops[i]
             if d then
@@ -150,7 +132,7 @@ local function nucleus(t: { [string]: any }, unit: () -> number, radius: () -> n
         draw()
     end
     stepper.new {
-        running = function() return drop_rate() > 0 or beat_rate() > 0 or settling.value end,
+        running = function() return drop_rate() > 0 or settling.value end,
         step = step,
     }
 
@@ -179,8 +161,8 @@ end
 
 -- `t`: kind ("cpu" | "ram" | "gpu" | "battery"), size(), load() (0…1, the
 -- colour and nothing else), rate() (0…1, the rhythm), level() (0…1, how
--- full), present(); for the battery, inflow() and outflow() (watts going
--- in and out), mains_full(), and active() (false while it is not seen: a
+-- full), present(); for the battery, inflow() (watts going in),
+-- mains_full(), and active() (false while it is not seen: a
 -- closed expansion's pod steps nothing).
 function M.new(t: { [string]: any }): any
     local kind = t.kind
