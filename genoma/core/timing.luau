@@ -41,6 +41,10 @@ local moved = {
     -- Between one cluster of the organic launcher leaving the field and the
     -- next, the most relevant first.
     cluster_stagger = 70,
+    -- Focus mode (core/focus_mode.luau): the membranes folding over their
+    -- edge and the organisms receding, and how long that takes before the
+    -- cells on the folded membranes go quiet.
+    fold = 420,
 }
 local scaled = { stagger = 16, debounce = 180, auto_hide = 500, notification = 5000, loader = 1200, welcome = 900 }
 local fixed = {
@@ -86,6 +90,16 @@ g.effect(function()
         hop = if instant then { duration = 0.001 } else { spring = { stiffness = 420, damping = 22 } },
         land = if instant then { duration = 0.001 } else { spring = { stiffness = 260, damping = 17 } },
         settle = if instant then { duration = 0.001 } else { spring = { stiffness = 320, damping = 30 } },
+        -- Focus mode (core/focus_mode.luau). Going, a membrane folds over
+        -- its own edge and the organisms recede into the screen, closing's
+        -- curve, never past; coming back, the membranes unfold on a spring
+        -- that carries them a little past flat before they settle (Genoma's
+        -- unfold, M4), and the organisms come forward on a gentler one.
+        fold = { duration = s.fold, curve = c.close },
+        unfold = if instant then { duration = 0.001 } else { spring = {
+            stiffness = config.get("timing.unfold_stiffness", 170), damping = config.get("timing.unfold_damping", 16) } },
+        emerge = if instant then { duration = 0.001 } else { spring = {
+            stiffness = config.get("timing.emerge_stiffness", 150), damping = config.get("timing.emerge_damping", 24) } },
         -- An auto-hiding membrane sliding out of the edge or back into it,
         -- and its halo fading with it (Membrane.qml, Timing.open InOutQuad).
         reveal = { duration = s.open, curve = c.in_out_quad },

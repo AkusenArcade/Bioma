@@ -8,15 +8,15 @@
 -- brightness always, having no cell, and the volume only on a monitor that
 -- declares no audio cell; the keyboard's layout the same, where no keyboard
 -- cell is declared (2026-10-08); performance mode going on or off both ways
--- (2026-10-24). It shows on the monitor the keyboard is pointed at, where
+-- (2026-10-24), and focus mode the same (2026-11-07). It shows on the monitor the keyboard is pointed at, where
 -- the key that changed it was pressed.
 local g = require("@genoma")
 local timing = require("core/timing")
 
 local M = {}
 
--- "volume" | "brightness" | "layout" | "performance" | "" while nothing is
--- said.
+-- "volume" | "brightness" | "layout" | "performance" | "focus" | "" while
+-- nothing is said.
 local kind = g.signal("")
 local output = g.signal("")
 function M.kind(): string return kind.value end
@@ -82,6 +82,14 @@ function M.start()
         local was = was_active
         was_active = on
         if was ~= nil and was ~= on then M.say("performance") end
+    end)
+
+    local focus_mode = require("core/focus_mode")
+    local was_focused: boolean? = nil
+    g.watch(focus_mode.active, function(on: boolean)
+        local was = was_focused
+        was_focused = on
+        if was ~= nil and was ~= on then M.say("focus") end
     end)
 
     -- The keyboard reports a switch only after its first reading.

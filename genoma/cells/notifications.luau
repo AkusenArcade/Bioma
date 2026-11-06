@@ -657,6 +657,9 @@ return {
                 end,
             },
             condition = function() return if shout() ~= nil or flooding() then 1 else 0 end,
+            -- In focus mode the ordinary ones are held by the service; a
+            -- critical one still comes.
+            speaks_in_focus = critical,
             claims_focus = function() return history.value end,
             engaging = function() return shout() ~= nil or flooding() end,
             outline = function() return if critical() then theme.alert() else nil end,

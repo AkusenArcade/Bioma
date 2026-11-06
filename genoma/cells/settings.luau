@@ -41,7 +41,7 @@ local CATEGORIES = {
     { key = "niri", label = "NIRI", glyph = "window", hint = "gaps, workspaces, rules", width = 600 },
     { key = "session", label = "SESSION", glyph = "lock", hint = "locking, power profile", width = 540 },
     { key = "sounds", label = "SOUNDS", glyph = "sounds", hint = "events, volume", width = 540 },
-    { key = "performance", label = "PERFORMANCE", glyph = "performance", hint = "lean mode, its triggers", width = 560 },
+    { key = "modes", label = "MODES", glyph = "performance", hint = "focus, performance", width = 560 },
     { key = "actions", label = "ACTIONS", glyph = "actions", hint = "the ring at the pointer", width = 600 },
 }
 
@@ -54,7 +54,7 @@ local PAGES = {
     monitors = "cells/settings_monitors",
     niri = "cells/settings_niri",
     organisms = "cells/settings_organisms",
-    performance = "cells/settings_performance",
+    modes = "cells/settings_modes",
     session = "cells/settings_session",
     sounds = "cells/settings_sounds",
     structure = "cells/settings_structure",
@@ -67,6 +67,12 @@ local PAGES = {
 -- Kept across reloads too, so a settings cell opened again after a monitor
 -- came or went is on the page it was left on (structure/focus.luau).
 local place = g.state("settings.category", g.env("BIOMA_GENOMA_SETTINGS") or "")
+-- Categories that were renamed, by their old key: Performance became Modes
+-- when focus mode joined it (2026-11-06).
+local RENAMED = { performance = "modes" }
+if RENAMED[g.untracked(function() return place.value end)] then
+    place.value = RENAMED[g.untracked(function() return place.value end)]
+end
 -- A category asked for from outside (`actions write`): every settings cell
 -- turns to it, open or not.
 local asked = g.signal("")
@@ -74,6 +80,7 @@ local asked = g.signal("")
 return {
     -- The next time settings is looked at, it is on this category.
     open_on = function(category: string)
+        category = RENAMED[category] or category
         place.value = category
         asked.value = ""
         asked.value = category

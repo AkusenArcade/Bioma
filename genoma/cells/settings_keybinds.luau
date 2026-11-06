@@ -232,6 +232,10 @@ function M.new(t: { [string]: any }): any
             table.insert(out, { group = "CELLS", label = "Performance mode: on or off", title = "Bioma: performance mode",
                 action = shell_call({ "performance", "toggle" }) })
         end
+        if keep("Focus mode: on or off") then
+            table.insert(out, { group = "CELLS", label = "Focus mode: on or off", title = "Bioma: focus mode",
+                action = shell_call({ "focus", "toggle" }) })
+        end
         for _, name in keybinds.actions() do
             local label = keybinds.humanize(name)
             if keep(label) then table.insert(out, { group = "NIRI", label = label, title = "", action = { name = name, args = {} } }) end

@@ -131,6 +131,8 @@ end
 -- in the middle of it as a summoned copy: what already says that domain
 -- there (the OSD stays quiet where it does).
 function M.declared(domain: string, output: string): boolean
+    -- In focus mode nothing placed says it.
+    if require("core/focus_mode").active() then return false end
     for _, c in cells do
         if c.domain == domain and c.output == output and g.untracked(c.visibility.type) ~= "invoked" then return true end
     end
@@ -152,7 +154,14 @@ end
 -- because it was asked for, it goes.
 function M.invoke(domain: string, output: string?): boolean
     domain = registry.canonical(domain)
+    -- In focus mode a cell asked for comes to the middle of the monitor,
+    -- unless the mode is set to open it at its place (core/focus_mode.luau).
+    -- One already open where it is closes there.
     local c = M.cell_for(domain, output)
+    if c and g.untracked(require("core/focus_mode").summons_centre)
+            and not (c.open.value or c.visibility.invoked()) then
+        c = nil
+    end
     if c then
         if c.open.value or c.visibility.invoked() then
             c.open.value = false
@@ -257,6 +266,10 @@ end
 function M.retire(domain: string, output: string?): boolean
     domain = registry.canonical(domain)
     local c = M.cell_for(domain, output)
+    if c and g.untracked(require("core/focus_mode").summons_centre)
+            and not (c.open.value or c.visibility.invoked()) then
+        c = nil
+    end
     if c then
         c.open.value = false
         if g.untracked(c.visibility.type) == "invoked" then c.visibility.set_invoked(false) end

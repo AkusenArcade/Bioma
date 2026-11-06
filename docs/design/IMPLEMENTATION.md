@@ -47,7 +47,8 @@ cost an error in prototype. **Read this before writing the first QML component, 
 ## Growth and reversibility
 
 - Animate **width and height**, never a scale: scaling deforms the outline, the radii and the
-  text.
+  text. Depth (a turn about an edge, a move in z) is not a scale and is allowed for a whole
+  surface leaving or coming back (STYLE_GUIDE §6, "Depth").
 - Content enters **after** the shape is at size, with opacity plus 4 px upward. Text is never
   scaled.
 - Animations are **reversible from wherever they are**, never queued.

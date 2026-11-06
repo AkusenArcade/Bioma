@@ -71,8 +71,10 @@ for _, side in { "top", "bottom", "left", "right" } do
         anchor = anchor,
         outputs = "all",
         present = function(output: string) return membrane_for(output, edge) ~= nil end,
-        -- Only a horizontal edge keeps its strip, and only while Fixed.
+        -- Only a horizontal edge keeps its strip, and only while Fixed; in
+        -- focus mode none does, and the windows take the whole screen.
         reserve = function(output: string): any
+            if require("core/focus_mode").active() then return false end
             local entry = membrane_for(output, edge)
             if not entry or not horizontal or entry.reserve_space ~= true or entry.auto_hide == true then return false end
             local strip = metrics.step(entry.scale or "normal")

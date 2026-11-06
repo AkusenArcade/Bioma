@@ -161,7 +161,7 @@ Macros are made on the settings cell's Actions page, which an empty ring opens.
 For a game or a heavy job the shell steps back: the live indicators hold
 still, the organisms and the overview's backdrop are put away, there is no
 blur and no shadow, shapes jump to size, and the vitals are sampled every ten
-seconds. Each of these is a switch on the settings cell's Performance page.
+seconds. Each of these is a switch on the settings cell's Modes page.
 
 It comes on with `Mod+Alt+G` or from the performance cell, and by itself while
 a game is registered with GameMode or a window whose app-id is on the page's
@@ -171,6 +171,15 @@ With a Proton game running, Bioma went from 9.4% of a core to 4.1%.
 <p align="center">
   <img src="docs/media/performance.webp" width="320" alt="The performance cell, opened: the switch and what the mode quietens">
 </p>
+
+### Focus mode
+
+`Mod+Alt+F` hands the desktop to the windows: the membranes fold away over
+their edges and give their space back, the organisms recede into the screen,
+and a cell comes only when its key asks for it — in the middle of the screen,
+or at its own place if you choose so on the Modes page. Notifications wait
+until it ends, unless critical; the on-screen display and the privacy cell
+still come.
 
 ### Sounds
 

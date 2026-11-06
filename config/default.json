@@ -167,6 +167,11 @@
     "on_mains": "keep"
   },
 
+  "focus_mode": {
+    "$comment": "Focus mode: the membranes fold away and give their space to the windows, the organisms are put away, and cells answer only when asked for (genoma/core/focus_mode.luau). It is turned on by a key (ipc focus toggle) and lasts for the session. summon is where a cell asked for by its key appears meanwhile: centre, in the middle of the monitor, or place, at its own place on its membrane, which unfolds for it alone.",
+    "summon": "centre"
+  },
+
   "performance": {
     "$comment": "Performance mode: the shell stepping back so the machine is the program's (core/Performance.qml). manual is the hand's switch (the key, the cell, Settings) and is kept across a restart. It also comes on by itself while GameMode has a game registered (gamemode) or a window of an application in apps is open — app-ids, * for anything: Steam's games are steam_app_* under XWayland, steam_proton under Proton's Wayland driver — and goes when they do. suspend says what it quietens: motion (live indicators still), organisms (put away), wallpaper (the overview's backdrop put away, one picture decoded), blur (no blur, no shadows), transitions (instant), polling (vitals read every vitals_interval ms).",
     "manual": false,

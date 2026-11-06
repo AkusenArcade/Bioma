@@ -182,6 +182,20 @@ of images and lists. There, use the panel radius.
 Shapes grow by animating **width and height** from the thread node. No scaling, so the rim
 does not thin out, the radius does not deform and text never passes through a scale.
 
+### Depth
+
+Depth is not a scale. On Genoma a surface may turn about an edge or move in z through a
+perspective, and its shapes are still drawn exactly: the rim keeps its width, the radii their
+form, and text is projected whole and is glyph-sharp again at rest (Genoma PRD §8.4). So depth is
+allowed, for **a whole surface leaving or coming back** — never for a cell growing, which stays
+width and height:
+
+- **Focus mode** (Akusen, 2026-11-06): a membrane folds over its own edge, a page turned toward
+  the viewer until it is seen edge-on, fading as it goes (`fold`, closing's curve, 420 ms); it
+  unfolds on a spring that carries it a little past flat (`unfold`). The organisms recede toward
+  the middle of the screen and fade (`fold`), and come forward on a gentler spring (`emerge`).
+- Nothing is left tilted at rest.
+
 ### Opening — 250 ms
 
 - Sequence: mini indicators fade (0–50 ms) → header → thread → panel → capsules.

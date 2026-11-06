@@ -117,7 +117,7 @@ return {
                     end,
                 },
                 g.text {
-                    text = "What it quietens, and what turns it on by itself, is chosen in Settings, under Performance.",
+                    text = "What it quietens, and what turns it on by itself, is chosen in Settings, under Modes.",
                     color = theme.text_muted,
                     font = typography.expressive,
                     size = function() return m().font_meta end,

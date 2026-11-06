@@ -20,6 +20,7 @@ local colour = require("core/colour")
 local config = require("core/config")
 local metrics_mod = require("core/metrics")
 local performance = require("core/performance")
+local focus_mode = require("core/focus_mode")
 local theme = require("core/theme")
 local runtime = require("core/runtime")
 local timing = require("core/timing")
@@ -633,6 +634,12 @@ function M.grid(): number return arranging.grid() end
 function M.surface(output: string, size: { width: number, height: number }): any
     local place = M.place(output, size, M.grid)
     local function config_list(): { any } return config.get("organisms", {}) end
+    -- Focus mode (core/focus_mode.luau): the desktop recedes into the
+    -- screen, toward its middle, and fades as it goes; once the fold has
+    -- run its time the organisms are put away, and nothing of them is
+    -- drawn. They come forward again on a spring when the mode ends.
+    -- Placing them is seeing them: the mode stands aside while they are.
+    local function away(): boolean return focus_mode.active() and not arranging.active() end
     return g.box {
         width = size.width,
         height = size.height,
@@ -641,7 +648,14 @@ function M.surface(output: string, size: { width: number, height: number }): any
             attach = "corner",
             width = size.width,
             height = size.height,
-            opacity = function() return if arranging.active() then 0 else 1 end,
+            present = function() return not (focus_mode.settled() and not arranging.active()) end,
+            perspective = function() return math.max(size.width, size.height) end,
+            depth = function() return if away() then -math.max(size.width, size.height) * 0.4 else 0 end,
+            opacity = function() return if arranging.active() or away() then 0 else 1 end,
+            transition = {
+                depth = function() return if away() then "fold" else "emerge" end,
+                opacity = function() return if away() then "fold" else "emerge" end,
+            },
             -- Kept by each block's `id`, not by its place: taken from the
             -- middle of the list, one must not hand its node to the next.
             items = rows_for(output, config_list),

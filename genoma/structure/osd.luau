@@ -8,7 +8,8 @@
 -- capsule) because it says the same thing, and the brightness wears the
 -- same capsule with the sun in its dial. The layout has no travel, so no
 -- dial: the keyboard cell's face, glyph and code, with the layout's full
--- name beside it; performance mode the same with its own glyph. It grows
+-- name beside it; performance mode and focus mode the same, each with its
+-- own glyph. It grows
 -- from its own centre, low in the middle of the screen, and takes no input:
 -- it answers a key, it is not a control.
 local g = require("@genoma")
@@ -16,6 +17,7 @@ local colour = require("core/colour")
 local config = require("core/config")
 local metrics_mod = require("core/metrics")
 local performance = require("core/performance")
+local focus_mode = require("core/focus_mode")
 local theme = require("core/theme")
 local timing = require("core/timing")
 local typography = require("core/typography")
@@ -44,7 +46,13 @@ function M.node(output: string, size: { width: number, height: number }): any
     local dial_size, figure_width, slider_width = 56 * f, 62 * f, 168 * f
     local gap, side, glyph_size = 20 * f, 23 * f, 28 * f
 
-    local function plain(): boolean return kind.value == "layout" or kind.value == "performance" end
+    local function plain(): boolean return kind.value == "layout" or kind.value == "performance" or kind.value == "focus" end
+    -- A mode being said, and whether it is on: its glyph is muted once off.
+    local function mode_off(): boolean
+        if kind.value == "performance" then return not performance.active() end
+        if kind.value == "focus" then return not focus_mode.active() end
+        return false
+    end
     local function is_brightness(): boolean return kind.value == "brightness" end
     local function fraction(): number
         return if is_brightness() then brightness.brightness() else math.min(1, audio.volume())
@@ -57,6 +65,7 @@ function M.node(output: string, size: { width: number, height: number }): any
 
     local function code(): string
         if kind.value == "performance" then return if performance.active() then "ON" else "OFF" end
+        if kind.value == "focus" then return if focus_mode.active() then "ON" else "OFF" end
         return keyboard.current_code()
     end
     local function name(): string
@@ -64,6 +73,7 @@ function M.node(output: string, size: { width: number, height: number }): any
             local reason = performance.reason()
             return "Performance mode" .. (if performance.active() and reason ~= "by hand" then ", " .. reason else "")
         end
+        if kind.value == "focus" then return "Focus mode" end
         return keyboard.current()
     end
     local function code_size(): number return m.font_value end
@@ -143,14 +153,18 @@ function M.node(output: string, size: { width: number, height: number }): any
         gap = gap,
         g.icon {
             width = glyph_size, height = glyph_size,
-            icon = function() return if kind.value == "performance" then "performance" else "keyboard" end,
+            icon = function()
+                if kind.value == "performance" then return "performance" end
+                if kind.value == "focus" then return "action-focus" end
+                return "keyboard"
+            end,
             -- Muted once the mode is off: an icon that is inactive.
             gradient_top = function()
-                if kind.value == "performance" and not performance.active() then return theme.text_muted() end
+                if mode_off() then return theme.text_muted() end
                 return theme.gradient_top(theme.primary())
             end,
             gradient_bottom = function()
-                if kind.value == "performance" and not performance.active() then return theme.text_muted() end
+                if mode_off() then return theme.text_muted() end
                 return theme.gradient_bottom(theme.primary())
             end,
         },

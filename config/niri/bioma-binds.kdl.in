@@ -181,6 +181,13 @@ binds {
         spawn "@BIOMA@/scripts/ipc" "performance" "toggle"
     }
 
+    // Focus mode, on or off: the membranes fold away and give their space to
+    // the windows, the organisms recede, and the cells come only when their
+    // key asks for them — Settings, under Modes.
+    Mod+Alt+F repeat=false hotkey-overlay-title="Bioma: focus mode" {
+        spawn "@BIOMA@/scripts/ipc" "focus" "toggle"
+    }
+
     // Not a cell either: the lock screen, which is a process of its own.
     // The script is called directly rather than through the shell, so the
     // key locks even when the shell is down; it also stands guard, and puts

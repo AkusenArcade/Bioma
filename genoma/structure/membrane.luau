@@ -16,6 +16,7 @@ local timing = require("core/timing")
 local theme = require("core/theme")
 local colour = require("core/colour")
 local performance = require("core/performance")
+local focus_mode = require("core/focus_mode")
 
 local M = {}
 
@@ -290,13 +291,34 @@ function M.new(block: () -> { [string]: any }, output: string, size: { width: nu
         return over_windows() and halo_opacity() > 0 and halo_reach() > 0 and not performance.flat()
     end
 
+    -- ---- Focus mode (core/focus_mode.luau) --------------------------------
+    --
+    -- The whole membrane folds over its own edge, a page turned toward the
+    -- viewer until it is seen edge-on, and fades as it goes; it unfolds
+    -- again on a spring when the mode ends, or while one of its cells has
+    -- been asked for at its place, holding that cell alone. Depth, not a
+    -- scale: the lit border and the radii stay exact at every angle
+    -- (Genoma PRD §8.4, STYLE_GUIDE "Depth"). Its strip is given back as
+    -- the fold starts (shell.luau).
+    local function folded(): boolean
+        if not focus_mode.active() then return false end
+        for _, t in tissues() do
+            for _, c in t.cells() do
+                if c.speaks_in_focus() then return false end
+            end
+        end
+        return true
+    end
+    local function fold_curve(): string return if folded() then "fold" else "unfold" end
+    local turn = ({ top = -90, bottom = 90, left = 90, right = -90 })[edge]
+
     local root: { [any]: any } = {
         width = width,
         height = height,
         -- Out, the strip is the membrane's: under the cells, so a press on
         -- a cell is the cell's.
         strip_box(m.strip, {
-            present = function() return auto_hide() and revealed.value end,
+            present = function() return auto_hide() and revealed.value and not focus_mode.active() end,
             on_hover = function(on: boolean) band_hovered.value = on end,
         }),
         g.box {
@@ -306,7 +328,19 @@ function M.new(block: () -> { [string]: any }, output: string, size: { width: nu
             height = height,
             offset_x = slide_x,
             offset_y = slide_y,
-            transition = { offset_x = "reveal", offset_y = "reveal" },
+            pivot_x = if edge == "left" then 0 elseif edge == "right" then 1 else 0.5,
+            pivot_y = if edge == "top" then 0 elseif edge == "bottom" then 1 else 0.5,
+            perspective = function() return math.max(size.width, size.height) end,
+            rotate_x = function() return if horizontal and folded() then turn else 0 end,
+            rotate_y = function() return if not horizontal and folded() then turn else 0 end,
+            opacity = function() return if folded() then 0 else 1 end,
+            transition = {
+                offset_x = "reveal",
+                offset_y = "reveal",
+                rotate_x = fold_curve,
+                rotate_y = fold_curve,
+                opacity = function() return if folded() then "fold" else "grow" end,
+            },
             g.each {
                 overlay = true,
                 attach = "corner",
@@ -352,7 +386,7 @@ function M.new(block: () -> { [string]: any }, output: string, size: { width: nu
         -- Hidden, the two units at the edge are all that takes the pointer,
         -- above the content that slid out under them.
         strip_box(function() return REVEAL end, {
-            present = function() return auto_hide() and not revealed.value end,
+            present = function() return auto_hide() and not revealed.value and not focus_mode.active() end,
             on_hover = function(on: boolean) if on then revealed.value = true end end,
         }),
     }

@@ -337,6 +337,23 @@ local function says(n: any): boolean
     return ((n.summary or "") .. (n.body or "") .. (n.app_name or "")) ~= ""
 end
 
+local function announce(n: any)
+    if crowding() then
+        collapsed.value += 1
+        return
+    end
+    -- Nobody would see it queue: it is kept, and it is in the history.
+    if not g.untracked(ordinary_visible) then return end
+    local q = table.clone(g.untracked(function() return queue.value end))
+    table.insert(q, n.id)
+    queue.value = q
+    if #q == 1 then begin() end
+    require("services/sounds").notification(n)
+end
+
+-- What focus mode is holding back, by id.
+local waiting: { number } = {}
+
 local function receive(n: any)
     if not says(n) then return end
     remember(n)
@@ -351,18 +368,25 @@ local function receive(n: any)
         return
     end
     if g.untracked(M.quiet) then return end
-    if crowding() then
-        collapsed.value += 1
+    -- Focus mode holds it, silent, until the mode ends.
+    if g.untracked(require("core/focus_mode").active) then
+        table.insert(waiting, n.id)
         return
     end
-    -- Nobody would see it queue: it is kept, and it is in the history.
-    if not g.untracked(ordinary_visible) then return end
-    local q = table.clone(g.untracked(function() return queue.value end))
-    table.insert(q, n.id)
-    queue.value = q
-    if #q == 1 then begin() end
-    require("services/sounds").notification(n)
+    announce(n)
 end
+
+-- Focus mode over: what it held comes now, oldest first, as if it had just
+-- arrived; one that was closed or read meanwhile stays gone.
+g.watch(function() return require("core/focus_mode").active() end, function(on: boolean)
+    if on or #waiting == 0 then return end
+    local ids = waiting
+    waiting = {}
+    for _, id in ids do
+        local n = g.untracked(function() return by_id.value[id] end)
+        if n then announce(n) end
+    end
+end)
 
 -- New ids are arrivals; ids gone are notifications closed, by the user, by
 -- their sender or by the server: off the queues whoever closed them.

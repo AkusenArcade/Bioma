@@ -227,6 +227,28 @@ Confirm and dwell are **asymmetric**: appear promptly, leave slowly.
 - **Animations are reversible from their current state**, never queued. Invoking
   a cell mid-open must reverse smoothly, not restart or strand the sequence.
 
+### 5.3 Focus mode
+
+A key (Mod+Alt+F as shipped, `ipc focus toggle`) hands the desktop to the
+windows for as long as the session lasts (Akusen, 2026-11-06):
+
+- **Every membrane folds away** over its own edge and gives its strip back, so
+  the windows take the whole screen. The organisms recede into the screen and
+  are put away. Floating tissues empty.
+- **Cells speak only when asked for.** A cell called by its key appears in the
+  middle of its monitor, as a cell with no place does; set to `place`
+  (`focus_mode.summon`), its membrane unfolds for it alone and folds again when
+  it closes.
+- **What arrives unasked waits**: ordinary notifications are held, silent,
+  and come when the mode ends. The on-screen display still answers a gesture;
+  the privacy cell and a critical notification still appear, on a membrane
+  that unfolds for them.
+- **The on-screen display says it going on and off**, as it says performance
+  mode: the focus glyph, ON or OFF, on the monitor the key was pressed on.
+- The fold and the recession are **depth**, never a scale (STYLE_GUIDE §6,
+  "Depth"). Settings → Modes holds the switch and the summon choice, beside
+  performance mode.
+
 ---
 
 ## 6. Visual language

@@ -1,5 +1,10 @@
 --!strict
--- Settings → Performance (cells/settings/SettingsPerformance.qml at
+-- Settings → Modes: the two ways the shell steps back.
+--
+-- Focus mode first (core/focus_mode.luau): its switch, and where a cell
+-- asked for by its key appears while it lasts (Akusen, 2026-11-06).
+--
+-- Then performance mode (cells/settings/SettingsPerformance.qml at
 -- 11bb81e): the switch, what turns it on by itself, and what it quietens,
 -- one switch a lever.
 --
@@ -11,6 +16,7 @@ local g = require("@genoma")
 local config = require("core/config")
 local apps = require("core/apps")
 local performance = require("core/performance")
+local focus_mode = require("core/focus_mode")
 local page = require("components/page")
 local switch = require("components/switch")
 local niri = require("services/niri")
@@ -174,7 +180,36 @@ function M.new(t: { [string]: any }): any
 
     local steam = "* stands for anything: Steam's games are steam_app_* under XWayland and steam_proton under Proton's Wayland driver."
 
+    local function summon_option(value: string, label: string, text: string): any
+        return p.option {
+            label = function() return label end,
+            line = function() return text end,
+            chosen = function() return focus_mode.summon() == value end,
+            busy = function() return false end,
+            on_click = function() config.set("focus_mode.summon", value) end,
+        }
+    end
+
     return p.column {
+        section("FOCUS MODE", switch.new {
+            on = focus_mode.active,
+            factor = f,
+            on_toggle = focus_mode.set,
+        }, {
+            line(function()
+                local state = if focus_mode.active()
+                    then "On: the membranes are folded away and their space is the windows', the organisms are put away. "
+                    else "Off: the membranes and the organisms are where you placed them. "
+                return state .. "Notifications wait until it ends, unless critical; the on-screen display and the privacy cell still come. "
+                    .. "A key turns it on and off (Mod+Alt+F as shipped, moved on the Keybinds page). It lasts for the session."
+            end),
+        }),
+        section("ASKED FOR IN FOCUS", nil, {
+            summon_option("centre", "IN THE MIDDLE",
+                "A cell asked for by its key appears in the middle of the monitor, as a cell with no place does."),
+            summon_option("place", "AT ITS PLACE",
+                "Its membrane unfolds for it alone, and folds away again when it closes."),
+        }),
         section("PERFORMANCE MODE", switch.new {
             on = performance.active,
             factor = f,

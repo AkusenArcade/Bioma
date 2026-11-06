@@ -72,6 +72,7 @@ local visibility = require("structure/visibility")
 local focus = require("structure/focus")
 local performance = require("core/performance")
 local timing = require("core/timing")
+local focus_mode = require("core/focus_mode")
 local typography = require("core/typography")
 local thread = require("components/thread")
 
@@ -301,7 +302,23 @@ function M.new(kind: any, ctx: { [string]: any })
         return if spec.condition then spec.condition() else 0
     end)
 
-    function c.shown(): boolean return c.visibility.shown() end
+    -- In focus mode (core/focus_mode.luau) a cell speaks only when it is
+    -- asked for, or when what it says cannot wait (the privacy cell, a
+    -- critical notification: the kind's `speaks_in_focus`). One on a
+    -- membrane goes quiet once the membrane has folded, so it is seen
+    -- folding away with it; one in a floating tissue, which has no fold,
+    -- leaves at once, the way it always leaves.
+    function c.speaks_in_focus(): boolean
+        if c.open.value or c.visibility.invoked() then return true end
+        return spec.speaks_in_focus ~= nil and spec.speaks_in_focus() == true
+    end
+    local function hushed(): boolean
+        return if c.floating then focus_mode.active() else focus_mode.settled()
+    end
+    function c.shown(): boolean
+        if not c.visibility.shown() then return false end
+        return not hushed() or c.speaks_in_focus()
+    end
 
     -- Interaction suspends disappearance; an open cell is interacted with
     -- wherever the pointer is.

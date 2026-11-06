@@ -372,6 +372,18 @@ function M.register()
         status = performance_status,
     })
 
+    -- Focus mode (core/focus_mode.luau): the membranes folded, the
+    -- organisms away, the cells only when asked for.
+    local function focus_status(): string
+        return if g.untracked(require("core/focus_mode").active) then "on" else "off"
+    end
+    g.ipc("focus", {
+        on = function(): string require("core/focus_mode").on() return focus_status() end,
+        off = function(): string require("core/focus_mode").off() return focus_status() end,
+        toggle = function(): string require("core/focus_mode").toggle() return focus_status() end,
+        status = focus_status,
+    })
+
     g.ipc("capture", {
         region = function(): string
             local capture = require("services/capture")
