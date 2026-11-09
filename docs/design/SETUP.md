@@ -245,7 +245,8 @@ name, in any case. `CHANGED` works as for any other preset.
 ## Install
 
 - **`post_install` stops setting up the greeter.** It loads uinput as before, and its message
-  shrinks to: install, then start Bioma once with `bioma -d` from a terminal inside niri, and *it
+  shrinks to: install, then start Bioma once with `/usr/share/bioma/scripts/shell start` from a
+  terminal inside niri (`bioma -d` was Quickshell's detach flag; on Genoma it names a file), and *it
   walks you through the rest*. `post_remove` keeps `_greeter_remove`, for every machine where a
   beta set greetd up.
 - **`scripts/greeter-setup`** (new; `enable`, `disable`, `status`) holds the body of

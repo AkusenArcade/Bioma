@@ -385,7 +385,9 @@ Then log in to niri: the package's autostart entry
 (`/etc/xdg/autostart/bioma.desktop`, shown only in niri) starts Bioma, and the
 first start opens the setup — layout, look, keys, login screen. Already inside
 niri, or starting niri from a TTY instead of a login manager, which runs no
-autostart entries? Run `bioma -d` from a terminal in niri once; the setup's
+autostart entries? Run `/usr/share/bioma/scripts/shell start` from a terminal
+in niri once (from a clone, `scripts/shell start`): the same line the
+autostart entry runs, detached from the terminal. The setup's
 NIRI step writes a `spawn-at-startup` line for the next logins. To keep Bioma
 from starting, copy the entry to `~/.config/autostart/` and add `Hidden=true`.
 
