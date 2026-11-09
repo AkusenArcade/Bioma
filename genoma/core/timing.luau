@@ -100,6 +100,11 @@ g.effect(function()
             stiffness = config.get("timing.unfold_stiffness", 170), damping = config.get("timing.unfold_damping", 16) } },
         emerge = if instant then { duration = 0.001 } else { spring = {
             stiffness = config.get("timing.emerge_stiffness", 150), damping = config.get("timing.emerge_damping", 24) } },
+        -- The organisms stepping back behind an open cell and forward again
+        -- (structure/organisms.luau): softer than unfold, slowing as it
+        -- arrives and carried a little past before it settles.
+        recede = if instant then { duration = 0.001 } else { spring = {
+            stiffness = config.get("timing.recede_stiffness", 220), damping = config.get("timing.recede_damping", 18) } },
         -- An auto-hiding membrane sliding out of the edge or back into it,
         -- and its halo fading with it (Membrane.qml, Timing.open InOutQuad).
         reveal = { duration = s.open, curve = c.in_out_quad },

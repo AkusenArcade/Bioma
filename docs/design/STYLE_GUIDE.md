@@ -187,13 +187,18 @@ does not thin out, the radius does not deform and text never passes through a sc
 Depth is not a scale. On Genoma a surface may turn about an edge or move in z through a
 perspective, and its shapes are still drawn exactly: the rim keeps its width, the radii their
 form, and text is projected whole and is glyph-sharp again at rest (Genoma PRD §8.4). So depth is
-allowed, for **a whole surface leaving or coming back** — never for a cell growing, which stays
-width and height:
+allowed, for **a whole surface leaving or coming back, or stepping back** — never for a cell
+growing, which stays width and height:
 
 - **Focus mode** (Akusen, 2026-11-06): a membrane folds over its own edge, a page turned toward
   the viewer until it is seen edge-on, fading as it goes (`fold`, closing's curve, 420 ms); it
   unfolds on a spring that carries it a little past flat (`unfold`). The organisms recede toward
   the middle of the screen and fade (`fold`), and come forward on a gentler spring (`emerge`).
+- **Behind an open cell** (Akusen, 2026-11-09): the organisms of that monitor step back 8 % of
+  its longer side and keep 70 % of their opacity, as the cell opens, and come forward as it
+  closes: the depth on a soft spring that slows as it arrives and carries a little past
+  (`recede`), the opacity on `emerge`, which never goes past. The same depth as focus mode in a smaller measure: what
+  was asked for stands in front. A blur of their content joins it once Genoma has one.
 - Nothing is left tilted at rest.
 
 ### Opening — 250 ms

@@ -27,6 +27,7 @@ local timing = require("core/timing")
 local monitors = require("services/monitors")
 local niri = require("services/niri")
 local arranging = require("structure/arranging")
+local focus = require("structure/focus")
 
 local M = {}
 
@@ -629,6 +630,21 @@ end
 
 function M.grid(): number return arranging.grid() end
 
+-- Behind an open cell: how far back, as a share of the monitor's longer
+-- side (focus mode takes them 0.4 back and out of sight), and how much of
+-- them is still seen.
+local BEHIND_DEPTH = 0.08
+local BEHIND_OPACITY = 0.7
+-- Into focus mode they fold away; out of it they emerge. Behind a cell and
+-- back, the depth goes on a spring that slows as it arrives and carries a
+-- little past (`recede`), and the light on one that never does (`emerge`):
+-- an opacity past whole is not drawn.
+local function curve_for(now: string, left: string, depth: boolean): string
+    if now == "away" then return "fold" end
+    if now == "behind" or left == "behind" then return if depth then "recede" else "emerge" end
+    return "emerge"
+end
+
 -- At rest, on the Bottom layer: the organisms under the windows. While they
 -- are being placed they are lifted onto the arranging surface instead.
 function M.surface(output: string, size: { width: number, height: number }): any
@@ -640,6 +656,23 @@ function M.surface(output: string, size: { width: number, height: number }): any
     -- drawn. They come forward again on a spring when the mode ends.
     -- Placing them is seeing them: the mode stands aside while they are.
     local function away(): boolean return focus_mode.active() and not arranging.active() end
+    -- A cell open on this monitor (Akusen, 2026-11-09): the organisms step
+    -- back a little and dim, the same depth as focus mode in a smaller
+    -- measure, so what was asked for stands in front. They go as the cell
+    -- opens and come forward as it closes, on a spring. Any cell holding the attention: one with a panel, and one
+    -- that is all panel (the launcher, the quick actions).
+    local function behind(): boolean
+        if focus_mode.active() or arranging.active() then return false end
+        local c = focus.open_cell()
+        return c ~= nil and c.output == output
+    end
+    local function state(): string
+        return if away() then "away" elseif behind() then "behind" else "rest"
+    end
+    -- Which of the two they come back from.
+    local left = "rest"
+    g.watch(state, function(now: string) if now ~= "rest" then left = now end end)
+    local reach = math.max(size.width, size.height)
     return g.box {
         width = size.width,
         height = size.height,
@@ -649,12 +682,19 @@ function M.surface(output: string, size: { width: number, height: number }): any
             width = size.width,
             height = size.height,
             present = function() return not (focus_mode.settled() and not arranging.active()) end,
-            perspective = function() return math.max(size.width, size.height) end,
-            depth = function() return if away() then -math.max(size.width, size.height) * 0.4 else 0 end,
-            opacity = function() return if arranging.active() or away() then 0 else 1 end,
+            perspective = reach,
+            depth = function()
+                local s = state()
+                return if s == "away" then -reach * 0.4 elseif s == "behind" then -reach * BEHIND_DEPTH else 0
+            end,
+            opacity = function()
+                if arranging.active() then return 0 end
+                local s = state()
+                return if s == "away" then 0 elseif s == "behind" then BEHIND_OPACITY else 1
+            end,
             transition = {
-                depth = function() return if away() then "fold" else "emerge" end,
-                opacity = function() return if away() then "fold" else "emerge" end,
+                depth = function() return curve_for(state(), left, true) end,
+                opacity = function() return curve_for(state(), left, false) end,
             },
             -- Kept by each block's `id`, not by its place: taken from the
             -- middle of the list, one must not hand its node to the next.
