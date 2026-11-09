@@ -198,7 +198,8 @@ growing, which stays width and height:
   its longer side and keep 70 % of their opacity, as the cell opens, and come forward as it
   closes: the depth on a soft spring that slows as it arrives and carries a little past
   (`recede`), the opacity on `emerge`, which never goes past. The same depth as focus mode in a smaller measure: what
-  was asked for stands in front. A blur of their content joins it once Genoma has one.
+  was asked for stands in front. Their content goes 3 units out of focus with them (Genoma's
+  `blur_radius`, on `emerge`); at rest nothing is blurred and nothing is spent.
 - Nothing is left tilted at rest.
 
 ### Opening — 250 ms

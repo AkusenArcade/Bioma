@@ -635,10 +635,13 @@ function M.grid(): number return arranging.grid() end
 -- them is still seen.
 local BEHIND_DEPTH = 0.08
 local BEHIND_OPACITY = 0.7
+-- And how far out of focus they go, logical units (Genoma's blur_radius,
+-- drawn after the depth has turned them; nothing is spent on it at rest).
+local BEHIND_BLUR = 3
 -- Into focus mode they fold away; out of it they emerge. Behind a cell and
 -- back, the depth goes on a spring that slows as it arrives and carries a
--- little past (`recede`), and the light on one that never does (`emerge`):
--- an opacity past whole is not drawn.
+-- little past (`recede`), and the light and the blur on one that never
+-- does (`emerge`): an opacity past whole, or a blur below none, is not drawn.
 local function curve_for(now: string, left: string, depth: boolean): string
     if now == "away" then return "fold" end
     if now == "behind" or left == "behind" then return if depth then "recede" else "emerge" end
@@ -692,9 +695,11 @@ function M.surface(output: string, size: { width: number, height: number }): any
                 local s = state()
                 return if s == "away" then 0 elseif s == "behind" then BEHIND_OPACITY else 1
             end,
+            blur_radius = function() return if state() == "behind" then BEHIND_BLUR else 0 end,
             transition = {
                 depth = function() return curve_for(state(), left, true) end,
                 opacity = function() return curve_for(state(), left, false) end,
+                blur_radius = function() return curve_for(state(), left, false) end,
             },
             -- Kept by each block's `id`, not by its place: taken from the
             -- middle of the list, one must not hand its node to the next.
