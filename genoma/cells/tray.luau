@@ -360,6 +360,8 @@ return {
             padding_leading = function() return (m().cell_height - glyph()) / 2 + 2 * f() end,
             padding_trailing = function() return (m().cell_height - glyph()) / 2 + 2 * f() end,
             condition = function() return if calling.value then 1 else 0 end,
+            -- No item, nothing to say: absent even when always shown.
+            empty = function() return tray.count() == 0 end,
             content_width = function()
                 local n = tray.count()
                 return math.max(glyph(), n * glyph() + math.max(0, n - 1) * spacing())

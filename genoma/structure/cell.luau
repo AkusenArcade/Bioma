@@ -303,8 +303,8 @@ function M.new(kind: any, ctx: { [string]: any })
     end)
 
     -- In focus mode (core/focus_mode.luau) a cell speaks only when it is
-    -- asked for, or when what it says cannot wait (the privacy cell, a
-    -- critical notification: the kind's `speaks_in_focus`). One on a
+    -- asked for, or when what it says cannot wait (a critical
+    -- notification: the kind's `speaks_in_focus`). One on a
     -- membrane goes quiet once the membrane has folded, so it is seen
     -- folding away with it; one in a floating tissue, which has no fold,
     -- leaves at once, the way it always leaves.
@@ -317,6 +317,10 @@ function M.new(kind: any, ctx: { [string]: any })
     end
     function c.shown(): boolean
         if not c.visibility.shown() then return false end
+        -- A cell with nothing at all to show is absent, even one that is
+        -- always there (the kind's `empty`: a tray with no item). Open, it
+        -- stays until it is closed.
+        if spec.empty ~= nil and spec.empty() == true and not c.open.value then return false end
         return not hushed() or c.speaks_in_focus()
     end
 

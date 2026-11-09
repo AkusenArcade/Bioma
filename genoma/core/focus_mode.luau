@@ -3,9 +3,10 @@
 -- membranes fold away over their own edge and give their strips back, the
 -- organisms recede into the screen, and the cells answer only when they
 -- are asked for. What speaks without being asked waits: an ordinary
--- notification is held until the mode ends; the on-screen display, the
--- privacy cell and a critical notification still come, since the first
--- answers a gesture and the other two are not to be missed.
+-- notification is held until the mode ends; the on-screen display and a
+-- critical notification still come, since the first answers a gesture and
+-- the other is not to be missed. The privacy cell waits too (Akusen,
+-- 2026-11-09): in focus mode it is one more thing on the screen.
 --
 -- Not `structure/focus.luau`, which is the attention (which cell is open).
 --

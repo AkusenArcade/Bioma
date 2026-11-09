@@ -152,8 +152,6 @@ return {
             padding_leading = function() return 12 * f() end,
             padding_trailing = function() return 16 * f() end,
             condition = function() return if privacy.in_use() then 1 else 0 end,
-            -- Focus mode does not hide what is listening or watching.
-            speaks_in_focus = privacy.in_use,
             content_width = function() return glyphs_width() + spacing() + label_width() end,
             header_title = "PRIVACY",
             header_mark_size = glyph,
