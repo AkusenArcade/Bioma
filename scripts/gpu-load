@@ -1,0 +1,152 @@
+#!/usr/bin/env python3
+"""How busy a graphics card is, and at what clock, where sysfs does not say it.
+
+    gpu-load /sys/class/drm/cardN/device
+
+amdgpu writes its load in `gpu_busy_percent`; Intel's drivers (i915, xe) do
+not. They write what each client used in the client's fdinfo instead
+(Documentation/gpu/drm-usage-stats.rst): nanoseconds on an engine
+(`drm-engine-<class>`, i915) or engine cycles against the card's own
+timestamp (`drm-cycles-<class>` / `drm-total-cycles-<class>`, xe). This adds
+up the clients of this card that the user can read, which on a desktop is
+every one that draws, and is how nvtop and gputop measure it.
+
+It samples when asked: one line on stdin, one line out,
+
+    <busy %> <clock MHz> <lowest MHz> <highest MHz>
+
+the load being the busiest engine class, the clock 0 when it is not known.
+The first answer is 0: a load is a difference between two readings.
+
+Looking through every process's descriptors for the card's is the costly
+part, so it is done every few samples; in between only the descriptors
+already found are read again. A client that starts is counted a few
+samples late, never wrongly.
+"""
+import glob
+import os
+import sys
+import time
+
+RESCAN_EVERY = 5
+
+
+def read(path):
+    try:
+        with open(path) as f:
+            return f.read().strip()
+    except OSError:
+        return ""
+
+
+def number(path):
+    try:
+        return float(read(path))
+    except ValueError:
+        return 0.0
+
+
+device = os.path.realpath(sys.argv[1])
+pdev = os.path.basename(device)
+
+# The clock: xe keeps it per tile and GT, i915 beside the card.
+xe = sorted(glob.glob(os.path.join(device, "tile*/gt*/freq0")))
+i915 = sorted(glob.glob(os.path.join(device, "drm/card*")))
+
+
+def clock():
+    if xe:
+        f = xe[0]
+        low = number(f + "/rpn_freq") or number(f + "/min_freq")
+        high = number(f + "/rp0_freq") or number(f + "/max_freq")
+        return number(f + "/act_freq"), low, high
+    if i915:
+        c = i915[0]
+        low = number(c + "/gt_RPn_freq_mhz") or number(c + "/gt_min_freq_mhz")
+        high = number(c + "/gt_RP0_freq_mhz") or number(c + "/gt_max_freq_mhz")
+        return number(c + "/gt_act_freq_mhz"), low, high
+    return 0.0, 0.0, 0.0
+
+
+def scan():
+    """Every fdinfo of an open descriptor on a DRM node."""
+    found = []
+    for pid in os.listdir("/proc"):
+        if not pid.isdigit():
+            continue
+        base = "/proc/" + pid
+        try:
+            entries = os.scandir(base + "/fd")
+        except OSError:
+            continue
+        with entries:
+            for e in entries:
+                try:
+                    if os.readlink(e.path).startswith("/dev/dri/"):
+                        found.append(base + "/fdinfo/" + e.name)
+                except OSError:
+                    pass
+    return found
+
+
+def clients(paths):
+    """client id -> its counters, for this card's clients."""
+    out = {}
+    for path in paths:
+        fields = {}
+        for line in read(path).splitlines():
+            key, _, value = line.partition(":")
+            fields[key.strip()] = value.strip()
+        if fields.get("drm-pdev") != pdev or "drm-client-id" not in fields:
+            continue
+        counters = {}
+        for key, value in fields.items():
+            word = value.split()[0] if value else ""
+            if not word.isdigit():
+                continue
+            for prefix in ("drm-engine-capacity-", "drm-total-cycles-", "drm-cycles-", "drm-engine-"):
+                if key.startswith(prefix):
+                    counters[(prefix, key[len(prefix):])] = int(word)
+                    break
+        out[fields["drm-client-id"]] = counters
+    return out
+
+
+def load(before, after, seconds):
+    """The busiest engine class, 0 to 100."""
+    busy = {}
+    capacity = {}
+    for cid, now in after.items():
+        then = before.get(cid)
+        if then is None:
+            continue
+        for (prefix, cls), value in now.items():
+            if prefix == "drm-engine-capacity-":
+                capacity[cls] = value
+            elif prefix == "drm-engine-":
+                old = then.get((prefix, cls))
+                if old is not None and value >= old and seconds > 0:
+                    busy[cls] = busy.get(cls, 0.0) + (value - old) / (seconds * 1e9)
+            elif prefix == "drm-cycles-":
+                old = then.get((prefix, cls))
+                total, total_old = now.get(("drm-total-cycles-", cls)), then.get(("drm-total-cycles-", cls))
+                if None not in (old, total, total_old) and value >= old and total > total_old:
+                    busy[cls] = busy.get(cls, 0.0) + (value - old) / (total - total_old)
+    shares = [b / max(1, capacity.get(cls, 1)) for cls, b in busy.items()]
+    return max(0.0, min(1.0, max(shares, default=0.0))) * 100
+
+
+paths = []
+previous = {}
+previous_time = None
+samples = 0
+for _ in sys.stdin:
+    if samples % RESCAN_EVERY == 0:
+        paths = scan()
+    samples += 1
+    now = time.monotonic()
+    current = clients(paths)
+    busy = load(previous, current, now - previous_time) if previous_time is not None else 0.0
+    previous, previous_time = current, now
+    mhz, low, high = clock()
+    print(f"{round(busy)} {round(mhz)} {round(low)} {round(high)}", flush=True)

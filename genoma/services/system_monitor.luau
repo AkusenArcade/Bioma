@@ -11,6 +11,7 @@
 -- Performance mode's polling lever reads them less often (core/performance.luau).
 local g = require("@genoma")
 local config = require("core/config")
+local paths = require("core/paths")
 local performance = require("core/performance")
 local power = require("@genoma/power")
 
@@ -119,9 +120,11 @@ end
 
 -- ---- GPU --------------------------------------------------------------------------
 --
--- Every figure a sysfs read on AMD. Utilisation and clock stay separate:
--- a card at 30% can sit at full clock, and the cell says one as colour and
--- the other as rotation.
+-- Every figure a sysfs read on AMD. Intel's cards (i915, xe) write no load
+-- in sysfs: there `scripts/gpu-load` adds up what each client used, from
+-- its fdinfo, and reads the clock, once a sample. Utilisation and clock
+-- stay separate: a card at 30% can sit at full clock, and the cell says
+-- one as colour and the other as rotation.
 
 local gpu_path = g.signal("")
 local gpu_name = g.signal("")
@@ -165,7 +168,29 @@ local function read_gpu_clock(text: string)
     end
 end
 
+-- Intel: the helper answers each line it is sent with
+-- "<busy %> <clock MHz> <lowest MHz> <highest MHz>".
+local gpu_helper: any = nil
+local function read_helper(line: string)
+    local busy, mhz, low, high = string.match(line, "^(%d+)%s+(%d+)%s+(%d+)%s+(%d+)")
+    if not busy then return end
+    gpu_percent.value = tonumber(busy) or 0
+    local current, lowest, highest = tonumber(mhz) or 0, tonumber(low) or 0, tonumber(high) or 0
+    if highest > lowest then
+        gpu_clock_min.value = lowest
+        gpu_clock_max.value = highest
+    end
+    gpu_clock.value = current
+    -- An Intel card idling in RC6 reports no clock at all: asleep, unless
+    -- the load says it worked since the last sample.
+    gpu_asleep.value = current == 0 and gpu_percent.value == 0
+end
+
 local function sample_gpu()
+    if gpu_helper then
+        gpu_helper:write("\n")
+        return
+    end
     local busy = gpu_files.busy:read()
     if busy then gpu_percent.value = tonumber(trim(busy)) or 0 end
     local clock = gpu_files.clock:read()
@@ -246,7 +271,7 @@ local function read_all()
     if mem then read_memory(mem) end
     local info = cpuinfo_file:read()
     if info then read_clock(info) end
-    if gpu_files.busy then sample_gpu() end
+    if gpu_files.busy or gpu_helper then sample_gpu() end
     if temperature_file then sample_temperature() end
     local net = netdev_file:read()
     if net then read_network(net) end
@@ -263,17 +288,25 @@ end)
 sample()
 
 -- Picking by index is wrong: card0 here is a 512 MB integrated GPU and card1
--- the 17 GB discrete one. The largest VRAM wins; the configuration overrides.
+-- the 17 GB discrete one. A card that writes its load (amdgpu) before one
+-- whose load is added up from its clients (i915, xe, the integrated GPU of
+-- a laptop that has nothing else); among them the largest VRAM wins. The
+-- configuration overrides.
+local MEASURED = { i915 = true, xe = true }
 do
     local found = {}
     g.process {
-        command = { "sh", "-c", "for d in /sys/class/drm/card*/device; do "
-            .. "[ -e \"$d/gpu_busy_percent\" ] || continue; "
-            .. "printf '%s %s\\n' \"$d\" \"$(cat \"$d/mem_info_vram_total\" 2>/dev/null || echo 0)\"; "
+        command = { "sh", "-c", "for c in /sys/class/drm/card*; do "
+            .. "case \"${c##*/}\" in *-*) continue;; esac; d=\"$c/device\"; "
+            .. "drv=$(basename \"$(readlink -f \"$d/driver\")\"); "
+            .. "busy=0; [ -e \"$d/gpu_busy_percent\" ] && busy=1; "
+            .. "printf '%s %s %s %s\\n' \"$d\" \"$(cat \"$d/mem_info_vram_total\" 2>/dev/null || echo 0)\" \"$busy\" \"$drv\"; "
             .. "done" },
         on_line = function(line: string)
-            local path, vram = string.match(line, "^(%S+)%s+(%d+)")
-            if path then table.insert(found, { path = path, vram = tonumber(vram) or 0 }) end
+            local path, vram, busy, driver = string.match(line, "^(%S+)%s+(%d+)%s+(%d)%s+(%S+)")
+            if path and (busy == "1" or MEASURED[driver]) then
+                table.insert(found, { path = path, vram = tonumber(vram) or 0, sysfs = busy == "1" })
+            end
         end,
         on_exit = function()
             if #found == 0 then return end
@@ -285,14 +318,23 @@ do
                 end
             else
                 for _, c in found do
-                    if c.vram > chosen.vram then chosen = c end
+                    if (c.sysfs and not chosen.sysfs) or (c.sysfs == chosen.sysfs and c.vram > chosen.vram) then chosen = c end
                 end
             end
             vram_total.value = chosen.vram / (1024 * 1024) -- bytes → MiB
             gpu_name.value = string.match(chosen.path, "/(card%d+)/") or ""
-            gpu_files.busy = file(chosen.path .. "/gpu_busy_percent")
-            gpu_files.clock = file(chosen.path .. "/pp_dpm_sclk")
-            gpu_files.vram = file(chosen.path .. "/mem_info_vram_used")
+            if chosen.sysfs then
+                gpu_files.busy = file(chosen.path .. "/gpu_busy_percent")
+                gpu_files.clock = file(chosen.path .. "/pp_dpm_sclk")
+                gpu_files.vram = file(chosen.path .. "/mem_info_vram_used")
+            else
+                gpu_helper = g.lasting(function()
+                    return g.process {
+                        command = { paths.script("gpu-load"), chosen.path },
+                        on_line = read_helper,
+                    }
+                end)
+            end
             gpu_path.value = chosen.path
             sample_gpu()
         end,
