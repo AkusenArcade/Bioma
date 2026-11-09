@@ -9,17 +9,73 @@
 -- Answers are cached, misses included, because the process list asks the
 -- same sixty questions every few seconds.
 --
--- The entries are read at the load; an application installed since is
--- found at the next one.
+-- The entries are read at the load and again whenever a file comes into or
+-- leaves one of the folders they are read from, so an application installed
+-- since is in the launcher without a restart.
 local g = require("@genoma")
 local paths = require("core/paths")
 
 local M = {}
 
+-- The list itself is kept outside a signal, which does not take it; the
+-- signal counts the readings, so a binding that reads the list follows it.
 local entries = g.desktop_entries()
-function M.entries(): { any } return entries end
+local read = g.signal(0)
+function M.entries(): { any }
+    local _ = read.value
+    return entries
+end
 
 local cache: { [string]: any } = {}
+
+-- The folders g.desktop_entries reads, in its order: the user's data
+-- folder, then the system's.
+local function application_folders(): { string }
+    local home = g.env("HOME") or ""
+    local data_home = g.env("XDG_DATA_HOME")
+    local out = { (if data_home and data_home ~= "" then data_home else home .. "/.local/share") .. "/applications" }
+    local system = g.env("XDG_DATA_DIRS")
+    if not system or system == "" then system = "/usr/local/share:/usr/share" end
+    for _, dir in string.split(system, ":") do
+        if dir ~= "" then
+            local folder = string.gsub(dir, "/$", "") .. "/applications"
+            if not table.find(out, folder) then table.insert(out, folder) end
+        end
+    end
+    return out
+end
+
+-- A package manager writes its files one after another: read once they
+-- have stopped coming. A folder that does not exist yet is not followed.
+-- The load's, whoever requires this first.
+local first = true
+local settle: any = nil
+g.lasting(function()
+    local folders = {}
+    for _, path in application_folders() do table.insert(folders, g.folder { path = path }) end
+    g.effect(function()
+        for _, folder in folders do
+            for _, e in folder.entries do local _ = e.name end
+        end
+        if first then
+            first = false
+            return
+        end
+        g.untracked(function()
+            if settle then settle:stop() end
+            settle = g.lasting(function()
+                -- Required here: core/timing reaches back to this module
+                -- (performance → workload → apps).
+                return g.after(require("core/timing").seconds.debounce, function()
+                    settle = nil
+                    cache = {}
+                    entries = g.desktop_entries()
+                    read.value += 1
+                end)
+            end)
+        end)
+    end)
+end)
 
 -- Wrappers and packaging leave these behind.
 local function normalise(name: string): string

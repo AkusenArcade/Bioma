@@ -26,12 +26,18 @@ function M.letters_of(s: string): { string }
 end
 
 -- The applications, with their names already split into lower-case
--- letters: the search runs over them on every key.
-local entries = {}
-for _, e in apps.entries() do
-    local name = if e.name ~= "" then e.name else e.id
-    table.insert(entries, { entry = e, name = name, letters = M.letters_of(string.lower(name)) })
-end
+-- letters: the search runs over them on every key. Split again when an
+-- application is installed or removed.
+local entries = g.lasting(function()
+    return g.computed(function(): { any }
+        local out = {}
+        for _, e in apps.entries() do
+            local name = if e.name ~= "" then e.name else e.id
+            table.insert(out, { entry = e, name = name, letters = M.letters_of(string.lower(name)) })
+        end
+        return out
+    end)
+end)
 
 -- A subsequence match, and it says **where** it matched: the letters the
 -- search found are coloured in the result, the one place in this shell
@@ -91,7 +97,7 @@ end
 function M.applications(wanted: { string }, cap: number): { any }
     local counts = M.uses()
     local out = {}
-    for _, item in entries do
+    for _, item in entries.value do
         local hit, at, score = M.match(item.letters, wanted)
         if hit then
             local categories = item.entry.categories or {}
