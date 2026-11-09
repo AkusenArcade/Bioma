@@ -16,6 +16,7 @@
 # A template is written only when what it renders differs from what is on disk,
 # and its hook runs only then or when it is in `force` — so starting the shell
 # does not make every terminal reload its colours.
+import ctypes.util
 import json
 import os
 import re
@@ -27,7 +28,11 @@ import tomllib
 HERE = os.path.dirname(os.path.realpath(__file__))
 TEMPLATES = os.path.join(os.path.dirname(HERE), "config", "templates")
 
-# What says an application is here: a program on the PATH, or its config dir.
+# What says an application is here: a program on the PATH, its config dir
+# (`@`), or a shared library (`lib:`). GTK is known by its library: its config
+# dir appears only once something writes a setting, so a fresh install has GTK
+# and no ~/.config/gtk-3.0, and the template could not be chosen (Akusen,
+# 2026-11-09, a new laptop). The template creates the dir itself.
 PRESENCE = {
     "alacritty": ["alacritty"], "btop": ["btop"], "cava": ["cava"], "emacs": ["emacs"],
     "foot": ["foot"], "ghostty": ["ghostty"], "helix": ["hx", "helix"], "kitty": ["kitty"],
@@ -36,7 +41,7 @@ PRESENCE = {
     "starship": ["starship"], "wezterm": ["wezterm"],
     "qt": ["qt5ct", "qt6ct", "@qt5ct", "@qt6ct"],
     "kcolorscheme": ["plasma-apply-colorscheme", "@kdeglobals"],
-    "gtk3": ["@gtk-3.0"], "gtk4": ["@gtk-4.0"],
+    "gtk3": ["lib:gtk-3", "@gtk-3.0"], "gtk4": ["lib:gtk-4", "@gtk-4.0"],
 }
 
 
@@ -52,6 +57,9 @@ def installed(template_id):
     for mark in PRESENCE.get(template_id, []):
         if mark.startswith("@"):
             if os.path.exists(os.path.join(config_home(), mark[1:])):
+                return True
+        elif mark.startswith("lib:"):
+            if ctypes.util.find_library(mark[4:]):
                 return True
         elif shutil.which(mark):
             return True
