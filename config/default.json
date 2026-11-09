@@ -142,8 +142,10 @@
   },
 
   "niri": {
-    "$comment": "What Bioma itself sets in niri. focus_ring is the width of the focused window's ring in logical pixels, written into niri's template (bioma-theme.kdl); 2 is a cell's rim. The other settings on the NIRI page are niri's own and live in niri's files.",
-    "focus_ring": 2
+    "$comment": "What Bioma itself sets in niri. focus_ring is the width of the focused window's ring in logical pixels, written into niri's template (bioma-theme.kdl); 2 is a cell's rim. focused_opacity and unfocused_opacity are every window's opacity (0 to 1) with the lit focus ring and without, written into bioma-windows.kdl, read after niri's own files; an application's window rule with an opacity of its own overrides the first only. false leaves both to niri's own rules. The other settings on the NIRI page are niri's own and live in niri's files.",
+    "focus_ring": 2,
+    "focused_opacity": false,
+    "unfocused_opacity": false
   },
 
   "sounds": {

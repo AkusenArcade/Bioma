@@ -342,6 +342,7 @@ if runtime.alone() then
     require("services/power").start()
     require("services/printers").start()
     require("services/osd").start()
+    require("services/niri_settings").start()
     -- The on-screen display, over everything and taking nothing.
     local osd_surface = require("structure/osd")
     table.insert(surfaces, g.surface {

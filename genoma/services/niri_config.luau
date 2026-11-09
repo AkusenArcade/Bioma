@@ -51,7 +51,7 @@ open(M.main)
 -- they are written, an include expanded where it stands.
 local walked = g.computed(function(): { [string]: any }
     local _ = found.value
-    local items, missing, seen, texts = {}, {}, {}, {}
+    local items, missing, unread, seen, texts = {}, {}, {}, {}, {}
     local function walk(path: string)
         if seen[path] then return end
         seen[path] = true
@@ -61,7 +61,10 @@ local walked = g.computed(function(): { [string]: any }
             return
         end
         local text = file.text
-        if text == nil then return end
+        if text == nil then
+            table.insert(unread, path)
+            return
+        end
         table.insert(texts, { path = path, text = text })
         for _, item in scans[path].value or {} do
             if item.kind == "include" then
@@ -72,7 +75,7 @@ local walked = g.computed(function(): { [string]: any }
         end
     end
     walk(M.main)
-    return { items = items, missing = missing, texts = texts }
+    return { items = items, missing = missing, unread = unread, texts = texts }
 end)
 
 -- A file named for the first time is opened, and the walk runs again.
@@ -86,6 +89,13 @@ function M.items(): { any } return walked.value.items end
 
 -- Whether every file the configuration reaches has been read.
 function M.ready(): boolean return #walked.value.missing == 0 end
+
+-- Whether every file it reaches has also been read: until then the items
+-- are only those of the files read so far.
+function M.read_all(): boolean
+    local w = walked.value
+    return #w.missing == 0 and #w.unread == 0 and #w.texts > 0
+end
 
 -- Every file's text, each before the files it includes (includes usually
 -- close a configuration, so what they set is what stands).

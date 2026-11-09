@@ -564,4 +564,182 @@ function M.add_rule(app_id: string)
     place("rule", kdl.rule_block(pattern), true, g.untracked(M.rules))
 end
 
+-- ---- Window opacity ---------------------------------------------------------------------
+
+-- Every window's opacity, in focus and out of it, and an application's rule
+-- giving its windows another one in focus only. niri takes a window's
+-- opacity from the last rule that matches it, so this order cannot live
+-- among the person's rules: wherever an application's rule stands, the
+-- rule for every window out of focus would have to come after it. Both are
+-- written in Bioma's own file, included last (scripts/niri-include): out of
+-- focus nothing overrides them; in focus the windows of every application
+-- with an opacity of its own are excluded, and keep that one.
+--
+-- "In focus" is niri's `is-active`, the window with the lit focus ring:
+-- one on each monitor, not only the one taking the keys.
+
+local function is_true(v: any): boolean return v == true or v == "true" or v == "#true" end
+local function is_false(v: any): boolean return v == false or v == "false" or v == "#false" end
+local function keys_of(t: any): number
+    local n = 0
+    for _ in t do n += 1 end
+    return n
+end
+
+-- A rule for every window: its matches say only `app-id=".*"`.
+function M.every_window(rule: any): boolean
+    if rule.kind ~= "rule" or rule.excludes ~= 0 or #rule.matches == 0 then return false end
+    for _, match in rule.matches do
+        local id = match["app-id"]
+        if keys_of(match) ~= 1 or (id ~= ".*" and id ~= "^.*$") then return false end
+    end
+    return true
+end
+-- A rule for every window out of focus: its matches say only `is-active=false`
+-- (or `is-focused=false`).
+local function every_unfocused(rule: any): boolean
+    if rule.kind ~= "rule" or rule.excludes ~= 0 or #rule.matches == 0 then return false end
+    for _, match in rule.matches do
+        if keys_of(match) ~= 1 then return false end
+        local v = match["is-active"]
+        if v == nil then v = match["is-focused"] end
+        if v == nil or not is_false(v) then return false end
+    end
+    return true
+end
+-- The opacity the last of the person's rules of that kind says.
+local function said_by(test: (any) -> boolean): number?
+    local found = nil
+    for _, item in items() do
+        if item.kind == "rule" and item.opacity ~= nil and test(item) then found = item.opacity end
+    end
+    return found
+end
+
+-- What the page chose, or nil while niri's own rules decide (false in the
+-- override, since a JSON null is not written).
+local function chosen(key: string): number?
+    local v = config.get("niri." .. key, false)
+    return if type(v) == "number" then v else nil
+end
+function M.owns_opacity(): boolean
+    return chosen("focused_opacity") ~= nil or chosen("unfocused_opacity") ~= nil
+end
+-- Until the page chooses, what the person's rules say: the rule for every
+-- window, the rule for every window out of focus, or else fully opaque.
+function M.focused_opacity(): number
+    return chosen("focused_opacity") or said_by(M.every_window) or 1
+end
+function M.unfocused_opacity(): number
+    return chosen("unfocused_opacity") or said_by(every_unfocused) or M.focused_opacity()
+end
+-- Choosing one keeps the other as it is shown, so moving one slider does
+-- not move what the other window looks like.
+local function choose(key: string, other: string, value: number, other_value: number)
+    local pairs = { { "niri." .. key, math.round(value * 100) / 100 } }
+    if chosen(other) == nil then table.insert(pairs, { "niri." .. other, math.round(other_value * 100) / 100 }) end
+    config.set_many(pairs)
+end
+function M.set_focused_opacity(value: number)
+    choose("focused_opacity", "unfocused_opacity", value, g.untracked(M.unfocused_opacity))
+end
+function M.set_unfocused_opacity(value: number)
+    choose("unfocused_opacity", "focused_opacity", value, g.untracked(M.focused_opacity))
+end
+-- Back to niri's own rules.
+function M.clear_opacity()
+    config.set_many({ { "niri.focused_opacity", false }, { "niri.unfocused_opacity", false } })
+end
+
+-- A match of a person's rule as an `exclude` line.
+local BOOLEAN_MATCHES = {
+    ["is-active"] = true, ["is-focused"] = true, ["is-active-in-column"] = true, ["is-floating"] = true,
+    ["is-urgent"] = true, ["is-window-cast-target"] = true, ["at-startup"] = true,
+}
+local function exclude_line(match: { [string]: any }): string
+    local names = {}
+    for name in match do table.insert(names, name) end
+    table.sort(names)
+    local words = { "exclude" }
+    for _, name in names do
+        local v = match[name]
+        local text = if BOOLEAN_MATCHES[name] then (if is_true(v) then "true" else "false") else kdl.quote(v)
+        table.insert(words, name .. "=" .. text)
+    end
+    return table.concat(words, " ")
+end
+
+local WINDOWS_HEAD = "// Written by Bioma's settings cell (NIRI, WINDOW OPACITY). Changing it rewrites this file."
+local function windows_body(): string
+    if not M.owns_opacity() then return WINDOWS_HEAD .. "\n// niri's own rules decide." end
+    local lines = { WINDOWS_HEAD, "", "window-rule {", "    match is-active=true" }
+    local seen = {}
+    for _, rule in M.rules() do
+        if rule.opacity ~= nil and not M.every_window(rule) then
+            for _, match in rule.matches do
+                local line = exclude_line(match)
+                if not seen[line] then
+                    seen[line] = true
+                    table.insert(lines, "    " .. line)
+                end
+            end
+        end
+    end
+    table.insert(lines, "    opacity " .. kdl.figure(M.focused_opacity()))
+    table.insert(lines, "}")
+    table.insert(lines, "")
+    table.insert(lines, "window-rule {")
+    table.insert(lines, "    match is-active=false")
+    table.insert(lines, "    opacity " .. kdl.figure(M.unfocused_opacity()))
+    table.insert(lines, "}")
+    return table.concat(lines, "\n")
+end
+
+-- One write at a time; a body that arrives meanwhile is written after it,
+-- the latest only, and one already written is not written again.
+local windows_written: string? = nil
+local windows_writing, windows_next = false, nil :: string?
+local function write_windows(body: string)
+    if body == windows_written then return end
+    if windows_writing then
+        windows_next = body
+        return
+    end
+    windows_writing = true
+    local said_now = {}
+    -- The load's, not the effect's: the write changes niri's files, the
+    -- effect runs again, and a process it owned would go with its run
+    -- before saying it had finished.
+    local p = g.lasting(function() return g.process {
+        command = { paths.script("niri-include"), "windows" },
+        on_error_line = function(line: string) table.insert(said_now, line) end,
+        on_exit = function()
+            windows_writing = false
+            local reason = string.match(table.concat(said_now, "\n"), "^%s*(.-)%s*$") or ""
+            if reason ~= "" then niri_config.set_error("niri refused it: " .. reason) else windows_written = body end
+            if windows_next then
+                local again = windows_next :: string
+                windows_next = nil
+                write_windows(again)
+            end
+        end,
+    } end)
+    p:write(body)
+    p:close_input()
+end
+
+-- Kept in step with the applications' rules, which name the windows the
+-- rule for every window in focus leaves out, from start to end of the
+-- session. Nothing is written for a person who never chose, unless the
+-- file is already there to be emptied.
+local windows_file = kdl.resolve("bioma-windows.kdl", kdl.directory_of(M.main), g.env("HOME") or "")
+function M.start()
+    g.effect(function()
+        if not niri_config.read_all() then return end
+        local body = windows_body()
+        if not M.owns_opacity() and niri_config.text_of(windows_file) == nil then return end
+        g.untracked(function() write_windows(body) end)
+    end)
+end
+
 return M

@@ -77,7 +77,10 @@ local function rule_summary(rule: any): string
     local apps_n = 0
     for _, match in rule.matches do if match["app-id"] ~= nil then apps_n += 1 end end
     if apps_n > 1 then table.insert(out, "and " .. (apps_n - 1) .. " more") end
-    if rule.opacity ~= nil then table.insert(out, math.round(rule.opacity * 100) .. "% opaque") end
+    -- The rule for every window gives its opacity to WINDOW OPACITY.
+    if rule.opacity ~= nil and not niri_settings.every_window(rule) then
+        table.insert(out, math.round(rule.opacity * 100) .. "% opaque in focus")
+    end
     if rule.width ~= nil then table.insert(out, width_words(rule.width)) end
     if rule.workspace ~= nil then table.insert(out, "on " .. rule.workspace) end
     if #out == (if apps_n > 1 then 1 else 0) then table.insert(out, "nothing set here") end
@@ -430,6 +433,33 @@ function M.new(t: { [string]: any }): any
         end),
     })
 
+    -- Every window's opacity, in focus and out of it. An application's rule
+    -- below overrides the first for its windows; nothing overrides the
+    -- second.
+    local function opacity_row(label: string, value: () -> number, write: (number) -> ()): any
+        return g.box {
+            direction = "column",
+            gap = function() return 6 * f() end,
+            g.box { width = p.inner, direction = "row", meta(label, theme.text_muted) },
+            amount(function() return value() * 100 end, function(v: number) write(v / 100) end, 10, 100, 5, "%"),
+        }
+    end
+    local opacity = section("WINDOW OPACITY", g.box {
+        present = niri_settings.owns_opacity,
+        choice_mod.new { label = "CLEAR", metrics = m, dimmed = busy, on_click = function() niri_settings.clear_opacity() end },
+    }, {
+        opacity_row("IN FOCUS", niri_settings.focused_opacity, niri_settings.set_focused_opacity),
+        opacity_row("OUT OF FOCUS", niri_settings.unfocused_opacity, niri_settings.set_unfocused_opacity),
+        line(function()
+            if not niri_settings.owns_opacity() then
+                return "niri's own window rules decide for now. Moving a slider sets both here, for every window, "
+                    .. "in bioma-windows.kdl, read after niri's own files."
+            end
+            return "For every window. An application's window rule below can give its windows another opacity in focus; "
+                .. "out of focus they all follow this one. Written in bioma-windows.kdl, read after niri's own files."
+        end),
+    })
+
     local function workspace_row(item: () -> any): any
         local function ws(): any return item().ws end
         local function id(): string return item().id end
@@ -651,11 +681,16 @@ function M.new(t: { [string]: any }): any
                 direction = "column",
                 gap = function() return 10 * f() end,
                 padding_left = function() return 34 * f() end,
-                setting("OPACITY",
-                    amount(function() local o = rule().opacity return if o ~= nil then o * 100 else nil end,
-                        function(v: number) niri_settings.set_rule_opacity(g.untracked(rule), v / 100) end, 10, 100, 5, "%", inner),
-                    function() niri_settings.set_rule_opacity(g.untracked(rule), nil) end,
-                    function() return rule().opacity ~= nil end),
+                -- In focus only: out of focus every window follows WINDOW
+                -- OPACITY. The rule for every window has its opacity there.
+                g.box {
+                    present = function() return not niri_settings.every_window(rule()) end,
+                    setting("OPACITY IN FOCUS",
+                        amount(function() local o = rule().opacity return if o ~= nil then o * 100 else nil end,
+                            function(v: number) niri_settings.set_rule_opacity(g.untracked(rule), v / 100) end, 10, 100, 5, "%", inner),
+                        function() niri_settings.set_rule_opacity(g.untracked(rule), nil) end,
+                        function() return rule().opacity ~= nil end),
+                },
                 setting("WIDTH WHEN IT OPENS", g.box {
                     direction = "column",
                     gap = function() return 4 * f() end,
@@ -707,7 +742,7 @@ function M.new(t: { [string]: any }): any
     local rules = section("WINDOW RULES", nil, {
         g.box {
             present = function() return #niri_settings.rules() == 0 end,
-            line(function() return "No rules for an application yet. A rule can make its windows see-through, open them at a width, or send them to a workspace." end),
+            line(function() return "No rules for an application yet. A rule can give its windows their own opacity in focus, open them at a width, or send them to a workspace." end),
         },
         g.each {
             direction = "column",
@@ -736,7 +771,7 @@ function M.new(t: { [string]: any }): any
         },
     })
 
-    return p.column { error_line, gaps, ring, follows, workspaces, startup, rules }
+    return p.column { error_line, gaps, ring, follows, opacity, workspaces, startup, rules }
 end
 
 return M

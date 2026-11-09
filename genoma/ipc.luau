@@ -188,6 +188,18 @@ function M.register()
             return "removed"
         end,
         addRule = function(app_id: string): string require("services/niri_settings").add_rule(app_id or "") return app_id or "" end,
+        -- Every window's opacity in focus and out of it, 0 to 1; "clear" gives
+        -- it back to niri's own rules.
+        focusedOpacity = function(value: string): string
+            if value == "clear" then require("services/niri_settings").clear_opacity() return "cleared" end
+            require("services/niri_settings").set_focused_opacity(number(value))
+            return value
+        end,
+        unfocusedOpacity = function(value: string): string
+            if value == "clear" then require("services/niri_settings").clear_opacity() return "cleared" end
+            require("services/niri_settings").set_unfocused_opacity(number(value))
+            return value
+        end,
         error = function(): string return g.untracked(require("services/niri_settings").error) end,
     })
 

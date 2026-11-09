@@ -922,6 +922,9 @@ screenshots, OCR and recording. The Utility cell reads both.
     gaps, focus ring width, focus following the pointer, named workspaces,
     startup entries, and per-application window rules for opacity, opening
     width and workspace
+  - every window's opacity in focus and out of focus (added 2026-11-09),
+    written into Bioma's own `bioma-windows.kdl`, included after niri's files;
+    an application's rule overrides the in-focus value only
 - **Visibility.** Invoked, optionally also an always-visible icon.
 - **Notes.** This is the second largest piece after the launcher. Both of the
   expensive parts exist in Prisma: `MonitorManager.qml` (drag-and-drop, magnetic
