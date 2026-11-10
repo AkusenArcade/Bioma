@@ -162,7 +162,13 @@ function M.new(t: { [string]: any }): any
                 width = function() return 64 * f() end,
                 justify = "end",
                 g.text {
-                    text = function() local v = shown() return if v then tostring(math.round(v * 10) / 10) .. unit else "—" end,
+                    text = function()
+                        local v = shown()
+                        if v == nil then return "—" end
+                        local r = math.round(v * 10) / 10
+                        if r == 0 then r = 0 end -- not -0
+                        return tostring(r) .. unit
+                    end,
                     color = theme.text,
                     font = typography.technical,
                     size = function() return m().font_secondary end,
@@ -432,6 +438,114 @@ function M.new(t: { [string]: any }): any
                 else "A window takes the focus when it is clicked, or reached from the keyboard."
         end),
     })
+
+    local centre = section("CENTRE A LONE WINDOW", switch.new {
+        on = niri_settings.centres_single,
+        factor = f,
+        dimmed = busy,
+        on_toggle = function(value: boolean) niri_settings.set_centres_single(value) end,
+    }, {
+        line(function()
+            return if niri_settings.centres_single()
+                then "A window alone on its workspace stands in the middle of the screen. A second one puts them back side by side."
+                else "A window alone on its workspace stays at the left edge, where the next one lines up beside it."
+        end),
+    })
+
+    -- ---- Mouse and touchpad ---------------------------------------------------------
+    -- niri applies a block to every device of its kind: no device is named.
+
+    local function labelled(label: string, body: any): any
+        return g.box {
+            direction = "column",
+            gap = function() return 6 * f() end,
+            g.box { width = p.inner, direction = "row", meta(label, theme.text_muted) },
+            body,
+        }
+    end
+    local function toggle(label: string, device: string, flag: string): any
+        return p.row(label, switch.new {
+            on = function() return niri_settings.device_flag(device, flag) end,
+            factor = f,
+            dimmed = busy,
+            on_toggle = function(value: boolean) niri_settings.set_device_flag(device, flag, value) end,
+        })
+    end
+    -- Chips for a setting that names one of a few words.
+    local function words(device: string, name: string, default: string, list: { { string } }): any
+        local chips: { [any]: any } = { direction = "row", gap = function() return 6 * f() end }
+        for _, pair in list do
+            table.insert(chips, choice_mod.new {
+                label = pair[2],
+                kind = function() return if niri_settings.device_word(device, name, default) == pair[1] then "primary" else "plain" end,
+                metrics = m,
+                dimmed = busy,
+                on_click = function() niri_settings.set_device_word(device, name, pair[1], default) end,
+            })
+        end
+        return g.box(chips)
+    end
+    local function pointing(device: string): { any }
+        return {
+            labelled("SPEED", amount(function() return niri_settings.device_value(device, "accel-speed", 0) end,
+                function(v: number) niri_settings.set_device_value(device, "accel-speed", v) end, -1, 1, 0.1, "")),
+            labelled("ACCELERATION", words(device, "accel-profile", "adaptive", { { "adaptive", "ADAPTIVE" }, { "flat", "FLAT" } })),
+            labelled("SCROLLING SPEED", amount(function() return niri_settings.device_value(device, "scroll-factor", 1) end,
+                function(v: number) niri_settings.set_device_value(device, "scroll-factor", v) end, 0.1, 3, 0.1, "×")),
+            toggle("NATURAL SCROLLING", device, "natural-scroll"),
+        }
+    end
+    local function said(device: string): string
+        local speed = niri_settings.device_value(device, "accel-speed", 0)
+        local flat = niri_settings.device_word(device, "accel-profile", "adaptive") == "flat"
+        local out = {
+            (if speed == 0 then "At libinput's own speed" elseif speed > 0 then "Faster than libinput's own speed" else "Slower than libinput's own speed")
+                .. (if flat then ", the pointer moving as far as the hand does at any pace. " else ", the pointer going further when the hand moves fast. "),
+            if niri_settings.device_flag(device, "natural-scroll") then "Scrolling is reversed: the content moves with the hand. " else "Scrolling down goes down the page. ",
+        }
+        return table.concat(out)
+    end
+    local function device_line(device: string, rest: () -> string): any
+        return line(function()
+            return said(device) .. rest() .. "Written in " .. written_in(niri_settings.device_blocks(device)) .. "."
+        end)
+    end
+
+    local mouse_body = pointing("mouse")
+    table.insert(mouse_body, toggle("LEFT-HANDED", "mouse", "left-handed"))
+    table.insert(mouse_body, device_line("mouse", function()
+        return if niri_settings.device_flag("mouse", "left-handed") then "The buttons are swapped for the left hand. " else ""
+    end))
+    local mouse = section("MOUSE", nil, mouse_body)
+
+    local touchpad_body = {
+        toggle("TAP TO CLICK", "touchpad", "tap"),
+        g.box {
+            present = function() return niri_settings.device_flag("touchpad", "tap") end,
+            labelled("TWO FINGERS", words("touchpad", "tap-button-map", "left-right-middle",
+                { { "left-right-middle", "RIGHT CLICK" }, { "left-middle-right", "MIDDLE CLICK" } })),
+        },
+    }
+    for _, row in pointing("touchpad") do table.insert(touchpad_body, row) end
+    table.insert(touchpad_body, toggle("OFF WHILE TYPING", "touchpad", "dwt"))
+    table.insert(touchpad_body, toggle("OFF WITH A MOUSE PLUGGED IN", "touchpad", "disabled-on-external-mouse"))
+    table.insert(touchpad_body, device_line("touchpad", function()
+        local out = {}
+        if niri_settings.device_flag("touchpad", "tap") then
+            table.insert(out, if niri_settings.device_word("touchpad", "tap-button-map", "left-right-middle") == "left-middle-right"
+                then "A tap clicks; two fingers are the middle button, three the right. "
+                else "A tap clicks; two fingers are the right button, three the middle. ")
+        else
+            table.insert(out, "Only a press clicks. ")
+        end
+        local dwt = niri_settings.device_flag("touchpad", "dwt")
+        local away = niri_settings.device_flag("touchpad", "disabled-on-external-mouse")
+        if dwt and away then table.insert(out, "It goes quiet while the keyboard is in use, and while a mouse is plugged in. ")
+        elseif dwt then table.insert(out, "It goes quiet while the keyboard is in use. ")
+        elseif away then table.insert(out, "It goes quiet while a mouse is plugged in. ") end
+        return table.concat(out)
+    end))
+    local touchpad = section("TOUCHPAD", nil, touchpad_body, niri_settings.has_touchpad)
 
     -- Every window's opacity, in focus and out of it. An application's rule
     -- below overrides the first for its windows; nothing overrides the
@@ -771,7 +885,8 @@ function M.new(t: { [string]: any }): any
         },
     })
 
-    return p.column { error_line, gaps, ring, follows, opacity, workspaces, startup, rules }
+    niri_settings.look_for_touchpad()
+    return p.column { error_line, gaps, ring, follows, centre, mouse, touchpad, opacity, workspaces, startup, rules }
 end
 
 return M

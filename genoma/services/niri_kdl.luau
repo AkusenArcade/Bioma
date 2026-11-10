@@ -438,16 +438,23 @@ function M.scan(text: string): { items: { any }, block: any }
         elseif (node.name == "layout" or node.name == "input") and node.children then
             -- Lines commented out directly in the section, not in a block
             -- inside it.
-            local commented = {}
+            -- Those in a block inside it (`input { mouse { … } }`) are kept
+            -- apart, with the block they are in.
+            local commented, nested = {}, {}
             for _, note in notes do
                 if inside(note.start, node) then
-                    local deeper = false
-                    for _, child in node.children.nodes do if inside(note.start, child) then deeper = true end end
-                    if not deeper then table.insert(commented, note) end
+                    local deeper = nil
+                    for _, child in node.children.nodes do if inside(note.start, child) then deeper = child end end
+                    if deeper then
+                        table.insert(nested, { block = deeper.name, block_dropped = deeper.dropped, note = note })
+                    else
+                        table.insert(commented, note)
+                    end
                 end
             end
             table.insert(items, { kind = "section", name = node.name, start = node.start, ["end"] = node["end"],
-                open = node.children.open, close = node.children.close, children = node.children.nodes, commented = commented })
+                open = node.children.open, close = node.children.close, children = node.children.nodes,
+                commented = commented, nested_commented = nested })
         elseif node.name == "binds" and node.children then
             block = { start = node.start, ["end"] = node["end"], open = node.children.open, close = node.children.close }
             for _, bind in node.children.nodes do
@@ -666,10 +673,17 @@ function M.without(text: string, bind: any): string
     return string.sub(text, 1, from - 1) .. string.sub(text, to)
 end
 
+-- The blanks a node's line opens with.
+function M.indent_of(text: string, node: any): string
+    local s = node.start
+    while s > 1 and at(text, s - 1) ~= "\n" do s -= 1 end
+    return string.match(string.sub(text, s, node.start - 1), "^[ \t]*") or ""
+end
+
 -- A child line at the end of a block, indented like the children already
--- in it.
-function M.with_child(text: string, block: any, entry: string, last_child: any?): string
-    local indent = "    "
+-- in it; in a block with none, by `empty_indent` (one level, by default).
+function M.with_child(text: string, block: any, entry: string, last_child: any?, empty_indent: string?): string
+    local indent = empty_indent or "    "
     if last_child then
         local s = last_child.start
         while s > 1 and at(text, s - 1) ~= "\n" do s -= 1 end

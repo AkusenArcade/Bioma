@@ -1,8 +1,8 @@
 --!strict
 -- A few of niri's settings (services/NiriSettings.qml at 11bb81e): the
--- gaps, the focus ring, the focus following the pointer, the named
--- workspaces, what starts with the session, and what the window rules say
--- about each application.
+-- gaps, the focus ring, the focus following the pointer, a lone column in
+-- the middle, the named workspaces, what starts with the session, and what
+-- the window rules say about each application.
 --
 -- Read here from niri's files, and written to the file each thing came
 -- from, once niri has validated it. Bioma on Genoma alone writes (M6 step
@@ -85,6 +85,59 @@ function M.focus_ring(): number
 end
 
 function M.follows_mouse(): boolean return #named("input", "focus-follows-mouse") > 0 end
+-- A workspace's only column in the middle of the screen, not at its left.
+function M.centres_single(): boolean return #named("layout", "always-center-single-column") > 0 end
+
+-- ---- Pointing devices -------------------------------------------------------------
+
+-- `input { mouse { … } }`, `input { touchpad { … } }`: every child of that
+-- name in every block for that device, in the order niri reads them.
+local function in_device(device: string, name: string, list: { any }?): { any }
+    local out = {}
+    for _, block in named("input", device, list) do
+        for _, child in (if block.node.children then block.node.children.nodes else {}) do
+            if not child.dropped and child.name == name then
+                table.insert(out, { file = block.file, block = block, node = child })
+            end
+        end
+    end
+    return out
+end
+
+function M.device_flag(device: string, name: string): boolean return #in_device(device, name) > 0 end
+-- The person's blocks for a device, each with the file it is in.
+function M.device_blocks(device: string): { any } return named("input", device, items()) end
+
+-- What the last of them says, or nil when none is written.
+local function device_arg(device: string, name: string): any
+    local list = in_device(device, name)
+    local last = list[#list]
+    return if last and #last.node.args > 0 then last.node.args[1].value else nil
+end
+function M.device_value(device: string, name: string, default: number): number
+    local p = pending.value[device .. "." .. name]
+    if p ~= nil then return p end
+    return tonumber(device_arg(device, name)) or default
+end
+function M.device_word(device: string, name: string, default: string): string
+    local v = device_arg(device, name)
+    return if v ~= nil then tostring(v) else default
+end
+
+-- Whether a touchpad is plugged in: udev marks it. BIOMA_CHECK_TOUCHPAD=1
+-- shows one where there is none, to see the page.
+local touchpad = g.signal(g.env("BIOMA_CHECK_TOUCHPAD") == "1")
+function M.has_touchpad(): boolean return touchpad.value end
+function M.look_for_touchpad()
+    if g.env("BIOMA_CHECK_TOUCHPAD") == "1" then return end
+    local found = false
+    g.lasting(function() return g.process {
+        command = { "sh", "-c", "grep -ls '^E:ID_INPUT_TOUCHPAD=1' /run/udev/data/c13:* 2>/dev/null" },
+        on_line = function(line: string) if line ~= "" then found = true end end,
+        on_exit = function() touchpad.value = found end,
+    } end)
+end
+M.look_for_touchpad()
 
 function M.workspaces(): { any }
     local out = {}
@@ -298,15 +351,21 @@ local function write_focus_ring(value: number)
     edits_across(by_file)
 end
 
+-- What writes a slider's value, by its key: `gaps`, `focus_ring`, or a
+-- device's `mouse.accel-speed`. Filled below.
+local writers: { [string]: (number) -> () } = {}
+
 -- A slider's value: shown at once, written once the hand rests, and kept
 -- until niri has read it back, so the slider does not jump to the old
--- value in between.
+-- value in between. Several sliders resting at once are written one after
+-- another: each write is computed against the file as it is read, and two
+-- in the same file at once would have the second undo the first.
 local resting: any = nil
-local function slide(key: string, call: string, value: number)
+local function slide(key: string, call: string?, value: number)
     local next = table.clone(g.untracked(function() return pending.value end))
     next[key] = value
     pending.value = next
-    if not alone() then
+    if not alone() and call then
         ask({ call, quick_figure(value) }, function()
             g.after(1, function()
                 local now = table.clone(g.untracked(function() return pending.value end))
@@ -323,55 +382,166 @@ local function slide(key: string, call: string, value: number)
         resting = g.after(timing.seconds.blur_settle, function()
             resting = nil
             if busy_now() then rest() return end
-            local asked = g.untracked(function() return pending.value end)
-            if asked.gaps ~= nil then write_gaps(asked.gaps) end
-            if asked.focus_ring ~= nil then write_focus_ring(asked.focus_ring) end
-            local function settle()
-                g.after(0.1, function()
-                    if busy_now() then settle() return end
-                    pending.value = {}
-                end)
+            local asked = table.clone(g.untracked(function() return pending.value end))
+            local keys = {}
+            for key in asked do table.insert(keys, key) end
+            table.sort(keys)
+            local i = 0
+            local function step()
+                i += 1
+                if i > #keys then
+                    -- Only what was written: a value asked for meanwhile
+                    -- waits for its own rest.
+                    local now = table.clone(g.untracked(function() return pending.value end))
+                    for k, v in asked do if now[k] == v then now[k] = nil end end
+                    pending.value = now
+                    return
+                end
+                local write = writers[keys[i]]
+                if write then write(asked[keys[i]]) end
+                local function settle()
+                    g.after(0.1, function()
+                        if busy_now() then settle() return end
+                        step()
+                    end)
+                end
+                settle()
             end
-            settle()
+            step()
         end)
     end
     rest()
 end
+writers.gaps = write_gaps
+writers.focus_ring = write_focus_ring
 function M.set_gaps(value: number) slide("gaps", "gaps", math.round(value)) end
 function M.set_focus_ring(value: number) slide("focus_ring", "focusRing", math.round(value)) end
 
-function M.set_follows_mouse(on: boolean)
-    if not alone() then ask({ "followsMouse", tostring(on) }) return end
-    if busy_now() or on == g.untracked(M.follows_mouse) then return end
+-- A new child of the last block for a device in the person's files, or a
+-- block of its own in their input section when there is none.
+local function add_to_device(device: string, entry: string)
+    local last = nil
+    for _, block in named("input", device, g.untracked(items)) do
+        if block.node.children then last = block end
+    end
+    if not last then
+        -- On lines of their own, so a flag can be switched off by a comment.
+        local section = nil
+        for _, item in g.untracked(items) do
+            if item.kind == "section" and item.name == "input" then section = item end
+        end
+        if not section then
+            add_to_section("input", device .. " {\n        " .. entry .. "\n    }")
+            return
+        end
+        local kids = {}
+        for _, child in section.children do if not child.dropped then table.insert(kids, child) end end
+        commit(section.file, function(text: string)
+            local lead = if kids[#kids] then kdl.indent_of(text, kids[#kids]) else "    "
+            return kdl.with_child(text, section, device .. " {\n" .. lead .. "    " .. entry .. "\n" .. lead .. "}", kids[#kids])
+        end)
+        return
+    end
+    local kids = {}
+    for _, child in last.node.children.nodes do if not child.dropped then table.insert(kids, child) end end
+    commit(last.file, function(text: string)
+        return kdl.with_child(text, last.node.children, entry, kids[#kids], kdl.indent_of(text, last.node) .. "    ")
+    end)
+end
+
+-- A device's setting with a value, the same in every block that says it.
+local function write_device(device: string, name: string, entry: string)
+    local found = in_device(device, name, g.untracked(items))
+    if #found == 0 then
+        add_to_device(device, entry)
+        return
+    end
+    local by_file = {}
+    for _, f in found do
+        add_edit(by_file, f.file, kdl.replacing(niri_config.text_of(f.file) or "", f.node, entry))
+    end
+    edits_across(by_file)
+end
+
+-- A flag of niri's, in a section or in a device's block inside it: present
+-- is on. niri 26.04 refuses `flag false` for most, so off is the line
+-- commented out, in every file that says it.
+local function set_flag(section_name: string, flag: string, on: boolean, device: string?)
     local mine = g.untracked(items)
     if not on then
         local by_file = {}
-        for _, found in named("input", "focus-follows-mouse", mine) do
+        local list = if device then in_device(device, flag, mine) else named(section_name, flag, mine)
+        for _, found in list do
             add_edit(by_file, found.file, kdl.switching_off(niri_config.text_of(found.file) or "", found.node))
         end
         edits_across(by_file)
         return
     end
     -- The line that was switched off, if there is one, comes back as it
-    -- was, with its `max-scroll-amount` if it had one.
+    -- was, with its properties (`max-scroll-amount`) if it had any.
     local commented = nil
-    for _, section in mine do
-        if section.kind == "section" and section.name == "input" then
-            for _, note in section.commented or {} do
-                if note.node.name == "focus-follows-mouse" then commented = { file = section.file, note = note } end
+    local function dropped_in(file: string, children: { any })
+        for _, child in children do
+            if child.dropped and child.name == flag then
+                commented = { file = file, note = { start = child.start, body_start = child.name_start } }
             end
-            for _, child in section.children do
-                if child.dropped and child.name == "focus-follows-mouse" then
-                    commented = { file = section.file, note = { start = child.start, body_start = child.name_start } }
+        end
+    end
+    for _, section in mine do
+        if section.kind == "section" and section.name == section_name then
+            if device then
+                for _, n in section.nested_commented or {} do
+                    if n.block == device and not n.block_dropped and n.note.node.name == flag then
+                        commented = { file = section.file, note = n.note }
+                    end
                 end
+                for _, block in section.children do
+                    if not block.dropped and block.name == device and block.children then dropped_in(section.file, block.children.nodes) end
+                end
+            else
+                for _, note in section.commented or {} do
+                    if note.node.name == flag then commented = { file = section.file, note = note } end
+                end
+                dropped_in(section.file, section.children)
             end
         end
     end
     if commented then
         edits(commented.file, { kdl.switching_on(commented.note) })
+    elseif device then
+        add_to_device(device, flag)
     else
-        add_to_section("input", "focus-follows-mouse")
+        add_to_section(section_name, flag)
     end
+end
+
+function M.set_follows_mouse(on: boolean)
+    if not alone() then ask({ "followsMouse", tostring(on) }) return end
+    if busy_now() or on == g.untracked(M.follows_mouse) then return end
+    set_flag("input", "focus-follows-mouse", on)
+end
+
+-- Bioma on Quickshell, frozen, has no verb for it: written here alone.
+function M.set_centres_single(on: boolean)
+    if busy_now() or on == g.untracked(M.centres_single) then return end
+    set_flag("layout", "always-center-single-column", on)
+end
+
+-- A mouse's or a touchpad's settings, written here alone, like the one above.
+function M.set_device_flag(device: string, flag: string, on: boolean)
+    if busy_now() or on == g.untracked(function() return M.device_flag(device, flag) end) then return end
+    set_flag("input", flag, on, device)
+end
+function M.set_device_word(device: string, name: string, word: string, default: string)
+    if busy_now() or word == g.untracked(function() return M.device_word(device, name, default) end) then return end
+    write_device(device, name, name .. " " .. kdl.quote(word))
+end
+function M.set_device_value(device: string, name: string, value: number)
+    local key = device .. "." .. name
+    if not writers[key] then
+        writers[key] = function(v: number) write_device(device, name, name .. " " .. kdl.figure(v)) end
+    end
+    slide(key, nil, value)
 end
 
 -- ---- Workspaces -------------------------------------------------------------------
