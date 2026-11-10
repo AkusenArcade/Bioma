@@ -37,6 +37,31 @@ local function root_cause(lines: { string }): string
     return lines[1] or ""
 end
 
+-- The configuration matugen is given: Bioma's template, rendered to the very
+-- file core/theme.luau watches. Not config/matugen/config.toml as it is,
+-- whose `~/.config/…` is the home's: with XDG_CONFIG_HOME elsewhere (a test
+-- of another configuration), matugen wrote the person's own palette and
+-- the shell watched a file nobody wrote. Written once a session.
+local function quoted(s: string): string
+    return '"' .. string.gsub(string.gsub(s, "\\", "\\\\"), '"', '\\"') .. '"'
+end
+local own_config: string? = nil
+local function config_path(): string
+    if own_config then return own_config end
+    local path = (g.env("XDG_RUNTIME_DIR") or "/tmp") .. "/bioma-matugen.toml"
+    g.file({ path = path, watch = false }):write(table.concat({
+        "# Written by Bioma's services/matugen.luau for this session.",
+        "[config]",
+        "",
+        "[templates.palette]",
+        "input_path = " .. quoted(paths.root .. "/config/matugen/palette.json"),
+        "output_path = " .. quoted(theme.matugen_path),
+        "",
+    }, "\n"))
+    own_config = path
+    return path
+end
+
 local running: any = nil
 local function run(image: string)
     -- A run still going is stopped for this one; its exit is not this run
@@ -49,7 +74,7 @@ local function run(image: string)
     local this = { superseded = false, process = nil :: any }
     running = this
     this.process = g.process {
-        command = { "matugen", "--config", "config.toml", "--mode", g.untracked(variant),
+        command = { "matugen", "--config", config_path(), "--mode", g.untracked(variant),
             "--type", g.untracked(scheme), "--source-color-index", tostring(g.untracked(source_index)), "image", image },
         cwd = paths.root .. "/config/matugen",
         on_error_line = function(line: string)

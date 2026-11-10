@@ -1,4 +1,7 @@
-# Bioma's own matugen configuration.
+# Bioma's own matugen configuration, as the Quickshell version uses it.
+# The Genoma shell (genoma/services/matugen.luau) renders its own copy for
+# each session, with the output where core/theme.luau watches it
+# (XDG_CONFIG_HOME-aware); a block added here must be added there too.
 #
 # Passed to matugen with `--config`, so the user's own ~/.config/matugen/
 # is never read and never written. Bioma renders its palette through a
