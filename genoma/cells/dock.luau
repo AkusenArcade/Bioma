@@ -106,6 +106,19 @@ return {
             end
             apps.run(entry, g.untracked(proxy.environment))
         end
+        -- Files dropped on an icon, or a link: opened with that application,
+        -- when its entry takes them.
+        local function dropped_files(d: any): { string }
+            if #d.files > 0 then return d.files end
+            local link = string.match(d.text or "", "^%s*(%a[%w+.-]*://%S+)")
+            return if link then { link } else {}
+        end
+        local function open_with(app_id: string, d: any)
+            local entry = apps.entry_for(app_id)
+            local files = dropped_files(d)
+            if not entry or #files == 0 or not apps.takes_files(entry) then return end
+            apps.run(entry, g.untracked(proxy.environment), files)
+        end
         -- Each press moves to the next of its windows.
         local rounds: { [string]: number } = {}
         local function activate(app_id: string)
@@ -193,8 +206,10 @@ return {
 
         -- An icon in its well; a ring of the primary while it runs.
         local function dock_icon(t: { [string]: any }): any
+            -- Something dragged over it that it can open.
+            local drop_over = g.signal(false)
             local function size(): number
-                return if t.held and t.held() then icon_size() * 1.12 else icon_size()
+                return if (t.held and t.held()) or drop_over.value then icon_size() * 1.12 else icon_size()
             end
             local function source(): string return apps.icon_for(t.app_id()) end
             -- Where the press landed, and where the icon was then: a drag is
@@ -214,13 +229,20 @@ return {
                 align = "center",
                 justify = "center",
                 fill = function() return theme.lift(theme.background(), -0.015) end,
-                rim_top = function() return colour.alpha(theme.text(), 0.35) end,
-                rim_bottom = function() return colour.alpha(theme.text(), 0.35) end,
+                rim_top = function() return if drop_over.value then theme.primary() else colour.alpha(theme.text(), 0.35) end,
+                rim_bottom = function() return if drop_over.value then theme.primary() else colour.alpha(theme.text(), 0.35) end,
                 transition = {
                     width = "transition",
                     height = "transition",
                     offset_x = function() return if t.held and t.held() then "instant" else "reflow" end,
                 },
+                on_drop_hover = function(on: boolean)
+                    drop_over.value = on and apps.takes_files(apps.entry_for(g.untracked(t.app_id)))
+                end,
+                on_drop = function(d: any)
+                    drop_over.value = false
+                    open_with(g.untracked(t.app_id), d)
+                end,
                 on_hover = function(on: boolean)
                     local label = label_of(g.untracked(t.app_id))
                     if on then

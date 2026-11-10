@@ -154,7 +154,10 @@ function M.icon_for(name: string?): string
 end
 
 -- `Exec=` as words: quoting undone, field codes (%f, %U, …) dropped.
-function M.command_of(entry: any): { string }
+-- The command an entry runs, its field codes gone; with `files` (paths),
+-- %f and %u take the first and %F and %U them all, as the desktop entry
+-- specification allows (a local file may be given as a path for a URL).
+function M.command_of(entry: any, files: { string }?): { string }
     local words, word, quoted, i = {}, {}, false, 1
     local exec = entry.exec or ""
     while i <= #exec do
@@ -179,6 +182,10 @@ function M.command_of(entry: any): { string }
     for _, w in words do
         if w == "%%" then
             table.insert(out, "%")
+        elseif files and #files > 0 and (w == "%f" or w == "%u") then
+            table.insert(out, files[1])
+        elseif files and (w == "%F" or w == "%U") then
+            for _, f in files do table.insert(out, f) end
         elseif not string.match(w, "^%%[fFuUdDnNickvm]$") then
             table.insert(out, (string.gsub(w, "%%%%", "%%")))
         end
@@ -194,25 +201,47 @@ local IN_TERMINAL = 'if command -v xdg-terminal-exec >/dev/null 2>&1; then exec 
     .. '[ -n "$t" ] && command -v "$t" >/dev/null 2>&1 && exec "$t" -e "$@"; done; '
     .. 'echo "no terminal for $1" >&2; exit 1'
 
+-- Whether an entry opens files or links given to it (its Exec has %f, %F,
+-- %u or %U): what a file dropped on its dock icon needs.
+function M.takes_files(entry: any): boolean
+    local exec = if entry then entry.exec or "" else ""
+    return string.find(exec, "%%[fFuU]") ~= nil
+end
+
 -- Start an application, with whatever the shell adds to its environment
--- (the proxy, while one is on). Not as the shell's child: `scripts/launch`
--- makes it a user service of its own, out of the shell's scheduling and
--- cgroup. One that runs in a terminal is started inside the desktop's.
-function M.run(entry: any, environment: { [string]: string }?)
+-- (the proxy, while one is on), and `files` for it to open. Not as the
+-- shell's child: `scripts/launch` makes it a user service of its own, out
+-- of the shell's scheduling and cgroup. One that runs in a terminal is
+-- started inside the desktop's. Where Genoma gives activation tokens, the
+-- press that asked gets one, and the application's window the focus (one
+-- already running is raised).
+function M.run(entry: any, environment: { [string]: string }?, files: { string }?)
     if not entry then return end
-    local command = M.command_of(entry)
+    local command = M.command_of(entry, files)
     if #command == 0 then return end
-    local launch = { paths.script("launch"), "--id", entry.id or "" }
-    if entry.path and entry.path ~= "" then
-        table.insert(launch, "--dir")
-        table.insert(launch, entry.path)
+    local function start(token: string?)
+        local launch = { paths.script("launch"), "--id", entry.id or "" }
+        if entry.path and entry.path ~= "" then
+            table.insert(launch, "--dir")
+            table.insert(launch, entry.path)
+        end
+        if token then
+            table.insert(launch, "--token")
+            table.insert(launch, token)
+        end
+        table.insert(launch, "--")
+        if entry.terminal then
+            for _, w in { "bash", "-c", IN_TERMINAL, "terminal" } do table.insert(launch, w) end
+        end
+        for _, w in command do table.insert(launch, w) end
+        g.process { command = launch, env = environment or {} }
     end
-    table.insert(launch, "--")
-    if entry.terminal then
-        for _, w in { "bash", "-c", IN_TERMINAL, "terminal" } do table.insert(launch, w) end
+    local ask = (g :: any).activation_token
+    if ask then
+        ask { app_id = entry.id, on_token = start }
+    else
+        start(nil)
     end
-    for _, w in command do table.insert(launch, w) end
-    g.process { command = launch, env = environment or {} }
 end
 
 return M

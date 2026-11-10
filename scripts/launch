@@ -2,7 +2,7 @@
 # Start an application as a systemd user service of its own, not as a child of
 # the shell.
 #
-#     launch [--id ID] [--dir DIR] -- COMMAND [ARGS...]
+#     launch [--id ID] [--dir DIR] [--token TOKEN] -- COMMAND [ARGS...]
 #
 # A child inherits the shell's scheduling, and the shell's is not neutral: on
 # CachyOS the ananicy-cpp rules match any process named `qs` and renice it to
@@ -21,11 +21,15 @@
 # Without a user manager the command is run directly, as before.
 set -u
 
-id="" dir=""
+id="" dir="" token=""
 while [ $# -gt 0 ]; do
     case "$1" in
         --id)  id="$2"; shift 2 ;;
         --dir) dir="$2"; shift 2 ;;
+        # An activation token the compositor gave for the press that asked
+        # (Genoma's g.activation_token): the application's window takes the
+        # focus with it. The shell's own, inherited, is left out below.
+        --token) token="$2"; shift 2 ;;
         --)    shift; break ;;
         *)     break ;;
     esac
@@ -64,6 +68,10 @@ fi
 if ! command -v systemd-run >/dev/null 2>&1 \
         || [ ! -S "${XDG_RUNTIME_DIR:-/nonexistent}/systemd/private" ]; then
     [ -n "$dir" ] && cd "$dir" 2>/dev/null
+    unset XDG_ACTIVATION_TOKEN DESKTOP_STARTUP_ID
+    if [ -n "$token" ]; then
+        export XDG_ACTIVATION_TOKEN="$token" DESKTOP_STARTUP_ID="$token"
+    fi
     exec "$@"
 fi
 
@@ -79,6 +87,9 @@ while IFS='=' read -r -d '' name _; do
         *) args+=("--setenv=$name") ;;
     esac
 done < <(env -0)
+if [ -n "$token" ]; then
+    args+=("--setenv=XDG_ACTIVATION_TOKEN=$token" "--setenv=DESKTOP_STARTUP_ID=$token")
+fi
 
 # A desktop entry's Path= that no longer exists fails the whole service on
 # CHDIR; the direct start above shrugs it off, and so does this one.

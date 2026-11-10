@@ -99,6 +99,9 @@ return {
                 return at
             end
             local function picture_width(): number return (image_row() - 12 * f()) * 1.6 end
+            -- Dragged out: a picture as its file, text as the text itself
+            -- (read from what was kept, not the shortened preview).
+            local kept = if string.sub(g.untracked(e).mime or "", 1, 5) == "text/" then g.file { path = g.untracked(e).file } else nil
             return g.capsule {
                 role = "button",
                 name = "Copied",
@@ -119,6 +122,8 @@ return {
                 padding_x = function() return 8 * f() end,
                 on_hover = function(on: boolean) hovered.value = on end,
                 on_click = function() choose(g.untracked(e)) end,
+                drag_files = function() return if image() then e().file or "" else "" end,
+                drag_text = function() return if kept then kept.text or "" else "" end,
                 g.image {
                     present = image,
                     src = function() return if image() then e().file else "" end,
