@@ -21,6 +21,21 @@ layer-rule {
     }
 }
 
+// Windows that blur (a window rule with `background-effect { blur true }`, the
+// person's own) blur what is behind them: the organisms and other windows, not
+// the wallpaper alone. niri's default for a window's effect is xray too, which
+// skips every layer between the window and the wallpaper, so the organisms
+// vanished behind a translucent terminal on one machine and showed through on
+// another (2026-11-10). This turns no blur on: a window that does not blur is
+// untouched. It costs the compositor a blur again whenever what is behind
+// changes, about half a percent of a core for a window over an organism in a
+// nested niri.
+window-rule {
+    background-effect {
+        xray false
+    }
+}
+
 // The overview. niri draws background-layer surfaces inside each workspace, so
 // when the workspaces shrink into the overview the wallpaper shrinks with them
 // and the space around them is niri's flat backdrop colour. Bioma puts a
