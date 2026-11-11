@@ -26,6 +26,7 @@ local theme = require("core/theme")
 local typography = require("core/typography")
 local search = require("cells/launcher_search")
 local registry = require("cells/registry")
+local app_icon = require("components/app_icon")
 local field_mod = require("components/field")
 local scroller_mod = require("components/scroller")
 local files = require("services/files")
@@ -238,33 +239,14 @@ local function simple(cell: any): any
                 on_click = function(button: number)
                     if button == 272 then launch(g.untracked(function() return item().index end), false) end
                 end,
-                g.box {
-                    width = portrait,
-                    height = portrait,
-                    align = "center",
-                    justify = "center",
-                    g.capsule {
-                        overlay = true,
-                        present = picked,
-                        width = portrait,
-                        height = portrait,
-                        stroke = function() return 1.5 * f() end,
-                        rim_top = theme.primary,
-                        rim_bottom = theme.primary,
-                    },
-                    g.icon {
-                        present = function() return source() ~= "" end,
-                        width = function() return portrait() * 0.7 end,
-                        height = function() return portrait() * 0.7 end,
-                        icon = source,
-                    },
-                    g.icon {
-                        present = function() return source() == "" end,
-                        width = function() return portrait() * 0.6 end,
-                        height = function() return portrait() * 0.6 end,
-                        icon = "app-fallback",
-                        color = theme.text_muted,
-                    },
+                app_icon.new {
+                    slot = portrait,
+                    ring = portrait,
+                    stroke = function() return 1.5 * f() end,
+                    icon = function() return portrait() * 0.7 end,
+                    fallback = function() return portrait() * 0.6 end,
+                    source = source,
+                    picked = picked,
                 },
                 -- The name, with the letters the search matched lit. A
                 -- name is human language; the line under it is the

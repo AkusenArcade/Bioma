@@ -38,6 +38,7 @@ local timing = require("core/timing")
 local typography = require("core/typography")
 local registry = require("cells/registry")
 local search = require("cells/launcher_search")
+local app_icon = require("components/app_icon")
 local field_mod = require("components/field")
 local files = require("services/files")
 local calculator = require("services/calculator")
@@ -535,36 +536,14 @@ function M.new(cell: any): any
                 end,
                 -- The row reached: its icon ringed in the primary as well
                 -- as the fill (theme.selection), as the simple launcher's.
-                -- The icon is sized to the ring, not the slot: 0.7 of it, as
-                -- in the simple launcher, so a full-bleed square icon keeps
-                -- its corners inside the ring.
-                g.box {
-                    width = portrait,
-                    height = portrait,
-                    align = "center",
-                    justify = "center",
-                    g.capsule {
-                        overlay = true,
-                        present = picked,
-                        width = ring,
-                        height = ring,
-                        stroke = function() return 1.5 * f() end,
-                        rim_top = theme.primary,
-                        rim_bottom = theme.primary,
-                    },
-                    g.icon {
-                        present = function() return source() ~= "" end,
-                        width = function() return ring() * 0.7 end,
-                        height = function() return ring() * 0.7 end,
-                        icon = source,
-                    },
-                    g.icon {
-                        present = function() return source() == "" end,
-                        width = function() return ring() * 0.6 end,
-                        height = function() return ring() * 0.6 end,
-                        icon = "app-fallback",
-                        color = theme.text_muted,
-                    },
+                app_icon.new {
+                    slot = portrait,
+                    ring = ring,
+                    stroke = function() return 1.5 * f() end,
+                    icon = portrait,
+                    fallback = function() return portrait() * 0.85 end,
+                    source = source,
+                    picked = picked,
                 },
                 g.text {
                     text = function() return item().name end,
