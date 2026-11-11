@@ -35,8 +35,10 @@ return {
         return {
             panel = opened.panel,
             on_key = opened.on_key,
-            padding_leading = 14,
-            padding_trailing = 14,
+            -- The end indicators sit concentric with the capsule's rounded
+            -- ends: the inset is what is left of the height around them.
+            padding_leading = function() return (cell.metrics().cell_height - indicator()) / 2 end,
+            padding_trailing = function() return (cell.metrics().cell_height - indicator()) / 2 end,
             -- The battery's load is how empty it is.
             condition = function()
                 return math.max(cpu(), ram(), if shows_gpu() then gpu() else 0, if shows_battery() then 1 - battery() else 0)
