@@ -215,8 +215,10 @@ return {
 
         local function question_width(): number
             local text = g.text_width { text = "Save recording?", font = typography.expressive(), size = cell.metrics().font_title }
+            -- Measured as components/choice draws it: upper case. Measured
+            -- as written, SAVE ran past the cell's cap.
             local function chip(label: string, bold: boolean): number
-                return g.text_width { text = label, font = typography.technical(), size = math.round(12 * f()),
+                return g.text_width { text = string.upper(label), font = typography.technical(), size = math.round(12 * f()),
                     weight = if bold then typography.weight_title else typography.weight_label, tracking = 0.04 } + 24 * f()
             end
             return text + chip("Discard", false) + chip("Save", true) + 24 * f()
