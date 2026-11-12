@@ -338,7 +338,7 @@ the whole shell. Only the second table is left to you.
 | Required | Package | For |
 |---|---|---|
 | niri 26.04 or later | `niri` | the compositor; 26.04 is the first with `ext-background-effect` blur |
-| Genoma 0.1.1 | AUR `genoma` | the shell runtime, drawing through Vulkan: it needs a Vulkan driver (`vulkan-radeon`, `vulkan-intel`, `nvidia-utils`) |
+| Genoma 0.1.9 | AUR `genoma` | the shell runtime, drawing through Vulkan: it needs a Vulkan driver (`vulkan-radeon`, `vulkan-intel`, `nvidia-utils`) |
 | Python 3, dateutil | `python`, `python-dateutil` | the helper scripts in `scripts/`; the calendars' recurring events |
 | libsecret | `libsecret` | the calendars' passwords and tokens, kept in the keyring |
 | gsettings | `glib2` | the desktop's settings: palette, icons, cursor, proxy |
@@ -397,6 +397,14 @@ from a terminal, run once per user. Coming from a clone, it points the existing
 includes, the autostart line and the keys at the package, and leaves the keys
 themselves as they are.
 
+Updates come with the system's (`paru -Syu`, `pacman -Syu`). When
+`bioma-shell` or `genoma` is upgraded, the running Bioma restarts on the new
+version by itself, once pacman is done, and keys the new version brings are
+added to your `bioma-binds.kdl` then. `bioma-shell restart` does the same by
+hand. A Bioma older than 1.0.0-beta.71 does not restart by itself yet: after
+the upgrade to it, run `bioma-shell restart` once, or log
+in again.
+
 Or from a clone:
 
 ```sh
@@ -429,8 +437,9 @@ would lose it. Then it writes the keys and tells niri where Bioma is:
 If niri refuses it, the copy is put back. Running the installer again changes
 nothing.
 
-Then start it with `scripts/shell bioma`, or log in again. After an update,
-`scripts/shell restart` stops Bioma and starts the new version. The first start uses
+Then start it with `scripts/shell bioma`, or log in again. A clone is not
+restarted by a package upgrade: after a `git pull`, `scripts/shell restart`
+stops Bioma and starts the new version. The first start uses
 `config/default.json`. Everything after that is set from the settings cell
 (`Mod+Alt+S`) and kept in `~/.config/bioma/override.json`.
 
@@ -629,7 +638,8 @@ followed by `scripts/shell restart` starts it again; `qs -p
 ## Two shells, one session
 
 One program per session may own `org.freedesktop.Notifications`, so Bioma and
-whatever was there before cannot both run. `scripts/shell` is the switch:
+whatever was there before cannot both run. `scripts/shell` is the switch
+(installed from the AUR, the same script is `bioma-shell`):
 
 ```sh
 scripts/shell            # what is running, and what will run at login
