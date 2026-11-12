@@ -20,5 +20,22 @@ if [ "${1:-}" = ipc ]; then
     shift
     exec "$bin" ipc "$@"
 fi
+# What pacman had installed of what this process runs, when it started:
+# Bioma from the package's directory, Genoma from the package's binary. The
+# shell restarts itself when that changes (genoma/services/upgrade.luau); a
+# checkout or a build of one's own lists nothing for its side.
+packages=""
+if [ -d /var/lib/pacman/local ]; then
+    want=()
+    [ "$here" = /usr/share/bioma ] && want+=(bioma-shell)
+    [ "$(readlink -f "$bin")" = /usr/bin/genoma ] && want+=(genoma)
+    for name in ${want[@]+"${want[@]}"}; do
+        for dir in /var/lib/pacman/local/"$name"-*; do
+            entry="${dir##*/}"
+            [ "${entry%-*-*}" = "$name" ] && packages="$packages${packages:+ }$entry"
+        done
+    done
+fi
+export BIOMA_PACKAGES="$packages"
 # Named for what it runs: Genoma is the toolkit, the process is Bioma.
 exec -a bioma "$bin" "$here/genoma" "$@"
