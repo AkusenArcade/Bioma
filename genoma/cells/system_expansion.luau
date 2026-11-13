@@ -49,10 +49,29 @@ function M.new(cell: any): { [string]: any }
     local function f(): number return m().factor end
     local down = cell.edge ~= "bottom"
 
-    local function capsule_width(): number return 300 * f() end
+    local function panel_padding(): number return 10 * f() end
+    -- The widest question, measured as it is drawn: the sentence, then
+    -- CANCEL and the action as components/choice draws them, in upper case.
+    -- At 300 SHUT DOWN ran past the row's rim.
+    local function question_width(): number
+        local function chip(label: string, bold: boolean): number
+            return g.text_width { text = string.upper(label), font = typography.technical(), size = math.round(12 * f()),
+                weight = if bold then typography.weight_title else typography.weight_label, tracking = 0.04 } + 24 * f()
+        end
+        local widest = 0
+        for _, a in ACTIONS do
+            local text = g.text_width { text = sentence(a.label) .. "?", font = typography.expressive(),
+                size = m().font_secondary }
+            widest = math.max(widest, 16 * f() + text + 12 * f() + chip("Cancel", false) + 8 * f()
+                + chip(a.label, true) + 6 * f())
+        end
+        return widest
+    end
+    local function capsule_width(): number
+        return math.max(300 * f(), math.ceil(question_width() + panel_padding() * 2))
+    end
     local function capsule_height(): number return 108 * f() end
     local function avatar(): number return 88 * f() end
-    local function panel_padding(): number return 10 * f() end
     local function row_height(): number return 44 * f() end
     local function panel_height(): number return panel_padding() * 2 + #ACTIONS * row_height() end
     local function info_width(): number return 340 * f() end
