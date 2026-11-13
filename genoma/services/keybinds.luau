@@ -11,6 +11,7 @@
 -- does (`keybinds …` through scripts/ipc; genoma/PORT.md, "Who acts on the
 -- desktop").
 local g = require("@genoma")
+local apps = require("core/apps")
 local paths = require("core/paths")
 local runtime = require("core/runtime")
 local niri_config = require("services/niri_config")
@@ -145,8 +146,10 @@ end
 --
 -- niri's own actions, asked of niri, so the list is the one this build
 -- knows, minus those that need an argument, which a picker cannot supply.
--- Read once, the first time somebody asks.
+-- `spawn` is the exception, offered as the applications and as a typed
+-- command. Read once, the first time somebody asks.
 local actions = g.signal({} :: { string })
+local terminal = g.signal({} :: { string })
 local asked = false
 function M.actions(): { string } return actions.value end
 function M.ask_actions()
@@ -166,6 +169,34 @@ function M.ask_actions()
         end,
         on_exit = function() actions.value = out end,
     }
+    -- The terminal an application that runs in one is spawned inside,
+    -- as words: xdg-terminal-exec takes the command as it is, the others
+    -- after `-e` (core/apps.luau asks the same, at launch).
+    g.process {
+        command = { "bash", "-c",
+            "if command -v xdg-terminal-exec >/dev/null 2>&1; then echo xdg-terminal-exec; exit; fi; "
+            .. "for t in \"$TERMINAL\" kitty alacritty foot ghostty wezterm konsole xterm; do "
+            .. "[ -n \"$t\" ] && command -v \"$t\" >/dev/null 2>&1 && { echo \"$t -e\"; exit; }; done" },
+        on_line = function(line: string)
+            local words = string.split(string.match(line, "^%s*(.-)%s*$") or "", " ")
+            if words[1] ~= "" then terminal.value = words end
+        end,
+    }
+end
+
+-- An application as niri spawns it: its Exec without field codes, inside
+-- the terminal when it asks for one. Nil when there is nothing to run.
+function M.spawn_of(entry: any): { name: string, args: { string } }?
+    local words = apps.command_of(entry)
+    if #words == 0 then return nil end
+    if entry.terminal then
+        local t = terminal.value
+        if #t == 0 then return nil end
+        local out = table.clone(t)
+        for _, w in words do table.insert(out, w) end
+        words = out
+    end
+    return { name = "spawn", args = words }
 end
 
 return M

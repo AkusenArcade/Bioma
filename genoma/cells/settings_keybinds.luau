@@ -13,8 +13,10 @@
 -- and the cross that replaces the pencil removes it.
 --
 -- A new shortcut starts from what it does: the dashed chip opens a picker
--- on a thread (the cells first, then niri's own actions), and what is
--- chosen arrives at the end of the list already listening for its keys.
+-- on a thread (the cells first, then niri's own actions, then the
+-- applications niri spawns, and last whatever was typed, as a command),
+-- and what is chosen arrives at the end of the list already listening for
+-- its keys.
 local g = require("@genoma")
 local colour = require("core/colour")
 local metrics_mod = require("core/metrics")
@@ -26,6 +28,7 @@ local hint_mod = require("components/hint")
 local field_mod = require("components/field")
 local thread_mod = require("components/thread")
 local keybinds = require("services/keybinds")
+local apps = require("core/apps")
 local registry = require("cells/registry")
 
 local M = {}
@@ -239,6 +242,28 @@ function M.new(t: { [string]: any }): any
         for _, name in keybinds.actions() do
             local label = keybinds.humanize(name)
             if keep(label) then table.insert(out, { group = "NIRI", label = label, title = "", action = { name = name, args = {} } }) end
+        end
+        -- The applications, spawned by niri itself, by name.
+        local seen: { [string]: boolean } = {}
+        local listed = {}
+        for _, e in apps.entries() do
+            local name = if e.name ~= "" then e.name else e.id
+            if not seen[e.id] and keep(name) then
+                local action = keybinds.spawn_of(e)
+                if action then
+                    seen[e.id] = true
+                    table.insert(listed, { group = "APPS", label = name, title = "Open " .. name, action = action })
+                end
+            end
+        end
+        table.sort(listed, function(a: any, b: any) return string.lower(a.label) < string.lower(b.label) end)
+        for _, c in listed do table.insert(out, c) end
+        -- Anything typed is also a command, run through the shell: last,
+        -- so Enter still takes a name that matched.
+        local typed = string.match(filter_text.value, "^%s*(.-)%s*$") or ""
+        if typed ~= "" then
+            table.insert(out, { group = "COMMAND", label = "Run " .. typed, title = "Run " .. typed,
+                action = { name = "spawn-sh", args = { typed } } })
         end
         return out
     end)
