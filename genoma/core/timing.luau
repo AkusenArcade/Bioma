@@ -74,6 +74,9 @@ g.effect(function()
         open = { duration = s.open, curve = c.open },
         open_flat = { duration = s.open, curve = c.open_flat },
         close = { duration = s.close, curve = c.close },
+        -- A shared transition (Genoma's `morph`): a chip opening into the
+        -- form it stands for, over the opening time; back again, the same.
+        morph = { duration = s.open, curve = c.open_flat },
         -- Springs, for what is tied to something by a thread and is seen to
         -- pull on it: the organic launcher's clusters arrive on `tether`
         -- and overshoot, and their threads' middles follow on `sway`, looser

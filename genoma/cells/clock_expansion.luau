@@ -30,6 +30,7 @@ local calendar = require("services/calendar")
 local field = require("components/field")
 local switch = require("components/switch")
 local thread = require("components/thread")
+local timing = require("core/timing")
 
 local M = {}
 
@@ -95,8 +96,10 @@ function M.new(cell: any, twenty_four: () -> boolean)
 
     -- The dashed chip that adds something, and is the way back out of the
     -- field it opened while that is open.
-    local function add_chip(label: () -> string, lit: () -> boolean, on_click: () -> ()): any
+    local function add_chip(label: () -> string, lit: () -> boolean, on_click: () -> (), morph: string?): any
         return g.capsule {
+            morph = morph,
+            id = if morph then morph .. " chip" else nil,
             role = "button",
             height = function() return 26 * f() end,
             padding_x = function() return 14 * f() end,
@@ -112,6 +115,28 @@ function M.new(cell: any, twenty_four: () -> boolean)
                 text = label,
                 color = function() return if lit() then theme.primary() else theme.text() end,
             }),
+        }
+    end
+
+    -- The way out of a field a chip opened into: a cross at its end.
+    local function give_up(on_click: () -> ()): any
+        local hovered = g.signal(false)
+        return g.box {
+            role = "button",
+            name = "Cancel",
+            width = function() return 16 * f() end,
+            height = function() return 16 * f() end,
+            justify = "center",
+            align = "center",
+            opacity = function() return if hovered.value then 1 else theme.tool_rest end,
+            on_hover = function(on: boolean) hovered.value = on end,
+            on_click = on_click,
+            g.icon {
+                width = function() return 9 * f() end,
+                height = function() return 9 * f() end,
+                icon = "close",
+                color = theme.text,
+            },
         }
     end
 
@@ -333,16 +358,37 @@ function M.new(cell: any, twenty_four: () -> boolean)
     local place_text = g.signal("")
     local place_node, place_field = field.new {
         text = place_text,
-        width = function() return inner(side_width)() - 28 * f() end,
+        width = function() return inner(side_width)() - 28 * f() - 22 * f() end,
         font = typography.expressive,
         size = function() return m().font_secondary end,
         placeholder = "A city or a zone",
         taking = function() return adding.value end,
     }
+    -- The places and the field take turns, the content never under a
+    -- shape that moves (Akusen, 2026-11-16). Opening, the places fade out
+    -- first, then the chip opens into the field over the room they left.
+    -- Closing, the field closes into its chip while the places are back
+    -- but unseen, and once it has they fade in.
+    local listing = g.signal(true)
+    local leaving = g.signal(false)
+    local function open_place()
+        if g.untracked(function() return leaving.value or adding.value end) then return end
+        leaving.value = true
+        g.after(timing.seconds.content_fade, function()
+            if g.untracked(function() return leaving.value and not adding.value end) then adding.value = true end
+        end)
+    end
     g.watch(function() return adding.value end, function(on: boolean)
         if on then
+            listing.value = false
             time.ask_known()
             place_field.set("")
+        else
+            leaving.value = true
+            listing.value = true
+            g.after(timing.seconds.open, function()
+                if not g.untracked(function() return adding.value end) then leaving.value = false end
+            end)
         end
     end)
 
@@ -489,7 +535,9 @@ function M.new(cell: any, twenty_four: () -> boolean)
                 direction = "column",
                 gap = function() return 4 * f() end,
                 g.each {
-                    present = function() return not adding.value end,
+                    present = function() return listing.value end,
+                    opacity = function() return if leaving.value then 0 else 1 end,
+                    transition = { opacity = "content_fade" },
                     direction = "column",
                     gap = function() return 4 * f() end,
                     items = time.zones,
@@ -497,7 +545,9 @@ function M.new(cell: any, twenty_four: () -> boolean)
                     row = place_row,
                 },
                 g.box {
-                    present = function() return not adding.value and #time.zones() == 0 end,
+                    present = function() return listing.value and #time.zones() == 0 end,
+                    opacity = function() return if leaving.value then 0 else 1 end,
+                    transition = { opacity = "content_fade" },
                     width = inner(side_width),
                     height = function() return 52 * f() end,
                     justify = "center",
@@ -510,7 +560,10 @@ function M.new(cell: any, twenty_four: () -> boolean)
                     },
                 },
                 -- Adding one: a field, and what the system knows that matches.
+                -- The chip that asked for it opens into it (one shape, Genoma's
+                -- `morph`), and it closes back into the chip.
                 g.capsule {
+                    morph = "clock place",
                     present = function() return adding.value end,
                     width = inner(side_width),
                     height = function() return 34 * f() end,
@@ -520,8 +573,10 @@ function M.new(cell: any, twenty_four: () -> boolean)
                     rim_bottom = theme.primary,
                     padding_x = function() return 14 * f() end,
                     align = "center",
-                    justify = "start",
+                    justify = "between",
+                    direction = "row",
                     place_node,
+                    give_up(function() adding.value = false end),
                 },
                 g.each {
                     present = function() return adding.value end,
@@ -534,10 +589,9 @@ function M.new(cell: any, twenty_four: () -> boolean)
             g.box {
                 width = inner(side_width),
                 justify = "center",
-                present = function() return adding.value or #time.zones() < 5 end,
-                add_chip(function() return if adding.value then "CANCEL" else "+ PLACE" end,
-                    function() return adding.value end,
-                    function() adding.value = not g.untracked(function() return adding.value end) end),
+                present = function() return not adding.value and #time.zones() < 5 end,
+                add_chip(function() return "+ PLACE" end, function() return false end,
+                    open_place, "clock place"),
             },
         }
     end
