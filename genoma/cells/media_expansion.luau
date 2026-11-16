@@ -15,6 +15,7 @@ local colour = require("core/colour")
 local performance = require("core/performance")
 local metrics_mod = require("core/metrics")
 local theme = require("core/theme")
+local play_pause = require("components/play_pause")
 local typography = require("core/typography")
 local media = require("services/media")
 local sinestesia = require("services/sinestesia")
@@ -123,11 +124,10 @@ function M.new(cell: any): any
             align = "center",
             justify = "center",
             on_click = function() if g.untracked(toggles) then media.play_pause() end end,
-            g.icon {
-                width = function() return 18 * f() end,
-                height = function() return 18 * f() end,
-                icon = function() return if media.playing() then "pause" else "play" end,
-                color = theme.background,
+            play_pause.new {
+                size = function() return 18 * f() end,
+                playing = media.playing,
+                colour = theme.background,
             },
         },
         step("skip-next", media.can_go_next, media.next),
