@@ -1,24 +1,25 @@
 --!strict
--- The keyboard's layouts (services/Keyboard.qml at 11bb81e): which niri has
--- loaded and which is on, from its event stream; the catalogue this machine
--- knows, from `scripts/xkb`; and the list written back, as a niri include,
--- when one is added or removed here.
+-- The keyboard's layouts (services/Keyboard.qml at 11bb81e): which the
+-- compositor has loaded and which is on, and the switch between them, from
+-- Genoma's `compositor.keyboard` (niri's event stream, or Hyprland's); the
+-- catalogue this machine knows, from `scripts/xkb`; and the list written
+-- back, as a niri include, when one is added or removed here.
 local g = require("@genoma")
 local config = require("core/config")
 local paths = require("core/paths")
-local niri = require("services/niri")
+local compositor = require("@genoma/compositor")
 
 local M = {}
 
-function M.loaded(): { string } return niri.layout_names() end
-function M.current(): string return niri.keyboard_layout() end
-function M.current_index(): number return table.find(niri.layout_names(), niri.keyboard_layout()) or 0 end
+function M.loaded(): { string } return compositor.keyboard.layouts end
+function M.current(): string return compositor.keyboard.name or "" end
+function M.current_index(): number return compositor.keyboard.current or 0 end
 
 -- A change of layout seen, not the first one read.
 local listeners: { () -> () } = {}
 function M.on_switched(f: () -> ()) table.insert(listeners, f) end
 local last_seen = ""
-g.watch(niri.keyboard_layout, function(now: string)
+g.watch(M.current, function(now: string)
     if last_seen ~= "" and now ~= "" and now ~= last_seen then
         for _, f in listeners do f() end
     end
@@ -45,7 +46,7 @@ function M.layouts(): { any }
     local by_name = {}
     for _, e in catalogue.value do by_name[e.name] = e end
     local out = {}
-    for _, name in niri.layout_names() do
+    for _, name in M.loaded() do
         local known = by_name[name]
         table.insert(out, { name = name, layout = if known then known.layout else "", variant = if known then known.variant else "" })
     end
@@ -60,10 +61,10 @@ end
 function M.current_code(): string return M.code_of(M.layouts()[M.current_index()]) end
 
 function M.switch_to(index: number)
-    if index < 1 or index > #niri.layout_names() or index == g.untracked(M.current_index) then return end
-    niri.switch_layout(tostring(index - 1))
+    if index < 1 or index > #g.untracked(M.loaded) or index == g.untracked(M.current_index) then return end
+    compositor:switch_layout(index)
 end
-function M.next() niri.switch_layout("next") end
+function M.next() compositor:switch_layout("next") end
 
 -- ---- Writing the list --------------------------------------------------------
 
