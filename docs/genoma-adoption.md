@@ -35,7 +35,7 @@ binary is rebuilt, which is his call.
 | Genoma | Proposed use in Bioma | The live value behind it |
 |---|---|---|
 | `g.svg` with `parts` | Icons that carry a reading by part: Wi-Fi arcs lit by signal strength, battery fill by charge, volume waves by level, the bell by unread count, the drive by space used. Static icons stay `g.icon` (cheaper) | strength, charge, level, count, space |
-| Path `trim` / `d` morph | Dials and gauges drawn on as far as their value (`components/gauge`, `dial`, `vital`) instead of SDF arcs, where a thread or arc follows a reading; a shape morphing between states (connected ↔ disconnected) | the reading; the state change |
+| Path `d` morph | A shape morphing between two states: play ↔ pause as one outline (`components/play_pause`). Dials and gauges (`components/gauge`, `dial`, `vital`) keep their SDF arcs: dropped | the state change |
 | `morph = "name"` (shared transitions) | A cell's contracted form and its expansion as one shape that grows from its origin — the rule "expanded forms grow from their origin" taken literally. Start with one cell (clock → calendar), then the others | opening and closing (the person's act) |
 | Particles: sprites, sub-emitters, forces | Traffic as particles whose rate is the transfer rate (connectivity expansion, downloads); a notification burst whose count is the number arrived | bytes a second; count |
 | `compute` simulations | An organism whose simulation speed is the machine's load (reaction-diffusion, boids), beside lava and the others | CPU or GPU load |
