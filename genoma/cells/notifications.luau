@@ -232,6 +232,24 @@ return {
             return carried
         end
 
+        -- A picture the message carries (a photo, the sender's face): the
+        -- PNG Genoma made of the sender's pixels, else a picture file it
+        -- named. An icon name is the application's, already on the pill.
+        local function picture(): string
+            local n = shout()
+            if not n then return "" end
+            if (n.image or "") ~= "" then return n.image end
+            local p = n.image_path or ""
+            if string.sub(p, 1, 7) == "file://" then p = string.sub(p, 8) end
+            if string.sub(p, 1, 1) == "/" and string.sub(p, -4) ~= ".svg" then return p end
+            return ""
+        end
+        local function picture_size(): number return 56 * f() end
+        local function picture_gap(): number return 12 * f() end
+        local function text_width(): number
+            return if picture() ~= "" then inner() - picture_size() - picture_gap() else inner()
+        end
+
         -- Three lines and then an ellipsis: the rest is in the history, and a
         -- membrane is not a page.
         local function body(): string
@@ -239,7 +257,7 @@ return {
             local text = plain(if n then n.body else "")
             text = (string.gsub(text, "%s+", " "))
             if text == "" then return "" end
-            local room = inner() * 3 * 0.96
+            local room = text_width() * 3 * 0.96
             local font, size = typography.expressive(), body_size()
             if g.text_width { text = text, font = font, size = size } <= room then return text end
             local words, out = string.split(text, " "), ""
@@ -254,12 +272,13 @@ return {
             local b = body()
             if b == "" then return 0 end
             local w = g.text_width { text = b, font = typography.expressive(), size = body_size() }
-            return math.clamp(math.ceil(w / inner()), 1, 3)
+            return math.clamp(math.ceil(w / text_width()), 1, 3)
         end
         local function notify_height(): number
-            return padding() * 2 + m().font_meta * 1.4 + 4 * f() + m().font_title * 1.4
+            local words = m().font_meta * 1.4 + 4 * f() + m().font_title * 1.4
                 + (if body_lines() > 0 then body_lines() * body_line() + 6 * f() else 0)
-                + (if #actions() > 0 then action_height() + 10 * f() else 0)
+            local block = if picture() ~= "" then math.max(words, picture_size()) else words
+            return padding() * 2 + block + (if #actions() > 0 then action_height() + 10 * f() else 0)
         end
 
         local function notification_node(): any
@@ -268,34 +287,54 @@ return {
                 direction = "column",
                 align = "start",
                 present = function() return not history.value end,
-                -- Who is speaking, in the machine's voice: a name the system
-                -- knows, not a sentence somebody wrote.
-                g.text {
-                    text = function() local n = shout() return if n then n.app_name or "" else "" end,
-                    color = theme.text_faint,
-                    font = typography.technical,
-                    size = function() return m().font_meta end,
-                    weight = typography.weight_label,
-                    tracking = typography.label_tracking,
-                    max_width = inner,
-                },
-                g.box { width = 1, height = function() return 4 * f() end },
-                g.text {
-                    text = function() local n = shout() return if n then plain(n.summary) else "" end,
-                    color = theme.text,
-                    font = typography.expressive,
-                    size = function() return m().font_title end,
-                    max_width = inner,
-                },
-                g.box { width = 1, present = function() return body_lines() > 0 end, height = function() return 6 * f() end },
-                g.text {
-                    present = function() return body_lines() > 0 end,
-                    text = body,
-                    color = theme.text_muted,
-                    font = typography.expressive,
-                    size = body_size,
-                    max_width = inner,
-                    wrap = true,
+                g.box {
+                    width = inner,
+                    direction = "row",
+                    align = "start",
+                    gap = picture_gap,
+                    g.box {
+                        width = text_width,
+                        direction = "column",
+                        align = "start",
+                        -- Who is speaking, in the machine's voice: a name the
+                        -- system knows, not a sentence somebody wrote.
+                        g.text {
+                            text = function() local n = shout() return if n then n.app_name or "" else "" end,
+                            color = theme.text_faint,
+                            font = typography.technical,
+                            size = function() return m().font_meta end,
+                            weight = typography.weight_label,
+                            tracking = typography.label_tracking,
+                            max_width = text_width,
+                        },
+                        g.box { width = 1, height = function() return 4 * f() end },
+                        g.text {
+                            text = function() local n = shout() return if n then plain(n.summary) else "" end,
+                            color = theme.text,
+                            font = typography.expressive,
+                            size = function() return m().font_title end,
+                            max_width = text_width,
+                        },
+                        g.box { width = 1, present = function() return body_lines() > 0 end, height = function() return 6 * f() end },
+                        g.text {
+                            present = function() return body_lines() > 0 end,
+                            text = body,
+                            color = theme.text_muted,
+                            font = typography.expressive,
+                            size = body_size,
+                            max_width = text_width,
+                            wrap = true,
+                        },
+                    },
+                    -- The message's picture, beside what it says.
+                    g.image {
+                        present = function() return picture() ~= "" end,
+                        src = picture,
+                        width = picture_size,
+                        height = picture_size,
+                        fit = "cover",
+                        radius = function() return 8 * f() end,
+                    },
                 },
                 g.box { width = 1, present = function() return #actions() > 0 end, height = function() return 10 * f() end },
                 g.each {
