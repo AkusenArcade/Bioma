@@ -56,6 +56,9 @@ local fixed = {
     -- How long the pointer rests on a button with no words before its name
     -- comes (components/hint.luau): long enough not to flicker past.
     hint = 600,
+    -- How long a press is held still before it is a long one (Genoma reads
+    -- the timing of this name): a finger's way to what the other buttons do.
+    long_press = 500,
 }
 
 g.effect(function()
@@ -77,6 +80,7 @@ g.effect(function()
         -- A shared transition (Genoma's `morph`): a chip opening into the
         -- form it stands for, over the opening time; back again, the same.
         morph = { duration = s.open, curve = c.open_flat },
+        long_press = { duration = s.long_press },
         -- Springs, for what is tied to something by a thread and is seen to
         -- pull on it: the organic launcher's clusters arrive on `tether`
         -- and overshoot, and their threads' middles follow on `sway`, looser

@@ -279,6 +279,12 @@ return {
             on_wheel = function(_, dy: number)
                 if dy ~= 0 then niri.focus_workspace_step(cell.output, dy > 0) end
             end,
+            -- And by hand, a finger or a held press carried across it: the
+            -- strip of workspaces is pushed along, so left or up brings the
+            -- next one, right or down the one before.
+            on_swipe = function(direction: string)
+                niri.focus_workspace_step(cell.output, direction == "left" or direction == "up")
+            end,
             on_key = function(key: string)
                 local list = g.untracked(rows)
                 local n = #list

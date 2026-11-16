@@ -314,6 +314,8 @@ return {
                 height = glyph,
                 align = "center",
                 justify = "center",
+                -- Held still, a finger's right button: the item's menu.
+                on_long_press = function() show(g.untracked(it)) end,
                 on_click = function(button: number)
                     local now = g.untracked(it)
                     if button == LEFT then press(now)

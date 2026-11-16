@@ -15,7 +15,8 @@
 --                      whose shape changes them), least_width, body_height
 --   interactive        whether it answers a press (default: it has a panel)
 --   on_click()         what a press does, if not opening
---   on_middle()        what the middle button does (the audio's mute)
+--   on_middle()        what the middle button does (the audio's mute), and
+--                      a press held still
 --   radius()           the cell's own radius, for a cell that is not a pill
 --                      of the strip's height (the summoned audio capsule)
 --   replaces_content   false (or a function) for a cell that keeps its
@@ -35,6 +36,10 @@
 --                      hang to its left
 --   on_key(name)       a key while it is open, Escape aside
 --   on_wheel(dx, dy)   the wheel over the cell
+--   on_swipe(direction, speed)
+--                      a press carried across the cell and let go: "left",
+--                      "right", "up" or "down". A cell that takes it stops
+--                      taking as a click a press dragged past a few units
 --   header_title, header_mark(size), header_mark_size()
 --                      what it shows while open: the domain's glyph and its
 --                      name in the technical voice, the title of what hangs
@@ -723,6 +728,11 @@ function M.new(kind: any, ctx: { [string]: any })
             end,
             on_move = function() c.touch("cell") end,
             on_wheel = spec.on_wheel,
+            on_swipe = spec.on_swipe,
+            drag_threshold = if spec.on_swipe then 8 else nil,
+            -- A finger has one button: held still, it does what the middle
+            -- one does.
+            on_long_press = if spec.on_middle then function() spec.on_middle() end else nil,
             -- While it is open it has the attention: a press on anything but
             -- itself and what it opened closes it, and so does Escape.
             catch = function() return (c.open.value and claims()) or focus.is(c) end,

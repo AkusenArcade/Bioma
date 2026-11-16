@@ -269,6 +269,10 @@ return {
                 on_release = function()
                     if moved then release() end
                 end,
+                -- Held still, a finger's right button.
+                on_long_press = function()
+                    if not moved then t.on_toggle(g.untracked(t.app_id)) end
+                end,
                 on_click = function(button: number)
                     if moved then moved = false return end
                     local id = g.untracked(t.app_id)
