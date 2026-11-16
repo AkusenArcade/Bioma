@@ -102,8 +102,8 @@ the pool, which independent particles cannot do.
 swarm, Genoma's boids on the GPU. Its speed is the processor's load on a
 square-root scale, so an idle machine still drifts; how close it keeps is
 the memory used; how many there are is the kernel's tasks, in steps of
-twenty-five. Masked by the panel's own shape (`clip` cuts a rectangle, the
-creatures crossed the round corners), and lit by `genoma:glow`, a bloom
+twenty-five. Clipped to the panel's round corners (Genoma's `clip` cut a
+rectangle and the creatures crossed them; it now follows the radius), and lit by `genoma:glow`, a bloom
 pass over the swarm.
 
 ## Order proposed

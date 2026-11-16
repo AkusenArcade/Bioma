@@ -20,6 +20,9 @@ local performance = require("core/performance")
 local PER_CREATURE = 10
 local STEP = 25
 local FEWEST, MOST = 50, 400
+-- The glass's outline: Genoma draws a rim never under two physical pixels,
+-- so two units hold it at any scale.
+local RIM = 2
 
 return {
     new = function(o: any)
@@ -32,6 +35,8 @@ return {
         local function tint(): string return if themed() then theme.primary() else theme.state_for(load()) end
         local function figures(): boolean return o.entry().figures ~= false end
         local function inset(): number return 18 * f() end
+        local function inner_width(): number return o.width() - 2 * RIM end
+        local function inner_height(): number return o.height() - 2 * RIM end
 
         -- The population changes only by whole steps: a new number starts
         -- the simulation again.
@@ -44,8 +49,8 @@ return {
             return g.shader {
                 overlay = true,
                 attach = "corner",
-                width = o.width,
-                height = o.height,
+                width = inner_width,
+                height = inner_height,
                 compute = "genoma:boids",
                 agents = function() return population.value end,
                 agent_size = function() return 4 * f() end,
@@ -70,42 +75,23 @@ return {
             }
         end
 
-        -- The swarm wraps round the panel's edges, so it is masked by the
-        -- panel's own shape: `clip` cuts a rectangle, and the corners are
-        -- round.
+        -- Each creature lit: Genoma's bloom over the swarm, a soft light
+        -- round each as wide as a few of its lengths. The panel's clip
+        -- follows its round corners, which the swarm wraps across.
         local function swarm(): any
             return g.box {
                 overlay = true,
                 attach = "corner",
-                width = o.width,
-                height = o.height,
-                -- Each creature lit: Genoma's bloom over the swarm, a soft
-                -- light round each as wide as a few of its lengths.
-                g.box {
-                    overlay = true,
+                width = inner_width,
+                height = inner_height,
+                creatures(),
+                g.shader {
+                    pass = true,
                     attach = "corner",
-                    width = o.width,
-                    height = o.height,
-                    creatures(),
-                    g.shader {
-                        pass = true,
-                        attach = "corner",
-                        width = o.width,
-                        height = o.height,
-                        src = "genoma:glow",
-                        values = function() return { 7 * f(), 1.4, 0.15 } end,
-                    },
-                },
-                g.capsule {
-                    mask = true,
-                    overlay = true,
-                    attach = "corner",
-                    width = o.width,
-                    height = o.height,
-                    radius = function() return m().radius_panel end,
-                    fill = "#ffffffff",
-                    rim_top = "#00000000",
-                    rim_bottom = "#00000000",
+                    width = inner_width,
+                    height = inner_height,
+                    src = "genoma:glow",
+                    values = function() return { 7 * f(), 1.4, 0.15 } end,
                 },
             }
         end
@@ -135,15 +121,25 @@ return {
         return {
             bleeds = true,
             node = function()
-                return g.capsule {
+                return g.box {
                     width = o.width,
                     height = o.height,
-                    radius = function() return m().radius_panel end,
-                    clip = true,
-                    fill = "#00000000",
-                    rim_top = "#00000000",
-                    rim_bottom = "#00000000",
-                    swarm(),
+                    -- The swarm swims inside the glass's outline, never
+                    -- over it: clipped to the shape within the rim.
+                    g.capsule {
+                        overlay = true,
+                        attach = "corner",
+                        offset_x = RIM,
+                        offset_y = RIM,
+                        width = inner_width,
+                        height = inner_height,
+                        radius = function() return m().radius_panel - RIM end,
+                        clip = true,
+                        fill = "#00000000",
+                        rim_top = "#00000000",
+                        rim_bottom = "#00000000",
+                        swarm(),
+                    },
                     g.box {
                         overlay = true,
                         attach = "corner",

@@ -84,6 +84,11 @@ Every organism is a **glass panel**: the cell's flat glass fill, its blur
 running to `line` at mid-height. Radius 20, the panel radius: every organism is taller than the
 110 px pill ceiling. Inner padding 20. Wells, where an organism has rows, radius 10.
 
+**The rim stays on top.** An organism that bleeds (its content filling the glass, no inner
+padding) keeps what moves inside the outline: its content is clipped to the shape within the
+rim — inset by the rim (2), the radius 2 less — never to the panel's own edge, where a creature
+or a drop would cross the outline (Akusen, 2026-11-16).
+
 **No shadow.** The shadow is reserved for what is invoked or expanded — what stands *above*
 something. An organism stands on the wallpaper; a shadow would lift it off the desktop and make
 it read as a panel waiting for a click.
@@ -887,7 +892,7 @@ step.
 
 | Measure | Value | Note |
 |---|---|---|
-| panel | 424 × 200 | template 2 × 1; bleeds, the swarm masked by the glass's own shape (`clip` cuts a rectangle; the corners are round) |
+| panel | 424 × 200 | template 2 × 1; bleeds, the swarm clipped within the rim, round corners included (Genoma's `clip` follows a capsule's radius) |
 | creature | 4 long | a dot stretched along its heading, in the colour, lit by a bloom (`genoma:glow`: spread 7, strength 1.4, from brightness 0.15) |
 | speed | 4 + 92 √load a second | 4 idle, ~13 at 1 %, ~50 at 25 %, 96 with all cores |
 | sight | 28 | how far one sees its neighbours |
