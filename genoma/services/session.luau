@@ -39,64 +39,33 @@ function M.restart_due(): boolean
 end
 
 -- ---- Who ------------------------------------------------------------------------
+--
+-- From Genoma's `@genoma/accounts` (AccountsService, `/etc/passwd` without
+-- it): the real name or the login, the uid, and the picture the desktop
+-- keeps (AccountsService's, else `~/.face`), followed as it changes.
 
-local person = g.signal({ name = login, uid = -1 })
-local passwd = g.file { path = "/etc/passwd" }
-g.effect(function()
-    local text = passwd.text or ""
-    for line in string.gmatch(text, "[^\n]+") do
-        local fields = string.split(line, ":")
-        if fields[1] == login then
-            local gecos = string.match(string.split(fields[5] or "", ",")[1] or "", "^%s*(.-)%s*$") or ""
-            person.value = { name = if gecos ~= "" then gecos else login, uid = tonumber(fields[3]) or -1 }
-            return
-        end
-    end
-end)
-function M.full_name(): string return person.value.name end
-function M.uid(): number return person.value.uid end
+local accounts = require("@genoma/accounts")
 
--- The picture, from where the desktop keeps it: AccountsService's, then the
--- old dotfiles. The first that can be read.
-local avatar = g.signal("")
-local function find_avatar()
-    local found = ""
-    g.process {
-        command = { "sh", "-c", 'for f; do [ -r "$f" ] && [ -s "$f" ] && { echo "$f"; exit; }; done', "avatar",
-            "/var/lib/AccountsService/icons/" .. login, home .. "/.face", home .. "/.face.icon" },
-        on_line = function(line: string) found = line end,
-        on_exit = function() avatar.value = found end,
-    }
+function M.full_name(): string
+    local me = accounts.me
+    return if me and (me.name or "") ~= "" then me.name else login
 end
-find_avatar()
-function M.avatar(): string return avatar.value end
-function M.has_avatar(): boolean return avatar.value ~= "" end
+function M.uid(): number
+    local me = accounts.me
+    return if me then me.uid else -1
+end
+function M.avatar(): string
+    local me = accounts.me
+    return if me and me.icon then me.icon else ""
+end
+function M.has_avatar(): boolean return M.avatar() ~= "" end
 
 -- A new picture, through AccountsService, which copies it where the greeter
 -- and the lock read it too.
-local last_error = g.signal("")
-function M.last_error(): string return last_error.value end
+function M.last_error(): string return accounts.error end
 function M.set_avatar(path: string)
-    local uid = g.untracked(M.uid)
-    if path == "" or uid < 0 then return end
-    last_error.value = ""
-    g.dbus.call {
-        bus = "system",
-        destination = "org.freedesktop.Accounts",
-        path = "/org/freedesktop/Accounts/User" .. uid,
-        interface = "org.freedesktop.Accounts.User",
-        method = "SetIconFile",
-        signature = "s",
-        args = { path },
-        reply = function(ok: boolean, why: any)
-            if ok then
-                find_avatar()
-            else
-                last_error.value = tostring(why)
-                print("Bioma: the avatar was not changed — " .. tostring(why))
-            end
-        end,
-    }
+    if path == "" then return end
+    accounts:set_icon(path)
 end
 
 -- ---- The end of the session ----------------------------------------------------------
