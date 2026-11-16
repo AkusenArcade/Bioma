@@ -1,56 +1,33 @@
 --!strict
 -- Removable drives, and whether they are being written to (services/
--- Drives.qml at 11bb81e), through `scripts/drives`, which follows udisks
--- and reads the kernel's write counts once a second while one is mounted.
--- Run only while a cell holds it.
+-- Drives.qml at 11bb81e), on Genoma's `@genoma/drives` since Genoma 0.1.16:
+-- udisks followed through its signals, the write rate and free space read
+-- once a second only while something is mounted. What is Bioma's: how a
+-- drive is opened (mounted, then shown in the file manager as a service
+-- of its own), and how a failure is said.
 --
--- BIOMA_CHECK_DRIVES names another program to read instead: a check
--- without a stick in the machine.
+-- A check without a stick in the machine mocks the service:
+-- `genoma snapshot --mock @genoma/drives=<file>`.
 local g = require("@genoma")
 local config = require("core/config")
 local paths = require("core/paths")
+local native = require("@genoma/drives")
 
 local M = {}
 
-local holders: { [any]: boolean } = {}
-local held = g.signal(0)
-function M.hold(owner: any, wanted: boolean)
-    if (holders[owner] == true) == wanted then return end
-    holders[owner] = if wanted then true else nil
-    local n = 0
-    for _ in holders do n += 1 end
-    held.value = n
-end
+-- Kept for the cells that hold the service while they show: Genoma reads
+-- nothing by the second unless a drive is mounted, so holding costs nothing.
+function M.hold(_owner: any, _wanted: boolean) end
 
-local drives = g.signal({})
 g.effect(function()
-    if held.value == 0 then return end
-    local loops = config.get("drives.include_loop", false) == true
-    g.untracked(function()
-        local function watch()
-            local command = { g.env("BIOMA_CHECK_DRIVES") or paths.script("drives") }
-            if loops then table.insert(command, "--loop") end
-            g.process {
-                command = command,
-                on_line = function(line: string)
-                    local ok, data = pcall(g.parse_json, line)
-                    if ok and type(data) == "table" and type(data.drives) == "table" then drives.value = data.drives end
-                end,
-                on_exit = function()
-                    drives.value = {}
-                    g.after(5, function() if g.untracked(function() return held.value end) > 0 then watch() end end)
-                end,
-            }
-        end
-        watch()
-    end)
+    native:include_loops(config.get("drives.include_loop", false) == true)
 end)
 
-function M.drives(): { any } return drives.value end
-function M.attached(): boolean return #drives.value > 0 end
+function M.drives(): { any } return native.list end
+function M.attached(): boolean return #native.list > 0 end
 function M.rate(): number
     local sum = 0
-    for _, d in drives.value do sum += d.rate or 0 end
+    for _, d in native.list do sum += d.rate or 0 end
     return sum
 end
 function M.writing(d: any): boolean return d ~= nil and (d.rate or 0) >= 4096 end
@@ -66,32 +43,6 @@ function M.size(d: any): number
     return sum
 end
 
--- What each drive is doing ("opening", "ejecting") and why it could not.
-local busy = g.signal({})
-local errors = g.signal({})
-function M.busy(id: string): string return busy.value[id] or "" end
-function M.error(id: string): string return errors.value[id] or "" end
--- A drive gone takes its marks with it.
-g.watch(function() return #drives.value end, function()
-    local here = {}
-    for _, d in g.untracked(function() return drives.value end) do here[d.id] = true end
-    local function keep(map: any): any
-        local out = {}
-        for id, v in map do if here[id] then out[id] = v end end
-        return out
-    end
-    busy.value = keep(g.untracked(function() return busy.value end))
-    errors.value = keep(g.untracked(function() return errors.value end))
-end)
-local function mark(id: string, doing: string, problem: string)
-    local b = table.clone(g.untracked(function() return busy.value end))
-    local e = table.clone(g.untracked(function() return errors.value end))
-    b[id] = if doing ~= "" then doing else nil
-    e[id] = if problem ~= "" then problem else nil
-    busy.value = b
-    errors.value = e
-end
-
 local function reason(lines: { string }): string
     local text = table.concat(lines, "\n")
     local said = string.lower(text)
@@ -105,14 +56,34 @@ local function reason(lines: { string }): string
     return if last ~= "" then (string.gsub(last, "^Error [^:]*:%s*", "")) else "It did not answer"
 end
 
-local function run(id: string, command: { string }, env: { [string]: string }?)
-    local complaint = {}
-    g.process {
-        command = command,
-        env = env,
-        on_error_line = function(line: string) table.insert(complaint, line) end,
-        on_exit = function(code: number) mark(id, "", if code == 0 then "" else reason(complaint)) end,
-    }
+-- Opening is Bioma's (Genoma only mounts), so it is marked here; what
+-- Genoma is doing comes with the drive.
+local opening = g.signal({} :: { [string]: boolean })
+local failed = g.signal({} :: { [string]: string })
+local function entry(id: string): any
+    for _, d in native.list do if d.id == id then return d end end
+    return nil
+end
+-- What each drive is doing ("opening", "ejecting") and why it could not.
+function M.busy(id: string): string
+    if opening.value[id] then return "opening" end
+    local d = entry(id)
+    local doing = if d then d.busy else ""
+    if doing == "mounting" then return "opening" end
+    return doing
+end
+function M.error(id: string): string
+    if failed.value[id] then return failed.value[id] end
+    local d = entry(id)
+    return if d and d.error ~= "" then reason({ d.error }) else ""
+end
+local function mark(id: string, on: boolean, problem: string?)
+    local o = table.clone(g.untracked(function() return opening.value end))
+    o[id] = if on then true else nil
+    opening.value = o
+    local f = table.clone(g.untracked(function() return failed.value end))
+    f[id] = problem
+    failed.value = f
 end
 
 -- Mounted if it is not, then shown in the file manager, as its own service.
@@ -120,30 +91,45 @@ function M.open(d: any, env: { [string]: string }?)
     if not d or g.untracked(function() return M.busy(d.id) end) ~= "" then return end
     local volume = d.volumes[1]
     if not volume then return end
-    mark(d.id, "opening", "")
-    run(d.id, { "sh", "-c",
-        'dev="$1"; launch="$2"; at=$(findmnt -n -o TARGET --source "$dev" | head -n 1); '
-        .. 'if [ -z "$at" ]; then udisksctl mount -b "$dev" >/dev/null || exit 1; '
-        .. 'at=$(findmnt -n -o TARGET --source "$dev" | head -n 1); fi; '
-        .. '[ -n "$at" ] && exec "$launch" --id xdg-open -- xdg-open "$at"',
-        "open", volume.device, paths.script("launch") }, env)
+    mark(d.id, true, nil)
+    local function show(at: string)
+        mark(d.id, false, nil)
+        g.process { command = { paths.script("launch"), "--id", "xdg-open", "--", "xdg-open", at }, env = env }
+    end
+    if #(volume.mounts or {}) > 0 then
+        show(volume.mounts[1])
+        return
+    end
+    local ok, why = pcall(function() native:mount(volume.device) end)
+    if not ok then
+        mark(d.id, false, reason({ tostring(why) }))
+        return
+    end
+    -- Shown once the mount appears; Genoma's own error ends the wait. A
+    -- watch cannot be stopped, so it answers once and is quiet after.
+    local answered = false
+    g.lasting(function()
+        g.watch(function()
+            local now = entry(d.id)
+            for _, v in (if now then now.volumes else nil) or {} do
+                if v.device == volume.device and #(v.mounts or {}) > 0 then return v.mounts[1] end
+            end
+            return if now and now.busy == "" and now.error ~= "" then "!" else ""
+        end, function(at: string)
+            if at == "" or answered then return end
+            answered = true
+            if at == "!" then mark(d.id, false, nil) else show(at) end
+        end)
+    end)
 end
 
 -- Unmounting waits for the last of the writing; then the power goes, so the
 -- drive leaves the list when it really is safe to pull.
 function M.eject(d: any)
     if not d or g.untracked(function() return M.busy(d.id) end) ~= "" then return end
-    local command = { "sh", "-c",
-        'disk="$1"; power="$2"; shift 2; '
-        .. 'for dev in "$@"; do udisksctl unmount -b "$dev" >/dev/null || exit 1; done; '
-        .. 'case "$power" in loop) exec udisksctl loop-delete -b "$disk" ;; yes) exec udisksctl power-off -b "$disk" ;; esac',
-        "eject", d.device,
-        if string.sub(d.device, 1, 9) == "/dev/loop" then "loop" elseif d.power_off then "yes" else "no" }
-    for _, v in d.volumes do
-        if #(v.mounts or {}) > 0 then table.insert(command, v.device) end
-    end
-    mark(d.id, "ejecting", "")
-    run(d.id, command)
+    mark(d.id, false, nil)
+    local ok, why = pcall(function() native:eject(d.id) end)
+    if not ok then mark(d.id, false, reason({ tostring(why) })) end
 end
 
 function M.bytes(value: number): string
