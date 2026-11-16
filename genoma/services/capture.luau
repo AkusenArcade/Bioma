@@ -6,11 +6,13 @@
 -- `select_region()` raises a flag; `structure/selection.luau` draws the
 -- rectangle and answers with `region_chosen` or `cancel_selection`, the
 -- region in slurp's format (`x,y WxH`, the compositor's logical
--- coordinates), which grim and wl-screenrec both take.
+-- coordinates), which @genoma/capture and wl-screenrec both take.
 local g = require("@genoma")
 local config = require("core/config")
 local timing = require("core/timing")
 local monitors = require("services/monitors")
+-- Genoma's screencopy: the pictures are taken in the shell, no grim.
+local capture = require("@genoma/capture")
 
 local M = {}
 
@@ -138,6 +140,13 @@ local function parse(region: string): (number?, number?, number?, number?)
     return tonumber(x), tonumber(y), tonumber(w), tonumber(h)
 end
 
+-- A region as @genoma/capture takes it, nil when it is not one.
+local function area_of(region: string): { x: number, y: number, w: number, h: number }?
+    local x, y, w, h = parse(region)
+    if not x or not y or not w or not h then return nil end
+    return { x = x, y = y, w = w, h = h }
+end
+
 -- H.264 refuses odd dimensions, and a hand-drawn rectangle gives them half
 -- the time. Rounding the region does not help: it is logical, the encoder
 -- physical, and 101 at 1.5× rounds back to 101. The encode resolution is
@@ -231,17 +240,18 @@ local function freeze_then(done: () -> ())
     for _, o in screens do
         local name = o.name
         local path = string.format("%s/bioma-freeze-%d-%s.png", runtime, serial, name)
-        g.process {
-            command = { "grim", "-l", "0", "-o", name, path },
-            on_exit = function(code: number)
-                if code == 0 then pictures[name] = path end
-                left -= 1
-                if left == 0 and serial == freezes then
-                    frozen.value = pictures
-                    done()
-                end
-            end,
-        }
+        capture:screenshot({ output = name, path = path }, function(taken: string?, why: string?)
+            if taken then
+                pictures[name] = path
+            else
+                print("Capture: freezing " .. name .. ": " .. tostring(why))
+            end
+            left -= 1
+            if left == 0 and serial == freezes then
+                frozen.value = pictures
+                done()
+            end
+        end)
     end
 end
 
@@ -328,24 +338,22 @@ end
 
 -- ---- Stills -----------------------------------------------------------------
 
-local function shoot(command: { string }, target: string)
+-- `what`: an `output`, an `area`, or neither for every screen.
+local function shoot(what: { output: string?, area: any? }, target: string)
     last_error.value = ""
     busy.value = true
     settle_then(function()
-        g.process {
-            command = command,
-            on_exit = function(code: number)
-                if code ~= 0 then
-                    fail("capture failed (" .. code .. ")")
-                    return
-                end
-                last_path.value = target
-                busy.value = false
-                if copies() then copy_image(target) end
-                emit("captured", target)
-                announce(target, false)
-            end,
-        }
+        capture:screenshot({ output = what.output, area = what.area, path = target }, function(taken: string?, why: string?)
+            if not taken then
+                fail("capture failed: " .. tostring(why))
+                return
+            end
+            last_path.value = target
+            busy.value = false
+            if copies() then copy_image(target) end
+            emit("captured", target)
+            announce(target, false)
+        end)
     end)
 end
 
@@ -353,7 +361,12 @@ function M.capture_region(region: string)
     local target = still_path()
     local picture, crop = frozen_crop(region)
     if not picture or not crop then
-        shoot({ "grim", "-g", region, target }, target)
+        local area = area_of(region)
+        if not area then
+            fail("not a region: " .. region)
+            return
+        end
+        shoot({ area = area }, target)
         return
     end
     -- Cut out of the frozen picture: nothing to wait for, the screen
@@ -379,10 +392,10 @@ end
 
 function M.capture_output(output: string?)
     local target = still_path()
-    shoot(if output and output ~= "" then { "grim", "-o", output, target } else { "grim", target }, target)
+    shoot(if output and output ~= "" then { output = output } else {}, target)
 end
 
--- A window is the one shape grim cannot take: niri reports no window
+-- A window is the one shape screencopy cannot take: niri reports no window
 -- position, so the compositor captures it by id, onto the clipboard
 -- (niri's own file goes wherever niri's configuration says), and the
 -- clipboard is written out. `niri msg` returns when the action is
@@ -425,13 +438,35 @@ function M.recognise_region(region: string)
     last_error.value = ""
     busy.value = true
     local language = config.get("capture.ocr_language", "eng")
-    -- Read off the frozen picture when there is one, the screen otherwise.
+    -- Read off the frozen picture when there is one; otherwise the screen
+    -- is photographed first, into a file of its own read the same way.
     local picture, crop = frozen_crop(region)
     local source = if picture and crop
         then { 'magick "$3" -crop "$4" +repage png:-', picture, crop }
-        else { 'grim -g "$1" -', "", "" }
-    local run = if picture then function(f: () -> ()) f() end else settle_then
-    run(function()
+        else { 'cat "$3"; rm -f "$3"', string.format("%s/bioma-ocr-%s.png", runtime, timestamp()), "" }
+    local function photographed(f: () -> ())
+        if picture then
+            f()
+            return
+        end
+        local area = area_of(region)
+        if not area then
+            busy.value = false
+            fail("not a region: " .. region)
+            return
+        end
+        settle_then(function()
+            capture:screenshot({ area = area, path = source[2] }, function(taken: string?, why: string?)
+                if not taken then
+                    busy.value = false
+                    fail("recognition failed: " .. tostring(why))
+                    return
+                end
+                f()
+            end)
+        end)
+    end
+    photographed(function()
         local lines = {}
         g.process {
             command = { "sh", "-c",
@@ -631,8 +666,8 @@ end
 
 -- ---- Destination ------------------------------------------------------------
 --
--- Made once: grim will not create it, and a screenshot lost to a missing
--- folder is lost at the moment it was wanted.
+-- Made once, though @genoma/capture makes it too: a screenshot lost to a
+-- missing folder is lost at the moment it was wanted.
 g.process { command = { "mkdir", "-p", g.untracked(M.folder) } }
 
 return M
