@@ -81,6 +81,23 @@ each side drawn up from its shoulders as far as the count (1 short, 5 or
 more whole); the brightness OSD's rays drawn as far as the level. Two
 rings each side were tried and merge at 18 px.
 
+**B2, morph** — the cell→panel budding stays (Akusen, 2026-10-28): a
+pill that keeps its content cannot morph into its panel. Morph is used
+where a thing becomes another inside an expansion: the clock's + PLACE
+opens into its search field and + CALENDAR into the address field, one
+shape each. The content takes turns with it: it fades out before the
+chip opens and fades in after the field has closed back, never under a
+moving shape. A `morph` timing joins the timing set.
+
+**B3, particles** — `components/traffic`: the connection carrying the
+traffic (the wire, else the Wi-Fi network joined) has two lanes along
+its row, in and out, particles as many as the bytes on a logarithmic
+scale. Notifications arriving a moment apart burst from the badge, one
+particle each. `components/rate_particles` takes rate_thread's place in
+the download cell (drives keep rate_thread). Osmosis stays a shader: it
+is one metaball field, drops budding from the membrane and melting into
+the pool, which independent particles cannot do.
+
 ## Order proposed
 
 1. **A, the services** (capture, lock, record, brightness, drives,
