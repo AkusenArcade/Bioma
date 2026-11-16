@@ -56,6 +56,18 @@ binary is rebuilt, which is his call.
 | Shared modules, `genoma module` | **ignore**: Bioma is one shell | |
 | `portal:screenshot` | **ignore**: niri has wlr-screencopy | |
 
+## Status of A (2026-11-16)
+
+Done, each its own commit, verified headless and on the live shell:
+capture (c119406), brightness over DDC (backlight on the laptop
+pending), drives, keyboard, notification pictures and the activation
+token, accounts (session's name, uid, picture), `g.colour` (alpha
+remembered over the native call, mix, luminance: equal to the byte,
+a miss four times cheaper). Kept as they are, with reasons above: the
+lock's grim, the recorder, the sensors. Waiting on a design decision:
+inline replies — the notification popup takes no keyboard, so a reply
+field means it must take the keys while the field is open.
+
 ## Order proposed
 
 1. **A, the services** (capture, lock, record, brightness, drives,
