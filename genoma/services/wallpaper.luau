@@ -264,28 +264,48 @@ end)
 -- from whatever it was doing), by Bioma on Genoma alone (M6 step 7a);
 -- beside Quickshell, Quickshell makes them. Without ImageMagick there are
 -- none, and the carousel reads the images themselves.
+--
+-- A thumbnail is written beside its name and moved onto it when it is
+-- whole: a converter stopped half way (the shell reloading, a picture still
+-- being downloaded) left an empty file under the real name, which counted as
+-- a thumbnail from then on and drew as a hole (Akusen, 2026-11-16). Whatever
+-- an earlier session left that way is removed when the folder is made
+-- ready, once a session.
 local queue: { string } = {}
 local converting = ""
 local failures = 0
-local directory_made = false
-local function pump()
+local ready = false
+local preparing = false
+local pump: () -> ()
+local function prepare()
+    if ready or preparing then return end
+    preparing = true
+    g.process {
+        command = { "sh", "-c",
+            'mkdir -p "$1" && find "$1" -maxdepth 1 -type f \\( -size 0 -o -name "*.part" \\) -delete',
+            "prepare", M.cache_folder },
+        on_exit = function(code: number)
+            preparing = false
+            ready = true
+            if code ~= 0 then failures = 3 end
+            pump()
+        end,
+    }
+end
+function pump()
     if converting ~= "" or #queue == 0 or failures > 2 then return end
-    if not directory_made then
-        directory_made = true
-        g.process {
-            command = { "mkdir", "-p", M.cache_folder },
-            on_exit = function(code: number)
-                if code ~= 0 then failures = 3 end
-                pump()
-            end,
-        }
+    if not ready then
+        prepare()
         return
     end
     local image = table.remove(queue, 1)
     converting = image
+    local target = M.cache_folder .. "/" .. fingerprint(image) .. ".jpg"
     g.process {
-        command = { "magick", image, "-auto-orient", "-strip", "-thumbnail", "640x640>", "-quality", "82",
-            M.cache_folder .. "/" .. fingerprint(image) .. ".jpg" },
+        command = { "sh", "-c",
+            'magick "$1" -auto-orient -strip -thumbnail "640x640>" -quality 82 "jpg:$2.part" && mv -f "$2.part" "$2"'
+                .. ' || { rm -f "$2.part"; exit 1; }',
+            "thumbnail", image, target },
         on_exit = function(code: number)
             if code == 0 then
                 failures = 0
@@ -314,5 +334,9 @@ function M.thumbnail(path: string): string
     if runtime.alone() then g.after(0, function() request(path) end) end
     return path
 end
+
+-- The empty ones go at the start, asked for or not: nothing asks for a
+-- thumbnail that seems to be there.
+if runtime.alone() then g.after(0, prepare) end
 
 return M
