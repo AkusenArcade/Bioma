@@ -29,6 +29,8 @@ local dial = require("components/dial")
 local choice = require("components/choice")
 local field = require("components/field")
 local glyph_mod = require("components/glyph")
+local timing = require("core/timing")
+local performance = require("core/performance")
 local switch = require("components/switch")
 local scroller_mod = require("components/scroller")
 local notifications = require("services/notifications")
@@ -729,6 +731,51 @@ return {
         end
         local function is_svg(p: string): boolean return string.sub(p, -4) == ".svg" end
 
+        -- What arrives arrives as a burst from the badge: one particle for
+        -- each notification that came (a dozen at most), thrown out once
+        -- and gone. Nothing arriving, nothing moves.
+        local BURST_MOST = 12
+        local burst_rate = g.signal(0)
+        local last_unread = #g.untracked(notifications.unread)
+        -- Arrivals a moment apart are one wave: gathered, then thrown once.
+        local gathered = 0
+        g.watch(function() return #notifications.unread() end, function(now: number)
+            local came = now - last_unread
+            last_unread = now
+            if came <= 0 or g.untracked(performance.still) then return end
+            local first = gathered == 0
+            gathered += came
+            if not first then return end
+            g.after(timing.seconds.content_fade, function()
+                -- Births are owed at the rate, so a rate held for a window
+                -- gives just that many: half a particle over, so the last
+                -- one is due before the window shuts.
+                local window = timing.seconds.open
+                burst_rate.value = (math.min(gathered, BURST_MOST) + 0.5) / window
+                gathered = 0
+                g.after(window, function() burst_rate.value = 0 end)
+            end)
+        end)
+        local function burst(): any
+            return g.emitter {
+                overlay = true,
+                attach = "corner",
+                width = icon_size,
+                height = icon_size,
+                from_x = function() return icon_size() / 2 end,
+                from_y = function() return icon_size() / 2 end,
+                rate = function() return burst_rate.value end,
+                lifetime = 0.8,
+                speed = function() return 40 * f() end,
+                spread = 360,
+                particle_size = function() return 4 * f() end,
+                size_end = function() return 1.5 * f() end,
+                trail = 0.08,
+                fill = function() return if critical() then theme.alert() else theme.primary() end,
+                color_end = function() return colour.alpha(if critical() then theme.alert() else theme.primary(), 0) end,
+            }
+        end
+
         local close_hovered = g.signal(false)
         local function contracted(): any
             return g.box {
@@ -750,6 +797,7 @@ return {
                         height = icon_size,
                         align = "center",
                         justify = "center",
+                        burst(),
                         g.icon {
                             present = function() local p = badge_path() return p ~= "" and is_svg(p) end,
                             width = icon_size,
