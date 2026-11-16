@@ -733,24 +733,57 @@ function M.new(cell: any, twenty_four: () -> boolean)
     local calendar_text = g.signal("")
     local calendar_node, calendar_field = field.new {
         text = calendar_text,
-        width = function() return inner(calendar_width)() - 28 * f() end,
+        width = function() return inner(calendar_width)() - 28 * f() - 22 * f() end,
         font = typography.expressive,
         size = function() return m().font_secondary end,
         placeholder = "Or an iCal address",
         taking = function() return adding_calendar.value and not calendar.checking() end,
     }
+    -- The day and the new calendar take turns as the places and their field
+    -- do: the day fades, the chip opens into the address field, and what
+    -- the accounts offer fades in round it once it is there. Closing, that
+    -- fades first, the field closes into its chip, and the day fades in.
+    local day_listing = g.signal(true)
+    local day_leaving = g.signal(false)
+    local offer_shown = g.signal(false)
+    local function open_calendar()
+        if g.untracked(function() return day_leaving.value or adding_calendar.value end) then return end
+        day_leaving.value = true
+        g.after(timing.seconds.content_fade, function()
+            if g.untracked(function() return day_leaving.value and not adding_calendar.value end) then
+                adding_calendar.value = true
+            end
+        end)
+    end
+    local function close_calendar()
+        if not g.untracked(function() return adding_calendar.value end) then return end
+        offer_shown.value = false
+        g.after(timing.seconds.content_fade, function() adding_calendar.value = false end)
+    end
     g.watch(function() return adding_calendar.value end, function(on: boolean)
         if on then
             adding.value = false
             calendar_field.set("")
             calendar.discover()
+            day_listing.value = false
+            offer_shown.value = false
+            g.after(timing.seconds.open, function()
+                if g.untracked(function() return adding_calendar.value end) then offer_shown.value = true end
+            end)
+        else
+            offer_shown.value = false
+            day_leaving.value = true
+            day_listing.value = true
+            g.after(timing.seconds.open, function()
+                if not g.untracked(function() return adding_calendar.value end) then day_leaving.value = false end
+            end)
         end
     end)
     g.watch(function() return adding.value end, function(on: boolean)
         if on then adding_calendar.value = false end
     end)
     calendar.on_added(function()
-        adding_calendar.value = false
+        close_calendar()
         today()
     end)
 
@@ -945,13 +978,17 @@ function M.new(cell: any, twenty_four: () -> boolean)
                         weight = typography.weight_title,
                         color = theme.text,
                     },
-                    add_chip(function() return if adding_calendar.value then "DONE" else "+ CALENDAR" end,
-                        function() return adding_calendar.value end,
-                        function() adding_calendar.value = not g.untracked(function() return adding_calendar.value end) end),
+                    g.box {
+                        present = function() return not adding_calendar.value end,
+                        add_chip(function() return "+ CALENDAR" end, function() return false end,
+                            open_calendar, "clock calendar"),
+                    },
                 },
                 -- The day.
                 g.capsule {
-                    present = function() return not adding_calendar.value end,
+                    present = function() return day_listing.value end,
+                    opacity = function() return if day_leaving.value then 0 else 1 end,
+                    transition = { opacity = "content_fade", scroll_y = "reflow" },
                     width = inner(calendar_width),
                     height = list_height,
                     radius = 0,
@@ -959,7 +996,6 @@ function M.new(cell: any, twenty_four: () -> boolean)
                     direction = "column",
                     justify = "start",
                     scroll_y = function() return agenda_scroll.value end,
-                    transition = { scroll_y = "reflow" },
                     on_wheel = function(_, dy: number)
                         local rows = #g.untracked(function() return chosen_events.value end)
                         local most = math.max(0, rows * g.untracked(event_row) - g.untracked(list_height))
@@ -1013,6 +1049,8 @@ function M.new(cell: any, twenty_four: () -> boolean)
                     justify = "start",
                     gap = function() return 6 * f() end,
                     g.text {
+                        opacity = function() return if offer_shown.value then 1 else 0 end,
+                        transition = { opacity = "content_fade" },
                         present = function() return #calendar.accounts() == 0 end,
                         text = function()
                             return if calendar.discovering() then "Looking in Online Accounts…"
@@ -1025,12 +1063,16 @@ function M.new(cell: any, twenty_four: () -> boolean)
                         color = theme.text_faint,
                     },
                     g.each {
+                        opacity = function() return if offer_shown.value then 1 else 0 end,
+                        transition = { opacity = "content_fade" },
                         direction = "column",
                         items = calendar.accounts,
                         key = function(a: any) return a.goa end,
                         row = account_block,
                     },
                     g.capsule {
+                        opacity = function() return if offer_shown.value then 1 else 0 end,
+                        transition = { opacity = "content_fade" },
                         width = inner(calendar_width),
                         height = 1,
                         crisp = true,
@@ -1052,8 +1094,12 @@ function M.new(cell: any, twenty_four: () -> boolean)
                         end,
                         padding_x = function() return 14 * f() end,
                         align = "center",
-                        justify = "start",
+                        justify = "between",
+                        direction = "row",
+                        -- The chip that asked for it opens into it.
+                        morph = "clock calendar",
                         calendar_node,
+                        give_up(close_calendar),
                     },
                     g.text {
                         present = function() return calendar.checking() or calendar.add_problem() ~= "" end,
@@ -1069,7 +1115,9 @@ function M.new(cell: any, twenty_four: () -> boolean)
             -- The calendars read, cut at the panel's edge when they run out
             -- of room.
             g.capsule {
-                present = function() return not adding_calendar.value end,
+                present = function() return day_listing.value end,
+                opacity = function() return if day_leaving.value then 0 else 1 end,
+                transition = { opacity = "content_fade" },
                 width = inner(calendar_width),
                 height = function() return 26 * f() end,
                 radius = 0,
@@ -1221,7 +1269,7 @@ function M.new(cell: any, twenty_four: () -> boolean)
     function spec.on_key(name: string, typed: string?, mods: { [string]: boolean }): boolean
         if g.untracked(function() return adding_calendar.value end) then
             if name == "Escape" then
-                adding_calendar.value = false
+                close_calendar()
                 return true
             end
             if name == "Return" or name == "KP_Enter" then
