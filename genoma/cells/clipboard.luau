@@ -100,8 +100,12 @@ return {
             end
             local function picture_width(): number return (image_row() - 12 * f()) * 1.6 end
             -- Dragged out: a picture as its file, text as the text itself
-            -- (read from what was kept, not the shortened preview).
-            local kept = if string.sub(g.untracked(e).mime or "", 1, 5) == "text/" then g.file { path = g.untracked(e).file } else nil
+            -- (read from what was kept, not the shortened preview). Read
+            -- once: a kept copy is never written again, and a watch each
+            -- was an inotify instance for every row.
+            local kept = if string.sub(g.untracked(e).mime or "", 1, 5) == "text/"
+                then g.file { path = g.untracked(e).file, watch = false }
+                else nil
             return g.capsule {
                 role = "button",
                 name = "Copied",
