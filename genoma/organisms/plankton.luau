@@ -56,6 +56,9 @@ return {
                 agent_size = function() return 4 * f() end,
                 fill = tint,
                 clock = swimming,
+                -- A drift needs few frames, a dart many: thirty a second
+                -- at rest, up to the screen's own with every core busy.
+                fps = function() return 30 + 135 * load() end,
                 values = function()
                     local l, mem = load(), memory()
                     return {

@@ -895,6 +895,7 @@ step.
 | panel | 424 × 200 | template 2 × 1; bleeds, the swarm clipped within the rim, round corners included (Genoma's `clip` follows a capsule's radius) |
 | creature | 4 long | a dot stretched along its heading, in the colour, lit by a bloom (`genoma:glow`: spread 7, strength 1.4, from brightness 0.15) |
 | speed | 4 + 92 √load a second | 4 idle, ~13 at 1 %, ~50 at 25 %, 96 with all cores |
+| frames | 30 + 135 × load a second | a drift needs few, a dart many (Genoma's `fps`): thirty at rest, the screen's own with all cores |
 | sight | 28 | how far one sees its neighbours |
 | figures | `CPU` · `RAM` | Orbitron label over the value, lit with the colour, top-left |
 
