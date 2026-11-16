@@ -19,6 +19,7 @@ local proxy = require("services/proxy")
 local choice = require("components/choice")
 local sweep = require("components/sweep")
 local rate_thread = require("components/rate_thread")
+local glyph_mod = require("components/glyph")
 
 return {
     new = function(cell: any)
@@ -52,14 +53,48 @@ return {
 
         local function writing(): boolean return drives.rate() >= 4096 end
         local function glyphs_width(): number return count.value * glyph() + (count.value - 1) * glyph_gap() end
-        local function stick(lit: (() -> boolean)?): any
+        -- The stick's body filled as far as the drive is used (mounted, its
+        -- free space read): a reading in the glyph's extent, never a figure.
+        -- The well sits a hair inside the outline (assets/icons/drive.svg,
+        -- `level`), its corners rounder than it is tall never.
+        local function level(used: () -> number): { [string]: any }
+            return {
+                d = function()
+                    local h = 9.5 * used()
+                    if h < 0.05 then return "M8.75 19.25 H15.25 Z" end
+                    local r, t = math.min(1.25, h / 2), 19.25 - h
+                    return string.format(
+                        "M8.75 %.3f a%.3f %.3f 0 0 1 %.3f %.3f H%.3f a%.3f %.3f 0 0 1 %.3f %.3f"
+                            .. " V%.3f a%.3f %.3f 0 0 1 %.3f %.3f H%.3f a%.3f %.3f 0 0 1 %.3f %.3f Z",
+                        t + r, r, r, r, -r, 15.25 - r, r, r, r, r,
+                        19.25 - r, r, r, -r, r, 8.75 + r, r, r, -r, -r
+                    )
+                end,
+                transition = { d = "transition" },
+            }
+        end
+        local function stick_glyph(size: () -> number, top: () -> string, bottom: () -> string, drive: (() -> any)?): any
+            local function used(): number
+                if not drive then return 0 end
+                local d = drive()
+                return if d and drives.mounted(d) then drives.used(d) else 0
+            end
+            return glyph_mod.new {
+                icon = "drive",
+                size = size,
+                top = top,
+                bottom = bottom,
+                parts = { level = glyph_mod.merge(glyph_mod.shown("fill", top, bottom, 0.45), level(used)) },
+            }
+        end
+        local function stick(lit: (() -> boolean)?, drive: (() -> any)?): any
             local function top(): string
                 return if lit == nil or lit() then theme.gradient_top(theme.primary()) else theme.text_muted()
             end
             local function bottom(): string
                 return if lit == nil or lit() then theme.gradient_bottom(theme.primary()) else theme.text_muted()
             end
-            return g.icon { width = glyph, height = glyph, icon = "drive", gradient_top = top, gradient_bottom = bottom }
+            return stick_glyph(glyph, top, bottom, drive)
         end
 
         local function row(item: () -> any, index: () -> number): any
@@ -99,13 +134,12 @@ return {
                     attach = "corner",
                     offset_x = function() return 10 * f() end,
                     offset_y = function() return (row_height() - 20 * f()) / 2 end,
-                    g.icon {
-                        width = function() return 20 * f() end,
-                        height = function() return 20 * f() end,
-                        icon = "drive",
-                        gradient_top = function() return if drives.mounted(d()) then theme.gradient_top(theme.primary()) else theme.text_muted() end,
-                        gradient_bottom = function() return if drives.mounted(d()) then theme.gradient_bottom(theme.primary()) else theme.text_muted() end,
-                    },
+                    stick_glyph(
+                        function() return 20 * f() end,
+                        function() return if drives.mounted(d()) then theme.gradient_top(theme.primary()) else theme.text_muted() end,
+                        function() return if drives.mounted(d()) then theme.gradient_bottom(theme.primary()) else theme.text_muted() end,
+                        d
+                    ),
                 },
                 -- What was written on it, or what its maker called it.
                 g.text {
@@ -253,7 +287,7 @@ return {
                             return out
                         end,
                         key = function(i: number) return i end,
-                        row = function() return stick() end,
+                        row = function(i: () -> number) return stick(nil, function() return rows.value[i()] end) end,
                     },
                     g.box {
                         present = writing,

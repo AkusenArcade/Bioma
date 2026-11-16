@@ -42,6 +42,18 @@ function M.size(d: any): number
     for _, v in (if d then d.volumes else nil) or {} do sum += v.size or 0 end
     return sum
 end
+-- How much of it is used, 0 to 1, over its mounted volumes whose free
+-- space Genoma has read; 0 while none is.
+function M.used(d: any): number
+    local size, free = 0, 0
+    for _, v in (if d then d.volumes else nil) or {} do
+        if #(v.mounts or {}) > 0 and v.free ~= nil and (v.size or 0) > 0 then
+            size += v.size
+            free += v.free
+        end
+    end
+    return if size > 0 then math.clamp(1 - free / size, 0, 1) else 0
+end
 
 local function reason(lines: { string }): string
     local text = table.concat(lines, "\n")

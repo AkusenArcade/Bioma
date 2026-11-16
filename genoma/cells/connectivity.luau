@@ -15,6 +15,7 @@ local bluetooth = require("services/bluetooth")
 local vpn = require("services/vpn")
 local printers = require("services/printers")
 local expansion = require("cells/connectivity_expansion")
+local glyph_mod = require("components/glyph")
 
 return {
     new = function(cell: any)
@@ -67,28 +68,45 @@ return {
             local bars = network.signal_bars()
             return if bars >= 4 then 3 else math.max(0, bars - 1)
         end
+        -- Drawn by parts (components/glyph): each arc fades between lit and
+        -- dim on its own as the strength reaches it or leaves it.
+        local function arcs(lit: boolean): { [string]: any }
+            local out = {}
+            for i = 1, 3 do
+                out["arc" .. i] = {
+                    opacity = function()
+                        local on = wifi_arcs() >= i
+                        return if on == lit then 1 else 0
+                    end,
+                    transition = { opacity = "transition" },
+                }
+            end
+            return out
+        end
         local function glyph(name: () -> string, idle: () -> boolean, size: () -> number): any
             local function wifi(): boolean return name() == "wifi" end
-            local function partial(): boolean return wifi() and wifi_arcs() < 3 end
+            local function top(): string return if idle() then theme.line() else theme.gradient_top(theme.primary()) end
+            local function bottom(): string return if idle() then theme.line() else theme.gradient_bottom(theme.primary()) end
             return g.box {
                 width = size,
                 height = size,
-                g.icon {
-                    overlay = true,
-                    present = partial,
-                    width = size,
-                    height = size,
+                glyph_mod.new {
                     icon = "wifi",
-                    gradient_top = theme.line,
-                    gradient_bottom = theme.line,
+                    present = wifi,
+                    size = size,
+                    top = top,
+                    bottom = bottom,
+                    parts = arcs(true),
+                    under = theme.line,
+                    under_parts = arcs(false),
                 },
                 g.icon {
-                    overlay = true,
+                    present = function() return not wifi() end,
                     width = size,
                     height = size,
-                    icon = function() return if partial() then "wifi-signal-" .. wifi_arcs() else name() end,
-                    gradient_top = function() return if idle() then theme.line() else theme.gradient_top(theme.primary()) end,
-                    gradient_bottom = function() return if idle() then theme.line() else theme.gradient_bottom(theme.primary()) end,
+                    icon = name,
+                    gradient_top = top,
+                    gradient_bottom = bottom,
                 },
             }
         end

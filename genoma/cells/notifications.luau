@@ -28,6 +28,7 @@ local typography = require("core/typography")
 local dial = require("components/dial")
 local choice = require("components/choice")
 local field = require("components/field")
+local glyph_mod = require("components/glyph")
 local switch = require("components/switch")
 local scroller_mod = require("components/scroller")
 local notifications = require("services/notifications")
@@ -699,6 +700,29 @@ return {
         local function bell(size: () -> number, tint: () -> string): any
             return g.icon { width = size, height = size, icon = "bell", gradient_top = tint, gradient_bottom = tint }
         end
+        -- At rest the bell rings for what is still unread: a ring each side
+        -- of its shoulders, drawn up from them as far as the count reaches
+        -- (one a short stroke, five or more the whole arc). Form, never a
+        -- figure; nothing unread, the plain bell.
+        local function ringing(): number
+            local n = #notifications.unread()
+            return if n < 1 then 0 else math.min(1, 0.4 + 0.15 * (n - 1))
+        end
+        local function resting_bell(size: () -> number): any
+            local function top(): string return theme.gradient_top(theme.primary()) end
+            local function bottom(): string return theme.gradient_bottom(theme.primary()) end
+            return glyph_mod.new {
+                icon = "bell",
+                present = resting,
+                size = size,
+                top = top,
+                bottom = bottom,
+                parts = {
+                    ring = glyph_mod.merge(glyph_mod.shown("stroke", top, bottom),
+                        { trim_end = ringing, transition = { trim_end = "transition" } }),
+                },
+            }
+        end
         local function badge_path(): string
             local d = displayed()
             return if flooding() or not d then "" else d.icon
@@ -715,14 +739,7 @@ return {
                 width = function() return if resting() then cell.room() else content_width() end,
                 justify = function() return if resting() then "center" else "start" end,
                 -- The cell's only content at rest, in the light gradient.
-                g.icon {
-                    present = resting,
-                    width = icon_size,
-                    height = icon_size,
-                    icon = "bell",
-                    gradient_top = function() return theme.gradient_top(theme.primary()) end,
-                    gradient_bottom = function() return theme.gradient_bottom(theme.primary()) end,
-                },
+                resting_bell(icon_size),
                 g.box {
                     present = function() return not resting() end,
                     direction = "row",
@@ -834,16 +851,7 @@ return {
             contracted = contracted,
             header_title = function() return if resting() then "NOTIFICATIONS" else "" end,
             header_mark_size = icon_size,
-            header_mark = function(size: () -> number)
-                return g.icon {
-                    present = resting,
-                    width = size,
-                    height = size,
-                    icon = "bell",
-                    gradient_top = function() return theme.gradient_top(theme.primary()) end,
-                    gradient_bottom = function() return theme.gradient_bottom(theme.primary()) end,
-                }
-            end,
+            header_mark = function(size: () -> number) return resting_bell(size) end,
             -- A press asks for the history; the pointer alone brings the body.
             on_click = function() history.value = not g.untracked(function() return history.value end) end,
             -- A critical notification has no clock: the middle button is the

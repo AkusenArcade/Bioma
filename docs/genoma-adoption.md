@@ -68,6 +68,19 @@ lock's grim, the recorder, the sensors. Inline replies done at Akusen's word: a 
 a field across the panel, and the cell takes the keys while it is open
 (the panel stays, its clock stops); verified with a real reply.
 
+## Status of B (2026-11-16)
+
+**B1, icons by part** — `components/glyph.luau` draws a file of
+`assets/icons` as nodes (`g.svg` with `gradient_top`/`gradient_bottom`,
+Genoma after 0.1.16), identical to `g.icon` at rest; parts the file hides
+at opacity 0 are revealed with `glyph.shown`. In use: the Wi-Fi arcs fade
+lit or dim one by one with the strength (connectivity cell and its
+header); a stick's body filled as far as the drive is used (drives cell,
+contracted and rows); the resting bell rings for what is unread, a ring
+each side drawn up from its shoulders as far as the count (1 short, 5 or
+more whole); the brightness OSD's rays drawn as far as the level. Two
+rings each side were tried and merge at 18 px.
+
 ## Order proposed
 
 1. **A, the services** (capture, lock, record, brightness, drives,

@@ -23,6 +23,7 @@ local timing = require("core/timing")
 local typography = require("core/typography")
 local gauge = require("components/gauge")
 local slider = require("components/slider")
+local glyph_mod = require("components/glyph")
 local osd = require("services/osd")
 
 local M = {}
@@ -118,10 +119,13 @@ function M.node(output: string, size: { width: number, height: number }): any
                 align = "center",
                 justify = "center",
                 present = is_brightness,
-                g.icon {
-                    width = 22 * f, height = 22 * f, icon = "brightness",
-                    gradient_top = function() return theme.gradient_top(theme.primary()) end,
-                    gradient_bottom = function() return theme.gradient_bottom(theme.primary()) end,
+                -- The sun's rays drawn out as far as the brightness goes.
+                glyph_mod.new {
+                    icon = "brightness",
+                    size = function() return 22 * f end,
+                    top = function() return theme.gradient_top(theme.primary()) end,
+                    bottom = function() return theme.gradient_bottom(theme.primary()) end,
+                    parts = { rays = { trim_end = fraction, transition = { trim_end = "transition" } } },
                 },
             },
         },
