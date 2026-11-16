@@ -13,9 +13,8 @@
 -- that is not a failure state to draw, it is the shell not being the shell
 -- yet. Notifications move last (genoma/PORT.md).
 --
--- Not yet: Bioma's notification sound (no Genoma cell plays sounds); an
--- image a sender gives only as pixels, which the scene cannot draw yet:
--- such a notification takes its icon, or the bell.
+-- Not yet: Bioma's notification sound (no Genoma cell plays sounds). An
+-- image a sender gives only as pixels is drawn from the PNG Genoma writes.
 local g = require("@genoma")
 local config = require("core/config")
 local apps = require("core/apps")
@@ -23,6 +22,10 @@ local apps = require("core/apps")
 local M = {}
 
 local server = require("@genoma/notifications")
+-- Genoma keeps the pictures senders give as pixels while its own history
+-- holds them: as long as Bioma's, so a picture in the history is still
+-- there when it opens. In memory, as Bioma's is.
+server:keep({ limit = g.untracked(function() return config.get("notifications.history", 100) end) })
 
 function M.serving(): boolean return server.serving == true end
 
@@ -256,10 +259,16 @@ function M.dismiss(id: number?)
     if find(which) then server:close(which, "dismissed") end
 end
 
--- An action; the server dismisses it after, unless it is resident.
+-- An action; the server dismisses it after, unless it is resident. The
+-- compositor's activation token goes with it, so the sender's window may
+-- take the focus (specification 1.2).
 function M.invoke(id: number, key: string)
+    local n = g.untracked(function() return by_id.value[id] end)
     advance(id)
-    server:invoke(id, key)
+    g.activation_token {
+        app_id = if n and (n.desktop_entry or "") ~= "" then n.desktop_entry else nil,
+        on_token = function(token: string?) server:invoke(id, key, token) end,
+    }
 end
 
 -- ---- The history ----------------------------------------------------------------
@@ -274,7 +283,7 @@ local function remember(n: any)
     local keep = g.untracked(function() return config.get("notifications.history", 100) end)
     local out = { {
         id = n.id, app_name = n.app_name, summary = n.summary, body = n.body,
-        image_path = n.image_path, app_icon = n.app_icon, desktop_entry = n.desktop_entry,
+        image_path = n.image_path, image = n.image, app_icon = n.app_icon, desktop_entry = n.desktop_entry,
         urgency = n.urgency, at = g.now(),
     } }
     for _, e in g.untracked(function() return history.value end) do
@@ -297,6 +306,8 @@ function M.forget()
         history.value = {}
         unread.value = {}
     end)
+    -- Genoma's history goes too, and with it the pictures it kept.
+    server:forget()
     begin()
     for _, n in live do
         if find(n) then server:close(n, "dismissed") end
@@ -450,6 +461,8 @@ end
 
 function M.icon_for(n: any): string
     if not n then return "" end
+    -- The sender's own pixels first, as the specification orders.
+    if n.image and n.image ~= "" then return n.image end
     local image = path_of(n.image_path)
     if image ~= "" then return image end
     local icon = path_of(n.app_icon)
