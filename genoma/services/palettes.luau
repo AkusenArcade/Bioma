@@ -10,14 +10,19 @@
 -- step at a time, and the theme follows the file. NEW starts from the
 -- colours on screen now, whatever made them.
 --
--- The pairing of each wallpaper with its palette stays Bioma on
--- Quickshell's while the two run side by side.
+-- And each wallpaper remembers the theme it was last worn with, with no one
+-- asking it to: going back to a picture brings its theme back. The pair is
+-- the source and what the source was told: for a manual one which palette,
+-- for matugen which scheme it read the picture with, since the same picture
+-- makes a different desktop under each (Akusen, 2026-10-18). A picture
+-- never paired keeps whatever is on screen.
 local g = require("@genoma")
 local colour = require("core/colour")
 local config = require("core/config")
 local theme = require("core/theme")
 local timing = require("core/timing")
 local capture = require("services/capture")
+local wallpaper = require("services/wallpaper")
 
 local M = {}
 
@@ -165,8 +170,111 @@ function M.remove()
     if writing then writing:stop() writing = nil end
     draft.value = nil
     draft_file.value = ""
-    M.choose("default")
+    -- And every picture that wore it forgets it, in the same write, so none
+    -- asks for it again.
+    local kept, dropped = {}, false
+    for image, pair in g.untracked(M.pairs) do
+        if type(pair) == "table" and pair.source == "manual" and pair.palette == file then
+            dropped = true
+        else
+            kept[image] = pair
+        end
+    end
+    local changes: { { any } } = { { "theme.source", "manual" }, { "theme.palette", "default" } }
+    if dropped then table.insert(changes, { "theme.pairs", kept }) end
+    config.set_many(changes)
     g.process { command = { "rm", "-f", path_of(file) } }
+end
+
+-- ---- Each wallpaper's theme -----------------------------------------------------
+--
+-- `theme.pairs`, in the override layer: { "<image>": { "source": "manual",
+-- "palette": "custom-1" } } or { "<image>": { "source": "matugen", "scheme":
+-- "scheme-content" } }. Written whole, never by a path: an image's path is
+-- full of dots.
+
+function M.pairs(): { [string]: any }
+    local saved = config.get("theme.pairs", {})
+    return if type(saved) == "table" then saved else {}
+end
+
+local function pair_now(): { [string]: any }
+    if theme.source() == "matugen" then
+        return { source = "matugen", scheme = config.get("theme.matugen.scheme", "scheme-tonal-spot") }
+    end
+    return { source = "manual", palette = theme.manual_palette() }
+end
+
+local function remember()
+    local image = g.untracked(wallpaper.current)
+    if image == "" then return end
+    local now = g.untracked(pair_now)
+    local saved = g.untracked(M.pairs)
+    local was = saved[image]
+    if type(was) == "table" and was.source == now.source and was.scheme == now.scheme and was.palette == now.palette then
+        return
+    end
+    local next_pairs = {}
+    for k, v in saved do next_pairs[k] = v end
+    next_pairs[image] = now
+    config.set("theme.pairs", next_pairs)
+end
+
+-- A wallpaper and a theme are a pair once they have stayed together for
+-- `timing.pair`: the pictures a carousel runs past are not.
+local together: any = nil
+local function settle_together()
+    if together then together:stop() end
+    together = g.after(timing.seconds.pair, function()
+        together = nil
+        remember()
+    end)
+end
+
+-- The picture's own theme, if it has one and, for a palette, that palette
+-- still exists.
+local function recall(image: string)
+    local pair = g.untracked(M.pairs)[image]
+    if type(pair) ~= "table" then return end
+    if pair.source == "matugen" then
+        flush()
+        -- The scheme and the source in one write: matugen runs once, with
+        -- the picture's own.
+        local changes: { { any } } = {}
+        if type(pair.scheme) == "string" and pair.scheme ~= "" then
+            table.insert(changes, { "theme.matugen.scheme", pair.scheme })
+        end
+        table.insert(changes, { "theme.source", "matugen" })
+        config.set_many(changes)
+    elseif pair.source == "manual" then
+        for _, p in g.untracked(theme.palettes) do
+            if p.file == pair.palette then
+                M.choose(pair.palette)
+                return
+            end
+        end
+    end
+end
+
+-- By Bioma on Genoma alone (shell.luau). The first picture is the one the
+-- session starts on, already wearing its theme: only a change of picture
+-- recalls anything, and that first one, unpaired, is paired with what it
+-- wears, so the first change has something to change from.
+local started = false
+function M.start()
+    if started then return end
+    started = true
+    local last = ""
+    g.watch(wallpaper.current, function(image: string)
+        local before = last
+        last = image
+        if before ~= "" and image ~= before then recall(image) end
+        settle_together()
+    end)
+    g.watch(function(): string
+        local now = pair_now()
+        return now.source .. "\n" .. (now.scheme or now.palette or "")
+    end, settle_together)
 end
 
 -- ---- The eyedropper ----------------------------------------------------------

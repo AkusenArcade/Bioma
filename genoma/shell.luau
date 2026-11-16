@@ -331,6 +331,7 @@ require("ipc").register()
 -- Quickshell, it acts and these only choose.
 if runtime.alone() then
     require("services/matugen").start()
+    require("services/palettes").start()
     require("services/templates").start()
     require("services/looks").start()
     require("services/proxy").start()
