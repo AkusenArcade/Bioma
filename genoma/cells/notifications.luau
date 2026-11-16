@@ -27,6 +27,7 @@ local theme = require("core/theme")
 local typography = require("core/typography")
 local dial = require("components/dial")
 local choice = require("components/choice")
+local field = require("components/field")
 local switch = require("components/switch")
 local scroller_mod = require("components/scroller")
 local notifications = require("services/notifications")
@@ -181,16 +182,21 @@ return {
         -- was asked: the pointer brings the body and the actions, a press
         -- brings the history, and only the press claims the attention.
         local history = g.signal(false)
+        -- An answer being typed (see Replying, below): declared here, as the
+        -- opening and the clock read it too.
+        local replying = g.signal(false)
+        local grown = g.signal(false)
+        local answer = g.signal("")
         -- Looking at the history is reading what is in it.
         g.watch(function() return history.value end, function(on: boolean)
             if on then notifications.read_all() end
         end)
         local function settle()
-            local want = history.value or (cell.touched() and shout() ~= nil)
+            local want = history.value or replying.value or (cell.touched() and shout() ~= nil)
             if g.untracked(function() return cell.open.value end) ~= want then cell.open.value = want end
         end
         g.watch(function()
-            return tostring(history.value) .. tostring(cell.touched()) .. tostring(shout_id())
+            return tostring(history.value) .. tostring(replying.value) .. tostring(cell.touched()) .. tostring(shout_id())
         end, function() g.untracked(settle) end)
         -- Opened by anything but the pointer (a keybind) is asking for the
         -- history: there is no body to show a hand that is not there.
@@ -211,7 +217,7 @@ return {
         -- only from the cell showing it.
         g.effect(function()
             local id = shout_id()
-            notifications.hold(cell.touched() and id ~= nil and id == notifications.ordinary_head())
+            notifications.hold((cell.touched() or replying.value) and id ~= nil and id == notifications.ordinary_head())
         end)
 
         -- ---- The notification, under the pointer -------------------------------------
@@ -223,13 +229,69 @@ return {
         local function body_size(): number return m().font_secondary end
         local function body_line(): number return body_size() * 19 / 13.5 end
 
+        -- ---- Replying -----------------------------------------------------------------
+        --
+        -- A sender that takes a typed answer gets a Reply among its actions,
+        -- last, at the right; pressed, a field grows from it across the
+        -- panel, and the cell takes the keys while it is open: the panel
+        -- stays and its clock stops, even with the pointer gone. Return
+        -- sends, Escape lets it go (Akusen, 2026-11-16).
+        local function can_reply(): boolean
+            local n = shout()
+            return n ~= nil and n.can_reply == true
+        end
+        local function stop_replying()
+            g.batch(function()
+                replying.value = false
+                grown.value = false
+            end)
+        end
+        local function send()
+            local id = g.untracked(shout_id)
+            local text = g.untracked(function() return answer.value end)
+            if id and string.match(text, "%S") then notifications.reply(id, text) end
+            stop_replying()
+        end
+        local function field_height(): number return 34 * f() end
+        -- Made with each panel: the panel's content is built again every
+        -- time it opens, and a node is mounted once.
+        local reply_handle: any = nil
+        local function reply_field(): any
+            local node, handle = field.new {
+                text = answer,
+                width = function() return inner() - 16 * f() - 6 * f() - 70 * f() end,
+                font = typography.expressive,
+                size = function() return m().font_secondary end,
+                -- A string, read as the panel is built: the field takes no binding.
+                placeholder = g.untracked(function()
+                    local n = shout()
+                    return if n and (n.reply_placeholder or "") ~= "" then n.reply_placeholder else "Reply"
+                end),
+                taking = function() return replying.value end,
+                on_submit = send,
+                on_release = stop_replying,
+            }
+            reply_handle = handle
+            return node
+        end
+        -- Another notification in its place is another conversation.
+        g.watch(shout_id, function() if g.untracked(function() return replying.value end) then stop_replying() end end)
+
         -- At most three actions: past that the first two, because a row of
-        -- five buttons is a dialog.
+        -- five buttons is a dialog. A Reply counts among the three.
         local function actions(): { any }
             local n = shout()
             local carried = if n then n.actions or {} else {}
-            if #carried > 3 then return { carried[1], carried[2] } end
-            return carried
+            local room = if can_reply() then 2 else 3
+            local out = {}
+            if #carried > room then
+                out = { carried[1], carried[2] }
+                if room == 2 then out = { carried[1] } end
+            else
+                out = table.clone(carried)
+            end
+            if can_reply() then table.insert(out, { key = "__reply", label = "Reply" }) end
+            return out
         end
 
         -- A picture the message carries (a photo, the sender's face): the
@@ -279,9 +341,11 @@ return {
                 + (if body_lines() > 0 then body_lines() * body_line() + 6 * f() else 0)
             local block = if picture() ~= "" then math.max(words, picture_size()) else words
             return padding() * 2 + block + (if #actions() > 0 then action_height() + 10 * f() else 0)
+                + (if replying.value then field_height() + 8 * f() else 0)
         end
 
         local function notification_node(): any
+            local reply_node = reply_field()
             return g.box {
                 width = inner,
                 direction = "column",
@@ -352,11 +416,64 @@ return {
                             label = function() local x = a() return if (x.label or "") ~= "" then x.label else x.key end,
                             metrics = m,
                             on_click = function()
+                                local key = g.untracked(a).key
+                                if key == "__reply" then
+                                    answer.value = ""
+                                    replying.value = true
+                                    -- Grown from the button's size, once it is there.
+                                    g.after(0.01, function() grown.value = true end)
+                                    return
+                                end
                                 local id = g.untracked(shout_id)
-                                if id then notifications.invoke(id, g.untracked(a).key) end
+                                if id then notifications.invoke(id, key) end
                             end,
                         }
                     end,
+                },
+                -- The answer, growing from the Reply button at the right.
+                g.box { width = 1, present = function() return replying.value end, height = function() return 8 * f() end },
+                g.box {
+                    present = function() return replying.value end,
+                    width = inner,
+                    direction = "row",
+                    justify = "end",
+                    g.capsule {
+                        width = function() return if grown.value then inner() else 70 * f() end,
+                        transition = { width = "open" },
+                        height = field_height,
+                        radius = function() return metrics_mod.radius_for(field_height(), m()) end,
+                        stroke = 1.5,
+                        rim_top = theme.primary,
+                        rim_bottom = theme.primary,
+                        direction = "row",
+                        align = "center",
+                        justify = "between",
+                        padding_left = function() return 16 * f() end,
+                        padding_right = function() return 6 * f() end,
+                        on_click = function() end,
+                        reply_node,
+                        g.capsule {
+                            role = "button",
+                            name = "Send",
+                            present = function() return grown.value end,
+                            height = function() return field_height() - 10 * f() end,
+                            padding_x = function() return 14 * f() end,
+                            align = "center",
+                            justify = "center",
+                            radius = function() return metrics_mod.radius_for(field_height() - 10 * f(), m()) end,
+                            stroke = metrics_mod.rim_width,
+                            rim_top = theme.line,
+                            rim_bottom = theme.line,
+                            on_click = send,
+                            g.text {
+                                text = "Send",
+                                color = theme.text,
+                                font = typography.technical,
+                                size = function() return m().font_secondary end,
+                                weight = typography.weight_label,
+                            },
+                        },
+                    },
                 },
             }
         end
@@ -699,7 +816,16 @@ return {
             -- In focus mode the ordinary ones are held by the service; a
             -- critical one still comes.
             speaks_in_focus = critical,
-            claims_focus = function() return history.value end,
+            claims_focus = function() return history.value or replying.value end,
+            -- The keys, while an answer is being typed.
+            on_key = function(name: string, typed: string?, mods: { [string]: boolean }): boolean
+                if not g.untracked(function() return replying.value end) then return false end
+                if name == "Escape" then
+                    stop_replying()
+                    return true
+                end
+                return reply_handle ~= nil and reply_handle.key(name, typed, mods)
+            end,
             engaging = function() return shout() ~= nil or flooding() end,
             outline = function() return if critical() then theme.alert() else nil end,
             padding_leading = leading,

@@ -271,6 +271,14 @@ function M.invoke(id: number, key: string)
     }
 end
 
+-- A typed answer, to a notification whose sender takes one (KDE's inline
+-- reply); dismissed after, as an action is.
+function M.reply(id: number, text: string)
+    advance(id)
+    local ok, why = pcall(function() server:reply(id, text) end)
+    if not ok then print("Bioma: the reply did not go — " .. tostring(why)) end
+end
+
 -- ---- The history ----------------------------------------------------------------
 --
 -- What the cell shows when it opens, grouped by application, most recent

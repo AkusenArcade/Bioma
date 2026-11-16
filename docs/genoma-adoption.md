@@ -64,9 +64,9 @@ pending), drives, keyboard, notification pictures and the activation
 token, accounts (session's name, uid, picture), `g.colour` (alpha
 remembered over the native call, mix, luminance: equal to the byte,
 a miss four times cheaper). Kept as they are, with reasons above: the
-lock's grim, the recorder, the sensors. Waiting on a design decision:
-inline replies — the notification popup takes no keyboard, so a reply
-field means it must take the keys while the field is open.
+lock's grim, the recorder, the sensors. Inline replies done at Akusen's word: a Reply among the actions grows
+a field across the panel, and the cell takes the keys while it is open
+(the panel stays, its clock stops); verified with a real reply.
 
 ## Order proposed
 
