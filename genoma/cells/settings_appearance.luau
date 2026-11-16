@@ -449,7 +449,19 @@ function M.new(t: { [string]: any }): any
         local h = palettes.hsv(role.value)
         if h >= 0 then g.untracked(function() kept_hue.value = h end) end
     end)
+    -- And the three as the hand set them, for as long as the colour is still
+    -- the one they made: read back from the hex, a dark colour has only a
+    -- few saturations and hues to give (at a value of 2 %, six), and the
+    -- sliders of a near-black background moved in steps (Akusen,
+    -- 2026-11-16). A colour that came from elsewhere (typed, picked, another
+    -- palette) is read from itself again.
+    local held: any = g.signal(nil)
     local function hsv(): (number, number, number)
+        local k = held.value
+        local c = palettes.colours()[role.value]
+        if k and k.role == role.value and type(c) == "string" and palettes.hex(c) == k.hex then
+            return k.h, k.s, k.v
+        end
         local h, s, v = palettes.hsv(role.value)
         return (if h >= 0 then h else kept_hue.value), s, v
     end
@@ -480,6 +492,8 @@ function M.new(t: { [string]: any }): any
                         kept_hue.value = h
                     elseif which == 2 then s = fraction
                     else v = fraction end
+                    held.value = { role = r, h = h, s = s, v = v,
+                        hex = palettes.hex(colour.format(colour.hsva(h, s, v, 1))) }
                     palettes.set_hsv(r, h, s, v)
                 end,
             },
