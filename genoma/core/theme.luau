@@ -136,17 +136,27 @@ M.shadow_float = memo(function() return colour.alpha("#000000", if M.is_dark() t
 
 -- ---- The outline family ------------------------------------------------------
 --
--- Line, node and rim at three lightnesses of the background's hue, the
--- primary's when the background has none.
+-- Line, node and rim at three lightnesses of the background's hue, always:
+-- the outline belongs to the ground it is drawn on, and the primary never
+-- gives it its hue. A background with no hue has an outline with none, a
+-- grey; on a tinted one the primary still lends the family some of its
+-- strength, never its colour (Akusen, 2026-11-16: under 5 % of saturation
+-- the family took the primary's hue, and a black background's borders
+-- turned with every change of the primary).
 
-local function hue_of(bg: string, accent: string): number
+local function tinted(bg: string): (boolean, number, number)
     local bh, bs = colour.hsl(colour.parse(bg))
-    local ah = colour.hsl(colour.parse(accent))
-    return if bs > 0.05 and bh >= 0 then bh else math.max(0, ah)
+    return bh >= 0 and bs > 0, bh, bs
+end
+
+local function hue_of(bg: string, _accent: string): number
+    local has, bh = tinted(bg)
+    return if has then bh else 0
 end
 
 local function saturation_of(bg: string, accent: string): number
-    local _, bs = colour.hsl(colour.parse(bg))
+    local has, _, bs = tinted(bg)
+    if not has then return 0 end
     local _, as = colour.hsl(colour.parse(accent))
     return math.max(math.min(bs + 0.04, 0.40), math.min(as * 0.33, 0.28))
 end
