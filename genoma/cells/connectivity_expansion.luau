@@ -32,6 +32,8 @@ local field = require("components/field")
 local scroller_mod = require("components/scroller")
 local sweep = require("components/sweep")
 local switch = require("components/switch")
+local traffic = require("components/traffic")
+local system = require("services/system_monitor")
 
 local CLEAR = "#00000000"
 local SHOWN_ROWS = 3
@@ -459,6 +461,14 @@ function M.new(cell: any): { [string]: any }
             },
             meta(speed),
         }),
+        -- The traffic, along the bottom of the connection that carries it.
+        at(well_inset, function() return well_padding() + header_height() + row_height() - 4 * f() end,
+            traffic.new {
+                width = inner,
+                factor = f,
+                inbound = system.net_in,
+                outbound = system.net_out,
+            }),
     })
 
     -- ---- Wi-Fi --------------------------------------------------------------------------
@@ -509,6 +519,20 @@ function M.new(cell: any): { [string]: any }
                     gradient_bottom = theme.text_muted,
                 },
                 strength(function() return network.bars_for(n().strength) end),
+            },
+            -- The traffic, along the bottom of the network it goes through
+            -- when no wire carries it.
+            g.box {
+                overlay = true,
+                attach = "corner",
+                offset_y = function() return row_height() - 4 * f() end,
+                traffic.new {
+                    present = function() return n().connected and not network.wired_connected() end,
+                    width = inner,
+                    factor = f,
+                    inbound = system.net_in,
+                    outbound = system.net_out,
+                },
             },
             -- The field, under the row it asks for.
             g.capsule {
