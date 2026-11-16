@@ -45,7 +45,7 @@ local KINDS = {
     { "weather", "Weather" }, { "note", "Note" }, { "lava", "Lava lamp" }, { "cytoplasm", "Cytoplasm" },
     { "rings", "Growth rings" }, { "osmosis", "Osmosis" }, { "photoperiod", "Photoperiod" },
     { "vacuole", "Vacuole" }, { "sediment", "Sediment" }, { "nucleus", "Nucleus" }, { "adipose", "Adipose" },
-    { "agenda", "Agenda" },
+    { "agenda", "Agenda" }, { "plankton", "Plankton" },
 }
 local function name_of(kind: string): string
     for _, k in KINDS do
@@ -538,7 +538,7 @@ function M.new(t: { [string]: any }): any
                 choice(screen, { { "row", "Row" }, { "square", "Square" } },
                     function(e: any) return if e.layout == "square" then "square" else "row" end,
                     function(key: string) write("layout", if key == "square" then key else nil) end)),
-            option_row(screen, "COLOUR", is("lava", "cytoplasm", "adipose"),
+            option_row(screen, "COLOUR", is("lava", "cytoplasm", "adipose", "plankton"),
                 choice(screen, { { "state", "State" }, { "theme", "Theme" } },
                     function(e: any) return if e.colour == "theme" then "theme" else "state" end,
                     function(key: string) write("colour", if key == "theme" then key else nil) end)),

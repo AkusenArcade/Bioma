@@ -98,6 +98,14 @@ the download cell (drives keep rate_thread). Osmosis stays a shader: it
 is one metaball field, drops budding from the membrane and melting into
 the pool, which independent particles cannot do.
 
+**B4, simulations** — `organisms/plankton.luau` (ORGANISMS.md §17): a
+swarm, Genoma's boids on the GPU. Its speed is the processor's load on a
+square-root scale, so an idle machine still drifts; how close it keeps is
+the memory used; how many there are is the kernel's tasks, in steps of
+twenty-five. Masked by the panel's own shape (`clip` cuts a rectangle, the
+creatures crossed the round corners), and lit by `genoma:glow`, a bloom
+pass over the swarm.
+
 ## Order proposed
 
 1. **A, the services** (capture, lock, record, brightness, drives,

@@ -50,6 +50,7 @@ M.kinds = {
     nucleus = { name = "Nucleus", template = { 2, 1 } },
     adipose = { name = "Adipose", template = { 2, 1 } },
     agenda = { name = "Agenda", template = { 2, 2 } },
+    plankton = { name = "Plankton", template = { 2, 1 } },
 }
 
 function M.name_of(kind: string): string

@@ -29,6 +29,15 @@ local cpu_percent = g.signal(0)
 local previous_cpu: { idle: number, total: number }? = nil
 local stat_file = file("/proc/stat")
 
+-- What the kernel is running, threads included: the plankton organism's
+-- population. The fourth field of /proc/loadavg, "runnable/total".
+local tasks = g.signal(0)
+local loadavg_file = file("/proc/loadavg")
+local function read_tasks(text: string)
+    local total = string.match(text, "^%S+%s+%S+%s+%S+%s+%d+/(%d+)")
+    if total then tasks.value = tonumber(total) or 0 end
+end
+
 local function read_load(text: string)
     -- Only the aggregate line is wanted, and it is the first.
     local line = string.match(text, "^[^\n]*") or ""
@@ -275,6 +284,8 @@ local function read_all()
     if temperature_file then sample_temperature() end
     local net = netdev_file:read()
     if net then read_network(net) end
+    local avg = loadavg_file:read()
+    if avg then read_tasks(avg) end
 end
 local function sample() g.batch(read_all) end
 
@@ -437,6 +448,7 @@ end
 function M.net_in(): number return net_in.value end
 function M.net_out(): number return net_out.value end
 function M.net_known(): boolean return net_known.value end
+function M.tasks(): number return tasks.value end
 
 -- ---- Battery ------------------------------------------------------------------------------
 --

@@ -56,7 +56,7 @@ That changes three rules and keeps the rest.
   | Template | Panel | Organisms |
   |---|---|---|
   | 1 × 2 | 200 × 424 | lava lamp, osmosis |
-  | 2 × 1 | 424 × 200 | clock, weather, photoperiod, nucleus, cytoplasm, vitals in a row, note `short` |
+  | 2 × 1 | 424 × 200 | clock, weather, photoperiod, nucleus, cytoplasm, plankton, vitals in a row, note `short` |
   | 3 × 1 | 648 × 200 | vitals in a row of four (with a battery): a figure cut short is not a figure |
   | 2 × 2 | 424 × 424 | media, calendar, agenda, growth rings, vacuole, sediment, vitals `square`, note `medium` |
   | 2 × 3 | 424 × 648 | note `tall` |
@@ -863,6 +863,42 @@ from — *Add one from the clock: open it, then + Calendar.* Calendars with noth
 why is the clock's to say, under its agenda.
 
 **Options** — `size`.
+
+---
+
+## 17 · Plankton
+
+*Built 2026-11-16, at Akusen's request, as Bioma showing Genoma's simulations (B4 of
+`docs/genoma-adoption.md`). Always present · what the machine is running, as a swarm.*
+
+A swarm of small creatures, Genoma's boids stepped on the GPU (`compute = "genoma:boids"`):
+each keeps apart from those too near, turns with its neighbours and drifts toward them, and
+they wrap round the panel's edges.
+
+**Every motion is the machine.** The swarm swims as fast as the processor works, on a
+square-root scale so an idle machine's few percent still read — a drift at rest, a dart with
+every core busy. It never stops at rest, which would read as broken and say nothing; only
+performance mode's motion lever stops it. **How close it keeps is the
+memory**: an empty machine is a loose drift, a full one a tight shoal (gathering 0.15 → 1.35,
+keeping apart 0.9 → 0.4 with the memory in use). **How many there are is what the kernel
+runs**: one creature for every ten tasks (threads included, `/proc/loadavg`), counted in
+twenty-fives, 50 to 400 — a new number starts the swarm again, so it changes only by a whole
+step.
+
+| Measure | Value | Note |
+|---|---|---|
+| panel | 424 × 200 | template 2 × 1; bleeds, the swarm masked by the glass's own shape (`clip` cuts a rectangle; the corners are round) |
+| creature | 4 long | a dot stretched along its heading, in the colour, lit by a bloom (`genoma:glow`: spread 7, strength 1.4, from brightness 0.15) |
+| speed | 4 + 92 √load a second | 4 idle, ~13 at 1 %, ~50 at 25 %, 96 with all cores |
+| sight | 28 | how far one sees its neighbours |
+| figures | `CPU` · `RAM` | Orbitron label over the value, lit with the colour, top-left |
+
+**Colour** — the state colours by load (calm, active, alert), like every reading of load;
+with `colour: "theme"` the primary, the load said by motion alone.
+
+**Options** — `size`, `colour` (`theme`, or absent for state), `figures`.
+
+**Settings** — the plankton's chip opens COLOUR: State · Theme.
 
 ---
 
