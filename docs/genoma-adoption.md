@@ -40,7 +40,7 @@ binary is rebuilt, which is his call.
 | Particles: sprites, sub-emitters, forces | Traffic as particles whose rate is the transfer rate (connectivity expansion, downloads); a notification burst whose count is the number arrived | bytes a second; count |
 | `compute` simulations | An organism whose simulation speed is the machine's load (reaction-diffusion, boids), beside lava and the others | CPU or GPU load |
 | Post-processing passes | Only where a value drives the pass: e.g. a privacy pass on the lock while a capture or recording is running. No decorative passes | capture/recording state |
-| `isolate` | Expansions that fade with overlapping children (panels over panels) stop showing through themselves while they fade | — (correctness) |
+| `isolate` | Controls held dimmed as one picture, so their parts do not show through each other: the slider (muted), the timer's face (paused), the timer's bar in the clock (stopped). Not the expansions' fade: measured, 120 ms hides the difference | — (correctness) |
 | `cache = true` | Rich static subtrees beside moving ones (settings pages, organisms' static parts) drawn once | — (cost) |
 
 ## C. Smaller fits and things to ignore

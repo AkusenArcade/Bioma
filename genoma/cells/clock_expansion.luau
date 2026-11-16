@@ -648,6 +648,8 @@ function M.new(cell: any, twenty_four: () -> boolean)
                 justify = "start",
                 align = "center",
                 opacity = function() return if time.running() then 1 else 0.45 end,
+                -- Stopped as one picture: the track must not show through its head.
+                isolate = true,
                 transition = { opacity = "transition" },
                 g.capsule {
                     overlay = true,

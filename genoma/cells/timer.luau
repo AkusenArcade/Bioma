@@ -52,6 +52,8 @@ return {
         local function face(size: () -> number): any
             return g.box {
                 opacity = function() return if time.paused() then 0.45 else 1 end,
+                -- Paused as one picture: the rim must not show through the disc.
+                isolate = true,
                 transition = { opacity = "content_fade" },
                 dial.new { size = size, fraction = function() return 0 end, orbit = orbit, still = true },
             }

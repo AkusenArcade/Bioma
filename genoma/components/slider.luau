@@ -30,6 +30,8 @@ function M.new(t: { [string]: any }): any
         justify = "start",
         align = "center",
         opacity = function() return if t.dimmed() then 0.45 else 1 end,
+        -- Dimmed as one picture: the track must not show through the handle.
+        isolate = true,
         transition = { opacity = "transition" },
         on_press = function(button: number, x: number)
             if button ~= 272 then return end
