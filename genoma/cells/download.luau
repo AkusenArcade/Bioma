@@ -3,7 +3,9 @@
 -- along (cells/download/DownloadCell.qml and DownloadPanel.qml at 11bb81e).
 -- See docs/design/CELLS.md §16.
 --
--- The thread is the cell's whole measure: no figure at rest. There is no
+-- The thread is the cell's whole measure: no figure at rest. The bytes run
+-- along it as particles, as many as the rate says (components/
+-- rate_particles). There is no
 -- progress to draw because there is none to know: no browser writes the
 -- total outside itself. Opened, each download on its own row, its own
 -- thread at its own speed, and the figures; a press shows the file where
@@ -14,7 +16,7 @@ local metrics_mod = require("core/metrics")
 local theme = require("core/theme")
 local typography = require("core/typography")
 local downloads = require("services/downloads")
-local rate_thread = require("components/rate_thread")
+local rate_particles = require("components/rate_particles")
 
 return {
     new = function(cell: any)
@@ -79,7 +81,7 @@ return {
                     direction = "row",
                     align = "center",
                     justify = "between",
-                    rate_thread.new {
+                    rate_particles.new {
                         width = function() return inner() - 30 * f() - figures_width() end,
                         rate = function() return d().rate or 0 end,
                         factor = f,
@@ -150,7 +152,7 @@ return {
                         gradient_top = function() return theme.gradient_top(theme.primary()) end,
                         gradient_bottom = function() return theme.gradient_bottom(theme.primary()) end,
                     },
-                    rate_thread.new {
+                    rate_particles.new {
                         width = thread_width,
                         rate = downloads.rate,
                         factor = f,
