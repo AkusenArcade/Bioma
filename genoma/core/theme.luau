@@ -139,10 +139,22 @@ M.secondary = token("secondary")
 M.target = t.target
 
 -- While a palette is being edited the desktop follows the hand, not a
--- quarter of a second behind it (services/Palettes.qml). Kept across
--- reloads; the theme follows it.
-M.immediate = g.state("theme.immediate", false)
-g.effect(function() t.immediate.value = M.immediate.value end)
+-- quarter of a second behind it: the editor shows its draft at once
+-- (M.show) and the file it writes behind the hand is not followed until the
+-- hand rests (services/palettes.luau). Not kept across a reload: left on,
+-- no palette file would be followed again.
+M.immediate = t.immediate
+
+-- A palette shown before it is on disk: the editor's draft. Only its roles
+-- are taken.
+function M.show(palette: { [string]: any }?)
+    if not palette then return end
+    local roles = {}
+    for _, role in t.roles() do
+        if type(palette[role]) == "string" then roles[role] = palette[role] end
+    end
+    t.set(roles)
+end
 
 -- ---- Light or dark -------------------------------------------------------
 
@@ -235,6 +247,9 @@ t.source {
         return if probe.text then own else M.shipped_palettes .. "/" .. name .. ".json"
     end,
     map = function(palette: any): { [string]: string }
+        -- The hand leads while a palette is edited; what was written a
+        -- moment ago would pull the desktop back.
+        if g.untracked(function() return M.immediate.value end) then return {} end
         if type(palette.image) == "string" and palette.image ~= "" then M.generated_image.value = palette.image end
         return palette
     end,

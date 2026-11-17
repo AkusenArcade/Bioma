@@ -90,7 +90,29 @@ local function settle()
         save()
     end)
 end
+-- While the hand moves a colour the desktop follows it at once, not a
+-- crossing behind (services/Palettes.qml: Theme.immediate); once it has
+-- rested past the last write, the theme follows its file again.
+local resting: any = nil
+local function let_go()
+    if resting then
+        resting:stop()
+        resting = nil
+    end
+    theme.immediate.value = false
+end
+local function follow_hand()
+    theme.immediate.value = true
+    theme.show(g.untracked(function() return draft.value end))
+    if resting then resting:stop() end
+    resting = g.after(timing.seconds.debounce * 2, function()
+        resting = nil
+        theme.immediate.value = false
+    end)
+end
+
 local function flush()
+    let_go()
     if writing then
         writing:stop()
         writing = nil
@@ -153,7 +175,9 @@ end
 function M.set_role(role: string, text: string)
     if not table.find(M.roles, role) then return end
     local hex = M.parse(text)
-    if hex ~= "" then change({ [role] = hex }) end
+    if hex == "" or not g.untracked(M.editable) then return end
+    change({ [role] = hex })
+    follow_hand()
 end
 
 function M.rename(name: string)
@@ -167,6 +191,7 @@ end
 function M.remove()
     if not g.untracked(M.editable) then return end
     local file = g.untracked(M.current).file
+    let_go()
     if writing then writing:stop() writing = nil end
     draft.value = nil
     draft_file.value = ""
