@@ -324,6 +324,15 @@ function M.new(cell: any): any
         clip = true,
         opacity = function() return if grid() then 0 else 1 end,
         transition = { opacity = "content_fade" },
+        -- By hand, a finger or a held press carried across it: the strip is
+        -- pushed along, so left brings the next picture, right the one
+        -- before, as the workspaces are. A press carried that far is no
+        -- click on the picture it began on.
+        drag_threshold = 8,
+        on_swipe = function(direction: string)
+            if g.untracked(grid) then return end
+            if direction == "left" then slide(1) elseif direction == "right" then slide(-1) end
+        end,
         g.each {
             overlay = true,
             attach = "corner",
