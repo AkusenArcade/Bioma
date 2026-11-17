@@ -19,9 +19,12 @@
 -- composition goes quickly, then the picture clears to the desktop it came
 -- from, and the session unlocks onto that.
 --
--- The greeter leaves differently (`welcomes`): the person stays, the
--- portrait and the name, while the rest goes; "Welcome to" and the logotype
--- open out from under the name, and then the whole screen fades to black.
+-- Both leave with a welcome (`welcomes`): the person stays, the portrait
+-- and the name, while the rest goes, and rises; in the middle of the
+-- screen, under "Welcome to", Bioma's mark draws itself and the logotype
+-- opens under it. The greeter's screen then fades to black; the lock
+-- (`returns`) lets the composition go and the picture clears back to the
+-- desktop it came from, as it always has.
 -- What follows is the session's compositor starting on a black screen, so
 -- the handover has no seam.
 --
@@ -47,10 +50,18 @@ local timing = require("core/timing")
 local typography = require("core/typography")
 local dial = require("components/dial")
 local field_mod = require("components/field")
+local mark = require("components/mark")
 local portrait = require("components/portrait")
 local wallpaper = require("structure/wallpaper")
 
 local M = {}
+
+-- How far below the composition's middle the welcome's mark has its own,
+-- in the density's units (measured at factor 1: what stands above the
+-- field, the welcome's step down from the name, "Welcome to" and half the
+-- mark). Welcoming, the composition rises by it, and the mark draws itself
+-- in the middle of the screen.
+local MARK_BELOW = 302
 
 local DAYS = { "SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY" }
 local MONTHS = { "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER",
@@ -89,8 +100,9 @@ function M.twenty_four(): boolean
     return true
 end
 
--- `t`: gate (above), output, size { width, height }, welcomes (the
--- greeter's leaving). Returns the node and a handle: key(name, text, mods).
+-- `t`: gate (above), output, size { width, height }, welcomes (leaving with
+-- the welcome), returns (the welcome ends back on the desktop, the lock's,
+-- not in the dark). Returns the node and a handle: key(name, text, mods).
 function M.new(t: { [string]: any }): (any, any)
     local gate = t.gate
     local output = t.output
@@ -100,6 +112,10 @@ function M.new(t: { [string]: any }): (any, any)
     local function active(): boolean return gate.active() == output end
     local function leaving(): boolean return gate.leaving() end
     local function welcoming(): boolean return t.welcomes == true and leaving() end
+    -- The lock's welcome over: what is in front goes, the picture clears.
+    local returns = t.returns == true
+    local ended = g.signal(false)
+    local function shown_welcome(): boolean return welcoming() and not ended.value end
 
     -- Here from the first turn on: the picture dissolves and the
     -- composition follows, each by its own timing. From a photograph, only
@@ -116,6 +132,7 @@ function M.new(t: { [string]: any }): (any, any)
     end
     local function dissolved(): boolean
         if leaving() and not t.welcomes then return false end
+        if ended.value then return false end
         return here.value
     end
     -- Leaving, the picture clears once the composition has gone.
@@ -179,9 +196,13 @@ function M.new(t: { [string]: any }): (any, any)
             g.box {
                 opacity = function()
                     if not leaving() then return 1 end
-                    return if kept and t.welcomes then 1 else 0
+                    return if kept and t.welcomes and not ended.value then 1 else 0
                 end,
-                transition = { opacity = if t.welcomes then "gate_leave" else "gate_close" },
+                transition = {
+                    opacity = function()
+                        return if t.welcomes and not ended.value then "gate_leave" else "gate_close"
+                    end,
+                },
                 child,
             },
         }
@@ -261,15 +282,19 @@ function M.new(t: { [string]: any }): (any, any)
         },
     }
 
-    -- The welcome, where the field was and from the name down: each line
-    -- comes in from just above, as if let out of the name.
+    -- The welcome, where the field was, a step below the name: each line
+    -- comes in from just above, and the mark draws itself between them.
     local function greeted(index: number, node: { [any]: any }): any
-        node.opacity = function() return if welcoming() then 1 else 0 end
+        local function timing_name(): string return if ended.value then "gate_close" else "greet_" .. index end
+        node.opacity = function() return if shown_welcome() then 1 else 0 end
         node.offset_y = function() return if welcoming() then 0 else -4 * f() end
-        node.transition = { opacity = "greet_" .. index, offset_y = "greet_" .. index }
+        node.transition = { opacity = timing_name, offset_y = timing_name }
         return node
     end
+    -- The logotype's measure, and the mark's own grid, larger: it is what
+    -- the screen is about for that moment.
     local function unit(): number return math.round(112 * f()) end
+    local function mark_size(): number return math.round(168 * f()) end
     local welcome = g.box {
         overlay = true,
         attach = "corner",
@@ -277,17 +302,21 @@ function M.new(t: { [string]: any }): (any, any)
         width = field_width,
         direction = "column",
         align = "center",
+        -- "Welcome to" heads the logotype, not the name: a step apart from
+        -- the person, as close to the mark as the name under it.
+        spacer(function() return 30 * f() end),
         g.text(greeted(1, {
             text = "Welcome to", color = theme.text_muted, font = typography.expressive,
             size = function() return math.round(18 * f()) end,
         })),
-        spacer(function() return 20 * f() end),
-        g.icon(greeted(2, {
-            width = unit, height = unit, icon = "mark",
-            gradient_top = function() return theme.gradient_top(theme.primary()) end,
-            gradient_bottom = function() return theme.gradient_bottom(theme.primary()) end,
-        })),
-        spacer(function() return 10 * f() end),
+        spacer(function() return 8 * f() end),
+        -- Drawn on; when the lock's welcome ends it goes with the rest.
+        g.box {
+            opacity = function() return if ended.value then 0 else 1 end,
+            transition = { opacity = "gate_close" },
+            mark.new { size = mark_size, drawn = welcoming, draw = "greet_draw", thread = "greet_thread", node = "greet_node" },
+        },
+        spacer(function() return 2 * f() end),
         g.text(greeted(3, {
             text = "BIOMA", color = theme.text, font = typography.technical,
             size = function() return math.round(0.18 * unit() / 0.72) end, tracking = 0.02,
@@ -304,7 +333,12 @@ function M.new(t: { [string]: any }): (any, any)
 
     local composition = g.box {
         present = active,
-        offset_y = function() return -size.height * 0.06 end,
+        -- Welcoming, the person rises so that the mark under the name draws
+        -- itself in the middle of the screen.
+        offset_y = function()
+            return if welcoming() then -MARK_BELOW * f() else -size.height * 0.06
+        end,
+        transition = { offset_y = "greet_lift" },
         direction = "column",
         align = "center",
         -- The time is the clock's, and the clock is a human thing: the
@@ -374,14 +408,19 @@ function M.new(t: { [string]: any }): (any, any)
         fill = "#000000",
         rim_top = "#00000000",
         rim_bottom = "#00000000",
+        present = not returns,
         opacity = function() return if welcoming() then 1 else 0 end,
         transition = { opacity = "gate_dark" },
     }
     if t.welcomes then
         g.watch(welcoming, function(on: boolean)
             if not on then return end
-            local s = timing.seconds
-            g.after(s.open + s.welcome_open + s.welcome_stagger * 3 + s.welcome + s.welcome_fade + 0.05, function()
+            if returns then
+                -- Read, then back to the desktop.
+                g.after(timing.welcome_dark_at(), function() ended.value = true end)
+                return
+            end
+            g.after(timing.welcome_dark_at() + timing.seconds.welcome_fade + 0.05, function()
                 if gate.entered then gate.entered() end
             end)
         end)

@@ -189,14 +189,15 @@ local function submit()
     }
 end
 
--- The composition goes quickly, then the picture clears back to the
--- desktop; the session unlocks once both have.
+-- The welcome, as the greeter's: the person rises and Bioma's mark draws
+-- itself; then the composition goes quickly and the picture clears back to
+-- the desktop. The session unlocks once all of it has.
 local was_leaving = false
 g.watch(function() return leaving.value end, function(on: boolean)
     local started = on and not was_leaving
     was_leaving = on
     if not started then return end
-    g.after(timing.seconds.close + timing.seconds.open, function()
+    g.after(timing.welcome_dark_at() + timing.seconds.close + timing.seconds.open, function()
         lock:unlock()
         finish(0)
     end)
@@ -228,7 +229,7 @@ return g.surface {
     namespace = "bioma-lock",
     function(output: string, size: any)
         size = size or { width = 1920, height = 1080 }
-        local gate_node, gate_keys = gate_mod.new { gate = gate, output = output, size = size }
+        local gate_node, gate_keys = gate_mod.new { gate = gate, output = output, size = size, welcomes = true, returns = true }
         local function here(): boolean return active() == output end
         return g.box {
             width = size.width,

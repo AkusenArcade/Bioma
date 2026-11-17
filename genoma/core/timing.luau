@@ -25,6 +25,9 @@ M.curves = {
     out_quad = { 0.25, 0.46, 0.45, 0.94 },
     -- 1 - (1 - t)^3: the greeter's welcome easing out.
     out_cubic = { 0.33, 1, 0.68, 1 },
+    -- A line drawing itself: slow to leave, slow to arrive (Genoma's
+    -- showcase draws its mark on the same).
+    draw = { 0.65, 0, 0.35, 1 },
 }
 
 -- Seconds, after the speed setting: what timers and the cascade read.
@@ -60,6 +63,13 @@ local fixed = {
     -- the timing of this name): a finger's way to what the other buttons do.
     long_press = 500,
 }
+
+-- When the greeter's welcome begins to darken, from the moment the
+-- password was taken: the name under the mark has opened and been read.
+local function welcome_dark_at(s: { [string]: number }): number
+    return s.open + s.welcome_stagger * 3 + s.welcome + s.welcome_open * 2
+end
+function M.welcome_dark_at(): number return welcome_dark_at(M.seconds) end
 
 g.effect(function()
     local speed = config.get("timing.speed", 1.0)
@@ -145,16 +155,21 @@ g.effect(function()
         -- clears back to the desktop.
         gate_close = { duration = s.close },
         gate_clear = { duration = s.open, delay = s.close, curve = c.in_out_quad },
-        -- The greeter's: what is not the person steps back, the welcome opens
-        -- under the name a line at a time, stays to be read, and the screen
+        -- The greeter's: what is not the person steps back and the person
+        -- rises; in the middle of the screen Bioma's mark draws itself, the
+        -- capsule, then the thread out to its nodes, and the name opens
+        -- under it a line at a time; it stays to be read, and the screen
         -- darkens, slower than the picture came.
         gate_leave = { duration = s.open },
-        greet_1 = { duration = s.welcome_open, delay = s.open, curve = c.out_cubic },
-        greet_2 = { duration = s.welcome_open, delay = s.open + s.welcome_stagger, curve = c.out_cubic },
-        greet_3 = { duration = s.welcome_open, delay = s.open + s.welcome_stagger * 2, curve = c.out_cubic },
-        greet_4 = { duration = s.welcome_open, delay = s.open + s.welcome_stagger * 3, curve = c.out_cubic },
-        gate_dark = { duration = s.welcome_fade,
-            delay = s.open + s.welcome_open + s.welcome_stagger * 3 + s.welcome, curve = c.in_out_quad },
+        greet_lift = { duration = s.welcome_open * 2, delay = s.open * 0.6, curve = c.out_cubic },
+        greet_1 = { duration = s.welcome_open, delay = s.open + s.welcome_stagger, curve = c.out_cubic },
+        greet_draw = { duration = s.welcome, delay = s.open + s.welcome_stagger * 2, curve = c.draw },
+        greet_thread = { duration = s.welcome_open, delay = s.open + s.welcome_stagger * 2 + s.welcome * 0.55, curve = c.draw },
+        greet_node = { duration = s.welcome_stagger * 2,
+            delay = s.open + s.welcome_stagger * 2 + s.welcome * 0.55 + s.welcome_open * 0.8, curve = c.open },
+        greet_3 = { duration = s.welcome_open, delay = s.open + s.welcome_stagger * 2 + s.welcome, curve = c.out_cubic },
+        greet_4 = { duration = s.welcome_open, delay = s.open + s.welcome_stagger * 3 + s.welcome, curve = c.out_cubic },
+        gate_dark = { duration = s.welcome_fade, delay = welcome_dark_at(s), curve = c.in_out_quad },
         depart_fade = { duration = s.open / 2, delay = s.content_fade / 2 + s.open / 2, curve = c.in_out_quad },
         grow = { duration = s.grow, curve = c.open_flat },
         transition = { duration = s.transition, curve = c.open_flat },
