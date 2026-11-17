@@ -551,7 +551,9 @@ two groups is decoration. Hover: the name appears above in Spectral, one at a ti
 windows: only the running group scrolls, the pinned stay put — icons never shrink.
 
 **Behaviour**
-- Click brings to front, or launches. Middle click: new instance. Drag reorders the pinned.
+- Click brings to front, or launches. Middle click: pin or unpin. Right click, or a finger held
+  on the icon: the application's menu, budding out of the dock as a panel — its own desktop
+  actions (new window, private window), another instance, pin or unpin. Drag reorders the pinned.
 - Several windows of the same application: one icon, and the click cycles through its windows.
   The ring stays one: it says "running", not how many times.
 - **Pinned applications are optional.** With none pinned, only the running group remains and the

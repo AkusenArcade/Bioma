@@ -5,13 +5,13 @@
 -- Kept ones first, in the order chosen, then a hairline, then what is open
 -- and not kept. A ring of the primary round an icon says it is running. A
 -- press focuses it (again: the next of its windows) or starts it; the
--- middle button always starts another; the right one keeps or lets go. A
--- kept icon is dragged along the row to reorder, the others making room.
+-- middle button keeps or lets go; the right one, or a finger held on it,
+-- opens its menu: what the application offers beside starting (a new
+-- window, a private one), another of it, and keeping it here or letting it
+-- go. The menu buds out of the dock as any cell's panel does. A kept icon
+-- is dragged along the row to reorder, the others making room.
 --
 -- Conditional, it is there while the desktop shows: on an empty workspace.
---
--- Not yet: a long press on a touch screen keeping an icon (Genoma's touch
--- input has not come).
 local g = require("@genoma")
 local colour = require("core/colour")
 local config = require("core/config")
@@ -25,6 +25,8 @@ local focus = require("structure/focus")
 
 local CLEAR = "#00000000"
 local LEFT, RIGHT, MIDDLE = 272, 273, 274
+-- The most of an application's own actions its menu lists.
+local MOST_ACTIONS = 8
 
 return {
     new = function(cell: any)
@@ -194,6 +196,47 @@ return {
             config.set("dock.pinned", next)
         end
 
+        -- ---- The menu: an icon's right button, or a finger held on it -------------------------
+        --
+        -- Kept after it closes: the panel goes back the size it came out.
+        local menu_for = g.signal("")
+        local function menu_open(app_id: string): boolean
+            return cell.open.value and menu_for.value == app_id
+        end
+        local function show_menu(app_id: string)
+            menu_for.value = app_id
+            cell.open.value = true
+        end
+        -- One of what the entry offers (`Actions=`), started as the
+        -- application itself is.
+        local function run_action(entry: any, action: any)
+            apps.run({ id = entry.id, exec = action.exec, path = entry.path, terminal = entry.terminal }, g.untracked(proxy.environment))
+        end
+        local function menu_rows(): { any }
+            local id = menu_for.value
+            if id == "" then return {} end
+            local entry = apps.entry_for(id)
+            local out = {}
+            for i, a in (if entry then entry.actions else nil) or {} do
+                if i > MOST_ACTIONS then break end
+                table.insert(out, { key = "action:" .. a.id, label = a.name, run = function() run_action(entry, a) end })
+            end
+            if #out > 0 then table.insert(out, { key = "separator", separator = true }) end
+            local running_now = #windows_of(id) > 0
+            table.insert(out, {
+                key = "start",
+                label = if running_now then "Start another" else "Start",
+                run = function() launch(id) end,
+            })
+            local kept = is_pinned(id)
+            table.insert(out, {
+                key = "keep",
+                label = if kept then "Remove from dock" else "Keep in dock",
+                run = function() if kept then unkeep(id) else keep(id) end end,
+            })
+            return out
+        end
+
         -- ---- The name, while the pointer is on an icon ----------------------------------------
         local named = g.signal("")
         local named_centre = g.signal(0)
@@ -209,7 +252,8 @@ return {
             -- Something dragged over it that it can open.
             local drop_over = g.signal(false)
             local function size(): number
-                return if (t.held and t.held()) or drop_over.value then icon_size() * 1.12 else icon_size()
+                local raised = (t.held and t.held()) or drop_over.value or menu_open(t.app_id())
+                return if raised then icon_size() * 1.12 else icon_size()
             end
             local function source(): string return apps.icon_for(t.app_id()) end
             -- Where the press landed, and where the icon was then: a drag is
@@ -271,14 +315,14 @@ return {
                 end,
                 -- Held still, a finger's right button.
                 on_long_press = function()
-                    if not moved then t.on_toggle(g.untracked(t.app_id)) end
+                    if not moved then show_menu(g.untracked(t.app_id)) end
                 end,
                 on_click = function(button: number)
                     if moved then moved = false return end
                     local id = g.untracked(t.app_id)
                     if button == LEFT then activate(id)
-                    elseif button == MIDDLE then launch(id)
-                    elseif button == RIGHT then t.on_toggle(id) end
+                    elseif button == MIDDLE then t.on_toggle(id)
+                    elseif button == RIGHT then show_menu(id) end
                 end,
                 -- Running: the ring.
                 g.capsule {
@@ -342,7 +386,7 @@ return {
                 g.box {
                     present = function() return count() == 0 end,
                     g.text {
-                        text = "Launch an app and right click on the icon to pin it",
+                        text = "Launch an app and keep it from its icon's menu",
                         color = theme.text_muted,
                         font = typography.expressive,
                         size = function() return m().font_secondary end,
@@ -457,7 +501,118 @@ return {
             }
         end
 
+        -- ---- The menu's panel -------------------------------------------------------------
+
+        local function panel_width(): number return 240 * f() end
+        local function menu_inner(): number return panel_width() - 20 * f() end
+        local function row_height(): number return 32 * f() end
+        local function header_height(): number return 30 * f() end
+        local function separator_height(): number return 9 * f() end
+        local function height_of(r: any): number return if r.separator then separator_height() else row_height() end
+        local function rows_height(): number
+            local h = 0
+            for _, r in menu_rows() do h += height_of(r) end
+            return math.max(h, row_height())
+        end
+        -- Inside the panel's own padding, as the tray's menu.
+        local function panel_height(): number return 20 * f() + header_height() + rows_height() + 8 * f() end
+
+        local function menu_row(item: () -> any): any
+            local function r(): any return item() end
+            local hovered = g.signal(false)
+            return g.capsule {
+                role = "button",
+                name = "Menu entry",
+                width = function() return menu_inner() - 10 * f() end,
+                height = function() return height_of(r()) end,
+                radius = function() return metrics_mod.radius_for(row_height(), m()) end,
+                direction = "row",
+                align = "center",
+                justify = "start",
+                padding_x = function() return 8 * f() end,
+                fill = function()
+                    return if hovered.value and not r().separator then colour.alpha(theme.primary(), 0.12) else CLEAR
+                end,
+                rim_top = CLEAR,
+                rim_bottom = CLEAR,
+                on_hover = function(on: boolean) hovered.value = on end,
+                on_click = function()
+                    local now = g.untracked(r)
+                    if now.separator then return end
+                    cell.open.value = false
+                    now.run()
+                end,
+                -- A separator is a hairline across the row.
+                g.capsule {
+                    present = function() return r().separator == true end,
+                    width = function() return menu_inner() - 26 * f() end,
+                    height = 1,
+                    crisp = true,
+                    radius = 0,
+                    fill = theme.line,
+                    rim_top = CLEAR,
+                    rim_bottom = CLEAR,
+                },
+                g.text {
+                    present = function() return not r().separator end,
+                    text = function() return r().label or "" end,
+                    color = theme.text,
+                    font = typography.expressive,
+                    size = function() return m().font_secondary end,
+                    max_width = function() return menu_inner() - 30 * f() end,
+                },
+            }
+        end
+
+        local function menu(): any
+            return g.box {
+                direction = "column",
+                width = menu_inner,
+                -- The application whose menu it is.
+                g.box {
+                    width = menu_inner,
+                    height = header_height,
+                    direction = "row",
+                    align = "center",
+                    padding_left = function() return 2 * f() end,
+                    g.text {
+                        text = function() return if menu_for.value ~= "" then label_of(menu_for.value) else "" end,
+                        color = theme.text,
+                        font = typography.expressive,
+                        size = function() return m().font_secondary end,
+                        max_width = function() return menu_inner() - 10 * f() end,
+                    },
+                },
+                g.capsule {
+                    width = menu_inner,
+                    height = function() return rows_height() + 8 * f() end,
+                    radius = function() return metrics_mod.inner_radius(m().radius_panel, 8 * f()) end,
+                    fill = function() return colour.alpha(theme.lift(theme.background(), -0.01), 0.8) end,
+                    rim_top = CLEAR,
+                    rim_bottom = CLEAR,
+                    direction = "column",
+                    align = "center",
+                    justify = "start",
+                    padding_y = function() return 4 * f() end,
+                    g.each {
+                        direction = "column",
+                        items = menu_rows,
+                        key = function(r: any) return r.key end,
+                        row = menu_row,
+                    },
+                },
+            }
+        end
+
         return {
+            panel = {
+                width = panel_width,
+                height = panel_height,
+                content = menu,
+            },
+            -- Its presses are the icons'; the pill itself opens nothing.
+            on_click = function() end,
+            replaces_content = false,
             padding_leading = function()
                 return if count() > 0 then (m().cell_height - icon_size()) / 2 else 16 * f()
             end,
@@ -468,7 +623,7 @@ return {
             content_width = function()
                 local n = count()
                 if n == 0 then
-                    return g.text_width { text = "Launch an app and right click on the icon to pin it",
+                    return g.text_width { text = "Launch an app and keep it from its icon's menu",
                         font = typography.expressive(), size = m().font_secondary }
                 end
                 return n * icon_size() + (n - 1) * pitch()
