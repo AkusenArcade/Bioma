@@ -33,7 +33,9 @@
 --                      (the media's track, hung under its band); radius
 --                      when it is not the panel's; outline() a colour for
 --                      its rim, nil for the usual; lead() how far satellites
---                      hang to its left
+--                      hang to its left; anchor() the x in the cell's own
+--                      frame it hangs from, nil for the cell's middle (the
+--                      dock's menu, under the icon it belongs to)
 --   on_key(name)       a key while it is open, Escape aside
 --   on_wheel(dx, dy)   the wheel over the cell
 --   on_swipe(direction, speed)
@@ -418,6 +420,11 @@ function M.new(kind: any, ctx: { [string]: any })
 
     local function opacity(): number return config.get("cell.opacity", 0.72) end
 
+    -- Where in the cell's own frame its panel hangs from, nil for the middle.
+    local function anchor(): number?
+        return if spec.panel and spec.panel.anchor then spec.panel.anchor() else nil
+    end
+
     -- ---- Expansion ----------------------------------------------------------
     --
     -- The panel buds out of the cell (Akusen, 2026-10-28; Genoma PRD §8.2):
@@ -438,6 +445,24 @@ function M.new(kind: any, ctx: { [string]: any })
             return if last then "retract_last" else "retract"
         end
 
+        -- Where it stands from the cell's left.
+        local function panel_x(): number
+            local origin = place.origin()
+            -- Centred on what it hangs from, but never past the edge
+            -- the cell stands against.
+            local at = anchor()
+            if at then
+                local x = at - p.width() / 2
+                if origin == "start" then return math.max(0, x) end
+                if origin == "end" then return math.min(place.width() - p.width(), x) end
+                return x
+            end
+            local lead = if p.lead then p.lead() else 0
+            if origin == "end" then return place.width() - p.width() end
+            if origin == "centre" then return (place.width() - p.width() + lead) / 2 end
+            return lead
+        end
+
         -- Still drawn while it is taken back.
         function c.reach(): number
             if not panel_out.value then return 0 end
@@ -455,13 +480,7 @@ function M.new(kind: any, ctx: { [string]: any })
             -- What hangs to the panel's left (settings' column of
             -- categories) is kept on the screen with it: from a cell at the
             -- start the panel moves right by all of it, centred by half.
-            offset_x = function()
-                local origin = place.origin()
-                local lead = if p.lead then p.lead() else 0
-                if origin == "end" then return place.width() - p.width() end
-                if origin == "centre" then return (place.width() - p.width() + lead) / 2 end
-                return lead
-            end,
+            offset_x = panel_x,
             -- On the cell's edge while shut: it leaves from there, so as it
             -- grows it never crosses the cells beside it in the row.
             offset_y = function()
@@ -797,6 +816,10 @@ function M.new(kind: any, ctx: { [string]: any })
                 vertical = true,
                 overlay = true,
                 attach = if c.edge ~= "bottom" then "below-center" else "above-center",
+                offset_x = function()
+                    local at = anchor()
+                    return if at then at - place.width() / 2 else 0
+                end,
                 present = function() return panel_out.value end,
                 length = function() return place.gap() end,
                 reversed = c.edge == "bottom",

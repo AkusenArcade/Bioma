@@ -552,7 +552,8 @@ windows: only the running group scrolls, the pinned stay put — icons never shr
 
 **Behaviour**
 - Click brings to front, or launches. Middle click: pin or unpin. Right click, or a finger held
-  on the icon: the application's menu, budding out of the dock as a panel — its own desktop
+  on the icon: the application's menu, budding out of the dock as a panel under that icon (kept
+  on the screen side the dock stands against) — its own desktop
   actions (new window, private window), another instance, pin or unpin. Drag reorders the pinned.
 - Several windows of the same application: one icon, and the click cycles through its windows.
   The ring stays one: it says "running", not how many times.

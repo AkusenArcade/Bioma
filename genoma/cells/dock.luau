@@ -8,7 +8,8 @@
 -- middle button keeps or lets go; the right one, or a finger held on it,
 -- opens its menu: what the application offers beside starting (a new
 -- window, a private one), another of it, and keeping it here or letting it
--- go. The menu buds out of the dock as any cell's panel does. A kept icon
+-- go. The menu buds out of the dock as any cell's panel does, from under
+-- the icon it belongs to rather than the strip's middle. A kept icon
 -- is dragged along the row to reorder, the others making room.
 --
 -- Conditional, it is there while the desktop shows: on an empty workspace.
@@ -200,10 +201,17 @@ return {
         --
         -- Kept after it closes: the panel goes back the size it came out.
         local menu_for = g.signal("")
+        -- Where its icon's middle is, in the content's frame: the menu hangs
+        -- from there. A function, so it follows the icon if the row moves;
+        -- the count says which one it is.
+        local menu_centre: () -> number = function() return 0 end
+        local menu_shown = g.signal(0)
         local function menu_open(app_id: string): boolean
             return cell.open.value and menu_for.value == app_id
         end
-        local function show_menu(app_id: string)
+        local function show_menu(app_id: string, centre: () -> number)
+            menu_centre = centre
+            menu_shown.value = g.untracked(function() return menu_shown.value end) + 1
             menu_for.value = app_id
             cell.open.value = true
         end
@@ -315,14 +323,14 @@ return {
                 end,
                 -- Held still, a finger's right button.
                 on_long_press = function()
-                    if not moved then show_menu(g.untracked(t.app_id)) end
+                    if not moved then show_menu(g.untracked(t.app_id), t.centre) end
                 end,
                 on_click = function(button: number)
                     if moved then moved = false return end
                     local id = g.untracked(t.app_id)
                     if button == LEFT then activate(id)
                     elseif button == MIDDLE then t.on_toggle(id)
-                    elseif button == RIGHT then show_menu(id) end
+                    elseif button == RIGHT then show_menu(id, t.centre) end
                 end,
                 -- Running: the ring.
                 g.capsule {
@@ -609,6 +617,11 @@ return {
                 width = panel_width,
                 height = panel_height,
                 content = menu,
+                -- Under the icon it belongs to, not the strip's middle.
+                anchor = function()
+                    local _ = menu_shown.value
+                    return (m().cell_height - icon_size()) / 2 + menu_centre()
+                end,
             },
             -- Its presses are the icons'; the pill itself opens nothing.
             on_click = function() end,
