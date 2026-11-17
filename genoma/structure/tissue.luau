@@ -213,7 +213,8 @@ function M.new(ctx: { [string]: any })
     end
 
     local function place_of(c: any, position: { [string]: any }): { [string]: any }
-        return {
+        local place
+        place = {
             -- Exact, never rounded here: Genoma lands the drawing on the
             -- screen's physical pixels and keeps a centred cell centred,
             -- which a whole logical unit at scale 1.5 does not (a 1.7 margin
@@ -242,7 +243,11 @@ function M.new(ctx: { [string]: any })
             radius = t.cell_radius,
             origin = ctx.anchor_side,
             gap = function(): number return origin_gap(position) end,
+            -- Where it stands on its surface, which spans the screen: what it
+            -- opens can tell whether it fits.
+            screen_x = function(): number return position.x() + place.x() end,
         }
+        return place
     end
 
     -- One continuous fill behind the cells, following the tissue's radius:

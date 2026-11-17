@@ -1134,13 +1134,34 @@ function M.new(cell: any, twenty_four: () -> boolean)
 
     -- ---- The side panels, budding out of the month ----------------------------------
 
-    local function side(attach: string, content: () -> any): any
+    -- Whether the side panel on that side of the month stays on the
+    -- screen. A clock in a corner opens its month against the screen's edge,
+    -- and the side that would leave it goes to the other side instead, past
+    -- its sibling and budding out of it: the month stays where it grew from.
+    local function fits(left: boolean): boolean
+        if not cell.panel_left then return true end
+        local x = cell.panel_left()
+        if left then return x - gap() - side_width() >= 0 end
+        return x + calendar_width() + gap() + side_width() <= cell.output_width()
+    end
+    -- Beside the month, or past the other side when it does not fit there
+    -- (and that one does).
+    local function beside(left: boolean): boolean return fits(left) or not fits(not left) end
+    local function past(left: boolean): boolean return not beside(left) end
+
+    -- `attach` the side it hangs on; `t.present` while it is there; `t.next`
+    -- for one budding out of another side rather than the month, a step
+    -- later; `t.beyond` what buds out of this one in turn.
+    local function side(attach: string, content: () -> any, t: { [string]: any }?): any
+        local o = t or {}
         local left = attach == "left"
+        local step = if o.next then "2" else "1"
         -- They came together, after the month: they go together, before it.
-        local function curve(): string return if cell.open.value then "pod_1" else "pod_retract_4" end
-        return g.capsule {
+        local function curve(): string return if cell.open.value then "pod_" .. step else "pod_retract_4" end
+        local node: { [any]: any } = {
             overlay = true,
             attach = attach,
+            present = o.present,
             width = side_width,
             height = panel_height,
             radius = function() return m().radius_panel end,
@@ -1162,10 +1183,26 @@ function M.new(cell: any, twenty_four: () -> boolean)
             transition = { growth = curve, bud = curve, offset_x = curve },
             g.box {
                 opacity = function() return if cell.open.value then 1 else 0 end,
-                transition = { opacity = function() return if cell.open.value then "pod_content_1" else "content_leave" end },
+                transition = { opacity = function() return if cell.open.value then "pod_content_" .. step else "content_leave" end },
                 content(),
             },
         }
+        if o.beyond then
+            -- Its thread to the one past it, from its outer edge.
+            table.insert(node, thread.new {
+                vertical = false,
+                overlay = true,
+                attach = attach,
+                present = o.beyond_present,
+                length = gap,
+                reversed = left,
+                shown = function() return cell.open.value end,
+                timing = function() return "pod_thread_2" end,
+                closing = function() return "pod_thread_close_4" end,
+            })
+            table.insert(node, o.beyond)
+        end
+        return g.capsule(node)
     end
 
     -- Hung from the month on the side away from the cell, on its own thread:
@@ -1214,9 +1251,20 @@ function M.new(cell: any, twenty_four: () -> boolean)
         satellites = function()
             local down = cell.edge ~= "bottom"
             local function agenda_out(): boolean return cell.open.value and agenda_shown() end
+            -- Each side, beside the month or past the other one.
+            local function places_past(): boolean return past(true) end
+            local function timers_past(): boolean return past(false) end
             return {
-                side("left", places),
-                side("right", timers),
+                side("left", places, {
+                    present = function() return beside(true) end,
+                    beyond = side("left", timers, { present = timers_past, next = true }),
+                    beyond_present = timers_past,
+                }),
+                side("right", timers, {
+                    present = function() return beside(false) end,
+                    beyond = side("right", places, { present = places_past, next = true }),
+                    beyond_present = places_past,
+                }),
                 below(agenda),
                 -- The threads belong to the month: drawn out of its edges, in
                 -- the place they keep, while the panels bud out to meet them.
@@ -1224,6 +1272,7 @@ function M.new(cell: any, twenty_four: () -> boolean)
                     vertical = false,
                     overlay = true,
                     attach = "left",
+                    present = function() return beside(true) end,
                     length = gap,
                     reversed = true,
                     shown = function() return cell.open.value end,
@@ -1234,6 +1283,7 @@ function M.new(cell: any, twenty_four: () -> boolean)
                     vertical = false,
                     overlay = true,
                     attach = "right",
+                    present = function() return beside(false) end,
                     length = gap,
                     shown = function() return cell.open.value end,
                     timing = function() return "pod_thread_1" end,

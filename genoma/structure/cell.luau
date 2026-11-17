@@ -86,7 +86,8 @@ local thread = require("components/thread")
 local M = {}
 
 -- `ctx`: block() (the cell's configuration block, read reactively),
--- metrics(), output, edge, output_width.
+-- metrics(), output, edge, output_width (the screen's, for what it opens to
+-- keep on it).
 function M.new(kind: any, ctx: { [string]: any })
     local c: { [string]: any } = {}
     c.domain = registry.canonical(ctx.block().type)
@@ -94,6 +95,7 @@ function M.new(kind: any, ctx: { [string]: any })
     c.metrics = ctx.metrics
     c.output = ctx.output
     c.edge = ctx.edge
+    c.output_width = ctx.output_width
     -- In a tissue with no membrane.
     c.floating = ctx.floating == true
 
@@ -461,6 +463,11 @@ function M.new(kind: any, ctx: { [string]: any })
             if origin == "end" then return place.width() - p.width() end
             if origin == "centre" then return (place.width() - p.width() + lead) / 2 end
             return lead
+        end
+        -- Its left edge on the screen: what buds out of it beside it can
+        -- tell whether it would leave the screen there (the clock's sides).
+        function c.panel_left(): number
+            return (if place.screen_x then place.screen_x() else 0) + panel_x()
         end
 
         -- Still drawn while it is taken back.
