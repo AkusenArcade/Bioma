@@ -1,6 +1,7 @@
 --!strict
--- A list longer than its room: where it is scrolled to, the wheel that
--- moves it, and the mark down its side (components/Scroller.qml).
+-- A list longer than its room: where it is scrolled to, and the mark down
+-- its side (components/Scroller.qml). Genoma's own `scroll` moves it, so
+-- the wheel, a touchpad and a finger on a touchscreen all do.
 --
 -- The mark exists only while the list moves. At rest the interface does not
 -- speak, and a bar that stays is a figure nobody asked for, so it fades in
@@ -12,9 +13,13 @@ local timing = require("core/timing")
 
 local M = {}
 
--- `t`: viewport() and content() (heights, logical units), step() (a wheel
--- notch, a row), factor(). Returns `offset()`, `wheel(dx, dy)` for the
--- well's on_wheel, `reveal(top, height)` to bring a stretch into view,
+-- `t`: viewport() and content() (heights, logical units), factor().
+-- Returns `offset()` for the well's `scroll_y`, `follow(x, y)` for its
+-- `on_scroll` (the well is `scroll = "y"`: Genoma moves it under the
+-- wheel, the touchpad and the finger, and tells it here), `content()` for
+-- the height of rows the cell places itself (the room Genoma scrolls is
+-- the content's laid-out size), `reveal(top, height)` to bring a stretch
+-- into view,
 -- `to(y)`, `home()` (the top, quietly), `fade()` for the well's
 -- `fade_bottom`, and `bar(x)`, the mark to place in the well at that x.
 function M.new(t: { [string]: any }): any
@@ -25,14 +30,20 @@ function M.new(t: { [string]: any }): any
     local function room(): number return math.max(0, t.content() - t.viewport()) end
     local function longer(): boolean return t.content() > t.viewport() + 0.5 end
 
-    local function to(y: number)
-        local clamped = math.clamp(y, 0, g.untracked(room))
-        if clamped == g.untracked(function() return offset.value end) then return end
-        offset.value = clamped
+    -- Now at y, and moving: the mark shows until it rests.
+    local function moved(y: number)
+        if y == g.untracked(function() return offset.value end) then return end
+        offset.value = y
         moving.value = true
         if rest then rest:stop() end
         rest = g.after(timing.seconds.reflow + timing.seconds.content_fade * 2, function() moving.value = false end)
     end
+
+    local function to(y: number) moved(math.clamp(y, 0, g.untracked(room))) end
+
+    -- Genoma moved the well: the wheel, a touchpad, a finger, a fling.
+    -- Where it is now is where it is, whatever this side thought its room.
+    local function follow(_: number, y: number) moved(y) end
 
     -- More below: the well lets its content fade out over its foot, so a
     -- list that goes on says so without a figure, and stops fading at its
@@ -46,13 +57,6 @@ function M.new(t: { [string]: any }): any
     -- Back to the top without the mark: another list in the same well.
     local function home()
         offset.value = 0
-    end
-
-    -- A notch is a row; a touchpad's movement is followed as it comes.
-    local function wheel(_: number, dy: number)
-        local discrete = dy == math.floor(dy) and math.abs(dy) <= 3
-        local now = g.untracked(function() return offset.value end)
-        to(now + (if discrete then dy * g.untracked(t.step) else dy))
     end
 
     local function reveal(top: number, height: number)
@@ -98,7 +102,8 @@ function M.new(t: { [string]: any }): any
 
     return {
         offset = function() return offset.value end,
-        wheel = wheel,
+        content = t.content,
+        follow = follow,
         reveal = reveal,
         to = to,
         home = home,

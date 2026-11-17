@@ -529,13 +529,14 @@ function M.new(t: { [string]: any }): any
             clip = true,
             scroll_y = function() return math.clamp(scroll_offset.value, 0, max_offset()) end,
             transition = { scroll_y = "reflow" },
-            on_wheel = function(_: number, dy: number)
-                scroll_offset.value = math.clamp(g.untracked(function() return scroll_offset.value end) + dy * 40 * g.untracked(f), 0, g.untracked(max_offset))
-            end,
+            -- Genoma moves it: the wheel, a touchpad, a finger.
+            scroll = "y",
+            on_scroll = function(_: number, y: number) scroll_offset.value = y end,
             g.each {
                 overlay = true,
                 attach = "corner",
                 direction = "column",
+                height = content_height,
                 items = function() return rows.value end,
                 key = function(r: any) return r.id end,
                 row = row,
@@ -620,10 +621,13 @@ function M.new(t: { [string]: any }): any
         return out
     end)
     local picker_offset = g.signal(0)
-    local function picker_max(): number
+    local function picker_content(): number
         local h = 0
         for _, item in picker_rows.value do h += if item.heading then header_row() else picker_row() end
-        return math.max(0, h - (picker_height() - 50 * f()))
+        return h
+    end
+    local function picker_max(): number
+        return math.max(0, picker_content() - (picker_height() - 50 * f()))
     end
     g.watch(function() return filter_text.value end, function() picker_offset.value = 0 end)
 
@@ -700,13 +704,13 @@ function M.new(t: { [string]: any }): any
             clip = true,
             scroll_y = function() return math.clamp(picker_offset.value, 0, picker_max()) end,
             transition = { scroll_y = "reflow" },
-            on_wheel = function(_: number, dy: number)
-                picker_offset.value = math.clamp(g.untracked(function() return picker_offset.value end) + dy * 40 * g.untracked(f), 0, g.untracked(picker_max))
-            end,
+            scroll = "y",
+            on_scroll = function(_: number, y: number) picker_offset.value = y end,
             g.each {
                 overlay = true,
                 attach = "corner",
                 direction = "column",
+                height = picker_content,
                 items = function() return picker_rows.value end,
                 key = function(item: any) return item.key end,
                 row = picker_item,

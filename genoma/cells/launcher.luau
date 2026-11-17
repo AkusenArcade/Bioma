@@ -107,7 +107,6 @@ local function simple(cell: any): any
     local scroll = scroller_mod.new {
         viewport = list_height,
         content = function() return layout.value.height end,
-        step = result_height,
         factor = f,
     }
 
@@ -335,10 +334,12 @@ local function simple(cell: any): any
                     scroll_y = scroll.offset,
                     fade_bottom = scroll.fade,
                     transition = { scroll_y = "reflow" },
-                    on_wheel = scroll.wheel,
+                    scroll = "y",
+                    on_scroll = scroll.follow,
                     g.each {
                         overlay = true,
                         attach = "corner",
+                        height = scroll.content,
                         items = function() return layout.value.rows end,
                         key = function(row: any): string
                             local res = row.result

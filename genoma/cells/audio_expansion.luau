@@ -254,7 +254,6 @@ function M.new(cell: any, bare: boolean): any
         local scroll = scroller_mod.new {
             viewport = viewport,
             content = function() return #items() * row_height() end,
-            step = row_height,
             factor = f,
         }
         local node: { [any]: any } = {
@@ -288,10 +287,12 @@ function M.new(cell: any, bare: boolean): any
                 scroll_y = scroll.offset,
                 fade_bottom = scroll.fade,
                 transition = { scroll_y = "reflow" },
-                on_wheel = scroll.wheel,
+                scroll = "y",
+                on_scroll = scroll.follow,
                 g.each {
                     overlay = true,
                     attach = "corner",
+                    height = scroll.content,
                     width = well_width,
                     items = items,
                     key = function(n: any) return n.id end,

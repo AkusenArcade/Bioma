@@ -574,11 +574,9 @@ function M.new(cell: any)
                 padding_y = function() return 6 * f() end,
                 scroll_y = function() return scroll.value end,
                 transition = { scroll_y = "reflow" },
-                on_wheel = function(_, dy: number)
-                    local discrete = dy == math.floor(dy) and math.abs(dy) <= 3
-                    local now = g.untracked(function() return scroll.value end)
-                    scroll_to(now + (if discrete then dy * g.untracked(m).row_height else dy))
-                end,
+                -- Genoma moves it: the wheel, a touchpad, a finger.
+                scroll = "y",
+                on_scroll = function(_, y: number) scroll.value = y end,
                 g.each {
                     direction = "column",
                     justify = "start",

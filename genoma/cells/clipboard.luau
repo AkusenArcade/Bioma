@@ -79,7 +79,6 @@ return {
                 for _, e in shown() do h += height_of(e) end
                 return h
             end,
-            step = row_height,
             factor = f,
         }
 
@@ -269,11 +268,13 @@ return {
                         scroll_y = scroll.offset,
                         fade_bottom = scroll.fade,
                         transition = { scroll_y = "reflow" },
-                        on_wheel = scroll.wheel,
+                        scroll = "y",
+                        on_scroll = scroll.follow,
                         g.each {
                             overlay = true,
                             attach = "corner",
                             width = function() return inner() - 12 * f() end,
+                            height = scroll.content,
                             items = shown,
                             key = function(e: any) return tostring(e.hash) end,
                             row = row,

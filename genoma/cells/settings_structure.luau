@@ -1145,7 +1145,6 @@ function M.new(t: { [string]: any }): any
     local list_scroll = scroller_mod.new {
         viewport = function() return math.min(#presets.all(), PRESET_ROWS) * row_height() end,
         content = function() return #presets.all() * row_height() end,
-        step = row_height,
         factor = f,
     }
     local function list_width(): number
@@ -1354,12 +1353,14 @@ function M.new(t: { [string]: any }): any
                 clip = true,
                 scroll_y = list_scroll.offset,
                 fade_bottom = list_scroll.fade,
-                on_wheel = list_scroll.wheel,
+                scroll = "y",
+                on_scroll = list_scroll.follow,
                 opacity = function() return if presets_open.value then 1 else 0 end,
                 transition = { opacity = function() return if presets_open.value then "content_enter" else "content_leave" end },
                 g.each {
                     overlay = true,
                     attach = "corner",
+                    height = list_scroll.content,
                     items = function()
                         local out = {}
                         for i, preset in presets.all() do table.insert(out, { index = i, preset = preset }) end

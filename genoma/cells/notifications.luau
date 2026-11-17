@@ -530,7 +530,6 @@ return {
                 for _, r in rows() do h += height_of(r) end
                 return h
             end,
-            step = row_height,
             factor = f,
         }
 
@@ -678,10 +677,12 @@ return {
                         scroll_y = scroll.offset,
                         fade_bottom = scroll.fade,
                         transition = { scroll_y = "reflow" },
-                        on_wheel = scroll.wheel,
+                        scroll = "y",
+                        on_scroll = scroll.follow,
                         g.each {
                             overlay = true,
                             attach = "corner",
+                            height = scroll.content,
                             width = function() return inner() - well_inset() * 2 - list_margin() * 2 end,
                             items = rows,
                             key = function(r: any) return r.key end,

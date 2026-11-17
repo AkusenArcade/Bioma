@@ -148,7 +148,6 @@ return {
         local scroll = scroller_mod.new {
             viewport = list_height,
             content = content_height,
-            step = row_height,
             factor = f,
         }
         g.watch(function() return #trail.value .. chosen.value end, function() scroll.to(0) end)
@@ -286,10 +285,12 @@ return {
                         scroll_y = scroll.offset,
                         fade_bottom = scroll.fade,
                         transition = { scroll_y = "reflow" },
-                        on_wheel = scroll.wheel,
+                        scroll = "y",
+                        on_scroll = scroll.follow,
                         g.each {
                             overlay = true,
                             attach = "corner",
+                            height = scroll.content,
                             width = inner,
                             items = entries,
                             key = function(e: any) return e.id end,

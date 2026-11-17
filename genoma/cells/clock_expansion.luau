@@ -998,13 +998,9 @@ function M.new(cell: any, twenty_four: () -> boolean)
                     direction = "column",
                     justify = "start",
                     scroll_y = function() return agenda_scroll.value end,
-                    on_wheel = function(_, dy: number)
-                        local rows = #g.untracked(function() return chosen_events.value end)
-                        local most = math.max(0, rows * g.untracked(event_row) - g.untracked(list_height))
-                        local discrete = dy == math.floor(dy) and math.abs(dy) <= 3
-                        local now = g.untracked(function() return agenda_scroll.value end)
-                        agenda_scroll.value = math.clamp(now + (if discrete then dy * g.untracked(event_row) else dy), 0, most)
-                    end,
+                    -- Genoma moves it: the wheel, a touchpad, a finger.
+                    scroll = "y",
+                    on_scroll = function(_, y: number) agenda_scroll.value = y end,
                     g.each {
                         direction = "column",
                         items = function() return chosen_events.value end,

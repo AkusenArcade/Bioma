@@ -197,7 +197,6 @@ return {
         local scroll = scroller_mod.new {
             viewport = page_area,
             content = function() return content_height.value end,
-            step = function() return 40 * f() end,
             factor = f,
         }
         -- Each page is read from its top, as each had its own list.
@@ -244,7 +243,8 @@ return {
                     scroll_y = scroll.offset,
                     fade_bottom = scroll.fade,
                     transition = { scroll_y = "reflow" },
-                    on_wheel = scroll.wheel,
+                    scroll = "y",
+                    on_scroll = scroll.follow,
                     on_focus_within = function(x: number, y: number, w: number, h: number)
                         local top = y + g.untracked(scroll.offset)
                         reached.value = { x = x, y = top, w = w, h = h }

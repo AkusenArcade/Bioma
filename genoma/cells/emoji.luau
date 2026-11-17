@@ -89,7 +89,6 @@ return {
         local scroll = scroller_mod.new {
             viewport = function() return list_height() - 12 * f() end,
             content = function() return layout.value.height end,
-            step = row_height,
             factor = f,
         }
         g.watch(function() return query.value end, function()
@@ -310,10 +309,12 @@ return {
                         scroll_y = scroll.offset,
                         fade_bottom = scroll.fade,
                         transition = { scroll_y = "reflow" },
-                        on_wheel = scroll.wheel,
+                        scroll = "y",
+                        on_scroll = scroll.follow,
                         g.each {
                             overlay = true,
                             attach = "corner",
+                            height = scroll.content,
                             width = grid_width,
                             items = visible,
                             key = function(v: any) return v.index end,

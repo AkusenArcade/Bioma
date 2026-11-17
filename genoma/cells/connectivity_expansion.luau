@@ -393,7 +393,6 @@ function M.new(cell: any): { [string]: any }
         local scroll = scroller_mod.new {
             viewport = viewport,
             content = function() return #items() * row_height() + (if extra then extra() else 0) end,
-            step = row_height,
             factor = f,
         }
         return g.box {
@@ -407,10 +406,12 @@ function M.new(cell: any): { [string]: any }
             scroll_y = scroll.offset,
             fade_bottom = scroll.fade,
             transition = { scroll_y = "reflow" },
-            on_wheel = scroll.wheel,
+            scroll = "y",
+            on_scroll = scroll.follow,
             g.each {
                 overlay = true,
                 attach = "corner",
+                height = scroll.content,
                 width = content_width,
                 items = items,
                 key = key,

@@ -389,7 +389,6 @@ function M.new(cell: any): any
     local scroll = scroller_mod.new {
         viewport = grid_viewport,
         content = grid_content,
-        step = function() return grid_tile_height() + pitch() end,
         factor = f,
     }
     -- Opened on the one on screen, wherever it is in the list.
@@ -482,10 +481,12 @@ function M.new(cell: any): any
         transition = { opacity = "content_fade", scroll_y = "reflow" },
         scroll_y = scroll.offset,
         fade_bottom = scroll.fade,
-        on_wheel = scroll.wheel,
+        scroll = "y",
+        on_scroll = scroll.follow,
         g.each {
             overlay = true,
             attach = "corner",
+            height = scroll.content,
             width = grid_inner,
             -- Only while the cell is out: closed, eighty pictures' nodes were
             -- laid out on every frame the clock's hand moved.
@@ -888,7 +889,6 @@ function M.new(cell: any): any
     local list_scroll = scroller_mod.new {
         viewport = list_view,
         content = function() return #list_options() * list_row() end,
-        step = list_row,
         factor = f,
     }
     -- Opened on a long list, the choice is where the eye is.
@@ -973,11 +973,13 @@ function M.new(cell: any): any
             scroll_y = list_scroll.offset,
             fade_bottom = list_scroll.fade,
             transition = { scroll_y = "reflow" },
-            on_wheel = list_scroll.wheel,
+            scroll = "y",
+            on_scroll = list_scroll.follow,
             opacity = function() return if list_growing() then 1 else 0 end,
             g.each {
                 overlay = true,
                 attach = "corner",
+                height = list_scroll.content,
                 width = function() return list_width() - list_padding() * 2 end,
                 items = list_options,
                 key = function(o: any) return o.key end,
