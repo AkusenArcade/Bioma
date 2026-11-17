@@ -635,9 +635,6 @@ function M.new(t: { [string]: any }): any
                         return out
                     end,
                     key = function(name: string) return if name == "" then "any" else name end,
-                    width_of = function(name: string): number
-                        return 24 * f() + g.text_width { text = if name ~= "" then name else "ANY MONITOR", font = typography.technical(), size = math.round(12 * f()), tracking = 0.04 }
-                    end,
                     chip = function(name: () -> string)
                         return choice_mod.new {
                             label = function() return if name() ~= "" then name() else "ANY MONITOR" end,
@@ -826,9 +823,6 @@ function M.new(t: { [string]: any }): any
                         return out
                     end,
                     key = function(name: string) return if name == "" then "where" else name end,
-                    width_of = function(name: string): number
-                        return 24 * f() + g.text_width { text = if name ~= "" then string.upper(name) else "WHERE IT IS OPENED", font = typography.technical(), size = math.round(12 * f()), tracking = 0.04 }
-                    end,
                     chip = function(name: () -> string)
                         return choice_mod.new {
                             label = function() return if name() ~= "" then string.upper(name()) else "WHERE IT IS OPENED" end,

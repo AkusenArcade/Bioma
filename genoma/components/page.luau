@@ -385,46 +385,21 @@ function M.new(t: { [string]: any }): any
         return value, set
     end
 
-    -- Chips that go on to the next line when the row is full (Qt's Flow):
-    -- `items()`, `key(item)`, `width_of(item)` measured as drawn, and
-    -- `chip(item)` building one from a getter. `gap` between chips; the
-    -- lines are a row of controls apart (`gap_row`), as the rows of a well.
+    -- Chips that go on to the next line when the row is full (Qt's Flow),
+    -- laid out by Genoma's `flow`: `items()`, `key(item)`, and `chip(item)`
+    -- building one from a getter. `gap` between chips; the lines are a row
+    -- of controls apart (`gap_row`), as the rows of a well.
     function p.flow(a: { [string]: any }): any
-        local function gap(): number return if a.gap then a.gap() else 6 * f() end
-        local rows = g.computed(function(): { any }
-            local out, line, used = {}, {}, 0
-            local room = p.inner()
-            for _, item in a.items() do
-                local w = a.width_of(item)
-                if #line > 0 and used + gap() + w > room then
-                    table.insert(out, line)
-                    line, used = {}, 0
-                end
-                used += (if #line > 0 then gap() else 0) + w
-                table.insert(line, item)
-            end
-            if #line > 0 then table.insert(out, line) end
-            return out
-        end)
         return g.each {
-            direction = "column",
+            direction = "row",
+            flow = true,
             align = "start",
-            gap = function() return m().gap_row end,
-            items = function()
-                local out = {}
-                for i, line in rows.value do table.insert(out, { index = i, line = line }) end
-                return out
-            end,
-            key = function(r: any) return tostring(r.index) end,
-            row = function(r: () -> any)
-                return g.each {
-                    direction = "row",
-                    gap = gap,
-                    items = function() return r().line end,
-                    key = a.key,
-                    row = a.chip,
-                }
-            end,
+            width = p.inner,
+            gap = function() return if a.gap then a.gap() else 6 * f() end,
+            gap_lines = function() return m().gap_row end,
+            items = a.items,
+            key = a.key,
+            row = a.chip,
         }
     end
 

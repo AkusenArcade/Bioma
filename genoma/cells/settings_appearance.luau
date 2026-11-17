@@ -257,10 +257,6 @@ function M.new(t: { [string]: any }): any
             meta(function() return string.upper(tostring(item().name or "")) end),
         }
     end
-    local function swatch_width(item: any): number
-        return 12 * f() * 4 - 3 * f() * 3 + 8 * f() + 22 * f()
-            + g.text_width { text = string.upper(tostring(item.name or "")), font = typography.technical(), size = m().font_meta, tracking = typography.label_tracking }
-    end
 
     -- ---- Your palette: the fields ------------------------------------------------
 
@@ -514,13 +510,6 @@ function M.new(t: { [string]: any }): any
                 return out
             end,
             key = function(item: any) return if item.kind == "new" then "new" else item.palette.file end,
-            width_of = function(item: any): number
-                if item.kind == "new" then
-                    return 11 * f() + 9 * f() + 7 * f() + 15 * f()
-                        + g.text_width { text = "NEW", font = typography.technical(), size = m().font_meta, tracking = typography.label_tracking }
-                end
-                return swatch_width(item.palette)
-            end,
             chip = function(item: () -> any): any
                 if g.untracked(item).kind == "new" then return p.offer("NEW", palettes.create) end
                 return swatches(function() return item().palette end)

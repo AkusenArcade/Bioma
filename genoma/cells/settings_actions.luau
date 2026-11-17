@@ -518,9 +518,6 @@ function M.new(t: { [string]: any }): any
         return p.flow {
             items = presets.all,
             key = function(pr: any) return pr.name end,
-            width_of = function(pr: any): number
-                return g.text_width { text = string.upper(pr.name), font = typography.technical(), size = math.round(12 * f()), tracking = 0.04 } + 24 * f()
-            end,
             chip = function(pr: () -> any)
                 return choice_mod.new {
                     label = function() return string.upper(pr().name) end,
@@ -539,7 +536,6 @@ function M.new(t: { [string]: any }): any
             p.flow {
                 items = wallpaper.favourites,
                 key = function(path: string) return path end,
-                width_of = function(): number return 88 * f() end,
                 chip = function(path: () -> string)
                     local hovered = g.signal(false)
                     local function chosen(): boolean local s = steps()[index()] return s ~= nil and s.path == path() end
@@ -593,12 +589,6 @@ function M.new(t: { [string]: any }): any
                 return out
             end,
             key = function(item: any) return if item.kind == "new" then "new" else item.index .. tostring(item.name) end,
-            width_of = function(item: any): number
-                if item.kind == "new" then
-                    return 42 * f() + g.text_width { text = "NEW", font = typography.technical(), size = m().font_meta, tracking = typography.label_tracking }
-                end
-                return capsule()
-            end,
             chip = function(item: () -> any)
                 if g.untracked(item).kind == "new" then return g.box { height = capsule, align = "center", p.offer("NEW", add_macro) } end
                 return glyph(function() return actions.icon_of(macros()[item().index]) end,
@@ -618,7 +608,6 @@ function M.new(t: { [string]: any }): any
     local icons_row = p.flow {
         items = function() return actions.icons end,
         key = function(name: string) return name end,
-        width_of = function(): number return 32 * f() end,
         chip = function(name: () -> string)
             return glyph(name, function() local mc = macro() return mc ~= nil and actions.icon_of(mc) == name() end,
                 function() return 32 * f() end, function() set_icon(g.untracked(name)) end)
@@ -741,9 +730,6 @@ function M.new(t: { [string]: any }): any
         p.flow {
             items = function() return actions.order end,
             key = function(k: string) return k end,
-            width_of = function(k: string): number
-                return 42 * f() + g.text_width { text = actions.kinds[k].label, font = typography.technical(), size = m().font_meta, tracking = typography.label_tracking }
-            end,
             chip = function(k: () -> string)
                 return p.offer(actions.kinds[g.untracked(k)].label, function() add_step(g.untracked(k)) end)
             end,

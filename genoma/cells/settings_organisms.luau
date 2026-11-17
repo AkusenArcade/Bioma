@@ -237,12 +237,6 @@ function M.new(t: { [string]: any }): any
             tracking = typography.label_tracking,
         }
     end
-    local function chip_width(text: string): number
-        return g.text_width {
-            text = text, font = typography.technical(), size = m().font_meta,
-            tracking = typography.label_tracking,
-        }
-    end
 
     local function organism_chip(screen: string): (() -> any) -> any
         return function(item: () -> any): any
@@ -475,10 +469,6 @@ function M.new(t: { [string]: any }): any
                     return out
                 end,
                 key = function(item: any) return item.kind .. tostring(item.index) end,
-                width_of = function(item: any): number
-                    if item.kind == "add" then return 44 * f() end
-                    return chip_width(string.upper(name_of(entry(item.index).type or ""))) + 40 * f()
-                end,
                 chip = function(item: () -> any): any
                     if g.untracked(item).kind == "add" then return add_chip(screen) end
                     return organism_chip(screen)(item)
@@ -506,7 +496,6 @@ function M.new(t: { [string]: any }): any
                         return out
                     end,
                     key = function(item: any) return item.kind end,
-                    width_of = function(item: any): number return chip_width(string.upper(item.name)) + 22 * f() end,
                     chip = kind_chip(screen),
                 },
             },

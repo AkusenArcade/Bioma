@@ -2090,7 +2090,6 @@ function M.new(t: { [string]: any }): any
             p.flow {
                 items = absent,
                 key = function(kind: string) return kind end,
-                width_of = function(kind: string): number return width_of(kind_label(kind)) + 22 * f() end,
                 chip = kind_chip,
             },
         },
