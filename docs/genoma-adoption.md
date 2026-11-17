@@ -47,9 +47,9 @@ binary is rebuilt, which is his call.
 
 | Genoma | Decision | Why |
 |---|---|---|
-| Touchpad gestures (`on_pinch`, `on_swipe`, `on_long_press`, `on_hold`) | **use, small**: swipe on the workspaces cell, long press for touch on the laptop | his laptop has a touchpad and touchscreen use is coming with new users |
-| Layout: `flow`, `snap`, insets | **check** the settings grids and the dock; adopt where Bioma lays out by hand | less layout code |
-| `@genoma/theme` (`theme.new`) | **later**: Bioma's `core/theme` is the model it was built from; moving is a refactor of every cell's colour access, worth one release of its own | risk is high, gain is code size |
+| Touchpad gestures (`on_pinch`, `on_swipe`, `on_long_press`, `on_hold`) | **done** (de8d069, 5a5ba64): swipe on the workspaces cell; a held finger does the middle button on a cell and opens a dock icon's menu | his laptop has a touchpad and touchscreen use is coming with new users |
+| Layout: `scroll`, `flow`, `snap`, insets | **done** (315a28f, 7b71ebf): every list well is a `scroll` node (wheel, touchpad and finger, Genoma's), the settings chips wrap with `flow`; `snap` not needed | less layout code, and lists a finger moves |
+| `@genoma/theme` (`theme.new`) | **done**, colours only: `core/theme` is a `theme.new` (roles, derivations, state colours, crossing, the palette file followed) behind the same API, so no cell changed; snapshots identical. Timing and sizes stay Bioma's: its speed multiplies durations where the theme's divides them, it has waits that scale but are never instant, and its density is per membrane, not one step for the desktop | the theme's mechanism is Genoma's, Bioma keeps its values |
 | `@genoma/portal` settings | **ignore**: Bioma sets the desktop's colour scheme, it does not follow it | Bioma is the source |
 | `@genoma/portal` file chooser | **ignore** for now: Bioma's pickers are its own design | design is normative |
 | `kit` components (tree, calendar, colour and file pickers) | **ignore**: Bioma's components follow `docs/design` | design is normative |
