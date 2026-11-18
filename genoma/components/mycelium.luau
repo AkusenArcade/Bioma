@@ -52,8 +52,9 @@ local ASIDE_MIN, ASIDE_MAX = 0.45, 1.05
 local BRANCH_MIN, BRANCH_MAX, SHORTER = 90, 220, 0.55
 local DEPTH = 3
 local SMELL, TURN = 60, 0.12
--- The points one hypha may have (its shader's numbers).
-local POINTS = 250
+-- The points one hypha may have: what fits in its shader's numbers, three
+-- each, with every run's lead (hypha()).
+local POINTS = 220
 -- Seconds without input before idle begins, and from then until full.
 local IDLE_AFTER, RAMP = 20, 300
 
@@ -280,7 +281,15 @@ local function grow(trunk: { number }, seed: number, eat: (number, number) -> (n
 end
 
 -- A hypha's box on the surface and the numbers its shader reads, but the
--- colour.
+-- colour. The branches go in as runs of at most RUN points, each led by
+-- its box and the distances it spans: a pixel far from a run, or a run
+-- the streak is not on, is passed over whole, without reading its points
+-- (the shader drawn per point, every pixel, every frame, held a 9070 at
+-- two thirds, Akusen 2026-11-18). Consecutive runs of a branch share
+-- their joining point.
+local RUN = 12
+-- The shader's numbers: 1024, the header's 12 before them.
+local NUMBERS = 1024 - 12
 local function hypha(branches: { any }, rank: number): any
     local min_x, min_y, max_x, max_y = math.huge, math.huge, -math.huge, -math.huge
     local furthest = 0
@@ -293,22 +302,35 @@ local function hypha(branches: { any }, rank: number): any
     end
     local x, y = min_x - MARGIN, min_y - MARGIN
     local values = { 0, furthest, TAIL, WIDTH, 1, 1, 1, 1, SPEED, 0, 0, 0 }
-    local n = 0
+    local runs = 0
     for _, b in branches do
-        for _, p in b.points do
-            table.insert(values, p[1] - x)
-            table.insert(values, p[2] - y)
-            table.insert(values, p[3])
-            table.insert(values, b.weight)
-            n += 1
+        local pts = b.points
+        local first = 1
+        while first < #pts do
+            local last = math.min(first + RUN - 1, #pts)
+            local count = last - first + 1
+            -- Breadth first, so what does not fit is the furthest twigs.
+            if #values - 12 + 8 + count * 3 > NUMBERS then break end
+            local lo_x, lo_y, hi_x, hi_y = math.huge, math.huge, -math.huge, -math.huge
+            for k = first, last do
+                local p = pts[k]
+                lo_x, lo_y = math.min(lo_x, p[1] - x), math.min(lo_y, p[2] - y)
+                hi_x, hi_y = math.max(hi_x, p[1] - x), math.max(hi_y, p[2] - y)
+            end
+            for _, v in { count, pts[first][3], pts[last][3], b.weight, lo_x, lo_y, hi_x, hi_y } do
+                table.insert(values, v)
+            end
+            for k = first, last do
+                local p = pts[k]
+                table.insert(values, p[1] - x)
+                table.insert(values, p[2] - y)
+                table.insert(values, p[3])
+            end
+            runs += 1
+            first = last
         end
-        table.insert(values, -1)
-        table.insert(values, -1)
-        table.insert(values, -1)
-        table.insert(values, -1)
-        n += 1
     end
-    values[1] = n
+    values[1] = runs
     -- Each its own place in its round and its own wait, so they never run
     -- in step: fixed by its rank, not by chance.
     local out = furthest + TAIL
@@ -399,6 +421,9 @@ function M.layer(t: { [string]: any }): any
             height = function() return it().height end,
             src = SHADER,
             follow = 0,
+            -- A head moves a unit or a few a frame at 60: as smooth as at
+            -- the screen's 165, at a third of the frames.
+            fps = 60,
             clock = function() return running() and alpha(g.untracked(it).rank) > 0 end,
             clock_rate = rate,
             opacity = function() return alpha(it().rank) end,
