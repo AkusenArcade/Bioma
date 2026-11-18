@@ -9,6 +9,7 @@
     "gap": 24,
     "pointer_light": false,
     "pointer_light_strength": 100,
+    "pointer_light_style": "soft",
     "inner_light": false,
     "depth": false,
     "depth_windows": false,

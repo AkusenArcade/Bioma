@@ -276,10 +276,39 @@ function M.new(t: { [string]: any }): any
             end, theme.text_muted),
         }
     end
+    -- The light's look, and how strong it is: one block under its switch.
+    local function pointer_rows(on: () -> boolean): any
+        return g.box {
+            width = p.inner,
+            direction = "column",
+            align = "start",
+            g.box {
+                width = p.inner,
+                height = row_height,
+                direction = "row",
+                align = "center",
+                gap = function() return 12 * f() end,
+                opacity = function() return if on() then 1 else 0.45 end,
+                g.box { width = label_width, p.label("STYLE") },
+                segmented.new {
+                    metrics = m,
+                    font_size = function() return m().font_meta end,
+                    options = function()
+                        return { { key = "soft", label = "Soft" }, { key = "bioluminescent", label = "Bioluminescent" } }
+                    end,
+                    current = light.pointer_style,
+                    on_choose = function(key: string) config.set("appearance.pointer_light_style", key) end,
+                },
+            },
+            strength_row(on),
+        }
+    end
     local effects = {
         effect("LIGHT AT THE POINTER", "appearance.pointer_light", function()
-            return "A soft light under the pointer, on the cell or panel it is over and nowhere else. It moves only when the pointer does."
-        end, strength_row),
+            return if light.pointer_style() == "bioluminescent"
+                then "A living light under the pointer, in the glass's own hue, on the cell or panel it is over and nowhere else. The hand stirs it: it flows as the pointer moves and is still when it stops."
+                else "A soft light under the pointer, on the cell or panel it is over and nowhere else. It moves only when the pointer does."
+        end, pointer_rows),
         effect("INNER LIGHT", "appearance.inner_light", function()
             return "The glass of every cell and panel catches light along its top edge, inside the rim. Drawn once; nothing moves."
         end),

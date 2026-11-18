@@ -34,6 +34,11 @@ M.STRENGTH = { from = 25, to = 300, step = 5, fallback = 100 }
 function M.pointer_strength(): number
     return math.clamp(config.get("appearance.pointer_light_strength", M.STRENGTH.fallback), M.STRENGTH.from, M.STRENGTH.to)
 end
+-- How it looks: "soft", a plain glow, or "bioluminescent", a living
+-- pattern in the background's own hue that the hand stirs (light.wgsl).
+function M.pointer_style(): string
+    return if config.get("appearance.pointer_light_style", "soft") == "bioluminescent" then "bioluminescent" else "soft"
+end
 
 -- White, as light is; stronger over a light palette's glass, which is
 -- already near it.
@@ -61,11 +66,19 @@ function M.pointer(t: { [string]: any }): any
         src = SHADER,
         follow = 0,
         values = function()
-            local c = colour.parse(white(0.1, 0.42))
             local w, h = t.width(), t.height()
             local r = math.min(t.radius(), w / 2, h / 2)
+            if M.pointer_style() == "bioluminescent" then
+                -- In the glass's own hue, two steps away from it: the light
+                -- is the glass's, not an accent's (Akusen, 2026-11-18).
+                local bg = theme.background()
+                local first, second = colour.parse(theme.lift(bg, 0.45)), colour.parse(theme.lift(bg, 0.8))
+                local a = math.min(1, (if theme.is_dark() then 0.6 else 0.8) * M.pointer_strength() / 100)
+                return { r, first.r, first.g, first.b, a, 64 * t.factor(), 1, second.r, second.g, second.b }
+            end
+            local c = colour.parse(white(0.1, 0.42))
             local a = math.min(1, c.a * M.pointer_strength() / 100)
-            return { r, c.r, c.g, c.b, a, 46 * t.factor() }
+            return { r, c.r, c.g, c.b, a, 46 * t.factor(), 0, 0, 0, 0 }
         end,
     }
 end

@@ -98,6 +98,7 @@ the override starts it again.
 | `edge` | Margin between the screen edge and a tissue, in logical units. |
 | `gap` | Distance between the shapes of one open cell — a capsule and the panel beside it, the pods and the list. |
 | `pointer_light` | A soft light under the pointer, on the cell or panel it is over and only there, cut to its shape. Off by default. |
+| `pointer_light_style` | `soft`, a plain glow, or `bioluminescent`: where the light falls, a living pattern in two tones of the background's own hue (noise warped by noise), brightest where it folds. The hand stirs it, not a clock: it flows as the pointer moves and is still when it stops, and runs on from one shape into the next. |
 | `pointer_light_strength` | How strong that light is, as a percentage of the drawn one: 25 to 300, 100 by default. |
 | `inner_light` | The glass of cells and panels catching light along its top edge, inside the rim; static. Off by default. |
 | `depth` | The desktop gains depth under the pointer: the organisms and the wallpaper move against it, the organisms faster (at most 16 units each way at the normal step) than the wallpaper (at most 6, and it runs as far past every edge, so it is that much larger). One desktop, not one per screen: the pointer is placed in the box of every monitor and every screen moves together. On a window, both settle back. While it is on, the organisms' surface takes the pointer where no window is. Off by default. |
