@@ -26,6 +26,7 @@ local switch = require("components/switch")
 local choice_mod = require("components/choice")
 local field_mod = require("components/field")
 local palettes = require("services/palettes")
+local light = require("components/light")
 
 local M = {}
 
@@ -201,6 +202,94 @@ function M.new(t: { [string]: any }): any
             on_choose = function(key: string) config.set("appearance.motion", key) end,
         },
     })
+
+    -- ---- Effects -------------------------------------------------------------------
+    --
+    -- Light and depth the design does not draw on its own (components/light.luau,
+    -- structure/organisms.luau): each a switch, off unless chosen, each
+    -- following something live. The lock screen and the greeter take the
+    -- lights too.
+
+    local function effect(title: string, key: string, said: () -> string, extra: any?): any
+        local function on(): boolean return config.get(key, false) == true end
+        local body = {}
+        if extra then table.insert(body, extra(on)) end
+        table.insert(body, line(said, theme.text_muted))
+        return p.section(title, switch.new {
+            on = on,
+            factor = f,
+            on_toggle = function(value: boolean) config.set(key, value) end,
+        }, body)
+    end
+    -- How strong the light at the pointer is: a percentage of the drawn
+    -- one, dimmed while the light is off.
+    local function strength_row(on: () -> boolean): any
+        local r = light.STRENGTH
+        local value, set = p.live("appearance.pointer_light_strength", r.fallback)
+        local span = r.to - r.from
+        local function shown(): number return math.clamp(value(), r.from, r.to) end
+        return g.box {
+            width = p.inner,
+            height = row_height,
+            direction = "row",
+            align = "center",
+            gap = function() return 12 * f() end,
+            g.box { width = label_width, p.label("STRENGTH") },
+            slider.new {
+                width = function() return math.max(0, p.inner() - label_width() - value_width() - 24 * f()) end,
+                factor = f,
+                dimmed = function() return not on() end,
+                value = function() return (shown() - r.from) / span end,
+                on_move = function(fraction: number)
+                    set(math.round((r.from + fraction * span) / r.step) * r.step)
+                end,
+            },
+            figure(function() return math.round(shown()) .. "%" end, function() return if on() then 1 else 0.45 end),
+        }
+    end
+    -- Depth on windows too: no program hears the pointer over another's
+    -- window, so there the focused window stands in for it
+    -- (structure/depth.luau).
+    local function depth_windows_row(on: () -> boolean): any
+        local function chosen(): boolean return config.get("appearance.depth_windows", false) == true end
+        return g.box {
+            width = p.inner,
+            direction = "column",
+            align = "start",
+            gap = function() return 4 * f() end,
+            g.box {
+                width = p.inner,
+                height = row_height,
+                direction = "row",
+                align = "center",
+                justify = "between",
+                opacity = function() return if on() then 1 else 0.45 end,
+                p.label("ON WINDOWS"),
+                switch.new {
+                    on = chosen,
+                    factor = f,
+                    on_toggle = function(value: boolean) config.set("appearance.depth_windows", value) end,
+                },
+            },
+            line(function()
+                return "Over a window the pointer cannot be followed, so the focused window stands in for it: with focus following the mouse, close to the hand."
+            end, theme.text_muted),
+        }
+    end
+    local effects = {
+        effect("LIGHT AT THE POINTER", "appearance.pointer_light", function()
+            return "A soft light under the pointer, on the cell or panel it is over and nowhere else. It moves only when the pointer does."
+        end, strength_row),
+        effect("INNER LIGHT", "appearance.inner_light", function()
+            return "The glass of every cell and panel catches light along its top edge, inside the rim. Drawn once; nothing moves."
+        end),
+        effect("DEPTH", "appearance.depth", function()
+            return "The desktop gains depth under the pointer: the organisms and the wallpaper move against it, the organisms faster, as nearer things do, every screen together. For that, the desktop takes the pointer where no window is."
+        end, depth_windows_row),
+        effect("ALERT GLOW", "appearance.alert_glow", function()
+            return "A cell in alert glows in the alert colour outside its pill, stronger the further past its threshold: the vitals near their limit, a critical notification."
+        end),
+    }
 
     -- ---- The palettes ------------------------------------------------------------
 
@@ -559,6 +648,7 @@ function M.new(t: { [string]: any }): any
 
     local column: { any } = {}
     table.insert(column, g.box { direction = "column", table.unpack(numbers) })
+    for _, well in effects do table.insert(column, well) end
     table.insert(column, palette_well)
     table.insert(column, yours)
     return p.column(column)

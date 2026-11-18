@@ -58,6 +58,10 @@
 --                      (Cell.claimsFocus); the default is true
 --   outline()          a colour drawn round the pill, nil for none: a
 --                      critical notification's urgency (Cell.outline)
+--   alarm()            0 to 1, how far past its threshold what it watches
+--                      is: the alert glow's strength, when that effect is
+--                      on (components/light.luau). Without it, a cell with
+--                      an outline is in alert and one without is not
 --   engaging()         false when the pointer on it should no longer keep
 --                      it: it has nothing left to say (Cell.engaging)
 --   withdrawal         seconds the pill waits, once it is no longer placed,
@@ -82,6 +86,7 @@ local timing = require("core/timing")
 local focus_mode = require("core/focus_mode")
 local typography = require("core/typography")
 local thread = require("components/thread")
+local light = require("components/light")
 
 local M = {}
 
@@ -422,6 +427,12 @@ function M.new(kind: any, ctx: { [string]: any })
 
     local function opacity(): number return config.get("cell.opacity", 0.72) end
 
+    -- How far into alert it is, 0 to 1 (the alert glow).
+    local function alarm(): number
+        if spec.alarm then return spec.alarm() end
+        return if spec.outline and spec.outline() then 1 else 0
+    end
+
     -- Where in the cell's own frame its panel hangs from, nil for the middle.
     local function anchor(): number?
         return if spec.panel and spec.panel.anchor then spec.panel.anchor() else nil
@@ -531,10 +542,18 @@ function M.new(kind: any, ctx: { [string]: any })
                 },
                 p.content(),
             },
+            light.pointer {
+                width = p.width,
+                height = p.height,
+                radius = function() return if p.radius then p.radius() else c.metrics().radius_panel end,
+                factor = function() return c.metrics().factor end,
+                lit = function() return c.open.value and touched.value end,
+            },
         }
         if p.satellites then
             for _, satellite in p.satellites() do table.insert(panel, satellite) end
         end
+        light.inner(panel, function() return c.metrics().factor end)
         return g.capsule(panel)
     end
 
@@ -750,6 +769,7 @@ function M.new(kind: any, ctx: { [string]: any })
             end,
             on_hover = function(on: boolean)
                 c.hovered.value = on
+                require("structure/depth").cell_hovered(c, on)
                 if on then c.touch("cell") else c.untouch("cell") end
             end,
             on_move = function() c.touch("cell") end,
@@ -812,9 +832,20 @@ function M.new(kind: any, ctx: { [string]: any })
                 spec.contracted(),
             },
         }
+        light.inner(node, function() return c.metrics().factor end)
+        light.glow(node, alarm, function() return spec.outline and spec.outline() end, function() return c.metrics().factor end)
         -- Appended rather than listed: a child that is nil in the middle of
         -- the list would end it, and every child after it with it.
         if has_header then table.insert(node, header_node(place)) end
+        -- The light at the pointer, over what the pill holds and under what
+        -- it opens.
+        table.insert(node, light.pointer {
+            width = width,
+            height = height,
+            radius = function() return if spec.radius then spec.radius() else place.radius() end,
+            factor = function() return c.metrics().factor end,
+            lit = function() return c.hovered.value end,
+        })
         if spec.around then table.insert(node, spec.around()) end
         if c.has_panel then
             -- The thread to what it opened, from the middle of the cell's

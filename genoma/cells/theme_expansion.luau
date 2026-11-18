@@ -18,6 +18,7 @@
 -- waiting for a restart, the failures of a template's render, a cursor
 -- niri refused.
 local g = require("@genoma")
+local light = require("components/light")
 local colour = require("core/colour")
 local performance = require("core/performance")
 local config = require("core/config")
@@ -568,7 +569,7 @@ function M.new(cell: any): any
         node.on_press = function() end
         node.on_click = function() end
         node.transition = { growth = curve, bud = curve, offset_x = curve, offset_y = curve, height = "reflow" }
-        return g.capsule(node)
+        return g.capsule(light.dress(node, f, shown))
     end
     local function content_of(order: number, node: { [any]: any }): any
         node.opacity = function() return if shown() then 1 else 0 end
@@ -943,7 +944,7 @@ function M.new(cell: any): any
     end
 
     local function list_growing(): boolean return listing.value ~= "" end
-    local list = g.capsule {
+    local list = g.capsule(light.dress({
         name = "list",
         role = "group",
         overlay = true,
@@ -996,7 +997,7 @@ function M.new(cell: any): any
             },
             list_scroll.bar(function() return list_width() - list_padding() * 2 - 3 * f() end),
         },
-    }
+    }, f, function() return cell.open.value end))
 
     -- ---- The composition -------------------------------------------------------------------
 

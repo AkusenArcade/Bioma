@@ -6,7 +6,13 @@
   "appearance": {
     "radius": 100,
     "edge": 12,
-    "gap": 24
+    "gap": 24,
+    "pointer_light": false,
+    "pointer_light_strength": 100,
+    "inner_light": false,
+    "depth": false,
+    "depth_windows": false,
+    "alert_glow": false
   },
 
   "cell": {

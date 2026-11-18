@@ -12,6 +12,7 @@
 local g = require("@genoma")
 local system = require("services/system_monitor")
 local vital = require("components/vital")
+local theme = require("core/theme")
 local expansion = require("cells/vitals_expansion")
 
 return {
@@ -30,6 +31,10 @@ return {
         local function ram(): number return system.ram_percent() / 100 end
         local function gpu(): number return system.gpu_percent() / 100 end
         local function battery(): number return system.battery_level() end
+        -- The worst of them; the battery's load is how empty it is.
+        local function worst(): number
+            return math.max(cpu(), ram(), if shows_gpu() then gpu() else 0, if shows_battery() then 1 - battery() else 0)
+        end
 
         local opened = expansion.new(cell)
         return {
@@ -39,9 +44,11 @@ return {
             -- ends: the inset is what is left of the height around them.
             padding_leading = function() return (cell.metrics().cell_height - indicator()) / 2 end,
             padding_trailing = function() return (cell.metrics().cell_height - indicator()) / 2 end,
-            -- The battery's load is how empty it is.
-            condition = function()
-                return math.max(cpu(), ram(), if shows_gpu() then gpu() else 0, if shows_battery() then 1 - battery() else 0)
+            condition = worst,
+            -- Past the alert threshold, how far toward the top: the alert
+            -- glow's strength.
+            alarm = function()
+                return (worst() - theme.threshold_alert) / (1 - theme.threshold_alert)
             end,
             content_width = function() return count() * indicator() + (count() - 1) * pitch() end,
             -- Open, the capsule names itself rather than the machine's parts.

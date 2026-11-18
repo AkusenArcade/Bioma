@@ -25,6 +25,7 @@ local metrics_mod = require("core/metrics")
 local theme = require("core/theme")
 local typography = require("core/typography")
 local gate_mod = require("components/gate")
+local light = require("components/light")
 local paths = require("core/paths")
 
 -- The shell's own glyphs, by name.
@@ -297,7 +298,7 @@ local function commands(size: any): any
         width = size.width,
         height = size.height,
         -- The panel, its corner on the glyph's: it grows from there.
-        g.capsule {
+        g.capsule(light.glass({
             overlay = true,
             attach = "corner",
             present = function() return #offered() > 0 end,
@@ -325,9 +326,15 @@ local function commands(size: any): any
                 direction = "column",
                 g.each { direction = "column", items = items, key = function(it: any) return it.item.id end, row = command_row },
             },
-        },
+        }, f, {
+            width = function() return if shown() then panel_width() else cell() end,
+            height = function() return if shown() then panel_height() else 0 end,
+            radius = function() return m().radius_panel end,
+            factor = f,
+            lit = shown,
+        })),
         -- The glyph.
-        g.capsule {
+        g.capsule(light.glass({
             overlay = true,
             attach = "corner",
             present = function() return #offered() > 0 and not leaving.value end,
@@ -351,7 +358,12 @@ local function commands(size: any): any
                 gradient_top = function() return theme.gradient_top(theme.primary()) end,
                 gradient_bottom = function() return theme.gradient_bottom(theme.primary()) end,
             },
-        },
+        }, f, {
+            width = cell,
+            height = cell,
+            radius = function() return metrics_mod.radius_for(cell(), m()) end,
+            factor = f,
+        })),
     }
     -- While open, the panel has the keys: 1 to 3 run their command,
     -- Escape closes it.

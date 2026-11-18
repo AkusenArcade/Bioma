@@ -27,6 +27,7 @@ local timing = require("core/timing")
 local monitors = require("services/monitors")
 local niri = require("services/niri")
 local arranging = require("structure/arranging")
+local depth = require("structure/depth")
 local focus = require("structure/focus")
 
 local M = {}
@@ -677,14 +678,34 @@ function M.surface(output: string, size: { width: number, height: number }): any
     local left = "rest"
     g.watch(state, function(now: string) if now ~= "rest" then left = now end end)
     local reach = math.max(size.width, size.height)
+    -- Depth (Appearance → DEPTH, off unless chosen, structure/depth.luau):
+    -- the organisms float a little above the wallpaper and move against
+    -- the pointer over the desktop, faster than the wallpaper does. For
+    -- that the surface takes the pointer where no window is, which it
+    -- otherwise never does, and shares it with the wallpaper.
+    local function lean(axis: string): number
+        return depth.lean(axis, depth.ORGANISMS * place.metrics().factor)
+    end
     return g.box {
         width = size.width,
         height = size.height,
+        g.box {
+            name = "Desktop",
+            overlay = true,
+            attach = "corner",
+            width = size.width,
+            height = size.height,
+            present = depth.on,
+            on_move = function(x: number, y: number) depth.set(output, { x = x, y = y }) end,
+            on_hover = function(on: boolean) if not on then depth.set(output, nil) end end,
+        },
         g.each {
             overlay = true,
             attach = "corner",
             width = size.width,
             height = size.height,
+            offset_x = function() return lean("x") end,
+            offset_y = function() return lean("y") end,
             present = function() return not (focus_mode.settled() and not arranging.active()) end,
             perspective = reach,
             depth = function()
@@ -698,6 +719,8 @@ function M.surface(output: string, size: { width: number, height: number }): any
             end,
             blur_radius = function() return if state() == "behind" then BEHIND_BLUR else 0 end,
             transition = {
+                offset_x = "parallax",
+                offset_y = "parallax",
                 depth = function() return curve_for(state(), left, true) end,
                 opacity = function() return curve_for(state(), left, false) end,
                 blur_radius = function() return curve_for(state(), left, false) end,

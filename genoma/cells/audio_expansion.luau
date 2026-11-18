@@ -16,6 +16,7 @@
 --
 -- Not yet: the keyboard's travel through the rows.
 local g = require("@genoma")
+local light = require("components/light")
 local colour = require("core/colour")
 local config = require("core/config")
 local performance = require("core/performance")
@@ -342,7 +343,7 @@ function M.new(cell: any, bare: boolean): any
     local function shown(): boolean return cell.open.value end
     local function curve(): string return if shown() then "pod_1" else "pod_retract_1" end
 
-    local devices = g.capsule {
+    local devices = g.capsule(light.dress({
         name = "devices",
         role = "group",
         overlay = true,
@@ -373,7 +374,7 @@ function M.new(cell: any, bare: boolean): any
             transition = { opacity = function() return if shown() then "pod_content_1" else "content_leave" end },
             wells(),
         },
-    }
+    }, f, function() return cell.open.value end))
 
     local link = thread.new {
         vertical = true,

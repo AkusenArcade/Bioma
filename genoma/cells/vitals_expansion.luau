@@ -19,6 +19,7 @@
 -- inner ones (they bud out of the panel; the matrix waits for a laptop to
 -- be checked on), the list's scroll bar.
 local g = require("@genoma")
+local light = require("components/light")
 local theme = require("core/theme")
 local performance = require("core/performance")
 local colour = require("core/colour")
@@ -287,7 +288,7 @@ function M.new(cell: any)
         table.insert(vertical, g.box { height = function() return 8 * f() end })
         table.insert(vertical, label(kind, true))
 
-        return g.capsule {
+        return g.capsule(light.dress({
             name = kind.label,
             role = "button",
             overlay = true,
@@ -345,7 +346,7 @@ function M.new(cell: any)
                 g.box(horizontal) :: any,
                 g.box(vertical) :: any,
             },
-        }
+        }, f, function() return cell.open.value end))
     end
 
     -- The thread from the shape a pod hangs off (the panel, or in the

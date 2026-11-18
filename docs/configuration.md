@@ -97,6 +97,17 @@ the override starts it again.
 | `radius` | One value as a percentage of the drawn shapes: 100 is the design as it stands, 0 a rectangle. It reaches every surface — cells, tissues, panels, wells, capsules, rows, controls — not only the cells on the membrane, because a shell with square cells and round capsules inside them is two shells. What it does not reach is what is round because of what it is: an avatar, a dial, a radio mark, a thread's node. A cell's radius is its tissue's minus the padding, so concentric corners are automatic at every value. |
 | `edge` | Margin between the screen edge and a tissue, in logical units. |
 | `gap` | Distance between the shapes of one open cell — a capsule and the panel beside it, the pods and the list. |
+| `pointer_light` | A soft light under the pointer, on the cell or panel it is over and only there, cut to its shape. Off by default. |
+| `pointer_light_strength` | How strong that light is, as a percentage of the drawn one: 25 to 300, 100 by default. |
+| `inner_light` | The glass of cells and panels catching light along its top edge, inside the rim; static. Off by default. |
+| `depth` | The desktop gains depth under the pointer: the organisms and the wallpaper move against it, the organisms faster (at most 16 units each way at the normal step) than the wallpaper (at most 6, and it runs as far past every edge, so it is that much larger). One desktop, not one per screen: the pointer is placed in the box of every monitor and every screen moves together. On a window, both settle back. While it is on, the organisms' surface takes the pointer where no window is. Off by default. |
+| `depth_windows` | Depth over windows too. No program hears the pointer over another's window and niri does not say where it is, so there the focused window stands in for it: where it lies, a tiled one at its column's share of the screen. With niri's `focus-follows-mouse` it follows the hand closely; without it, the desktop moves when the focus does. Off by default; nothing without `depth`. |
+| `alert_glow` | A cell in alert glows outside its pill in the alert colour, stronger the further past its threshold (a cell's `alarm()`; one with an outline is fully in alert). Off by default. |
+
+The four switches are the **Effects** of the Appearance page. The design draws none of
+them (`docs/design/STYLE_GUIDE.md` §4); each is the person's choice, and each
+follows a live value: where the pointer is, how far into alert a cell is. The
+lights reach the lock screen and the greeter too.
 
 The third margin of the family, the one between a tissue and the cells inside
 it, is `tissue.padding` below, where it has always been. All three are read in

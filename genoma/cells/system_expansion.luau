@@ -11,6 +11,7 @@
 --
 -- Not yet: the keyboard's travel through the rows.
 local g = require("@genoma")
+local light = require("components/light")
 local colour = require("core/colour")
 local config = require("core/config")
 local performance = require("core/performance")
@@ -137,7 +138,7 @@ function M.new(cell: any): { [string]: any }
             },
         }
         for _, c in children do table.insert(node, c) end
-        return g.capsule(node)
+        return g.capsule(light.dress(node, f, shown))
     end
     local function link(i: number, t: { [string]: any }): any
         return thread.new {

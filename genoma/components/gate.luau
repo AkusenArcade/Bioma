@@ -52,6 +52,7 @@ local dial = require("components/dial")
 local field_mod = require("components/field")
 local mark = require("components/mark")
 local portrait = require("components/portrait")
+local light = require("components/light")
 local wallpaper = require("structure/wallpaper")
 
 local M = {}
@@ -364,7 +365,7 @@ function M.new(t: { [string]: any }): (any, any)
         spacer(function() return 72 * f() end),
         -- The avatar as the System cell wears it at rest, the portrait in a
         -- round cell of its own, glass and lit rim, at the lock's scale.
-        element(3, true, g.capsule {
+        element(3, true, g.capsule(light.glass({
             width = badge_size,
             height = badge_size,
             radius = function() return metrics_mod.radius_for(badge_size(), m()) end,
@@ -374,7 +375,7 @@ function M.new(t: { [string]: any }): (any, any)
             align = "center",
             justify = "center",
             portrait.new { size = badge_portrait, source = gate.avatar },
-        }),
+        }, f))),
         spacer(function() return 14 * f() end),
         element(4, true, g.text {
             text = gate.full_name, color = theme.text, font = typography.expressive,

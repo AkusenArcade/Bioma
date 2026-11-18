@@ -11,6 +11,7 @@
 --
 -- Not yet: the keyboard travel through the controls (shell-wide, to come).
 local g = require("@genoma")
+local light = require("components/light")
 local colour = require("core/colour")
 local performance = require("core/performance")
 local metrics_mod = require("core/metrics")
@@ -309,7 +310,7 @@ function M.new(cell: any): any
     }
 
     local function zero(): number return 0 end
-    local track = g.capsule {
+    local track = g.capsule(light.dress({
         name = "track",
         role = "group",
         overlay = true,
@@ -355,7 +356,7 @@ function M.new(cell: any): any
             at(function() return beside() + column() - chooser_width() end,
                 function() return 104 * f() + (44 * f() - 30 * f()) / 2 end, chooser),
         },
-    }
+    }, f, function() return cell.open.value end))
 
     -- The thread between the two belongs to the band, drawn out of it.
     local link = thread.new {

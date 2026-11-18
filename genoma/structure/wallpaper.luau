@@ -19,6 +19,12 @@
 -- nothing to hold. It runs past the screen's edges, because a blur fades to
 -- nothing at the edge of what it blurs.
 --
+-- Depth (Appearance → DEPTH, structure/depth.luau): the wallpaper, far
+-- behind, moves against the pointer over the desktop, slower than the
+-- organisms above it, at most depth.WALLPAPER units each way, and runs
+-- that far past every edge so no edge ever shows. The backdrop holds still: the overview is not the
+-- desktop.
+--
 -- Drawn by Bioma on Genoma only when `wallpaper.runtime` is "genoma";
 -- Quickshell then leaves its own out (shell.qml).
 --
@@ -31,6 +37,7 @@ local timing = require("core/timing")
 local performance = require("core/performance")
 local wallpaper = require("services/wallpaper")
 local monitors = require("services/monitors")
+local depth = require("structure/depth")
 
 local M = {}
 
@@ -59,7 +66,10 @@ local function span_of(output: string): any
 end
 
 function M.node(output: string, size: { width: number, height: number }, backdrop: boolean): any
-    local bleed = if backdrop then 96 else 0
+    local function bleed(): number
+        if backdrop then return 96 end
+        return if depth.on() then math.abs(depth.WALLPAPER) else 0
+    end
     local density = if backdrop then 0.25 else 1
     local function source(): string return wallpaper.path_for(output) end
 
@@ -105,12 +115,13 @@ function M.node(output: string, size: { width: number, height: number }, backdro
         -- covering picture, so the slices line up across the seam.
         local function box(): any
             local s = span_of(output)
-            local w, h = size.width + bleed * 2, size.height + bleed * 2
-            if not s then return { x = -bleed, y = -bleed, width = w, height = h } end
+            local b = bleed()
+            local w, h = size.width + b * 2, size.height + b * 2
+            if not s then return { x = -b, y = -b, width = w, height = h } end
             local kx, ky = w / s.width, h / s.height
             return {
-                x = -bleed - s.offset_x * kx,
-                y = -bleed - s.offset_y * ky,
+                x = -b - s.offset_x * kx,
+                y = -b - s.offset_y * ky,
                 width = s.total_width * kx,
                 height = s.total_height * ky,
             }
@@ -160,6 +171,9 @@ function M.node(output: string, size: { width: number, height: number }, backdro
             -- wallpaper lever on: a second picture per screen, for a view a
             -- game does not open.
             present = function() return not (backdrop and performance.lever("wallpaper")) end,
+            offset_x = function() return if backdrop then 0 else depth.lean("x", depth.WALLPAPER) end,
+            offset_y = function() return if backdrop then 0 else depth.lean("y", depth.WALLPAPER) end,
+            transition = { offset_x = "parallax", offset_y = "parallax" },
             items = function() return generations.value end,
             key = function(gen: any) return tostring(gen.key) end,
             row = picture,

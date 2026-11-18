@@ -20,6 +20,7 @@
 -- Every category has its page. Not yet: the setup's steps
 -- (docs/design/SETUP.md), keyboard travel down the column.
 local g = require("@genoma")
+local light = require("components/light")
 local colour = require("core/colour")
 local metrics_mod = require("core/metrics")
 local theme = require("core/theme")
@@ -407,7 +408,7 @@ return {
             local function content_curve(): string
                 return if cell.open.value then "cascade_content_" .. math.min(index, 12) else "content_leave"
             end
-            return g.capsule {
+            return g.capsule(light.dress({
                 name = "Category",
                 role = "button",
                 present = function() return index <= #entries() end,
@@ -500,7 +501,7 @@ return {
                         max_width = function() return capsule_width() - 21 * f() - 20 * f() - glyph_size() - 16 * f() end,
                     },
                 },
-            }
+            }, f, function() return cell.open.value end))
         end
 
         -- The thread leaves the chosen capsule and feeds the page: it moves

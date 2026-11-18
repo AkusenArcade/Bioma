@@ -187,6 +187,10 @@ g.effect(function()
         -- colour lifting under the pointer (its ColorAnimations, linear).
         fade = { duration = s.reflow, curve = c.in_out_quad },
         colour = { duration = s.transition },
+        -- The organisms following the pointer over the desktop (Appearance
+        -- → DEPTH): retargeted at every move, so it trails the hand a
+        -- little and stops when it stops.
+        parallax = { duration = s.reflow, curve = c.out_quad },
         content_fade = { duration = s.content_fade },
         -- The audio band's bars following the sound (Band.qml's Behavior).
         band = { duration = s.content_fade, curve = c.out_quad },

@@ -19,6 +19,7 @@
 -- Enter takes the first match (or reads the address) and Escape gives up.
 -- Not yet: the shell-wide keyboard travel, the lists' scroll bars.
 local g = require("@genoma")
+local light = require("components/light")
 local clock = require("@genoma/clock")
 local theme = require("core/theme")
 local performance = require("core/performance")
@@ -1202,7 +1203,7 @@ function M.new(cell: any, twenty_four: () -> boolean)
             })
             table.insert(node, o.beyond)
         end
-        return g.capsule(node)
+        return g.capsule(light.dress(node, f, function() return cell.open.value end))
     end
 
     -- Hung from the month on the side away from the cell, on its own thread:
@@ -1212,7 +1213,7 @@ function M.new(cell: any, twenty_four: () -> boolean)
         local down = cell.edge ~= "bottom"
         local function shown(): boolean return cell.open.value and agenda_shown() end
         local function curve(): string return if shown() then "pod_1" else "pod_retract_4" end
-        return g.capsule {
+        return g.capsule(light.dress({
             overlay = true,
             attach = if down then "below-center" else "above-center",
             width = calendar_width,
@@ -1239,7 +1240,7 @@ function M.new(cell: any, twenty_four: () -> boolean)
                 transition = { opacity = function() return if shown() then "pod_content_1" else "content_leave" end },
                 content(),
             },
-        }
+        }, f, function() return cell.open.value end))
     end
 
     local spec = {}

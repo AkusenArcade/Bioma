@@ -79,6 +79,9 @@ local function normalise_layout(layout: any): any
         size = layout.window_size,
         tile_size = layout.tile_size,
         position_in_view = layout.tile_pos_in_workspace_view,
+        -- Column and row in the scrolling layout, from 1; nil when floating.
+        column = if type(layout.pos_in_scrolling_layout) == "table" then layout.pos_in_scrolling_layout[1] else nil,
+        row = if type(layout.pos_in_scrolling_layout) == "table" then layout.pos_in_scrolling_layout[2] else nil,
         offset_in_tile = layout.window_offset_in_tile,
     }
 end
