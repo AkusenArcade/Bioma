@@ -96,7 +96,11 @@ function M.new(t: { [string]: any }): any
             rim_top = "#00000000",
             rim_bottom = "#00000000",
             opacity = function() return if moving.value then 1 else 0 end,
-            transition = { opacity = "content_fade", offset_y = "reflow" },
+            -- Its place follows the scroll at once: the well carries it
+            -- with the content the moment it moves, and a place that eased
+            -- after it drew it out with the content and back (Akusen,
+            -- 2026-11-18: the bars bounced at every scroll).
+            transition = { opacity = "content_fade" },
         }
     end
 
