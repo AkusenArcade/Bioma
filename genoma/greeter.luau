@@ -17,7 +17,9 @@
 -- In the corner of the primary screen, the machine's own commands: restart,
 -- restart into the firmware's setup, shut down (Akusen, 2026-11-02). Nobody
 -- is logged in yet, so nothing is lost and nothing asks twice: the session
--- cell confirms only where something would be lost.
+-- cell confirms only where something would be lost. Beside them, the
+-- sessions installed, to choose which one starts (Akusen, 2026-11-18):
+-- niri, Hyprland, Umbriel, whatever /usr/share/wayland-sessions offers.
 local g = require("@genoma")
 local colour = require("core/colour")
 local config = require("core/config")
@@ -56,11 +58,103 @@ local function avatar(): string
     local u = user.value
     return if u.avatar and u.avatar ~= "" then home .. "/" .. u.avatar else ""
 end
--- What greetd starts once the password is right: the session the person
--- logs into, as the shell found it.
+-- ---- Which session ---------------------------------------------------------------
+
+-- The sessions installed, as display managers find them: each .desktop in
+-- /usr/share/wayland-sessions that is not hidden, by name.
+local SESSIONS = "/usr/share/wayland-sessions"
+local session_folder = g.folder { path = SESSIONS }
+local session_files: { [string]: any } = {}
+local function session_file(name: string): any
+    local f = session_files[name]
+    if not f then
+        f = g.lasting(function() return g.file { path = SESSIONS .. "/" .. name } end)
+        session_files[name] = f
+    end
+    return f
+end
+-- The words of an Exec line, its field codes dropped.
+local function words(exec: string): { string }
+    local out = {}
+    for w in string.gmatch(exec, "%S+") do
+        if not string.match(w, "^%%%a$") then table.insert(out, w) end
+    end
+    return out
+end
+local sessions = g.computed(function(): { any }
+    local out = {}
+    for _, entry in session_folder.entries or {} do
+        local name = if type(entry) == "table" then entry.name else entry
+        if type(name) == "string" and string.match(name, "%.desktop$") then
+            local text = session_file(name).text or ""
+            local fields: { [string]: string } = {}
+            local in_entry = false
+            for line in string.gmatch(text, "[^\n]+") do
+                local group = string.match(line, "^%[(.-)%]")
+                if group then
+                    in_entry = group == "Desktop Entry"
+                elseif in_entry then
+                    local k, v = string.match(line, "^([%w%-]+)%s*=%s*(.*)$")
+                    if k and fields[k] == nil then fields[k] = v end
+                end
+            end
+            if fields.Exec and fields.Hidden ~= "true" and fields.NoDisplay ~= "true" then
+                table.insert(out, {
+                    id = string.gsub(name, "%.desktop$", ""),
+                    name = fields.Name or name,
+                    command = words(fields.Exec),
+                    desktop = fields.DesktopNames or "",
+                })
+            end
+        end
+    end
+    table.sort(out, function(a, b) return string.lower(a.name) < string.lower(b.name) end)
+    return out
+end)
+
+-- The one chosen here, until the machine restarts (the greeter can write
+-- nowhere that lasts); otherwise the one the person was last in, as the
+-- shell recorded it (scripts/greeter-sync), or the first.
+local CHOSEN = (g.env("XDG_STATE_HOME") or "/tmp") .. "/bioma-greeter-session"
+local chosen_file = g.file { path = CHOSEN }
+local chosen = g.signal("")
+local function current(): any?
+    local list = sessions.value
+    local wanted = if chosen.value ~= "" then chosen.value else string.match(chosen_file.text or "", "^%s*(.-)%s*$") or ""
+    if wanted == "" then wanted = user.value.sessionId or "" end
+    for _, s in list do
+        if s.id == wanted then return s end
+    end
+    -- An older copy names only the command it starts.
+    local recorded = user.value.session
+    if type(recorded) == "table" and recorded[1] then
+        for _, s in list do
+            if s.command[1] == recorded[1] then return s end
+        end
+    end
+    return list[1]
+end
+local function choose(id: string)
+    chosen.value = id
+    pcall(function() chosen_file:write(id) end)
+end
+
+-- What greetd starts once the password is right, and what it tells the
+-- session about itself, as display managers do.
 local function session(): { string }
-    local s = user.value.session
-    return if type(s) == "table" and #s > 0 then s else { "niri-session" }
+    local s = current()
+    if s and #s.command > 0 then return s.command end
+    local recorded = user.value.session
+    return if type(recorded) == "table" and #recorded > 0 then recorded else { "niri-session" }
+end
+local function session_env(): { string }
+    local s = current()
+    if not s or s.desktop == "" then return {} end
+    local first = string.match(s.desktop, "^[^;:]+") or s.desktop
+    return {
+        "XDG_SESSION_DESKTOP=" .. string.lower(first),
+        "XDG_CURRENT_DESKTOP=" .. string.gsub(s.desktop, ";", ":"),
+    }
 end
 
 -- ---- What it shows ------------------------------------------------------------
@@ -159,7 +253,7 @@ local gate = {
         if launched then return end
         launched = true
         if greetd.available then
-            greetd:start_session(g.untracked(session), {})
+            greetd:start_session(g.untracked(session), g.untracked(session_env))
         else
             g.quit(0)
         end
@@ -226,20 +320,28 @@ local function offered(): { any }
     return out
 end
 
-local open = g.signal(false)
+-- Which corner menu is open: "" none, "power" or "session". One at a time.
+local open = g.signal("")
 
--- The power glyph in the corner, in a cell of its own, and the commands
--- growing out of it upward: a panel of rows, each numbered, as the session
--- cell's are.
-local function commands(size: any): any
+-- A glyph in the corner, in a cell of its own, and its rows growing out of
+-- it upward: a panel of rows, each numbered, as the session cell's are.
+-- `t`: id, icon, slot (0 the corner, 1 the cell beside it), items() (each
+-- { id, label, icon? }), run(item), marked(item)? (the one in use, drawn
+-- as chosen), width (the panel's, logical units at the normal step),
+-- least (shown only with more items than this).
+local function corner_menu(size: any, t: { [string]: any }): (any, (string, string?) -> boolean)
     local function m(): any return metrics_mod.step(density()) end
     local function f(): number return m().factor end
     local function cell(): number return metrics_mod.cell_height * f() end
     local function edge(): number return metrics_mod.margin_edge() * f() end
     local function row(): number return 44 * f() end
-    local function panel_width(): number return 300 * f() end
-    local function panel_height(): number return #offered() * row() + 16 * f() end
-    local function shown(): boolean return open.value and not leaving.value end
+    local function panel_width(): number return t.width * f() end
+    local function panel_height(): number return #t.items() * row() + 16 * f() end
+    local function is_open(): boolean return open.value == t.id end
+    local function shown(): boolean return is_open() and not leaving.value end
+    -- The glyph's right edge: the corner, or a cell and a gap in from it.
+    local function right(): number return size.width - edge() - t.slot * (cell() + m().gap / 2) end
+    local function present(): boolean return #t.items() > (t.least or 0) end
 
     local function key_box(n: () -> number): any
         return g.capsule {
@@ -255,32 +357,40 @@ local function commands(size: any): any
                 size = function() return math.round(11 * f()) end, tabular = true },
         }
     end
-    local function command_row(item: () -> any): any
+    local function item_row(item: () -> any): any
         local hover = g.signal(false)
+        local function marked(): boolean return t.marked ~= nil and t.marked(item().item) end
         return g.capsule {
             width = function() return panel_width() - 16 * f() end,
             height = row,
             radius = function() return metrics_mod.radius_for(row(), m()) end,
-            fill = function() return if hover.value then colour.alpha(theme.primary(), 0.12) else "#00000000" end,
-            rim_top = "#00000000",
-            rim_bottom = "#00000000",
-            transition = { fill = "colour" },
+            fill = function()
+                if hover.value then return colour.alpha(theme.primary(), 0.12) end
+                return if marked() then colour.alpha(theme.primary(), 0.07) else "#00000000"
+            end,
+            rim_top = function() return if marked() then colour.alpha(theme.primary(), 0.5) else "#00000000" end,
+            rim_bottom = function() return if marked() then colour.alpha(theme.primary(), 0.3) else "#00000000" end,
+            transition = { fill = "colour", rim_top = "colour", rim_bottom = "colour" },
             padding_x = function() return 14 * f() end,
             direction = "row",
             align = "center",
             justify = "between",
             cursor = "pointer",
             on_hover = function(on: boolean) hover.value = on end,
-            on_click = function() g.untracked(item).item.run() end,
+            on_click = function() t.run(g.untracked(item).item) end,
             g.box {
                 direction = "row",
                 align = "center",
                 gap = function() return 12 * f() end,
                 g.icon { width = function() return 20 * f() end, height = function() return 20 * f() end,
-                    icon = function() return item().item.icon end,
+                    present = function() return item().item.icon ~= nil end,
+                    icon = function() return item().item.icon or "" end,
                     gradient_top = function() return theme.gradient_top(theme.primary()) end,
                     gradient_bottom = function() return theme.gradient_bottom(theme.primary()) end },
-                g.text { text = function() return item().item.label end, color = theme.text, font = typography.technical,
+                g.text { text = function() return item().item.label end,
+                    color = function() return if marked() then theme.primary() else theme.text() end,
+                    transition = { color = "colour" },
+                    font = typography.technical,
                     size = function() return math.round(13 * f()) end, weight = 500 },
             },
             key_box(function() return item().n end),
@@ -288,7 +398,7 @@ local function commands(size: any): any
     end
     local function items(): { any }
         local out = {}
-        for i, c in offered() do table.insert(out, { n = i, item = c }) end
+        for i, c in t.items() do table.insert(out, { n = i, item = c }) end
         return out
     end
 
@@ -301,8 +411,8 @@ local function commands(size: any): any
         g.capsule(light.glass({
             overlay = true,
             attach = "corner",
-            present = function() return #offered() > 0 end,
-            offset_x = function() return size.width - edge() - (if shown() then panel_width() else cell()) end,
+            present = present,
+            offset_x = function() return right() - (if shown() then panel_width() else cell()) end,
             offset_y = function()
                 return size.height - edge() - cell() - m().gap / 2 - (if shown() then panel_height() else 0)
             end,
@@ -324,7 +434,7 @@ local function commands(size: any): any
                 opacity = function() return if shown() then 1 else 0 end,
                 transition = { opacity = "content_enter" },
                 direction = "column",
-                g.each { direction = "column", items = items, key = function(it: any) return it.item.id end, row = command_row },
+                g.each { direction = "column", items = items, key = function(it: any) return it.item.id end, row = item_row },
             },
         }, f, {
             width = function() return if shown() then panel_width() else cell() end,
@@ -337,24 +447,26 @@ local function commands(size: any): any
         g.capsule(light.glass({
             overlay = true,
             attach = "corner",
-            present = function() return #offered() > 0 and not leaving.value end,
-            offset_x = function() return size.width - edge() - cell() end,
+            present = function() return present() and not leaving.value end,
+            offset_x = function() return right() - cell() end,
             offset_y = function() return size.height - edge() - cell() end,
             width = cell,
             height = cell,
             radius = function() return metrics_mod.radius_for(cell(), m()) end,
             fill = function() return colour.alpha(theme.cell(), config.get("cell.opacity", 0.72)) end,
-            rim_top = function() return if open.value then theme.primary() else theme.rim() end,
-            rim_bottom = function() return if open.value then theme.primary() else theme.line() end,
+            rim_top = function() return if is_open() then theme.primary() else theme.rim() end,
+            rim_bottom = function() return if is_open() then theme.primary() else theme.line() end,
             transition = { rim_top = "colour", rim_bottom = "colour" },
             align = "center",
             justify = "center",
             cursor = "pointer",
-            on_click = function() open.value = not g.untracked(function() return open.value end) end,
+            on_click = function()
+                open.value = if g.untracked(is_open) then "" else t.id
+            end,
             g.icon {
                 width = function() return 20 * f() end,
                 height = function() return 20 * f() end,
-                icon = "power",
+                icon = t.icon,
                 gradient_top = function() return theme.gradient_top(theme.primary()) end,
                 gradient_bottom = function() return theme.gradient_bottom(theme.primary()) end,
             },
@@ -365,23 +477,65 @@ local function commands(size: any): any
             factor = f,
         })),
     }
-    -- While open, the panel has the keys: 1 to 3 run their command,
-    -- Escape closes it.
+    -- While open, the panel has the keys: a number runs its row, Escape
+    -- closes it.
     local function key(name: string, typed: string?): boolean
         if not g.untracked(shown) then return false end
         if name == "Escape" then
-            open.value = false
+            open.value = ""
             return true
         end
         local n = tonumber(typed or "") or tonumber(string.match(name, "^KP_(%d)$") or "")
-        local list = g.untracked(offered)
+        local list = g.untracked(t.items)
         if n and list[n] then
-            list[n].run()
+            t.run(list[n])
             return true
         end
         return true
     end
     return node, key
+end
+
+-- The machine's commands, in the corner.
+local function commands(size: any): (any, (string, string?) -> boolean)
+    return corner_menu(size, {
+        id = "power",
+        icon = "power",
+        slot = 0,
+        width = 300,
+        items = function()
+            local out = {}
+            for _, c in offered() do table.insert(out, { id = c.id, label = c.label, icon = c.icon, command = c }) end
+            return out
+        end,
+        run = function(item: any) item.command.run() end,
+    })
+end
+
+-- The sessions, beside them: only where there is more than one to choose.
+-- Choosing one marks it and closes the panel; the password field keeps
+-- the keys.
+local function session_menu(size: any): (any, (string, string?) -> boolean)
+    return corner_menu(size, {
+        id = "session",
+        icon = "workspaces",
+        slot = 1,
+        width = 300,
+        least = 1,
+        items = function()
+            local out = {}
+            for _, s in sessions.value do table.insert(out, { id = s.id, label = string.upper(s.name) }) end
+            return out
+        end,
+        marked = function(item: any)
+            local c = current()
+            return c ~= nil and c.id == item.id
+        end,
+        run = function(item: any)
+            choose(item.id)
+            open.value = ""
+        end,
+    })
 end
 
 if test ~= "" then
@@ -395,8 +549,23 @@ if test ~= "" then
             return "submitted"
         end,
         power = function(): string
-            open.value = not g.untracked(function() return open.value end)
-            return if g.untracked(function() return open.value end) then "open" else "closed"
+            open.value = if g.untracked(function() return open.value end) == "power" then "" else "power"
+            return if g.untracked(function() return open.value end) == "power" then "open" else "closed"
+        end,
+        sessions = function(): string
+            open.value = if g.untracked(function() return open.value end) == "session" then "" else "session"
+            local names = {}
+            for _, s in g.untracked(function() return sessions.value end) do table.insert(names, s.id) end
+            return table.concat(names, " ")
+        end,
+        session = function(): string
+            local c = g.untracked(current)
+            if not c then return "none" end
+            return c.id .. " " .. table.concat(c.command, " ") .. " | " .. table.concat(g.untracked(session_env), " ")
+        end,
+        choose = function(id: string): string
+            choose(id)
+            return id
         end,
         run = function(n: string): string
             local c = g.untracked(offered)[tonumber(n) or 0]
@@ -421,6 +590,7 @@ return g.surface {
         size = size or { width = 1920, height = 1080 }
         local gate_node, gate_keys = gate_mod.new { gate = gate, output = output, size = size, welcomes = true }
         local commands_node, commands_key = commands(size)
+        local sessions_node, sessions_key = session_menu(size)
         local function here(): boolean return primary.value == output end
         return g.box {
             width = size.width,
@@ -429,6 +599,7 @@ return g.surface {
             catch = function() return here() and test == "" end,
             on_key = function(name: string, text: string?, mods: any)
                 if commands_key(name, text) then return end
+                if sessions_key(name, text) then return end
                 gate_keys.key(name, text, mods)
             end,
             g.capsule {
@@ -436,6 +607,7 @@ return g.surface {
                 fill = theme.background, rim_top = "#00000000", rim_bottom = "#00000000",
             },
             g.box { overlay = true, attach = "corner", gate_node },
+            g.box { overlay = true, attach = "corner", present = here, sessions_node },
             g.box { overlay = true, attach = "corner", present = here, commands_node },
         }
     end,

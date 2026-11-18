@@ -29,7 +29,7 @@
 #                  wallpaper has to cross the same seam — and the password is
 #                  typed on the same layout
 #   niri.kdl       the greeter's compositor configuration
-#   user.json      who to greet, and the session to start
+#   user.json      who to greet, and the session they were last in
 #   avatar         their picture
 #
 # It is built beside the old one and swapped in whole, so a greeter starting
@@ -152,9 +152,47 @@ for candidate in (f"/var/lib/AccountsService/icons/{login}",
         avatar = "avatar"
         break
 
-# The session the user is in now is the one to start: niri's own launcher.
+# The session the user is in now is the one the greeter offers first: the
+# installed session whose DesktopNames name this desktop (a session that
+# hands itself to uwsm only when this one runs under it), niri's own
+# launcher when none is found. The greeter lists them all to choose from.
+def session_now():
+    desktops = [d for d in os.environ.get("XDG_CURRENT_DESKTOP", "").split(":") if d]
+    under_uwsm = bool(os.environ.get("UWSM_FINALIZE_VARNAMES") or os.environ.get("__UWSM_SELECT_TAG"))
+    found = []
+    folder = "/usr/share/wayland-sessions"
+    try:
+        names = sorted(os.listdir(folder))
+    except OSError:
+        names = []
+    for name in names:
+        if not name.endswith(".desktop"):
+            continue
+        fields, in_entry = {}, False
+        try:
+            lines = open(os.path.join(folder, name), encoding="utf-8").read().splitlines()
+        except OSError:
+            continue
+        for line in lines:
+            if line.startswith("["):
+                in_entry = line.strip() == "[Desktop Entry]"
+            elif in_entry and "=" in line:
+                k, v = line.split("=", 1)
+                fields.setdefault(k.strip(), v.strip())
+        names_here = [d for d in fields.get("DesktopNames", "").replace(";", ":").split(":") if d]
+        if "Exec" in fields and any(d.lower() == w.lower() for d in desktops for w in names_here):
+            exec_words = [w for w in fields["Exec"].split() if not (len(w) == 2 and w[0] == "%")]
+            found.append((name[:-len(".desktop")], exec_words))
+    for sid, words in found:
+        if (words[:1] == ["uwsm"]) == under_uwsm:
+            return sid, words
+    if found:
+        return found[0]
+    return "niri", ["niri-session"]
+
+session_id, session_command = session_now()
 json.dump({"login": login, "fullName": full_name, "avatar": avatar,
-           "session": ["niri-session"]},
+           "session": session_command, "sessionId": session_id},
           open(os.path.join(next_dir, "user.json"), "w"), indent=2)
 PY
 
