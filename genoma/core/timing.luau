@@ -53,6 +53,10 @@ local scaled = { stagger = 16, debounce = 180, auto_hide = 500, notification = 5
 local fixed = {
     locate = 120, pair = 2000, search = 150, pulse = 120, settle = 3000, overview_settle = 800,
     blur_settle = 400, osd = 1500, hush = 1000, fling = 80,
+    -- The wallpaper's mycelium (components/mycelium.luau): the idle level
+    -- is stepped every two seconds and each step eased over the next, so it
+    -- quickens smoothly; at the first input it falls to the least.
+    mycelium_ramp = 2000, mycelium_wake = 600,
     -- A particle's travel along a thread: its rate is the value, this only
     -- how long one takes to cross.
     flow = 600,
@@ -191,6 +195,8 @@ g.effect(function()
         -- → DEPTH): retargeted at every move, so it trails the hand a
         -- little and stops when it stops.
         parallax = { duration = s.reflow, curve = c.out_quad },
+        mycelium_ramp = { duration = s.mycelium_ramp },
+        mycelium_wake = { duration = s.mycelium_wake, curve = c.out_quad },
         content_fade = { duration = s.content_fade },
         -- The audio band's bars following the sound (Band.qml's Behavior).
         band = { duration = s.content_fade, curve = c.out_quad },

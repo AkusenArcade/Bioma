@@ -38,6 +38,7 @@ local performance = require("core/performance")
 local wallpaper = require("services/wallpaper")
 local monitors = require("services/monitors")
 local depth = require("structure/depth")
+local mycelium = require("components/mycelium")
 
 local M = {}
 
@@ -108,24 +109,29 @@ function M.node(output: string, size: { width: number, height: number }, backdro
         generations.value = next_list
     end)
 
+    -- Spanning, the picture covers the box of every screen and this screen
+    -- shows its own part: each cuts its slice out of the same covering
+    -- picture, so the slices line up across the seam.
+    local function box(): any
+        local s = span_of(output)
+        local b = bleed()
+        local w, h = size.width + b * 2, size.height + b * 2
+        if not s then return { x = -b, y = -b, width = w, height = h } end
+        local kx, ky = w / s.width, h / s.height
+        return {
+            x = -b - s.offset_x * kx,
+            y = -b - s.offset_y * ky,
+            width = s.total_width * kx,
+            height = s.total_height * ky,
+        }
+    end
+    local function fit(): string return if wallpaper.mode() == "fit" then "contain" else "cover" end
+    local function lean(axis: string): () -> number
+        return function() return if backdrop then 0 else depth.lean(axis, depth.WALLPAPER) end
+    end
+
     local function picture(item: () -> any): any
         local function gen(): any return item() end
-        -- Spanning, the picture covers the box of every screen and this
-        -- screen shows its own part: each cuts its slice out of the same
-        -- covering picture, so the slices line up across the seam.
-        local function box(): any
-            local s = span_of(output)
-            local b = bleed()
-            local w, h = size.width + b * 2, size.height + b * 2
-            if not s then return { x = -b, y = -b, width = w, height = h } end
-            local kx, ky = w / s.width, h / s.height
-            return {
-                x = -b - s.offset_x * kx,
-                y = -b - s.offset_y * ky,
-                width = s.total_width * kx,
-                height = s.total_height * ky,
-            }
-        end
         return g.image {
             overlay = true,
             attach = "corner",
@@ -137,7 +143,7 @@ function M.node(output: string, size: { width: number, height: number }, backdro
             decode_width = function() return box().width * density end,
             decode_height = function() return box().height * density end,
             -- Covered, never stretched; fit letterboxes on the black below.
-            fit = function() return if wallpaper.mode() == "fit" then "contain" else "cover" end,
+            fit = fit,
             soften = if backdrop then 16 else 0,
             -- Not quite nothing while it waits: a transparent node is not
             -- drawn, and one not drawn is never decoded.
@@ -171,12 +177,24 @@ function M.node(output: string, size: { width: number, height: number }, backdro
             -- wallpaper lever on: a second picture per screen, for a view a
             -- game does not open.
             present = function() return not (backdrop and performance.lever("wallpaper")) end,
-            offset_x = function() return if backdrop then 0 else depth.lean("x", depth.WALLPAPER) end,
-            offset_y = function() return if backdrop then 0 else depth.lean("y", depth.WALLPAPER) end,
+            offset_x = lean("x"),
+            offset_y = lean("y"),
             transition = { offset_x = "parallax", offset_y = "parallax" },
             items = function() return generations.value end,
             key = function(gen: any) return tostring(gen.key) end,
             row = picture,
+        },
+        -- The mycelium on the picture (components/mycelium.luau): its own
+        -- layer, moved with it by the depth; never on the backdrop.
+        if backdrop then nil else mycelium.layer {
+            output = output,
+            size = size,
+            source = source,
+            box = box,
+            fit = fit,
+            offset_x = lean("x"),
+            offset_y = lean("y"),
+            present = function() return true end,
         },
     }
 end

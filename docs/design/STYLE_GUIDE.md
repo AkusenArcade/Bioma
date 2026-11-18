@@ -27,7 +27,7 @@ hard it is working.
 **4. Volume only where it is alive.** Tissues and cells are the support and stay flat. Gradient
 goes on indicators, value digits, header icons and selected controls. No glow, anywhere.
 *The one exception is the person's own:* the Effects of Settings → Appearance (light at the
-pointer, inner light, depth, alert glow) are off unless switched on, and each still follows a
+pointer, inner light, depth, mycelium, alert glow) are off unless switched on, and each still follows a
 live value. The design is drawn, and judged, with them off.
 
 **5. It is born from its point.** Every expanded shape grows from the node of the thread that

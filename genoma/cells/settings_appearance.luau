@@ -286,6 +286,9 @@ function M.new(t: { [string]: any }): any
         effect("DEPTH", "appearance.depth", function()
             return "The desktop gains depth under the pointer: the organisms and the wallpaper move against it, the organisms faster, as nearer things do, every screen together. For that, the desktop takes the pointer where no window is."
         end, depth_windows_row),
+        effect("MYCELIUM", "appearance.mycelium", function()
+            return "Streaks of light run out along the outlines of the wallpaper and divide at every branch, as a mould spreads. A few faint ones while you work; the longer nothing is touched, the more of them, brighter and faster, until they are a screensaver. They stop while windows cover the screen."
+        end),
         effect("ALERT GLOW", "appearance.alert_glow", function()
             return "A cell in alert glows in the alert colour outside its pill, stronger the further past its threshold: the vitals near their limit, a critical notification."
         end),
