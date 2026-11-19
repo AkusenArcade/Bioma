@@ -9,8 +9,10 @@
 -- How close it keeps is how full the memory is: an empty machine is a
 -- loose drift, a full one a tight shoal. How many there are is how much
 -- the kernel runs, one creature for every ten of its tasks (threads
--- included), counted in twenty-fives so a thread starting does not start
--- the swarm again.
+-- included), counted in twenty-fives so the swarm does not grow or thin
+-- with every thread. A new number keeps the swarm (Genoma 0.1.20): new
+-- creatures divide from those there, and fewer, the last go; before it,
+-- every new number started the swarm again from the same scatter.
 local g = require("@genoma")
 local theme = require("core/theme")
 local typography = require("core/typography")
@@ -38,8 +40,8 @@ return {
         local function inner_width(): number return o.width() - 2 * RIM end
         local function inner_height(): number return o.height() - 2 * RIM end
 
-        -- The population changes only by whole steps: a new number starts
-        -- the simulation again.
+        -- The population changes only by whole steps; the creatures there
+        -- stay when it does.
         local population = g.computed(function(): number
             local n = math.round(system.tasks() / PER_CREATURE / STEP) * STEP
             return math.clamp(n, FEWEST, MOST)

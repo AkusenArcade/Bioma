@@ -887,8 +887,9 @@ performance mode's motion lever stops it. **How close it keeps is the
 memory**: an empty machine is a loose drift, a full one a tight shoal (gathering 0.15 → 1.35,
 keeping apart 0.9 → 0.4 with the memory in use). **How many there are is what the kernel
 runs**: one creature for every ten tasks (threads included, `/proc/loadavg`), counted in
-twenty-fives, 50 to 400 — a new number starts the swarm again, so it changes only by a whole
-step.
+twenty-fives, 50 to 400. A new number does not start the swarm again (Genoma 0.1.20): more,
+and new creatures divide from those there and part from them; fewer, and the last go. Counted
+in twenty-fives so the swarm does not grow or thin with every thread.
 
 | Measure | Value | Note |
 |---|---|---|
