@@ -262,6 +262,9 @@ t.source {
 -- frame of the crossing. The state colours are not among them.
 
 function M.target_is_dark(): boolean return colour.luminance(M.target("background")) < 0.5 end
+-- A state colour for the palette at rest: what the state roles will be once
+-- the crossing is over (the desktop's theme file, services/desktop_theme).
+function M.target_state(role: string): string return state_of(role, M.target_is_dark()) end
 
 function M.target_roles(): { string }
     local bg, p = M.target("background"), M.target("primary")

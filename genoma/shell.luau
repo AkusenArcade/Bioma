@@ -333,6 +333,7 @@ if runtime.alone() then
     require("services/matugen").start()
     require("services/palettes").start()
     require("services/templates").start()
+    require("services/desktop_theme").start()
     require("services/looks").start()
     require("services/proxy").start()
     require("services/locker").start()
