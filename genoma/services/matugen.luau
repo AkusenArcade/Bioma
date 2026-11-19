@@ -41,16 +41,25 @@ end
 -- file core/theme.luau watches. Not config/matugen/config.toml as it is,
 -- whose `~/.config/…` is the home's: with XDG_CONFIG_HOME elsewhere (a test
 -- of another configuration), matugen wrote the person's own palette and
--- the shell watched a file nobody wrote. Written once a session.
+-- the shell watched a file nobody wrote.
+--
+-- Its name follows where the palette goes, and it is written again before
+-- every run. It was one name for every Bioma and written once a session: a
+-- test run with another configuration rewrote it, and from then on the
+-- desktop's own shell sent every scheme to the test's folder, its palette
+-- never changing (2026-11-20: "le varianti di matugen non funzionano").
 local function quoted(s: string): string
     return '"' .. string.gsub(string.gsub(s, "\\", "\\\\"), '"', '\\"') .. '"'
 end
-local own_config: string? = nil
 local function config_path(): string
-    if own_config then return own_config end
-    local path = (g.env("XDG_RUNTIME_DIR") or "/tmp") .. "/bioma-matugen.toml"
+    -- A short name from the output path, so two shells never share one.
+    local h = 5381
+    for k = 1, #theme.matugen_path do
+        h = (h * 33 + string.byte(theme.matugen_path, k)) % 4294967296
+    end
+    local path = string.format("%s/bioma-matugen-%08x.toml", g.env("XDG_RUNTIME_DIR") or "/tmp", h)
     g.file({ path = path, watch = false }):write(table.concat({
-        "# Written by Bioma's services/matugen.luau for this session.",
+        "# Written by Bioma's services/matugen.luau before each run.",
         "[config]",
         "",
         "[templates.palette]",
@@ -58,7 +67,6 @@ local function config_path(): string
         "output_path = " .. quoted(theme.matugen_path),
         "",
     }, "\n"))
-    own_config = path
     return path
 end
 
