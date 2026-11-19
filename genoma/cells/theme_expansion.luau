@@ -93,9 +93,15 @@ function M.new(cell: any): any
 
     -- Every block is placed from the panel's top-left corner, where the
     -- carousel is: arithmetic, so a list knows where its dropdown will be
-    -- while the capsule holding it is still growing.
-    local function capsule_y(): number return picker_height() + gap() end
-    local function desktop_y(): number return capsule_y() + capsule_height() + gap() end
+    -- while the capsule holding it is still growing. On a bottom membrane the
+    -- capsules and DESKTOP stand above the carousel, so they sit at negative y.
+    local desktop_height: () -> number
+    local function capsule_y(): number
+        return if down then picker_height() + gap() else -(gap() + capsule_height())
+    end
+    local function desktop_y(): number
+        return if down then capsule_y() + capsule_height() + gap() else capsule_y() - gap() - desktop_height()
+    end
 
     -- ---- Text ----------------------------------------------------------------
 
@@ -235,6 +241,7 @@ function M.new(cell: any): any
         local hovered = g.signal(false)
         local function width(): number return dropdown_width(text(), if widest then widest() else nil) end
         return g.capsule {
+            id = "dropdown-" .. which,
             role = "button",
             width = width,
             height = dropdown_height,
@@ -700,7 +707,7 @@ function M.new(cell: any): any
         local n = #app_rows()
         return if n == 0 then 0 else n * 24 * f() + (n - 1) * 6 * f()
     end
-    local function desktop_height(): number
+    function desktop_height(): number
         local d = desktop_padding()
         return d + looks_height() + 20 * f() + (label_height() + stack_spacing() + dropdown_height())
             + 20 * f() + (label_height() + stack_spacing() + apps_height()) + d
