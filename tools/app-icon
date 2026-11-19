@@ -1,0 +1,117 @@
+#!/usr/bin/env python3
+"""The icon of an app on Genoma, in Bioma's look.
+
+    tools/app-icon <glyph.svg> <out.svg>
+
+Every app built on Genoma for the Bioma desktop (Sinestesia, OBS Touch
+Control, Rizoma, Xilema…) gets its icon the same way (Akusen, 2026-11-20):
+a glyph chosen for the app, drawn as a Bioma cell draws one — inside a round
+glass capsule with Bioma's rim, the glyph in the primary's gradient — in
+Bioma's *default* theme, never the palette of the moment.
+
+The colours are core/theme.luau's derivations on its default roles:
+the capsule is `cell` (the background lifted 0.075), its rim runs from
+`rim` (top) to `line` (bottom), and the glyph from gradient_top(primary)
+to gradient_bottom(primary) at 165°. The glyph is one of assets/icons (24
+units, `currentColor` strokes and fills), taking 45% of the capsule as on
+a 40-unit cell with an 18-unit glyph.
+"""
+import colorsys
+import math
+import re
+import sys
+
+BACKGROUND = "#12160F"
+PRIMARY = "#B9DE6B"
+
+
+def hls(hex_colour):
+    h = hex_colour.lstrip("#")
+    r, g, b = (int(h[i:i + 2], 16) / 255 for i in (0, 2, 4))
+    return colorsys.rgb_to_hls(r, g, b)  # hue, lightness, saturation
+
+
+def hex_of(h, l, s):
+    r, g, b = colorsys.hls_to_rgb(h, max(0.0, min(1.0, l)), max(0.0, min(1.0, s)))
+    return "#%02x%02x%02x" % tuple(round(c * 255) for c in (r, g, b))
+
+
+def is_dark(hex_colour):
+    h = hex_colour.lstrip("#")
+    r, g, b = (int(h[i:i + 2], 16) / 255 for i in (0, 2, 4))
+    lin = [c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4 for c in (r, g, b)]
+    return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2] < 0.5
+
+
+def lift_away(hex_colour, amount, dark):
+    h, l, s = hls(hex_colour)
+    return hex_of(h, l + (amount if dark else -amount), s)
+
+
+def structural(bg, accent, lightness):
+    bh, _, bs = hls(bg)
+    if bs <= 0:
+        return hex_of(0, lightness, 0)
+    _, _, accent_s = hls(accent)
+    s = max(min(bs + 0.04, 0.40), min(accent_s * 0.33, 0.28))
+    return hex_of(bh, lightness, s)
+
+
+def gradient_top(hex_colour):
+    h, l, s = hls(hex_colour)
+    return hex_of(h, l + 0.16, s + 0.14)
+
+
+def gradient_bottom(hex_colour):
+    h, l, s = hls(hex_colour)
+    return hex_of(h, l - 0.15, s - 0.15)
+
+
+def main():
+    if len(sys.argv) != 3:
+        sys.exit(__doc__)
+    glyph_text = open(sys.argv[1]).read()
+    inner = re.search(r"<svg[^>]*>(.*)</svg>", glyph_text, re.S)
+    if not inner:
+        sys.exit(f"{sys.argv[1]}: not an SVG")
+    body = inner.group(1).strip().replace("currentColor", "url(#glyph)")
+    # The outer attributes the glyph's shapes inherit (stroke width, caps).
+    outer = re.search(r"<svg([^>]*)>", glyph_text).group(1)
+    inherited = " ".join(
+        m.group(0) for m in re.finditer(r'(stroke-width|stroke-linecap|stroke-linejoin|fill|stroke)="[^"]*"', outer)
+    ).replace("currentColor", "url(#glyph)")
+
+    dark = is_dark(BACKGROUND)
+    cell = lift_away(BACKGROUND, 0.075, dark)
+    rim = structural(BACKGROUND, PRIMARY, 0.55 if dark else 0.50)
+    line = structural(BACKGROUND, PRIMARY, 0.32 if dark else 0.72)
+    top, bottom = gradient_top(PRIMARY), gradient_bottom(PRIMARY)
+
+    # 165°, as CSS turns it: from above, a little left, down to the right.
+    a = math.radians(165)
+    dx, dy = math.sin(a) * 12, -math.cos(a) * 12
+    size, radius, stroke = 256, 120, 5
+    scale = radius * 2 * 0.45 / 24
+    offset = size / 2 - 12 * scale
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 {size} {size}">
+  <defs>
+    <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="{rim}"/>
+      <stop offset="1" stop-color="{line}"/>
+    </linearGradient>
+    <linearGradient id="glyph" gradientUnits="userSpaceOnUse" x1="{12 - dx:.3f}" y1="{12 - dy:.3f}" x2="{12 + dx:.3f}" y2="{12 + dy:.3f}">
+      <stop offset="0" stop-color="{top}"/>
+      <stop offset="1" stop-color="{bottom}"/>
+    </linearGradient>
+  </defs>
+  <circle cx="{size / 2}" cy="{size / 2}" r="{radius}" fill="{cell}" stroke="url(#rim)" stroke-width="{stroke}"/>
+  <g transform="translate({offset:.3f} {offset:.3f}) scale({scale:.4f})" {inherited}>
+    {body}
+  </g>
+</svg>
+"""
+    open(sys.argv[2], "w").write(svg)
+
+
+if __name__ == "__main__":
+    main()
