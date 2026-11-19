@@ -88,6 +88,41 @@ function M.follows_mouse(): boolean return #named("input", "focus-follows-mouse"
 -- A workspace's only column in the middle of the screen, not at its left.
 function M.centres_single(): boolean return #named("layout", "always-center-single-column") > 0 end
 
+-- ---- Hot corners -------------------------------------------------------------------
+-- `gestures { hot-corners { … } }`: the corners where the pointer, pushed
+-- in, opens the overview. Nothing written, or an empty block, is the top
+-- left alone; `off` is none; otherwise the corners named. The last block
+-- niri reads is the one in force.
+
+M.corners = { "top-left", "top-right", "bottom-left", "bottom-right" }
+
+function M.hot_corner_blocks(): { any } return named("gestures", "hot-corners", items()) end
+
+function M.hot_corners(): { [string]: boolean }
+    local out = { ["top-left"] = false, ["top-right"] = false, ["bottom-left"] = false, ["bottom-right"] = false }
+    local blocks = named("gestures", "hot-corners")
+    local last = blocks[#blocks]
+    local listed, off = 0, false
+    if last and last.node.children then
+        for _, child in last.node.children.nodes do
+            if not child.dropped then
+                if child.name == "off" then
+                    off = true
+                elseif out[child.name] ~= nil then
+                    out[child.name] = true
+                    listed += 1
+                end
+            end
+        end
+    end
+    if off then
+        for c in out do out[c] = false end
+    elseif listed == 0 then
+        out["top-left"] = true
+    end
+    return out
+end
+
 -- ---- Pointing devices -------------------------------------------------------------
 
 -- `input { mouse { … } }`, `input { touchpad { … } }`: every child of that
@@ -525,6 +560,48 @@ end
 function M.set_centres_single(on: boolean)
     if busy_now() or on == g.untracked(M.centres_single) then return end
     set_flag("layout", "always-center-single-column", on)
+end
+
+-- The whole block, written again: each corner on a line of its own, `off`
+-- when none is left. Written here alone, like the one above.
+local function corners_entry(on: { [string]: boolean }, lead: string): string
+    local lines = {}
+    for _, c in M.corners do if on[c] then table.insert(lines, c) end end
+    if #lines == 0 then lines = { "off" } end
+    local out = "hot-corners {"
+    for _, l in lines do out ..= "\n" .. lead .. "    " .. l end
+    return out .. "\n" .. lead .. "}"
+end
+function M.set_hot_corner(corner: string, on: boolean)
+    if busy_now() then return end
+    local now = g.untracked(M.hot_corners)
+    if now[corner] == nil or now[corner] == on then return end
+    local wanted = table.clone(now)
+    wanted[corner] = on
+    local mine = named("gestures", "hot-corners", g.untracked(items))
+    if #mine > 0 then
+        local by_file = {}
+        for _, block in mine do
+            local text = niri_config.text_of(block.file) or ""
+            add_edit(by_file, block.file, kdl.replacing(text, block.node, corners_entry(wanted, kdl.indent_of(text, block.node))))
+        end
+        edits_across(by_file)
+        return
+    end
+    local section = nil
+    for _, item in g.untracked(items) do
+        if item.kind == "section" and item.name == "gestures" then section = item end
+    end
+    if not section then
+        add_to_section("gestures", corners_entry(wanted, "    "))
+        return
+    end
+    local kids = {}
+    for _, child in section.children do if not child.dropped then table.insert(kids, child) end end
+    commit(section.file, function(text: string)
+        local lead = if kids[#kids] then kdl.indent_of(text, kids[#kids]) else "    "
+        return kdl.with_child(text, section, corners_entry(wanted, lead), kids[#kids])
+    end)
 end
 
 -- A mouse's or a touchpad's settings, written here alone, like the one above.

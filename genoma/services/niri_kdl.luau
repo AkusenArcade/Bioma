@@ -435,7 +435,7 @@ function M.scan(text: string): { items: { any }, block: any }
             table.insert(items, rule_details(rule_of(node)))
         elseif node.name == "workspace" and #node.args > 0 then
             table.insert(items, workspace_of(node))
-        elseif (node.name == "layout" or node.name == "input") and node.children then
+        elseif (node.name == "layout" or node.name == "input" or node.name == "gestures") and node.children then
             -- Lines commented out directly in the section, not in a block
             -- inside it.
             -- Those in a block inside it (`input { mouse { … } }`) are kept

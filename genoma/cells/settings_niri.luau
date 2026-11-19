@@ -452,6 +452,61 @@ function M.new(t: { [string]: any }): any
         end),
     })
 
+    -- ---- Hot corners ---------------------------------------------------------------
+    -- Four chips standing where their corners are: left ones in one column,
+    -- right ones in the other, the top above the bottom.
+
+    local CORNER_LABELS = {
+        ["top-left"] = "TOP LEFT", ["top-right"] = "TOP RIGHT",
+        ["bottom-left"] = "BOTTOM LEFT", ["bottom-right"] = "BOTTOM RIGHT",
+    }
+    local function corner_chip(corner: string): any
+        return choice_mod.new {
+            id = "corner-" .. corner,
+            label = CORNER_LABELS[corner],
+            kind = function() return if niri_settings.hot_corners()[corner] then "primary" else "plain" end,
+            metrics = m,
+            dimmed = busy,
+            on_click = function()
+                niri_settings.set_hot_corner(corner, not g.untracked(niri_settings.hot_corners)[corner])
+            end,
+        }
+    end
+    local function corner_column(top: string, bottom: string, align: string): any
+        return g.box {
+            direction = "column",
+            align = align,
+            gap = function() return 6 * f() end,
+            corner_chip(top),
+            corner_chip(bottom),
+        }
+    end
+    local hot_corners = section("HOT CORNERS", nil, {
+        g.box {
+            width = p.inner,
+            direction = "row",
+            justify = "between",
+            corner_column("top-left", "bottom-left", "start"),
+            corner_column("top-right", "bottom-right", "end"),
+        },
+        line(function()
+            local on = niri_settings.hot_corners()
+            local names = {}
+            for _, c in niri_settings.corners do
+                if on[c] then table.insert(names, string.lower(CORNER_LABELS[c])) end
+            end
+            local said
+            if #names == 0 then
+                said = "No corner opens the overview; its key still does. "
+            else
+                local list = if #names == 1 then names[1]
+                    else table.concat(names, ", ", 1, #names - 1) .. " or " .. names[#names]
+                said = "Pushing the pointer into the " .. list .. " corner of a screen opens the overview. "
+            end
+            return said .. "Written in " .. written_in(niri_settings.hot_corner_blocks()) .. "."
+        end),
+    })
+
     -- ---- Mouse and touchpad ---------------------------------------------------------
     -- niri applies a block to every device of its kind: no device is named.
 
@@ -880,7 +935,7 @@ function M.new(t: { [string]: any }): any
     })
 
     niri_settings.look_for_touchpad()
-    return p.column { error_line, gaps, ring, follows, centre, mouse, touchpad, opacity, workspaces, startup, rules }
+    return p.column { error_line, gaps, ring, follows, centre, hot_corners, mouse, touchpad, opacity, workspaces, startup, rules }
 end
 
 return M

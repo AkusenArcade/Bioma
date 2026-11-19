@@ -410,6 +410,7 @@ return {
             end
             return g.capsule(light.dress({
                 name = "Category",
+                id = "category-" .. index,
                 role = "button",
                 present = function() return index <= #entries() end,
                 overlay = true,
