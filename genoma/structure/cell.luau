@@ -554,6 +554,7 @@ function M.new(kind: any, ctx: { [string]: any })
             for _, satellite in p.satellites() do table.insert(panel, satellite) end
         end
         light.inner(panel, function() return c.metrics().factor end)
+        light.shadow(panel, function() return c.metrics().factor end, function() return c.open.value end)
         return g.capsule(panel)
     end
 

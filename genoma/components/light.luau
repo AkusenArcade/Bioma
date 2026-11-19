@@ -11,14 +11,18 @@
 --                   edge: static, drawn once, nothing at rest.
 --   alert glow      a cell in alert glows in the alert colour, the
 --                   further past its threshold the stronger (alarm()).
+--   shadows         an open cell's glass casts a shadow: it stands
+--                   above the desktop while it is open, and only then.
 --
 -- The lock screen and the greeter dress their glass the same way
--- (an Appearance setting reaches them too).
+-- (an Appearance setting reaches them too), shadows aside: they are an
+-- open cell's, and neither has one (Akusen, 2026-11-19).
 local g = require("@genoma")
 local config = require("core/config")
 local colour = require("core/colour")
 local theme = require("core/theme")
 local paths = require("core/paths")
+local performance = require("core/performance")
 
 local M = {}
 
@@ -28,6 +32,11 @@ local CLEAR = "#00000000"
 function M.pointer_on(): boolean return config.get("appearance.pointer_light", false) == true end
 function M.inner_on(): boolean return config.get("appearance.inner_light", false) == true end
 function M.glow_on(): boolean return config.get("appearance.alert_glow", false) == true end
+-- None while performance mode takes the blur away: its lever is "blur and
+-- shadows" (cells/settings_modes.luau).
+function M.shadows_on(): boolean
+    return config.get("appearance.shadows", false) == true and not performance.flat()
+end
 -- How strong the light at the pointer is, a percentage of the drawn one
 -- (Appearance → LIGHT AT THE POINTER's slider).
 M.STRENGTH = { from = 25, to = 300, step = 5, fallback = 100 }
@@ -111,6 +120,7 @@ local function read(v: any): number
     return if type(v) == "number" then v else 0
 end
 function M.dress(props: { [any]: any }, factor: () -> number, lit: (() -> boolean)?): { [any]: any }
+    M.shadow(props, factor, lit or function() return true end)
     return M.glass(props, factor, {
         width = function() return read(props.width) end,
         height = function() return read(props.height) end,
@@ -118,6 +128,21 @@ function M.dress(props: { [any]: any }, factor: () -> number, lit: (() -> boolea
         factor = factor,
         lit = lit,
     })
+end
+
+-- An open cell's glass over the desktop: a shadow outside its shape only
+-- (Genoma's box-shadow; a glass fill does not darken over it), as
+-- tokens.css's --shadow draws it. It arrives once the shape is at size and
+-- leaves before the shape does (core/timing.luau, shadow_for), so its halo
+-- is never left alone in the last frames. `shown()` while the cell is open.
+-- Sets it on a capsule's props.
+function M.shadow(props: { [any]: any }, factor: () -> number, shown: () -> boolean)
+    props.shadow = function() return if M.shadows_on() and shown() then theme.shadow() else CLEAR end
+    props.shadow_y = function() return 14 * factor() end
+    props.shadow_blur = function() return 28 * factor() end
+    local tr = props.transition or {}
+    tr.shadow = function() return if shown() then "content_enter" else "content_leave" end
+    props.transition = tr
 end
 
 -- A cell in alert: a glow outside its pill, in `tint` (the alert colour

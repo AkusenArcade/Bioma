@@ -318,6 +318,9 @@ function M.new(t: { [string]: any }): any
         effect("MYCELIUM", "appearance.mycelium", function()
             return "Streaks of light run out along the outlines of the wallpaper and divide at every branch, as a mould spreads. A few faint ones while you work; the longer nothing is touched, the more of them, brighter and faster, until they are a screensaver. They stop while windows cover the screen."
         end),
+        effect("SHADOWS", "appearance.shadows", function()
+            return "An open cell casts a soft shadow on what is under it, its panel and everything that buds out of it, so it reads as standing above the desktop. Only while it is open; not on the lock screen or the greeter."
+        end),
         effect("ALERT GLOW", "appearance.alert_glow", function()
             return "A cell in alert glows in the alert colour outside its pill, stronger the further past its threshold: the vitals near their limit, a critical notification."
         end),
