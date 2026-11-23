@@ -12,8 +12,6 @@
 -- desktop").
 local g = require("@genoma")
 local apps = require("core/apps")
-local paths = require("core/paths")
-local runtime = require("core/runtime")
 local niri_config = require("services/niri_config")
 local kdl = require("services/niri_kdl")
 
@@ -69,38 +67,10 @@ end
 function M.keycaps(key: string): { string } return kdl.keycaps(key) end
 function M.humanize(name: string): string return kdl.humanize(name) end
 
--- ---- Writing, through Quickshell ----------------------------------------------
+-- ---- Writing ---------------------------------------------------------------------
 
-local writing = g.signal(0)
-local said = g.signal("")
-function M.busy(): boolean
-    if runtime.alone() then return niri_config.busy() end
-    return writing.value > 0
-end
-function M.error(): string
-    if runtime.alone() then return niri_config.error() end
-    return said.value
-end
-
-local function ask(args: { string })
-    local command = { paths.script("ipc"), "keybinds" }
-    for _, a in args do table.insert(command, a) end
-    writing.value += 1
-    said.value = ""
-    g.process {
-        command = command,
-        on_exit = function()
-            writing.value -= 1
-            -- niri's refusal comes once Quickshell has validated the file.
-            g.after(1.5, function()
-                g.process {
-                    command = { paths.script("ipc"), "keybinds", "error" },
-                    on_line = function(line: string) if line ~= "" then said.value = line end end,
-                }
-            end)
-        end,
-    }
-end
+function M.busy(): boolean return niri_config.busy() end
+function M.error(): string return niri_config.error() end
 
 -- The text a bind was read from must still be there: an edit made against a
 -- file somebody else has changed since would land in the wrong place.
@@ -115,22 +85,16 @@ end
 local function commit(file: string, text: string) niri_config.write(file, text, kdl.block_of(text)) end
 
 function M.rekey(bind: any, key: string)
-    if not g.untracked(runtime.alone) then ask({ "rekey", bind.id, key }) return end
     local text = current(bind)
     if text then commit(bind.file, kdl.with_key(text, bind, key)) end
 end
 function M.remove(bind: any)
-    if not g.untracked(runtime.alone) then ask({ "remove", bind.id }) return end
     local text = current(bind)
     if text then commit(bind.file, kdl.without(text, bind)) end
 end
 -- A new bind goes into niri's own file, at the end of its block: the one
 -- file here nothing else rewrites.
 function M.add(key: string, action: { name: string, args: { string } }, title: string)
-    if not g.untracked(runtime.alone) then
-        ask({ "add", key, g.to_json({ name = action.name, args = g.array(table.clone(action.args)) }), title })
-        return
-    end
     local text = niri_config.text_of(M.main)
     if not text then
         niri_config.set_error("niri's configuration could not be read.")

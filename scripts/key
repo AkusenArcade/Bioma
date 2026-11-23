@@ -3,18 +3,16 @@
 #
 # Volume, brightness and the transport keys are not cells: they reach a
 # service and change something. What makes this a script rather than a
-# straight `qs ipc call` in the keybind file is the switch — while Bioma is
-# being built the session goes back and forth between the two shells, and a
-# key that only works under one of them is a key that is broken half the time.
+# straight IPC call in the keybind file is the switch between shells: a key
+# that only works under one of them is a key that is broken half the time.
 #
 #     key volume-up [percent]     key mute        key media-toggle
 #     key volume-down [percent]   key mic-mute    key media-next
 #     key brightness-up [percent]                 key media-previous
 #     key brightness-down [percent]               key media-stop
 #
-# Under Bioma each one is an IPC call into the running shell, on either
-# runtime (`scripts/ipc`); under the other one it is that shell's own
-# message. Neither running is not an error worth printing on a keypress.
+# Under Bioma each one is an IPC call into the running shell (`scripts/ipc`);
+# under the other one it is that shell's own message. Neither running is not an error worth printing on a keypress.
 set -eu
 
 here="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
@@ -29,12 +27,11 @@ other() {
     noctalia msg "$@" >/dev/null 2>&1 || true
 }
 
-# On either runtime. Bioma on Genoma is the process `scripts/genoma` names
-# `bioma`, wherever its directory is: matched by path, a shell started from
-# a checkout rather than the package was taken for none, and every key went
-# to Noctalia (2026-11-04).
+# Bioma is the process `scripts/genoma` names `bioma`, wherever its
+# directory is: matched by path, a shell started from a checkout rather than
+# the package was taken for none, and every key went to Noctalia (2026-11-04).
 running_bioma() {
-    pgrep -x bioma >/dev/null 2>&1 || pgrep -f -- "qs -p $here/(quickshell/)?shell.qml" >/dev/null 2>&1
+    pgrep -x bioma >/dev/null 2>&1
 }
 
 case "${1-}" in

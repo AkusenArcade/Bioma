@@ -141,8 +141,7 @@ package() {
     install -d "$share"
 
     # What the shell, the lock screen and the greeter read at runtime. The
-    # design documents and their media stay in the repository, and so does
-    # the Quickshell version (quickshell/), kept there as a backup.
+    # design documents and their media stay in the repository.
     cp -r --no-preserve=ownership \
         assets config genoma scripts \
         "$share/"

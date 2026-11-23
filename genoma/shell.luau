@@ -1,8 +1,6 @@
 --!strict
--- Bioma on Genoma (genoma/PORT.md): the core, and a surface for every
--- membrane block that is Genoma's (core/runtime.luau: marked
--- `"runtime": "genoma"`, or every one once the switch is made), laid out by
--- the structure engine (genoma/structure/).
+-- Bioma (genoma/PORT.md): the core, and a surface for every membrane block,
+-- laid out by the structure engine (genoma/structure/).
 local g = require("@genoma")
 local config = require("core/config")
 local theme = require("core/theme")
@@ -19,7 +17,6 @@ local registry = require("cells/registry")
 
 local monitors = require("services/monitors")
 local paths = require("core/paths")
-local runtime = require("core/runtime")
 
 -- The shell's own glyphs, by name: assets/icons, the runtime copy.
 g.icon_dir(paths.root .. "/assets/icons")
@@ -51,7 +48,7 @@ end
 -- (Akusen, 2026-11-03).
 local function membrane_for(output: string, edge: string): { [string]: any }?
     for _, entry in config.get("membranes", {}) do
-        if type(entry) == "table" and runtime.ours(entry) and (entry.edge or "top") == edge and on_output(entry, output) then
+        if type(entry) == "table" and (entry.edge or "top") == edge and on_output(entry, output) then
             return entry
         end
     end
@@ -107,7 +104,7 @@ end
 local function floats_on(output: string): { any }
     local out = {}
     for _, entry in config.get("floating", {}) do
-        if type(entry) == "table" and runtime.ours(entry) and on_output(entry, output) then table.insert(out, entry) end
+        if type(entry) == "table" and on_output(entry, output) then table.insert(out, entry) end
     end
     return out
 end
@@ -158,47 +155,32 @@ table.insert(surfaces, g.surface {
         }
     end,
 })
--- What Genoma has to hold now: while every surface is Quickshell's, the
--- host, the input catcher and the polkit agent below stay Quickshell's too.
-local function holds_blocks(): boolean
-    if runtime.alone() then return true end
-    for _, key in { "membranes", "floating" } do
-        for _, entry in config.get(key, {}) do
-            if runtime.ours(entry) then return true end
-        end
-    end
-    return false
-end
-
--- The wallpaper, and its blurred copy behind niri's overview, when
--- `wallpaper.runtime` or the switch gives them to Genoma (Quickshell then
--- leaves its own out). Below everything, one of each per monitor, over every zone.
+-- The wallpaper, and its blurred copy behind niri's overview. Below
+-- everything, one of each per monitor, over every zone.
 local wallpaper_surface = require("structure/wallpaper")
 local wallpapers = 0
-if runtime.part("wallpaper") then
-    for _, backdrop in { false, true } do
-        local blurred = backdrop
-        table.insert(surfaces, g.surface {
-            full = true,
-            anchor = { "top", "bottom", "left", "right" },
-            outputs = "all",
-            reserve = false,
-            above_zones = true,
-            layer = "background",
-            -- niri's rules match these: the backdrop is placed behind the
-            -- workspaces in the overview (config/niri/bioma.kdl).
-            namespace = if blurred then "bioma-backdrop" else "bioma-wallpaper",
-            function(output: string, size: any)
-                return wallpaper_surface.node(output, size or { width = 1920, height = 1080 }, blurred)
-            end,
-        })
-        wallpapers += 1
-    end
+for _, backdrop in { false, true } do
+    local blurred = backdrop
+    table.insert(surfaces, g.surface {
+        full = true,
+        anchor = { "top", "bottom", "left", "right" },
+        outputs = "all",
+        reserve = false,
+        above_zones = true,
+        layer = "background",
+        -- niri's rules match these: the backdrop is placed behind the
+        -- workspaces in the overview (config/niri/bioma.kdl).
+        namespace = if blurred then "bioma-backdrop" else "bioma-wallpaper",
+        function(output: string, size: any)
+            return wallpaper_surface.node(output, size or { width = 1920, height = 1080 }, blurred)
+        end,
+    })
+    wallpapers += 1
 end
--- The organisms marked for this runtime, on the Bottom layer: above the
--- wallpaper, under every window (structure/organisms.luau).
+-- The organisms, on the Bottom layer: above the wallpaper, under every
+-- window (structure/organisms.luau).
 local organisms = require("structure/organisms")
--- Always there, empty while no organism is Genoma's: the first one added
+-- Always there, empty while there is no organism: the first one added
 -- from the settings appears without a reload.
 table.insert(surfaces, g.surface {
     full = true,
@@ -246,57 +228,55 @@ g.ipc("organisms", {
         return g.to_json(g.array(table.clone(list)))
     end,
 })
-if holds_blocks() then
-    -- Where a cell with no place of its own appears when it is asked for:
-    -- the middle of each monitor, empty until then.
-    table.insert(surfaces, g.surface {
-        full = true,
-        anchor = { "top", "bottom", "left", "right" },
-        outputs = "all",
-        reserve = false,
-        above_zones = true,
-        namespace = "bioma-float",
-        -- Followed, not built again: a summoned cell outlives a membrane
-        -- taking or letting go of its strip.
-        fluid = true,
-        function(output: string, size: any)
-            return float.host(output, size or { width = 1920, height = 1080 })
-        end,
-    })
+-- Where a cell with no place of its own appears when it is asked for:
+-- the middle of each monitor, empty until then.
+table.insert(surfaces, g.surface {
+    full = true,
+    anchor = { "top", "bottom", "left", "right" },
+    outputs = "all",
+    reserve = false,
+    above_zones = true,
+    namespace = "bioma-float",
+    -- Followed, not built again: a summoned cell outlives a membrane
+    -- taking or letting go of its strip.
+    fluid = true,
+    function(output: string, size: any)
+        return float.host(output, size or { width = 1920, height = 1080 })
+    end,
+})
 
-    -- The session's authentication agent, there before anything asks: it
-    -- summons the polkit cell into a host.
-    require("services/polkit").start()
+-- The session's authentication agent, there before anything asks: it
+-- summons the polkit cell into a host.
+require("services/polkit").start()
 
-    -- While a cell is open, a press on any other monitor closes it.
-    table.insert(surfaces, g.surface {
-        full = true,
-        anchor = { "top", "bottom", "left", "right" },
-        outputs = "all",
-        reserve = false,
-        -- A press anywhere on the screen, a membrane's strip included.
-        above_zones = true,
-        namespace = "bioma-input",
-        function(output: string, size: any)
-            return input_surface.node(output, size or { width = 1920, height = 1080 })
-        end,
-    })
+-- While a cell is open, a press on any other monitor closes it.
+table.insert(surfaces, g.surface {
+    full = true,
+    anchor = { "top", "bottom", "left", "right" },
+    outputs = "all",
+    reserve = false,
+    -- A press anywhere on the screen, a membrane's strip included.
+    above_zones = true,
+    namespace = "bioma-input",
+    function(output: string, size: any)
+        return input_surface.node(output, size or { width = 1920, height = 1080 })
+    end,
+})
 
-    -- Bioma's own selection rectangle, over everything, another shell's
-    -- surfaces included, while the capture service asks for a region.
-    table.insert(surfaces, g.surface {
-        full = true,
-        anchor = { "top", "bottom", "left", "right" },
-        outputs = "all",
-        reserve = false,
-        above_zones = true,
-        layer = "overlay",
-        namespace = "bioma-selection",
-        function(output: string, size: any)
-            return selection.node(output, size or { width = 1920, height = 1080 })
-        end,
-    })
-end
+-- Bioma's own selection rectangle, over everything, another shell's
+-- surfaces included, while the capture service asks for a region.
+table.insert(surfaces, g.surface {
+    full = true,
+    anchor = { "top", "bottom", "left", "right" },
+    outputs = "all",
+    reserve = false,
+    above_zones = true,
+    layer = "overlay",
+    namespace = "bioma-selection",
+    function(output: string, size: any)
+        return selection.node(output, size or { width = 1920, height = 1080 })
+    end,
+})
 
 -- Being asked for: `scripts/genoma ipc cell toggle <domain> [output]`. The
 -- output the keyboard is on is the one meant, unless the call names one. An
@@ -323,46 +303,43 @@ g.ipc("cell", {
     list = function(): string return table.concat(focus.domains(), "\n") end,
 })
 
--- The rest of what Quickshell's shell.qml answers (genoma/ipc.luau).
+-- The rest of the IPC targets (genoma/ipc.luau).
 require("ipc").register()
 
--- What Bioma on Quickshell does to the desktop, done here once the switch
--- is made (M6 step 7a; genoma/PORT.md, "Who acts on the desktop"): beside
--- Quickshell, it acts and these only choose.
-if runtime.alone() then
-    require("services/matugen").start()
-    require("services/palettes").start()
-    require("services/templates").start()
-    require("services/desktop_theme").start()
-    require("services/looks").start()
-    require("services/proxy").start()
-    require("services/locker").start()
-    require("services/session").start()
-    require("services/clipboard").start()
-    require("services/greeter_sync").start()
-    require("services/sounds").start()
-    require("services/power").start()
-    require("services/printers").start()
-    require("services/osd").start()
-    require("services/niri_settings").start()
-    require("services/upgrade").start()
-    -- The on-screen display, over everything and taking nothing.
-    local osd_surface = require("structure/osd")
-    table.insert(surfaces, g.surface {
-        full = true,
-        anchor = { "top", "bottom", "left", "right" },
-        outputs = "all",
-        reserve = false,
-        above_zones = true,
-        layer = "overlay",
-        namespace = "bioma-osd",
-        function(output: string, size: any)
-            return osd_surface.node(output, size or { width = 1920, height = 1080 })
-        end,
-    })
-end
+-- What Bioma does to the desktop (genoma/PORT.md, "Who acts on the
+-- desktop").
+require("services/matugen").start()
+require("services/palettes").start()
+require("services/templates").start()
+require("services/desktop_theme").start()
+require("services/looks").start()
+require("services/proxy").start()
+require("services/locker").start()
+require("services/session").start()
+require("services/clipboard").start()
+require("services/greeter_sync").start()
+require("services/sounds").start()
+require("services/power").start()
+require("services/printers").start()
+require("services/osd").start()
+require("services/niri_settings").start()
+require("services/upgrade").start()
+-- The on-screen display, over everything and taking nothing.
+local osd_surface = require("structure/osd")
+table.insert(surfaces, g.surface {
+    full = true,
+    anchor = { "top", "bottom", "left", "right" },
+    outputs = "all",
+    reserve = false,
+    above_zones = true,
+    layer = "overlay",
+    namespace = "bioma-osd",
+    function(output: string, size: any)
+        return osd_surface.node(output, size or { width = 1920, height = 1080 })
+    end,
+})
 
--- The walk-through, as Quickshell's `setup` target has it: opened on a
+-- The walk-through: opened on a
 -- screen, moved to a step, its state read.
 g.ipc("setup", {
     open = function(output: string?): string
@@ -393,7 +370,7 @@ g.ipc("setup", {
 })
 
 -- BIOMA_GENOMA_CHECK=<service>: that service's state as it changes, with
--- no interface (services/check.luau), the way each was verified on Quickshell.
+-- no interface (services/check.luau).
 local check = g.env("BIOMA_GENOMA_CHECK")
 if check and check ~= "1" and check ~= "write" then
     local checks = require("services/check")

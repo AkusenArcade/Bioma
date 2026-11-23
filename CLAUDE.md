@@ -2,7 +2,8 @@
 
 A Wayland desktop shell for **Niri**, running on **Genoma** (Rust + Luau,
 `~/Documents/Development/Genoma`) since 1.0.0-beta.61. The Quickshell (Qt/QML)
-version it was first written in is kept in `quickshell/` as a backup.
+version it was first written in is no longer in the tree: the tag
+`quickshell-final` is the last commit that carries it.
 
 **Bioma is not a bar.** It is a set of independent surfaces that appear when they
 have something to say and go quiet when nothing is happening. If a change makes
@@ -66,65 +67,21 @@ open beside it.
 - **Adding a new cell must cost one config block**, never a structural change.
 - **Grow by animating width and height, never `transform: scale`.** Scale
   deforms the lit border, distorts radii and blurs text.
-- **All durations come from the timing set** (`core/Timing.qml`). Never a
+- **All durations come from the timing set** (`genoma/core/timing.luau`). Never a
   literal duration in a cell.
-- **Colour is an animated singleton** (`core/Theme.qml`), never a value copied
+- **Colour is an animated singleton** (`genoma/core/theme.luau`), never a value copied
   into a cell — that is what lets the theme cell retint the desktop live.
 - **All dimensions are logical units**, never physical pixels. Round only
   critical dimensions (hairlines, 1.3 px threads) to the physical pixel.
-- **The geometry singleton is `core/Metrics.qml`, not `Scale`.** `QtQuick`
-  already exports a `Scale` type — the transform — and it shadows a singleton of
-  that name wherever `QtQuick` is imported, which is everywhere.
 - **Blur applies to cells only, never to the tissue background**, and via
   `ext-background-effect`, never compositor layer rules.
 - **One service singleton per domain.** Never a poller per cell.
-- **A layer drawn only to be sampled is hidden with `opacity: 0`, never
-  `visible: false`.** Qt asks for no frame when something changes inside an
-  invisible item, so a mask over a moving source shows it only when something
-  else redraws the window. A membrane redraws continuously and hides the
-  mistake; the organisms' surface does not, and the media band ran at the
-  progress bar's one frame a second.
-
-## Quickshell 0.3.1 — what this build actually gives us
-
-Verified against the installed build, not assumed.
-
-**Singletons and compositor-backed models initialise on their first property
-binding, not on first access.** Read `ToplevelManager.toplevels` from inside a
-function and it answers empty; bind it to a property and it fills. This is the
-single most expensive thing to learn the hard way here — every service is
-verified through `probe.qml`, which binds before it reads.
-
-**There is no `Quickshell.Niri` module.** Prisma was built against one; it does
-not exist in 0.3.1. `services/Niri.qml` reads niri's own IPC socket instead —
-one connection, one `"EventStream"` request, newline-delimited JSON for the life
-of the session. Nothing polls.
-
-Available and already relied on, so do not write these by hand:
-
-| Need | Use |
-|---|---|
-| Blur on a declared shape | `Quickshell.Wayland` → `BackgroundEffect.blurRegion` (niri 26.04 implements `ext_background_effect_v1`) |
-| Battery | `Quickshell.Services.UPower` — `UPower.displayDevice`, `isLaptopBattery` |
-| Bluetooth | `Quickshell.Bluetooth` — adapter, devices, states |
-| Wi-Fi **and ethernet** | `Quickshell.Networking` — `WifiDevice`, `WiredDevice` |
-| Windows / workspaces, compositor-agnostic | `ToplevelManager`, `WindowManager` — the fallback if Bioma ever leaves niri |
-| Keybind → invoked cell | `Quickshell.Io` → `IpcHandler` |
-| Writing config back | `FileView.setText` / `writeAdapter` — no shell process |
-| Colours from an image | `ColorQuantizer` |
-
-Two shapes come back from these APIs: most collections are an `ObjectModel`
-(read `.values`), but `WindowManager.windowsets` is a plain JS array. Check
-before iterating.
 
 ## Layout
 
 ```
-genoma/            Bioma on Genoma, the shell that ships (genoma/PORT.md)
-quickshell/        The Quickshell version, a backup: shell.qml, core/,
-                   structure/, components/, services/, cells/, organisms/,
-                   lock.qml, greeter.qml; assets, config, scripts, tools
-                   are symlinks to the shared ones
+genoma/            the shell, the lock and the greeter: core/, structure/,
+                   components/, services/, cells/, organisms/ (genoma/PORT.md)
 config/            default.json (base layer) + palettes/
 assets/            icons, fonts
 scripts/           start, lock, greeter, ipc, niri's include
@@ -134,16 +91,11 @@ docs/              PRD and design material
 ## Bioma on Genoma
 
 `genoma/` is Bioma written on Genoma, the Rust + Luau toolkit that replaced
-Quickshell (`~/Documents/Development/Genoma`, its `docs/m6-plan.md`). Since
-1.0.0-beta.61 it is the shell: `config/default.json` has a top-level
-`"runtime": "genoma"`, the package ships `genoma/` and depends on the
-`genoma` package at a precise version, and work happens here. The lock
-falls back to hyprlock (or swaylock), the greeter to agreety.
-
-`quickshell/` is the Quickshell version, frozen at the switch: not packaged,
-not developed. The scripts still start it from a checkout when an override
-sets `"runtime": "quickshell"`. The Quickshell notes above describe it, and
-remain the reference when a behaviour has to be compared with the original.
+Quickshell (`~/Documents/Development/Genoma`, its `docs/m6-plan.md`). The
+package ships `genoma/` and depends on the `genoma` package at a precise
+version. The lock falls back to hyprlock (or swaylock), the greeter to
+agreety. When a behaviour has to be compared with the Quickshell original,
+read it at the tag `quickshell-final`.
 
 ## Configuration
 
@@ -156,12 +108,12 @@ means redoing all loading.
 
 Prisma is the predecessor Quickshell shell, at `~/.config/quickshell/prisma`.
 It is **not under version control**, so this is copy-and-adapt, not merge, and
-its sources predate the current Quickshell release — expect API drift.
+it is QML: what it does is brought over, never its code.
 
 - **Work into this structure, never out of the old one.** Ask for a specific
   capability and bring it here; do not open Prisma and take what looks reusable,
   because the bar-centric architecture comes with it.
-- **Inventory before writing** (`services/INVENTORY.md`).
+- **Inventory before writing** (the Quickshell one is `quickshell/services/INVENTORY.md` at the tag `quickshell-final`).
 - **Port service by service and verify each without UI** before a cell depends
   on it.
 - **Do not port**: `bar/Bar.qml`, `bar/SysStats.qml`, `services/I18n.qml`.

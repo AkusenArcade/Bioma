@@ -11,7 +11,7 @@
 # they look the way they do is docs/design/ICON_THEME.md. Every theme listed
 # there becomes an icon theme under $XDG_DATA_HOME/icons/<id>: folders, places
 # and file types as scalable SVG in four size ranges, each drawn for its own. The colours are the
-# shell's own (services/Looks.qml takes them from core/Theme.qml): nothing here
+# shell's own (genoma/services/looks.luau takes them from core/theme.luau): nothing here
 # decides a colour.
 #
 # Bioma draws only what it has something to say about. Everything else —

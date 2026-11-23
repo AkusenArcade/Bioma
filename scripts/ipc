@@ -1,19 +1,11 @@
 #!/usr/bin/env bash
-# One way into the running Bioma, whichever runtime draws it.
+# One way into the running Bioma.
 #
 #     ipc <target> <function> [argument…]      e.g.  ipc cell toggle vitals
 #
-# The targets and functions are genoma/ipc.luau's, the same the Quickshell
-# version's shell.qml answers (quickshell/, the backup). Keybinds, `scripts/key` and the
-# settings' Keybinds page call this rather than `qs ipc call`, so a key keeps
-# working across the switch to Genoma (M6 step 7a). The configuration says
-# which runtime is the shell (`scripts/runtime`); Genoma answers on its
-# socket while it runs, and Quickshell otherwise.
+# The targets and functions are genoma/ipc.luau's. Keybinds, `scripts/key`
+# and the settings' Keybinds page call this, so a key does not depend on how
+# the runtime is reached.
 set -u
 here="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
-
-if [ -S "${XDG_RUNTIME_DIR:-/tmp}/genoma/${GENOMA_IPC:-bioma}.sock" ] \
-        || [ ! -f "$here/quickshell/shell.qml" ] || ! command -v qs >/dev/null 2>&1; then
-    exec "$here/scripts/genoma" ipc "$@"
-fi
-exec qs -p "$here/quickshell/shell.qml" ipc call "$@"
+exec "$here/scripts/genoma" ipc "$@"

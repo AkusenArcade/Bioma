@@ -13,8 +13,8 @@
 # they look the way they do is docs/design/CURSORS.md. Every theme listed there
 # becomes an XCursor theme under $XDG_DATA_HOME/icons/<id>, at every size the
 # drawings list, with the loader sweeping through wait and progress. The colours
-# are the shell's own (services/Looks.qml derives them from core/Theme.qml), and
-# so is the loader's timing (core/Timing.qml): nothing here decides a colour or
+# are the shell's own (genoma/services/looks.luau derives them from core/theme.luau), and
+# so is the loader's timing (core/timing.luau): nothing here decides a colour or
 # a duration. A loader of 0 ms — the animations switched off — leaves the
 # segment still at the left end. Nothing is rebuilt when neither the request
 # nor the drawings have changed.

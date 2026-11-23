@@ -10,7 +10,6 @@
 local g = require("@genoma")
 local config = require("core/config")
 local paths = require("core/paths")
-local runtime = require("core/runtime")
 local apps = require("core/apps")
 
 local M = {}
@@ -186,10 +185,6 @@ function M.describe(step: any): string
     return if kind then kind.describe(step) else "Unknown step \"" .. tostring(step and step.type or "") .. "\""
 end
 
-local function ask(...: string)
-    g.process { command = { paths.script("ipc"), "actions", ... } }
-end
-
 local function expand(path: string): string
     local home = g.env("HOME") or ""
     local out = string.gsub(path, "^~(/?)", home .. "%1")
@@ -356,10 +351,6 @@ end
 -- A macro asked for while another runs takes its place: the second press is
 -- the newer wish. True when there is one by that name.
 function M.run(name: string): boolean
-    if not g.untracked(runtime.alone) then
-        ask("run", name)
-        return true
-    end
     local macro = nil
     for _, m in g.untracked(M.macros) do if m.name == name then macro = m end end
     if not macro then return false end
@@ -377,7 +368,6 @@ end
 -- With nothing written yet, the ring's one capsule opens Settings on the
 -- page where macros are written.
 function M.write()
-    if not g.untracked(runtime.alone) then ask("write") return end
     require("cells/settings").open_on("actions")
     local niri = require("services/niri")
     local focused = g.untracked(niri.focused_output)

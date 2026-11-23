@@ -1,5 +1,12 @@
 # Bioma on Genoma
 
+> The port is finished. Genoma has been the only runtime since
+> 1.0.0-beta.61, and the Quickshell version left the tree after it: the tag
+> `quickshell-final` is the last commit that carries it, together with the
+> side-by-side machinery (`scripts/runtime`, `core/runtime.luau`, the
+> `"runtime"` keys) this record describes. What follows is the record of how
+> the port was done.
+
 This directory is Bioma written on **Genoma**, the Rust and Luau toolkit
 meant to replace Quickshell under it
 (`~/Documents/Development/Genoma`, its PRD and `docs/m6-plan.md`). The shell

@@ -6,7 +6,7 @@
     printf %s "$address" | calendar add
     calendar forget <id>
 
-`read` prints one JSON object on stdout for services/Calendar.qml:
+`read` prints one JSON object on stdout for genoma/services/calendar.luau:
 
     { "events":   [{ "uid", "calendar", "title", "location",
                      "start", "end", "allDay" }],
@@ -116,7 +116,7 @@ def download(url):
         return Path(url).expanduser().read_text(encoding="utf-8", errors="replace")
 
     # urllib honours http_proxy, https_proxy and no_proxy, which is how the
-    # shell hands over its proxy (services/Proxy.qml).
+    # shell hands over its proxy (genoma/services/proxy.luau).
     request = urllib.request.Request(url, headers={"User-Agent": "Bioma"})
     with urllib.request.urlopen(request, timeout=20) as response:
         text = response.read().decode("utf-8", errors="replace")

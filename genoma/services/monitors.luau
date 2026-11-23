@@ -15,7 +15,6 @@ local g = require("@genoma")
 local niri_config = require("services/niri_config")
 local kdl = require("services/niri_kdl")
 local paths = require("core/paths")
-local runtime = require("core/runtime")
 
 local M = {}
 
@@ -141,44 +140,11 @@ end
 
 -- ---- Writing ----------------------------------------------------------------
 --
--- Bioma on Genoma alone writes niri's output sections itself, through
--- `niri validate` (M6 step 7a); beside Quickshell it asks Quickshell, which
--- acts on them while the two run side by side.
+-- Bioma writes niri's output sections itself, through `niri validate`.
 
-local writing = g.signal(0)
-local said = g.signal("")
-function M.busy(): boolean
-    if runtime.alone() then return niri_config.busy() end
-    return writing.value > 0
-end
-function M.error(): string
-    if runtime.alone() then return niri_config.error() end
-    return said.value
-end
+function M.busy(): boolean return niri_config.busy() end
+function M.error(): string return niri_config.error() end
 
-local function ask(args: { string }, on_answer: ((string) -> ())?)
-    local command = { paths.script("ipc"), "monitors" }
-    for _, a in args do table.insert(command, a) end
-    local lines = {}
-    writing.value += 1
-    said.value = ""
-    g.process {
-        command = command,
-        on_line = function(line: string) table.insert(lines, line) end,
-        on_exit = function()
-            writing.value -= 1
-            if on_answer then on_answer(table.concat(lines, "\n")) end
-            -- niri's refusal comes once Quickshell has validated the file.
-            g.after(1.5, function()
-                g.process {
-                    command = { paths.script("ipc"), "monitors", "error" },
-                    on_line = function(line: string) if line ~= "" then said.value = line end end,
-                }
-            end)
-        end,
-    }
-end
-local function alone(): boolean return g.untracked(runtime.alone) end
 
 -- Every section of one output in one file, rewritten by `edit`, one at a
 -- time and scanned again after each: an edit moves every offset after it.
@@ -245,7 +211,6 @@ end
 -- Positions in logical units, `{ ["DP-1"] = { x = 0, y = 0 }, … }`. Only
 -- the outputs named are written.
 function M.place(positions: { [string]: { x: number, y: number } })
-    if not alone() then ask({ "place", g.to_json(positions) }) return end
     apply(function(text: string, output: any): string
         local wanted = positions[output.name]
         if not wanted or (wanted.x == output.x and wanted.y == output.y) then return text end
@@ -260,10 +225,6 @@ local switching = false
 function M.switching(): boolean return switching end
 function M.power(name: string, on: boolean): boolean
     if not on and g.untracked(M.count) <= 1 then return false end
-    if not alone() then
-        ask({ "power", name, if on then "true" else "false" }, function() M.refresh() end)
-        return true
-    end
     local output = M.output_of(name)
     if not output or output.on == on or switching then return true end
     switching = true
@@ -278,7 +239,6 @@ function M.power(name: string, on: boolean): boolean
 end
 
 function M.make_primary(name: string)
-    if not alone() then ask({ "primary", name }) return end
     apply(function(text: string, output: any): string
         local on = output.name == name
         if #output.sections == 0 then
@@ -292,7 +252,6 @@ end
 
 -- `off`, `on` or `demand`, for one output.
 function M.set_vrr(name: string, mode: string)
-    if not alone() then ask({ "vrr", name, mode }) return end
     apply(function(text: string, output: any): string
         if output.name ~= name or output.vrr == mode then return text end
         if #output.sections == 0 then
@@ -308,7 +267,6 @@ end
 -- `bioma-vrr.kdl`; switched off, the file says so and holds no rule.
 local games_writing = false
 function M.set_games(on: boolean)
-    if not alone() then ask({ "games", if on then "true" else "false" }) return end
     if on == g.untracked(M.games_rule) or games_writing then return end
     games_writing = true
     local body = if on

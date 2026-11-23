@@ -739,9 +739,9 @@ OCR.
   DICTATION closes the panel first, so that focus returns to the window the
   text is for, and then starts listening. Its icon is a new one, a
   microphone, drawn in `docs/design/icons/` like the rest.
-- **The keybind is the real entry point.** `qs ipc call capture dictate`
+- **The keybind is the real entry point.** `scripts/ipc capture dictate`
   toggles: the first press starts listening, the second stops and transcribes.
-  `qs ipc call capture cancel` drops the take, with nothing transcribed and
+  `scripts/ipc capture cancel` drops the take, with nothing transcribed and
   nothing typed. Push-to-talk (hold to speak) is not offered: niri binds act
   on press, and a release would have to be reconstructed.
 - **Listening.** The cell takes the recording's place: same width, same stop

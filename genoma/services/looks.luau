@@ -22,7 +22,6 @@ local colour = require("core/colour")
 local config = require("core/config")
 local metrics = require("core/metrics")
 local paths = require("core/paths")
-local runtime = require("core/runtime")
 local theme = require("core/theme")
 local timing = require("core/timing")
 
@@ -114,15 +113,6 @@ end
 
 -- ---- Setting --------------------------------------------------------------------
 
-local function ask(...: string)
-    local command = { paths.script("ipc"), "looks" }
-    for _, a in { ... } do table.insert(command, a) end
-    g.process {
-        command = command,
-        on_exit = function() g.after(0.3, M.refresh) end,
-    }
-end
-
 local function remember(values: { [string]: any })
     local next_chosen = table.clone(g.untracked(function() return chosen.value end))
     for k, v in values do next_chosen[k] = v end
@@ -181,10 +171,6 @@ end
 
 function M.set_icons(id: string)
     if id == "" or id == g.untracked(M.icon_theme) then return end
-    if not g.untracked(runtime.alone) then
-        ask("icons", id)
-        return
-    end
     -- Leaving a theme of somebody else's for one of Bioma's: what was on the
     -- desktop becomes what Bioma's sits on, so the applications look as
     -- they did.
@@ -202,10 +188,6 @@ function M.set_cursor(id: string, size: number)
     local theme_id = if id ~= "" then id else g.untracked(M.cursor_theme)
     local px = if size > 0 then size else g.untracked(M.cursor_size)
     if theme_id == g.untracked(M.cursor_theme) and px == g.untracked(M.cursor_size) then return end
-    if not g.untracked(runtime.alone) then
-        ask("cursor", theme_id, tostring(px))
-        return
-    end
     apply_cursor(theme_id, px)
 end
 
@@ -215,10 +197,6 @@ end
 function M.set_blur(strength: number)
     local steps = metrics.blur_steps
     local index = math.clamp(math.floor(strength + 0.5), 1, #steps)
-    if not g.untracked(runtime.alone) then
-        ask("blur", tostring(index))
-        return
-    end
     if index == g.untracked(metrics.blur_strength) then return end
     config.set("cell.blurStrength", index)
     local step = steps[index]

@@ -17,7 +17,6 @@
 -- nothing written about the user, while no rings organism holds it.
 local g = require("@genoma")
 local config = require("core/config")
-local runtime = require("core/runtime")
 
 local M = {}
 
@@ -29,14 +28,9 @@ function M.hold(on: boolean)
     holders.value = math.max(0, g.untracked(function() return holders.value end) + (if on then 1 else -1))
 end
 
--- Whether this shell counts: it holds the service and no rings organism of
--- Quickshell's would count too.
+-- Whether this shell counts: something holds the service.
 local function counting(): boolean
-    if holders.value <= 0 then return false end
-    for _, entry in config.get("organisms", {}) do
-        if type(entry) == "table" and entry.type == "rings" and not runtime.ours(entry) then return false end
-    end
-    return true
+    return holders.value > 0
 end
 
 -- Read from the load, not from inside the effect below: made there, it

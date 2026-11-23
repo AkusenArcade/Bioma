@@ -629,12 +629,9 @@ as the keybinds do: `scripts/ipc cell toggle vitals`.
 
 ## The Quickshell version
 
-Until 1.0.0-beta.61 Bioma ran on Quickshell. That version is kept in
-`quickshell/` as a backup: it is no longer packaged and no longer developed.
-From a checkout, with Quickshell 0.3.1 or later and `qt6-5compat` installed,
-a top-level `"runtime": "quickshell"` in `~/.config/bioma/override.json`
-followed by `scripts/shell restart` starts it again; `qs -p
-"$PWD/quickshell/probe.qml"` still verifies its services without a UI.
+Until 1.0.0-beta.61 Bioma ran on Quickshell. That version is no longer in
+the tree; the tag `quickshell-final` is the last commit that carries it
+(`git checkout quickshell-final -- quickshell`).
 
 ## Two shells, one session
 
@@ -702,7 +699,6 @@ genoma/            the shell on Genoma: shell.luau the entry point,
   services/        one per system domain
   cells/           one file per cell, and its panels
   organisms/       one file per organism
-quickshell/        the Quickshell version, kept as a backup (not packaged)
 config/            default.json, palettes/, niri/ (the keys and layer rules)
 scripts/           the installer, the shell switch, the lock, and helpers
 assets/            the 84 glyphs, the sounds, wallpapers, cursor and

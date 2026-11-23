@@ -22,7 +22,7 @@ import time
 from PIL import Image, ImageChops
 
 HERE = os.path.dirname(os.path.realpath(__file__))
-SHELL = os.path.join(os.path.dirname(HERE), "shell.qml")
+IPC = os.path.join(os.path.dirname(HERE), "scripts", "ipc")
 
 SETTLE = 1.4      # seconds after asking: the cascade, and the content's fade
 BLOCK = 12        # the grid the change is read on, in pixels
@@ -30,7 +30,7 @@ PAD = 36          # room around the crop, so a shadow is not cut
 
 
 def ipc(*args):
-    subprocess.run(["qs", "ipc", "-p", SHELL, "call", *args], check=True, capture_output=True)
+    subprocess.run([IPC, *args], check=True, capture_output=True)
 
 
 def grab(output, path):

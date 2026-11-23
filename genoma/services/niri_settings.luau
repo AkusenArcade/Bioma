@@ -12,7 +12,6 @@
 local g = require("@genoma")
 local config = require("core/config")
 local paths = require("core/paths")
-local runtime = require("core/runtime")
 local timing = require("core/timing")
 local niri_config = require("services/niri_config")
 local kdl = require("services/niri_kdl")
@@ -223,44 +222,12 @@ end
 
 -- ---- Writing ------------------------------------------------------------------
 
-local writing = g.signal(0)
-local said = g.signal("")
-function M.busy(): boolean
-    if runtime.alone() then return niri_config.busy() end
-    return writing.value > 0
-end
-function M.error(): string
-    if runtime.alone() then return niri_config.error() end
-    return said.value
-end
+function M.busy(): boolean return niri_config.busy() end
+function M.error(): string return niri_config.error() end
 
--- Beside Quickshell: asked of it.
-local function ask(args: { string }, after: (() -> ())?)
-    local command = { paths.script("ipc"), "niri" }
-    for _, a in args do table.insert(command, a) end
-    writing.value += 1
-    said.value = ""
-    g.process {
-        command = command,
-        on_exit = function()
-            writing.value -= 1
-            if after then after() end
-            -- niri's refusal comes once Quickshell has validated the file.
-            g.after(1.5, function()
-                g.process {
-                    command = { paths.script("ipc"), "niri", "error" },
-                    on_line = function(line: string) if line ~= "" then said.value = line end end,
-                }
-            end)
-        end,
-    }
-end
-local function quick_figure(v: number): string return tostring(math.round(v * 1000) / 1000) end
 
--- Alone: written here. One change at a time, each computed against the text
--- as it is read now; a press made while niri is still checking the last one
--- is dropped.
-local function alone(): boolean return g.untracked(runtime.alone) end
+-- One change at a time, each computed against the text as it is read now; a
+-- press made while niri is still checking the last one is dropped.
 local function busy_now(): boolean return g.untracked(niri_config.busy) end
 
 -- The item as the files say it now: one no longer there was read from a
@@ -396,22 +363,10 @@ local writers: { [string]: (number) -> () } = {}
 -- another: each write is computed against the file as it is read, and two
 -- in the same file at once would have the second undo the first.
 local resting: any = nil
-local function slide(key: string, call: string?, value: number)
+local function slide(key: string, value: number)
     local next = table.clone(g.untracked(function() return pending.value end))
     next[key] = value
     pending.value = next
-    if not alone() and call then
-        ask({ call, quick_figure(value) }, function()
-            g.after(1, function()
-                local now = table.clone(g.untracked(function() return pending.value end))
-                if now[key] == value then
-                    now[key] = nil
-                    pending.value = now
-                end
-            end)
-        end)
-        return
-    end
     if resting then resting:stop() end
     local function rest()
         resting = g.after(timing.seconds.blur_settle, function()
@@ -449,8 +404,8 @@ local function slide(key: string, call: string?, value: number)
 end
 writers.gaps = write_gaps
 writers.focus_ring = write_focus_ring
-function M.set_gaps(value: number) slide("gaps", "gaps", math.round(value)) end
-function M.set_focus_ring(value: number) slide("focus_ring", "focusRing", math.round(value)) end
+function M.set_gaps(value: number) slide("gaps", math.round(value)) end
+function M.set_focus_ring(value: number) slide("focus_ring", math.round(value)) end
 
 -- A new child of the last block for a device in the person's files, or a
 -- block of its own in their input section when there is none.
@@ -551,7 +506,6 @@ local function set_flag(section_name: string, flag: string, on: boolean, device:
 end
 
 function M.set_follows_mouse(on: boolean)
-    if not alone() then ask({ "followsMouse", tostring(on) }) return end
     if busy_now() or on == g.untracked(M.follows_mouse) then return end
     set_flag("input", "focus-follows-mouse", on)
 end
@@ -618,7 +572,7 @@ function M.set_device_value(device: string, name: string, value: number)
     if not writers[key] then
         writers[key] = function(v: number) write_device(device, name, name .. " " .. kdl.figure(v)) end
     end
-    slide(key, nil, value)
+    slide(key, value)
 end
 
 -- ---- Workspaces -------------------------------------------------------------------
@@ -643,7 +597,6 @@ local function free_workspace(): string
 end
 
 function M.add_workspace()
-    if not alone() then ask({ "addWorkspace" }) return end
     if busy_now() then return end
     local list = g.untracked(M.workspaces)
     local last = list[#list]
@@ -653,7 +606,6 @@ end
 -- The new name everywhere the old one is used: the rules that open windows
 -- on it and the binds that go to it.
 function M.rename_workspace(ws: any, name: string)
-    if not alone() then ask({ "renameWorkspace", M.id(ws), name }) return end
     local wanted = string.match(name, "^%s*(.-)%s*$") or ""
     if busy_now() or wanted == ws.name then return end
     ws = current(ws)
@@ -681,7 +633,6 @@ function M.rename_workspace(ws: any, name: string)
 end
 
 function M.set_workspace_output(ws: any, output: string)
-    if not alone() then ask({ "workspaceOutput", M.id(ws), output }) return end
     if busy_now() or output == ws.output then return end
     ws = current(ws)
     if not ws then return end
@@ -699,7 +650,6 @@ end
 -- A workspace changes places with its neighbour, only one in the same file:
 -- across files the order is the order of the includes.
 function M.move_workspace(ws: any, delta: number)
-    if not alone() then ask({ "moveWorkspace", M.id(ws), tostring(delta) }) return end
     if busy_now() then return end
     ws = current(ws)
     if not ws then return end
@@ -716,7 +666,6 @@ function M.move_workspace(ws: any, delta: number)
 end
 
 function M.remove_workspace(ws: any)
-    if not alone() then ask({ "removeWorkspace", M.id(ws) }) return end
     if busy_now() then return end
     ws = current(ws)
     if ws then edits(ws.file, { kdl.removing(niri_config.text_of(ws.file) or "", ws) }) end
@@ -726,14 +675,6 @@ end
 
 -- `command` is the words of a command, or one line for the shell.
 function M.add_startup(command: { string } | string, sh: boolean)
-    if not alone() then
-        if sh then
-            ask({ "addStartup", tostring(command), "true" })
-        else
-            ask({ "addStartup", g.to_json(g.array(table.clone(command :: { string }))), "false" })
-        end
-        return
-    end
     if busy_now() then return end
     local entry
     if sh then
@@ -748,7 +689,6 @@ function M.add_startup(command: { string } | string, sh: boolean)
 end
 
 function M.set_startup_on(item: any, on: boolean)
-    if not alone() then ask({ "startupOn", M.id(item), tostring(on) }) return end
     if busy_now() or on == item.on then return end
     item = current(item)
     if not item then return end
@@ -757,7 +697,6 @@ function M.set_startup_on(item: any, on: boolean)
 end
 
 function M.remove_startup(item: any)
-    if not alone() then ask({ "removeStartup", M.id(item) }) return end
     if busy_now() then return end
     item = current(item)
     if item then edits(item.file, { kdl.removing(niri_config.text_of(item.file) or "", item) }) end
@@ -782,20 +721,16 @@ local function set_rule(rule: any, name: string, entry: string?)
 end
 
 function M.set_rule_opacity(rule: any, value: number?)
-    if not alone() then ask({ "ruleOpacity", M.id(rule), quick_figure(value or -1) }) return end
     set_rule(rule, "opacity", if value == nil then nil else "opacity " .. kdl.figure(value))
 end
 function M.set_rule_width(rule: any, fraction: number?)
-    if not alone() then ask({ "ruleWidth", M.id(rule), quick_figure(fraction or -1) }) return end
     set_rule(rule, "default-column-width",
         if fraction == nil then nil else "default-column-width { proportion " .. kdl.figure(fraction) .. "; }")
 end
 function M.set_rule_workspace(rule: any, name: string?)
-    if not alone() then ask({ "ruleWorkspace", M.id(rule), name or "" }) return end
     set_rule(rule, "open-on-workspace", if name == nil or name == "" then nil else "open-on-workspace " .. kdl.quote(name))
 end
 function M.remove_rule(rule: any)
-    if not alone() then ask({ "removeRule", M.id(rule) }) return end
     if busy_now() or not M.removable(rule) then return end
     rule = current(rule)
     if rule then edits(rule.file, { kdl.removing(niri_config.text_of(rule.file) or "", rule) }) end
@@ -805,7 +740,6 @@ end
 -- is not also `zen-beta`; beside the other rules for an application, since
 -- the last rule of all can be a file's catch-all, included after them.
 function M.add_rule(app_id: string)
-    if not alone() then ask({ "addRule", app_id }) return end
     if busy_now() or app_id == "" then return end
     local pattern = "^" .. string.gsub(app_id, "[%.%*%+%?%^%$%{%}%(%)|%[%]\\]", "\\%0") .. "$"
     place("rule", kdl.rule_block(pattern), true, g.untracked(M.rules))

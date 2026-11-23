@@ -133,7 +133,7 @@ enable() {
     fi
 
     # The copy first, so the next boot already greets with it. The shell keeps
-    # it current from then on (services/GreeterSync.qml).
+    # it current from then on (genoma/services/greeter_sync.luau).
     install -d -m 2750 -o "$user" -g greeter "$greeter_dir"
     runuser -u "$user" -- env -i HOME="$home" USER="$user" LOGNAME="$user" \
         PATH=/usr/local/bin:/usr/bin "$here/scripts/greeter-sync" "$greeter_dir" \

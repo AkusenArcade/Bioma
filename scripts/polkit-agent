@@ -5,7 +5,7 @@
     polkit-agent takeover   stop it where it is started, then stop it
 
 polkit allows one agent per session, and whichever registers first keeps it,
-so Bioma's own (services/Polkit.qml) can only ask once the other is gone — and
+so Bioma's own (genoma/services/polkit.luau) can only ask once the other is gone — and
 gone at the next login too, or the two race again. An agent is usually started
 in one of three places, and each is undone the way its owner would undo it:
 

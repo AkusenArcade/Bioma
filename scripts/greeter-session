@@ -24,11 +24,9 @@ if [ ! -f "$live/niri.kdl" ]; then
     live="${BIOMA_GREETER_DIR:-/var/lib/bioma-greeter}/live"
 fi
 
-# A copy runs Genoma's greeter (bin/genoma) or, from a checkout that still
-# has the Quickshell version, greeter.qml.
+# A copy runs Bioma's greeter on the runtime it carries (bin/genoma).
 runnable() {
-    [ -x "$live/bin/genoma" ] && return 0
-    [ -f "$live/shell/greeter.qml" ] && command -v qs >/dev/null 2>&1
+    [ -x "$live/bin/genoma" ]
 }
 
 if [ ! -f "$live/niri.kdl" ] || ! command -v niri >/dev/null 2>&1 || ! runnable; then

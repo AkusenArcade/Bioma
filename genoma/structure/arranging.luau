@@ -100,7 +100,7 @@ function M.add(kind: string, monitor: string, quietly: boolean)
         then g.untracked(function() return working.value end)
         else config.get("organisms", {})
     local next = named(config.copy_list(list))
-    table.insert(next, { id = new_id(), type = kind, monitor = monitor, x = 0.5, y = 0.5, runtime = "genoma" })
+    table.insert(next, { id = new_id(), type = kind, monitor = monitor, x = 0.5, y = 0.5 })
     if g.untracked(function() return active.value end) then
         working.value = next
         return

@@ -9,18 +9,10 @@
 -- wants it. Where they are is never set here by figures: it is set by
 -- hand, on the desktop itself. The weather's city is here too, because it
 -- belongs to the weather and not to one organism.
---
--- A new organism is Genoma's to draw (`"runtime": "genoma"`), and Genoma
--- arranges, takes away and chooses a file for its own. One still drawn by
--- Quickshell is handed to Quickshell (`qs ipc call organisms …`), and so is
--- the arranging while no organism is Genoma's (genoma/PORT.md, "Who acts on
--- the desktop").
 local g = require("@genoma")
 local colour = require("core/colour")
 local config = require("core/config")
 local metrics_mod = require("core/metrics")
-local paths = require("core/paths")
-local runtime = require("core/runtime")
 local theme = require("core/theme")
 local typography = require("core/typography")
 local page = require("components/page")
@@ -52,12 +44,6 @@ local function name_of(kind: string): string
         if k[1] == kind then return k[2] end
     end
     return kind
-end
-
-local function quickshell(args: { string }, on_line: ((string) -> ())?)
-    local command = { paths.script("ipc"), "organisms" }
-    for _, a in args do table.insert(command, a) end
-    g.process { command = command, on_line = on_line }
 end
 
 -- Every block written from here carries an `id`, so a surface can tell one
@@ -119,16 +105,9 @@ function M.new(t: { [string]: any }): any
     end
 
     -- Placing is done on the desktop, so the settings step out of the way.
-    local function genoma(index: number): boolean return runtime.ours(g.untracked(organisms)[index]) end
     local function arrange()
         focus.dismiss()
-        for _, e in g.untracked(organisms) do
-            if runtime.ours(e) then
-                arranging.start()
-                return
-            end
-        end
-        quickshell({ "arrange" })
+        arranging.start()
     end
     local function add(kind: string, screen: string)
         picking.value = ""
@@ -144,12 +123,7 @@ function M.new(t: { [string]: any }): any
     end
     local function remove(index: number)
         if g.untracked(function() return chosen.value end) == index then chosen.value = -1 end
-        if genoma(index) then
-            arranging.remove(index)
-            return
-        end
-        -- Quickshell counts from 0.
-        quickshell({ "remove", tostring(index - 1) })
+        arranging.remove(index)
     end
 
     -- ---- The fields: a note's file, the weather's city ----------------------------
@@ -556,11 +530,11 @@ function M.new(t: { [string]: any }): any
                     -- way, and come back to show what was chosen.
                     local o = g.untracked(open)
                     local c = focus.open_cell()
-                    if genoma(o) and c then
+                    if c then
                         focus.aside(c, function(done) arranging.choose_file(o, done) end)
                     else
                         focus.dismiss()
-                        if genoma(o) then arranging.choose_file(o) else quickshell({ "chooseFile", tostring(o - 1) }) end
+                        arranging.choose_file(o)
                     end
                 end)),
                 g.box {

@@ -13,7 +13,7 @@
 # is nothing to subscribe to but the device nodes themselves: inotify reports
 # every open and close of them, and only then are the holders looked up in
 # /proc. Nothing polls. Opens that only ask a device what it can do come and
-# go within a moment; the shell waits before believing one (Privacy.qml).
+# go within a moment; the shell waits before believing one (genoma/services/privacy.luau).
 
 import ctypes
 import glob

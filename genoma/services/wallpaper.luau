@@ -14,7 +14,6 @@
 local g = require("@genoma")
 local config = require("core/config")
 local paths = require("core/paths")
-local runtime = require("core/runtime")
 
 local M = {}
 
@@ -331,12 +330,12 @@ function M.thumbnail(path: string): string
     if path == "" or not config.get("wallpaper.thumbnails", true) then return path end
     local name = fingerprint(path) .. ".jpg"
     if cached.value[name] then return M.cache_folder .. "/" .. name end
-    if runtime.alone() then g.after(0, function() request(path) end) end
+    g.after(0, function() request(path) end)
     return path
 end
 
 -- The empty ones go at the start, asked for or not: nothing asks for a
 -- thumbnail that seems to be there.
-if runtime.alone() then g.after(0, prepare) end
+g.after(0, prepare)
 
 return M

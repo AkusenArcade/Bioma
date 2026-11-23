@@ -81,15 +81,6 @@ names and leaves the rest of the section where the user set it.
 
 ## Keys
 
-### `runtime`
-
-What draws Bioma: `"genoma"`, the default, runs the shell, the lock screen
-and the greeter on [Genoma](https://github.com/AkusenArcade/Genoma), the
-`genoma` package. The Quickshell version that came before it is kept in the
-repository's `quickshell/` folder as a backup and is not packaged; from a
-checkout with Quickshell installed, a top-level `"runtime": "quickshell"` in
-the override starts it again.
-
 ### `appearance`
 
 | Key | Meaning |

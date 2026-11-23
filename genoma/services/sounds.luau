@@ -15,7 +15,6 @@
 local g = require("@genoma")
 local config = require("core/config")
 local paths = require("core/paths")
-local runtime = require("core/runtime")
 local theme = require("core/theme")
 
 local M = {}
@@ -35,10 +34,6 @@ local function file(path: string)
 end
 
 function M.play(name: string)
-    if not g.untracked(runtime.alone) then
-        g.process { command = { paths.script("ipc"), "sounds", "play", name } }
-        return
-    end
     if g.untracked(volume) <= 0 then return end
     -- The same sound twice inside a breath is one sound.
     if since(name) < 0.06 then return end
@@ -52,7 +47,7 @@ end
 local closing: any = nil
 local CLOSE_WAIT = 0.09
 function M.cell(open: boolean)
-    if not g.untracked(runtime.alone) or not g.untracked(function() return enabled("cells") end) then return end
+    if not g.untracked(function() return enabled("cells") end) then return end
     if open then
         if closing then closing:stop() end
         closing = nil
@@ -91,7 +86,6 @@ local function named(name: string)
 end
 
 function M.notification(n: any)
-    if not g.untracked(runtime.alone) then return end
     if not g.untracked(function() return enabled("notifications") end) or g.untracked(volume) <= 0 then return end
     if type(n) ~= "table" or n.suppress_sound == true then return end
     local path = string.gsub(tostring(n.sound_file or ""), "^file://", "")

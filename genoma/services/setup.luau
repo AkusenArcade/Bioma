@@ -16,13 +16,10 @@
 -- `polkit-agent report`, `greeter-setup status` and `setup-scan list`,
 -- asked when it opens and again after each action. What it does to the
 -- machine (niri's configuration, the login screen, another shell stopped,
--- a service enabled, the polkit agent handed over) is Bioma on Quickshell's
--- to do while the two run side by side (`qs ipc call setup …`, genoma/
--- PORT.md, "Who acts on the desktop"), and asked of it.
+-- a service enabled, the polkit agent handed over) it does itself.
 local g = require("@genoma")
 local config = require("core/config")
 local paths = require("core/paths")
-local runtime = require("core/runtime")
 local presets = require("core/presets")
 local timing = require("core/timing")
 local monitors = require("services/monitors")
@@ -195,45 +192,8 @@ function M.enabling(unit: string): boolean return table.find(progress.value.enab
 function M.enable_error(unit: string): string return (progress.value.enableErrors or {})[unit] or "" end
 
 local refresh: () -> ()
-local function quickshell(args: { string }, on_line: ((string) -> ())?, on_exit: (() -> ())?)
-    local command = { paths.script("ipc"), "setup" }
-    for _, a in args do table.insert(command, a) end
-    g.process { command = command, on_line = on_line, on_exit = on_exit }
-end
+-- ---- Acting (Setup.qml at 8ed8892) -------------------------------------------
 
--- Asked again while something is under way: the action is Quickshell's
--- script, and only it knows when it has finished. Nothing is asked once
--- nothing is.
-local watching = false
-local function busy(p: { [string]: any }): boolean
-    return p.niriBusy == true or p.loginBusy == true or p.handingOver == true
-        or #(p.stopping or {}) > 0 or #(p.enabling or {}) > 0
-end
-local function follow()
-    if watching then return end
-    watching = true
-    local function ask()
-        local text = ""
-        quickshell({ "progress" }, function(line: string) text ..= line end, function()
-            local ok, p = pcall(g.parse_json, text)
-            if ok and type(p) == "table" then progress.value = p end
-            if ok and type(p) == "table" and busy(p) then
-                g.after(0.5, ask)
-            else
-                watching = false
-                refresh()
-            end
-        end)
-    end
-    g.after(0.3, ask)
-end
-local function act(args: { string })
-    quickshell(args, nil, follow)
-end
-
--- ---- Acting itself, once the switch is made (Setup.qml at 8ed8892) -----------
-
-local function alone(): boolean return g.untracked(runtime.alone) end
 -- One field of the progress at a time; tables copied, as a signal holds them.
 local function mark(key: string, value: any)
     local next = table.clone(g.untracked(function() return progress.value end))
@@ -269,7 +229,6 @@ local function last_line(lines: { string }, otherwise: string): string
 end
 
 function M.set_up_niri(autostart: boolean)
-    if not alone() then act({ "niri", tostring(autostart) }) return end
     if g.untracked(M.niri_busy) then return end
     mark("niriError", "")
     mark("niriBusy", true)
@@ -292,7 +251,6 @@ end
 
 function M.set_greeter(enable: boolean)
     if enable == g.untracked(function() return bioma_greeter.value end) then return end
-    if not alone() then act({ "greeter", tostring(enable) }) return end
     if g.untracked(M.login_busy) then return end
     mark("loginError", "")
     mark("loginBusy", true)
@@ -312,7 +270,6 @@ function M.set_greeter(enable: boolean)
 end
 
 function M.stop(conflict: any)
-    if not alone() then act({ "stop", conflict.pid, conflict.name, conflict.from }) return end
     if g.untracked(function() return M.stopping(conflict.pid) end) then return end
     mark_in("stopping", conflict.pid, true)
     if conflict.what == "notifications" then mark("restartAtEnd", true) end
@@ -324,7 +281,6 @@ function M.stop(conflict: any)
 end
 
 function M.enable_service(unit: string)
-    if not alone() then act({ "enable", unit }) return end
     if g.untracked(function() return M.enabling(unit) end) then return end
     mark_in("enabling", unit, true)
     run({ "pkexec", "systemctl", "enable", "--now", unit }, function(code: number)
@@ -336,7 +292,6 @@ function M.enable_service(unit: string)
 end
 
 function M.use_bioma_agent()
-    if not alone() then act({ "takeover" }) return end
     if g.untracked(M.handing_over) then return end
     mark("handingOver", true)
     mark("handOverError", "")

@@ -16,7 +16,6 @@ local colour = require("core/colour")
 local config = require("core/config")
 local metrics = require("core/metrics")
 local paths = require("core/paths")
-local runtime = require("core/runtime")
 local theme = require("core/theme")
 local timing = require("core/timing")
 
@@ -51,10 +50,6 @@ function M.failures(): { [string]: string } return failures.value end
 
 function M.set_on(id: string, on: boolean)
     if on == g.untracked(function() return M.is_on(id) end) then return end
-    if not g.untracked(runtime.alone) then
-        g.process { command = { paths.script("ipc"), "looks", "template", id, if on then "true" else "false" } }
-        return
-    end
     local list = table.clone(g.untracked(M.enabled))
     if on then
         table.insert(forced, id)

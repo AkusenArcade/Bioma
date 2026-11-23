@@ -14,7 +14,6 @@
 local g = require("@genoma")
 local config = require("core/config")
 local paths = require("core/paths")
-local runtime = require("core/runtime")
 local timing = require("core/timing")
 
 local M = {}
@@ -164,7 +163,7 @@ end
 
 local started = false
 function M.start()
-    if started or not runtime.alone() then return end
+    if started then return end
     started = true
     -- What an earlier session kept, then this one's; a first run makes the
     -- directory private before anything is in it.
