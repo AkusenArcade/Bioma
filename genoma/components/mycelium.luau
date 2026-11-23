@@ -124,11 +124,15 @@ end
 
 -- Whether the windows on this screen's workspace cover nearly all of it:
 -- columns across nine tenths of its width, each filling most of its
--- height. Then nothing of the mycelium would be seen.
+-- height. Then nothing of the mycelium would be seen. Where the layout has
+-- no columns (Hyprland), the tiles' own rectangles: four fifths of the
+-- screen's area under them, which two windows side by side reach once the
+-- gaps and a membrane's strip are taken off (tiled windows do not overlap).
 local function covered(output: string, size: { width: number, height: number }): boolean
     local ws = compositor.active_workspace_for_output(output)
     if not ws then return false end
     local columns: { [number]: { w: number, h: number } } = {}
+    local area, placed = 0, false
     for _, w in compositor.windows_on_workspace(ws.id) do
         local l = compositor.layout_for(w.id)
         if l and l.column and type(l.tile_size) == "table" then
@@ -136,8 +140,15 @@ local function covered(output: string, size: { width: number, height: number }):
             c.w = math.max(c.w, l.tile_size[1])
             c.h += l.tile_size[2]
             columns[l.column] = c
+        elseif l and l.position_in_view and not w.is_floating then
+            local x0, y0 = math.max(0, l.position_in_view[1]), math.max(0, l.position_in_view[2])
+            local x1 = math.min(size.width, l.position_in_view[1] + l.tile_size[1])
+            local y1 = math.min(size.height, l.position_in_view[2] + l.tile_size[2])
+            if x1 > x0 and y1 > y0 then area += (x1 - x0) * (y1 - y0) end
+            placed = true
         end
     end
+    if next(columns) == nil and placed then return area >= size.width * size.height * 0.8 end
     local across, any = 0, false
     for _, c in columns do
         if c.h < size.height * 0.8 then return false end

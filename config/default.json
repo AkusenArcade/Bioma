@@ -139,7 +139,7 @@
     "suspend": ["systemctl", "suspend"],
     "restart": ["systemctl", "reboot"],
     "shutdown": ["systemctl", "poweroff"],
-    "logout": ["niri", "msg", "action", "quit", "-s"]
+    "logout": "compositor"
   },
 
   "lock": {

@@ -156,10 +156,12 @@ table.insert(surfaces, g.surface {
     end,
 })
 -- The wallpaper, and its blurred copy behind niri's overview. Below
--- everything, one of each per monitor, over every zone.
+-- everything, one of each per monitor, over every zone. The copy only on
+-- niri, whose rule places it in the overview's backdrop: elsewhere it would
+-- be one more background surface, over the wallpaper.
 local wallpaper_surface = require("structure/wallpaper")
-local wallpapers = 0
-for _, backdrop in { false, true } do
+local backdrops = if require("services/compositor").name() == "niri" then { false, true } else { false }
+for _, backdrop in backdrops do
     local blurred = backdrop
     table.insert(surfaces, g.surface {
         full = true,
@@ -175,7 +177,6 @@ for _, backdrop in { false, true } do
             return wallpaper_surface.node(output, size or { width = 1920, height = 1080 }, blurred)
         end,
     })
-    wallpapers += 1
 end
 -- The organisms, on the Bottom layer: above the wallpaper, under every
 -- window (structure/organisms.luau).

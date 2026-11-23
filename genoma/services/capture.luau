@@ -36,8 +36,9 @@ local last_path = g.signal("")
 local last_text = g.signal("")
 local last_error = g.signal("")
 local selecting = g.signal(false)
--- What is being chosen while selecting: "region", a rectangle drawn; or
--- "screen", a whole monitor picked by a click.
+-- What is being chosen while selecting: "region", a rectangle drawn;
+-- "screen", a whole monitor picked by a click; or "point", one spot whose
+-- colour is read (the colour picker, where niri's is not there).
 local choosing = g.signal("region")
 local recording = g.signal(false)
 local pending_video = g.signal("")
@@ -296,6 +297,15 @@ function M.select_screen(after_close: boolean?)
     if after_close then settle_then(begin) else begin() end
 end
 
+-- One spot on the live screen, for its colour: nothing is frozen or
+-- veiled, so what is read is what was under the pointer.
+function M.select_point(after_close: boolean?)
+    last_error.value = ""
+    choosing.value = "point"
+    local function begin() selecting.value = true end
+    if after_close then settle_then(begin) else begin() end
+end
+
 function M.screen_chosen(output: string)
     M.region_chosen(M.output_region(output))
 end
@@ -402,7 +412,32 @@ end
 -- dispatched, not when the image is there, and a clipboard manager puts
 -- the old selection straight back after a clear: so it waits for the
 -- contents to change, by checksum, up to two seconds.
+--
+-- Elsewhere the compositor says where a window is (Hyprland, Umbriel), and
+-- its tile on the screen is taken like any area: what is in front of it
+-- comes too, as it would in a region drawn round it.
+local function window_area(id: string?): { x: number, y: number, w: number, h: number }?
+    local windows = require("services/compositor")
+    windows.refresh()
+    local w = if id and id ~= "" then windows.windows()[id] else windows.focused_window()
+    if not w then return nil end
+    local layout = windows.layout_for(w.id)
+    local screen = monitors.output_of(w.output)
+    if not layout or not layout.position_in_view or not screen or screen.x == nil then return nil end
+    return { x = screen.x + layout.position_in_view[1], y = screen.y + layout.position_in_view[2],
+        w = layout.tile_size[1], h = layout.tile_size[2] }
+end
+
 function M.capture_window(id: string?)
+    if require("services/compositor").name() ~= "niri" then
+        local area = g.untracked(function() return window_area(id) end)
+        if not area then
+            fail("window capture: the compositor does not say where the window is")
+            return
+        end
+        shoot({ area = area }, still_path())
+        return
+    end
     last_error.value = ""
     busy.value = true
     local target = still_path()
@@ -535,10 +570,34 @@ local function hex_of(rgb: { number }): string
     return out
 end
 
--- `{"rgb":[r,g,b]}` with each channel 0–1, or `null` for a pick cancelled.
+local function colour_read(hex: string?)
+    if not hex then
+        fail("colour picker could not read the screen")
+        return
+    end
+    if M.pick_kept then M.copy_colour(hex) else emit("picked", hex) end
+end
+
+-- A spot chosen on `output`, at x, y on its surface: its colour is read
+-- once the selection has left the screen.
+function M.point_chosen(output: string, x: number, y: number)
+    selecting.value = false
+    local o = monitors.output_of(output)
+    local gx, gy = (if o then o.x else 0) + x, (if o then o.y else 0) + y
+    settle_then(function()
+        capture:colour(math.floor(gx), math.floor(gy), function(hex: string?, _why: string?) colour_read(hex) end)
+    end)
+end
+
+-- niri's own picker: `{"rgb":[r,g,b]}` with each channel 0–1, or `null`
+-- for a pick cancelled. Elsewhere, a spot chosen on Bioma's selection.
 function M.pick_colour(kept: boolean?)
     last_error.value = ""
     M.pick_kept = kept ~= false
+    if require("services/compositor").name() ~= "niri" then
+        M.select_point(true)
+        return
+    end
     settle_then(function()
         local said = {}
         g.process {

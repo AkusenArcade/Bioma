@@ -1,0 +1,62 @@
+-- Bioma — the keys that ask for a cell, for Hyprland (bioma-binds.kdl.in is
+-- niri's, with the same keys).
+--
+-- The compositor holds the keys and the shell holds the cells, and the whole
+-- of the connection is one IPC call: `scripts/ipc cell toggle <domain>` asks
+-- the register for a cell of that domain and toggles it. Ask the running
+-- shell which domains it knows:
+--
+--     /path/to/Bioma/scripts/ipc cell list
+--
+-- **This is a template.** It is written out as `bioma-binds.lua` beside
+-- Hyprland's `hyprland.lua`, with `@BIOMA@` replaced by where Bioma actually
+-- is, and required from it. The written copy is yours: one bind a line, so
+-- the settings cell's Keybinds page can edit it in place.
+--
+-- **The prefix is Super+Alt**, as on niri: the plain Super keys are the
+-- compositor's own.
+
+-- A key Bioma binds is Bioma's: whatever hyprland.lua bound to it before is
+-- taken off first (Hyprland would run both), as niri lets the file included
+-- last win.
+local function bind(keys, command, options)
+    pcall(hl.unbind, keys)
+    hl.bind(keys, hl.dsp.exec_cmd(command), options)
+end
+
+local IPC = "'@BIOMA@/scripts/ipc'"
+local KEY = "'@BIOMA@/scripts/key'"
+local BIOMA = "'@BIOMA@/scripts/"
+
+bind("SUPER + ALT + V", IPC .. " cell toggle vitals", { description = "Bioma: vitals" })
+bind("SUPER + ALT + P", IPC .. " cell toggle utility", { description = "Bioma: capture" })
+bind("SUPER + ALT + K", IPC .. " cell toggle keyboard", { description = "Bioma: keyboard" })
+bind("SUPER + SHIFT + space", "hyprctl switchxkblayout all next", { description = "Next keyboard layout" })
+bind("SUPER + ALT + T", IPC .. " cell toggle theme", { description = "Bioma: theme" })
+bind("SUPER + ALT + A", IPC .. " cell toggle audio", { description = "Bioma: audio" })
+bind("SUPER + ALT + S", IPC .. " cell toggle settings", { description = "Bioma: settings" })
+bind("SUPER + ALT + Escape", IPC .. " cell toggle system", { description = "Bioma: system" })
+bind("XF86AudioRaiseVolume", KEY .. " volume-up", { locked = true, repeating = true, description = "Volume up" })
+bind("XF86AudioLowerVolume", KEY .. " volume-down", { locked = true, repeating = true, description = "Volume down" })
+bind("XF86AudioMute", KEY .. " mute", { locked = true, description = "Mute" })
+bind("XF86AudioMicMute", KEY .. " mic-mute", { locked = true, description = "Microphone mute" })
+bind("XF86MonBrightnessUp", KEY .. " brightness-up", { locked = true, repeating = true, description = "Brightness up" })
+bind("XF86MonBrightnessDown", KEY .. " brightness-down", { locked = true, repeating = true, description = "Brightness down" })
+bind("XF86AudioPlay", KEY .. " media-toggle", { description = "Media: play or pause" })
+bind("XF86AudioNext", KEY .. " media-next", { description = "Media: next" })
+bind("XF86AudioPrev", KEY .. " media-previous", { description = "Media: previous" })
+bind("XF86AudioStop", KEY .. " media-stop", { description = "Media: stop" })
+bind("Print", IPC .. " capture region", { description = "Bioma: screenshot of a region" })
+bind("SUPER + Print", IPC .. " capture screen", { description = "Bioma: screenshot of the screen" })
+bind("ALT + Print", IPC .. " capture window", { description = "Bioma: screenshot of the window" })
+bind("SUPER + ALT + C", IPC .. " capture colour", { description = "Bioma: pick a colour" })
+bind("SHIFT + Print", IPC .. " capture stop", { description = "Bioma: stop recording" })
+bind("SUPER + ALT + D", IPC .. " capture dictate", { description = "Bioma: dictation" })
+bind("SUPER + space", IPC .. " cell toggle launcher", { description = "Bioma: launcher" })
+bind("SUPER + ALT + space", IPC .. " cell toggle actions", { description = "Bioma: quick actions" })
+bind("SUPER + ALT + mouse:274", IPC .. " actions ring", { description = "Bioma: quick actions" })
+bind("SUPER + ALT + period", IPC .. " cell toggle emoji", { description = "Bioma: emoji" })
+bind("SUPER + ALT + G", IPC .. " performance toggle", { description = "Bioma: performance mode" })
+bind("SUPER + ALT + F", IPC .. " focus toggle", { description = "Bioma: focus mode" })
+bind("SUPER + ALT + L", BIOMA .. "lock'", { description = "Bioma: lock" })
+bind("SUPER + ALT + B", BIOMA .. "shell' toggle", { description = "Bioma: switch shell" })

@@ -349,6 +349,17 @@ function M.new(cell: any): { [string]: any }
         local room = panel_height() - (panel_padding() + 4 * f()) * 2
         return math.min(24 * f(), room / math.max(1, #machine.rows()))
     end
+    -- The labels' column: as wide as the widest label, and never narrower
+    -- than it was drawn (the compositor's name is the one that varies:
+    -- NIRI, HYPRLAND, UMBRIEL).
+    local function label_width(): number
+        local widest = 0
+        for _, r in machine.rows() do
+            widest = math.max(widest, g.text_width { text = r.label, font = typography.technical(), size = m().font_meta,
+                tracking = typography.label_tracking })
+        end
+        return math.max(70 * f(), widest + 12 * f())
+    end
     local function facts(): any
         return g.each {
             direction = "column",
@@ -360,7 +371,7 @@ function M.new(cell: any): { [string]: any }
                     direction = "row",
                     align = "center",
                     height = fact_height,
-                    g.box { width = function() return 70 * f() end,
+                    g.box { width = label_width,
                         technical(function() return r().label end, { color = theme.text_faint }) },
                     g.box {
                         present = function() return r().human end,
@@ -369,13 +380,13 @@ function M.new(cell: any): { [string]: any }
                             color = theme.text,
                             font = typography.expressive,
                             size = function() return m().font_secondary end,
-                            max_width = function() return info_width() - 28 * f() - 70 * f() end,
+                            max_width = function() return info_width() - 28 * f() - label_width() end,
                         },
                     },
                     g.box {
                         present = function() return not r().human end,
                         technical(function() return r().value end, { tabular = true,
-                            max_width = function() return info_width() - 28 * f() - 70 * f() end }),
+                            max_width = function() return info_width() - 28 * f() - label_width() end }),
                     },
                 }
             end,

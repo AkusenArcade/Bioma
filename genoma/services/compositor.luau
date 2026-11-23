@@ -137,6 +137,10 @@ function M.layout_for(id: string): any
     }
 end
 
+-- The state asked again now: Hyprland moves and resizes windows without
+-- saying so, so a window's place read for an action is asked for first.
+function M.refresh() pcall(function() c:refresh() end) end
+
 function M.overview_open(): boolean return c.overview end
 function M.keyboard_layout(): string return c.keyboard.name or "" end
 
@@ -161,12 +165,12 @@ end)
 --
 -- Windows do not begin at the edge of a reserved strip: the compositor
 -- insets them by its gaps and by any struts, and an expansion hangs from
--- the line where they actually start. None says it over IPC, so this reads
--- the configuration: niri's own files, every `layout` section in the order
+-- the line where they actually start. Hyprland says its outer gaps over
+-- IPC (`compositor.gaps`, one per edge): the smallest is the gap, and what
+-- an edge has beyond it stands as that edge's strut. niri says nothing, so
+-- for niri this reads its own files, every `layout` section in the order
 -- niri reads them, a value written later winning (Niri.qml read the main
--- file alone, and missed a `gaps` in an included `layout.kdl`). Hyprland's
--- and Umbriel's come with their configuration (plan steps 5b, 5c); until
--- then their windows are taken to start at the strip.
+-- file alone, and missed a `gaps` in an included `layout.kdl`).
 
 local niri_config = require("services/niri_config")
 
@@ -196,6 +200,13 @@ end
 
 local figures = g.computed(function(): { [string]: any }
     local out = { gap = 0, struts = { top = 0, bottom = 0, left = 0, right = 0 } }
+    -- pcall: a Genoma older than the one that says gaps has no such field.
+    local ok, said = pcall(function() return c.gaps end)
+    if ok and said then
+        out.gap = math.min(said.top, said.right, said.bottom, said.left)
+        for _, side in { "top", "bottom", "left", "right" } do out.struts[side] = said[side] - out.gap end
+        return out
+    end
     if c.name ~= "niri" then return out end
     for _, file in niri_config.texts() do
         -- Comments first: a commented-out `gaps 0` is not a value.

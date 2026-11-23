@@ -11,7 +11,14 @@
 -- configuration changes, and with every load, which a change of screens
 -- brings), and the configuration says what was asked for: the `output`
 -- sections, and which one is focused at startup.
+--
+-- Elsewhere (Hyprland, Umbriel) where each output is comes from
+-- wlr-output-management (@genoma/displays), followed as it changes; no
+-- niri sections are read there, and writing the layout is the settings'
+-- work for that compositor (plan step 5d).
 local g = require("@genoma")
+local compositor = require("@genoma/compositor")
+local displays = require("@genoma/displays")
 local niri_config = require("services/niri_config")
 local kdl = require("services/niri_kdl")
 local paths = require("core/paths")
@@ -25,8 +32,11 @@ local dark = g.signal({})
 -- Whether niri has answered, or given up on after a while.
 local answered = g.signal(false)
 
+-- niri's `output` sections; none on another compositor, whose settings
+-- are not niri's even when niri's files are there too.
 local function sections(): { any }
     local out = {}
+    if compositor.name ~= "niri" then return out end
     for _, item in niri_config.items() do
         if item.kind == "output" then table.insert(out, item) end
     end
@@ -367,8 +377,71 @@ local function refresh()
     }
 end
 
-M.refresh = refresh
-refresh()
+-- The logical size of a display: its mode turned by its transform, over
+-- its scale.
+local function logical(d: any): (number, number)
+    local w, h = d.mode.width, d.mode.height
+    local t = d.transform or "normal"
+    if string.find(t, "90") or string.find(t, "270") then w, h = h, w end
+    local scale = if (d.scale or 0) > 0 then d.scale else 1
+    return w / scale, h / scale
+end
+
+local function from_displays()
+    local on, off = {}, {}
+    local heads = displays.heads
+    table.sort(heads, function(a, b) return a.name < b.name end)
+    for _, d in heads do
+        local preferred = nil
+        for _, m in d.modes or {} do
+            if m.preferred then preferred = m end
+        end
+        preferred = preferred or (d.modes or {})[1]
+        if d.enabled and d.mode then
+            local w, h = logical(d)
+            table.insert(on, {
+                name = d.name,
+                description = d.description,
+                x = d.x,
+                y = d.y,
+                width = w,
+                height = h,
+                scale = d.scale,
+                mode_width = d.mode.width,
+                mode_height = d.mode.height,
+                refresh = d.mode.refresh,
+                vrr_supported = d.adaptive_sync ~= nil,
+            })
+        elseif preferred then
+            table.insert(off, {
+                name = d.name,
+                description = d.description,
+                mode_width = preferred.width,
+                mode_height = preferred.height,
+                refresh = preferred.refresh,
+                vrr_supported = d.adaptive_sync ~= nil,
+            })
+        end
+    end
+    dark.value = off
+    live.value = on
+    answered.value = true
+end
+
+local on_niri = compositor.name == "niri"
+if on_niri then
+    M.refresh = refresh
+    refresh()
+else
+    M.refresh = function() end
+    g.lasting(function()
+        g.effect(function()
+            if not displays.available then return end
+            local _ = displays.heads
+            g.untracked(from_displays)
+        end)
+    end)
+end
 
 -- Not niri, or niri not answering: the first screen, after a while.
 g.after(2, function() answered.value = true end)
@@ -377,6 +450,7 @@ g.after(2, function() answered.value = true end)
 -- changes; ask once it has.
 local settle: any = nil
 g.watch(function() return niri_config.items() end, function()
+    if not on_niri then return end
     if settle then settle:stop() end
     settle = g.after(0.4, refresh)
 end)

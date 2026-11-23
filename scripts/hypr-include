@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# Write one of Bioma's own Hyprland files and make sure Hyprland reads it:
+# scripts/niri-include's twin.
+#
+#     hypr-include NAME < body.lua
+#
+# The body goes to $hypr_dir/bioma-NAME.lua, but only after Hyprland has
+# accepted it on its own (`Hyprland --verify-config`) and only if it differs
+# from what is there. Then `require("bioma-NAME")` is appended to
+# hyprland.lua, once, last: what Bioma sets there overrides the same setting
+# made earlier and leaves the rest alone. Hyprland reloads by itself when a
+# file it read changes; a running one is asked to reload too, for whoever
+# turned that off (`misc.disable_autoreload`).
+#
+# Hyprland reads only hyprland.lua since 0.57. Without one, Hyprland writes
+# its own default at its next start; appending to nothing would make a
+# configuration of Bioma's lines alone, so that is refused.
+#
+# Prints nothing on success; Hyprland's reason on stderr and exit 1 when
+# refused.
+set -euo pipefail
+
+name="${1:?usage: hypr-include NAME < body.lua}"
+dir="${XDG_CONFIG_HOME:-$HOME/.config}/hypr"
+config="$dir/hyprland.lua"
+file="$dir/bioma-$name.lua"
+line="require(\"bioma-$name\")"
+
+if [ ! -f "$config" ]; then
+    echo "Hyprland has no hyprland.lua yet: start Hyprland once, then try again" >&2
+    exit 1
+fi
+
+body="$(cat)"
+
+check="$(mktemp "${TMPDIR:-/tmp}/bioma-hypr-include.XXXXXX.lua")"
+trap 'rm -f "$check"' EXIT
+printf '%s\n' "$body" >"$check"
+if ! said="$(env -u HYPRLAND_INSTANCE_SIGNATURE Hyprland --verify-config -c "$check" 2>&1)"; then
+    printf '%s\n' "$said" | grep -m1 -E 'error|attempt|expected|unexpected' | sed -E "s#^.*$(basename "$check"):##" >&2
+    exit 1
+fi
+
+if [ ! -f "$file" ] || [ "$(cat "$file")" != "$body" ]; then
+    printf '%s\n' "$body" >"$file.tmp.$$"
+    mv "$file.tmp.$$" "$file"
+fi
+
+target="$(readlink -f "$config")"
+if ! grep -qE "^[[:space:]]*require[[:space:]]*\(?[[:space:]]*[\"']bioma-$name[\"']" "$target"; then
+    printf '\n%s\n' "$line" >>"$target"
+fi
+
+if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && command -v hyprctl >/dev/null 2>&1; then
+    hyprctl reload >/dev/null 2>&1 || true
+fi

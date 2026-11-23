@@ -4,6 +4,16 @@
 -- once, the first time someone looks; the uptime again each minute while
 -- the system cell is open.
 local g = require("@genoma")
+local compositor = require("@genoma/compositor")
+
+-- The compositor that runs, as the row names it, and its program: whose
+-- `--version` says "<name> <version> …".
+local COMPOSITORS: { [string]: { label: string, program: string } } = {
+    niri = { label = "NIRI", program = "niri" },
+    hyprland = { label = "HYPRLAND", program = "Hyprland" },
+    umbriel = { label = "UMBRIEL", program = "umbriel" },
+}
+local running = COMPOSITORS[compositor.name]
 
 local M = {}
 
@@ -62,14 +72,15 @@ function M.ask()
             .. "grep -m1 '^model name' /proc/cpuinfo; grep -c '^processor' /proc/cpuinfo; "
             .. "grep -m1 '^MemTotal' /proc/meminfo; echo --; "
             .. "lspci -mm 2>/dev/null | grep -Ei '\"(VGA compatible controller|3D controller|Display controller)\"'; echo --; "
-            .. "df -h --output=used,size / | tail -1; echo --; niri --version 2>/dev/null" },
+            .. "df -h --output=used,size / | tail -1; echo --; "
+            .. (if running then running.program .. " --version 2>/dev/null | head -1" else "true") },
         on_line = function(line: string) table.insert(lines, line) end,
         on_exit = function()
             local parts: { { string } } = { {} }
             for _, l in lines do
                 if l == "--" then table.insert(parts, {}) else table.insert(parts[#parts], l) end
             end
-            local base, cpu, gpu, disk, niri = parts[1] or {}, parts[2] or {}, parts[3] or {}, parts[4] or {}, parts[5] or {}
+            local base, cpu, gpu, disk, wm = parts[1] or {}, parts[2] or {}, parts[3] or {}, parts[4] or {}, parts[5] or {}
             local out: { [string]: any } = { host = base[1] or "", kernel = base[2] or "", os = base[3] or "Linux" }
             local model = first(cpu[1], "^model name%s*:%s*(.*)$")
             if model then
@@ -93,7 +104,7 @@ function M.ask()
             end
             local used, size = string.match(disk[1] or "", "^%s*(%S+)%s+(%S+)%s*$")
             out.disk = if used then used .. " of " .. size else ""
-            out.niri = first(niri[1], "niri%s+(%S+)") or ""
+            out.compositor = first(wm[1], "^%S+%s+(%S+)") or ""
             facts.value = out
         end,
     }
@@ -127,7 +138,7 @@ function M.rows(): { any }
         { label = "HOST", value = f.host, human = true },
         { label = "SYSTEM", value = f.os, human = true },
         { label = "KERNEL", value = f.kernel, human = false },
-        { label = "NIRI", value = f.niri, human = false },
+        { label = if running then running.label else "COMPOSITOR", value = f.compositor, human = false },
         { label = "CPU", value = f.cpu, human = true },
     }
     for _, gpu in f.gpus or {} do table.insert(out, { label = "GPU", value = gpu, human = true }) end

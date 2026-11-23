@@ -8,6 +8,7 @@
 -- choice, and runs.
 local g = require("@genoma")
 local idle = require("@genoma/idle")
+local compositor = require("@genoma/compositor")
 local config = require("core/config")
 
 local M = {}
@@ -75,12 +76,22 @@ local commands = {
     suspend = function() return config.get("session.suspend", { "systemctl", "suspend" }) end,
     restart = function() return config.get("session.restart", { "systemctl", "reboot" }) end,
     shutdown = function() return config.get("session.shutdown", { "systemctl", "poweroff" }) end,
-    logout = function() return config.get("session.logout", { "niri", "msg", "action", "quit", "-s" }) end,
+    -- "compositor": whichever runs is asked to quit (niri, Hyprland,
+    -- Umbriel), the default; a list is a command of the person's own.
+    logout = function() return config.get("session.logout", "compositor") end,
 }
+
+local function quits(): boolean
+    local ok, can = pcall(function() return compositor.name ~= "wayland" and compositor.quit ~= nil end)
+    return ok and can == true
+end
 
 function M.available(action: string): boolean
     local c = commands[action]
-    return c ~= nil and #c() > 0
+    if not c then return false end
+    local command = c()
+    if command == "compositor" then return quits() end
+    return type(command) == "table" and #command > 0
 end
 
 -- The three that end the session ask first; lock and suspend leave it
@@ -98,7 +109,12 @@ function M.run(action: string)
     local c = commands[action]
     local command = if c then g.untracked(c) else {}
     pending.value = ""
-    if #command == 0 then
+    if command == "compositor" then
+        local ok, problem = pcall(function() compositor:quit() end)
+        if not ok then print('Bioma: session action "' .. action .. '": ' .. tostring(problem)) end
+        return
+    end
+    if type(command) ~= "table" or #command == 0 then
         print('Bioma: session action "' .. action .. '" has no command configured')
         return
     end
@@ -125,7 +141,6 @@ function M.cancel() pending.value = "" end
 --
 -- Through the compositor, whichever it is (niri, Hyprland, Umbriel); the
 -- standard protocols have no way, and a Genoma older than 0.1.22 no call.
-local compositor = require("@genoma/compositor")
 function M.can_blank(): boolean
     local ok, can = pcall(function() return compositor.can_power_monitors end)
     return ok and can == true

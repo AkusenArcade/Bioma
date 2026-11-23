@@ -47,6 +47,8 @@ function M.node(output: string, size: { width: number, height: number }): any
     -- Choosing a whole screen instead of drawing: the one under the pointer
     -- lights whole, a press picks it.
     local function picking(): boolean return capture.choosing() == "screen" end
+    -- A spot, for its colour: no veil, a press is the choice.
+    local function pointing(): boolean return capture.choosing() == "point" end
     local hovered = g.signal(false)
     local function screen_lit(): boolean return picking() and hovered.value end
 
@@ -78,6 +80,7 @@ function M.node(output: string, size: { width: number, height: number }): any
 
     local veil_values = g.computed(function(): { number }
         local c = colour.parse(colour.alpha(theme.background(), 0.45))
+        if pointing() then return { 0, 0, 0, 0, 0, c.r, c.g, c.b, 0 } end
         if picking() then
             if hovered.value then return { 0, 0, size.width, size.height, 0, c.r, c.g, c.b, c.a } end
             return { 0, 0, 0, 0, 0, c.r, c.g, c.b, c.a }
@@ -122,6 +125,10 @@ function M.node(output: string, size: { width: number, height: number }): any
                 if button ~= LEFT then return end
                 if g.untracked(picking) then
                     capture.screen_chosen(output)
+                    return
+                end
+                if g.untracked(pointing) then
+                    capture.point_chosen(output, x, y)
                     return
                 end
                 anchor.value = { x = x, y = y }
