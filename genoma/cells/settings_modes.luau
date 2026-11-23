@@ -19,7 +19,7 @@ local performance = require("core/performance")
 local focus_mode = require("core/focus_mode")
 local page = require("components/page")
 local switch = require("components/switch")
-local niri = require("services/niri")
+local compositor = require("services/compositor")
 local workload = require("services/workload")
 
 local M = {}
@@ -61,7 +61,7 @@ function M.new(t: { [string]: any }): any
         return g.icon_path(name) or ""
     end
     local function is_open(pattern: string): boolean
-        for _, w in niri.windows() do
+        for _, w in compositor.windows() do
             if workload.matches(pattern, w.app_id or "") then return true end
         end
         return false
@@ -94,7 +94,7 @@ function M.new(t: { [string]: any }): any
         local seen: { [string]: boolean } = {}
         for _, q in patterns() do seen[string.lower(q)] = true end
         local out = {}
-        for _, w in niri.windows() do
+        for _, w in compositor.windows() do
             local id = w.app_id or ""
             if id ~= "" and not seen[string.lower(id)] then
                 local entry = apps.entry_for(id)

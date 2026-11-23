@@ -20,7 +20,7 @@ local metrics_mod = require("core/metrics")
 local theme = require("core/theme")
 local typography = require("core/typography")
 local apps = require("core/apps")
-local niri = require("services/niri")
+local compositor = require("services/compositor")
 local proxy = require("services/proxy")
 local focus = require("structure/focus")
 
@@ -60,8 +60,14 @@ return {
         local running = g.computed(function(): { any }
             local out, seen = {}, {}
             local list = {}
-            for _, w in niri.windows() do table.insert(list, w) end
-            table.sort(list, function(a, b) return a.id < b.id end)
+            for _, w in compositor.windows() do table.insert(list, w) end
+            -- In the order they opened: niri's ids are numbers counted up,
+            -- held as strings; elsewhere the order is only stable.
+            table.sort(list, function(a, b)
+                local x, y = tonumber(a.id), tonumber(b.id)
+                if x and y then return x < y end
+                return a.id < b.id
+            end)
             for _, w in list do
                 if w.app_id ~= "" then
                     if seen[w.app_id] then
@@ -95,8 +101,8 @@ return {
         local function launcher_divided(): boolean return with_launcher() and app_count() > 0 end
 
         local function desktop_showing(): boolean
-            local ws = niri.active_workspace_for_output(cell.output)
-            return ws ~= nil and #niri.windows_on_workspace(ws.id) == 0
+            local ws = compositor.active_workspace_for_output(cell.output)
+            return ws ~= nil and #compositor.windows_on_workspace(ws.id) == 0
         end
 
         -- ---- What a press does ------------------------------------------------------------
@@ -132,7 +138,7 @@ return {
             end
             local nxt = ((rounds[app_id] or 0) % #windows) + 1
             rounds[app_id] = nxt
-            niri.focus_window(windows[nxt].id)
+            compositor.focus_window(windows[nxt].id)
         end
         local function keep(app_id: string)
             local entry = apps.entry_for(app_id)

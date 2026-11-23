@@ -7,40 +7,48 @@ local g = require("@genoma")
 
 local M = {}
 
-function M.niri()
-    local niri = require("services/niri")
+function M.compositor()
+    local compositor = require("services/compositor")
+    print("check compositor " .. compositor.name())
     g.effect(function()
         local parts = {}
-        for _, ws in niri.workspace_list() do
-            table.insert(parts, string.format("%s:%d%s%s%s", ws.output, ws.idx, if ws.is_active then "*" else "",
-                if ws.is_focused then "F" else "", if ws.active_window_id ~= -1 then "w" else ""))
+        for _, ws in compositor.workspace_list() do
+            table.insert(parts, string.format("%s:%d%s%s%s%s", ws.output, ws.idx, if ws.is_active then "*" else "",
+                if ws.is_focused then "F" else "", if ws.active_window_id ~= "" then "w" else "", if ws.is_urgent then "!" else ""))
         end
-        print("check niri workspaces " .. table.concat(parts, " ") .. " focused output " .. niri.focused_output())
+        print("check compositor workspaces " .. table.concat(parts, " ") .. " focused output " .. compositor.focused_output())
+    end)
+    g.effect(function()
+        local count, urgent = 0, 0
+        for _, w in compositor.windows() do
+            count += 1
+            if w.is_urgent then urgent += 1 end
+        end
+        local w = compositor.focused_window()
+        print(string.format("check compositor focused %q (%s) pid %s floating %s, %d windows, %d urgent", compositor.focused_title(),
+            compositor.focused_app_id(), if w then tostring(w.pid) else "-", if w then tostring(w.is_floating) else "-", count, urgent))
+    end)
+    g.effect(function()
+        print(string.format("check compositor gaps %s struts %s/%s/%s/%s, overview %s, layout %q",
+            tostring(compositor.window_gap()), tostring(compositor.strut_for("top")), tostring(compositor.strut_for("bottom")),
+            tostring(compositor.strut_for("left")), tostring(compositor.strut_for("right")), tostring(compositor.overview_open()),
+            compositor.keyboard_layout()))
     end)
     g.effect(function()
         local count = 0
-        for _ in niri.windows() do count += 1 end
-        print(string.format("check niri focused %q (%s), %d windows", niri.focused_title(), niri.focused_app_id(), count))
+        for _ in compositor.casts() do count += 1 end
+        print("check compositor casts " .. count)
     end)
     g.effect(function()
-        print(string.format("check niri gaps %s struts %s/%s/%s/%s, overview %s, layout %q",
-            tostring(niri.window_gap()), tostring(niri.strut_for("top")), tostring(niri.strut_for("bottom")),
-            tostring(niri.strut_for("left")), tostring(niri.strut_for("right")), tostring(niri.overview_open()),
-            niri.keyboard_layout()))
-    end)
-    g.effect(function()
-        local count = 0
-        for _ in niri.casts() do count += 1 end
-        print("check niri casts " .. count)
-    end)
-    g.effect(function()
-        local w = niri.focused_window()
-        local layout = if w then niri.layout_for(w.id) else nil
-        if layout and layout.size then
-            print(string.format("check niri focused size %sx%s", tostring(layout.size[1]), tostring(layout.size[2])))
+        local w = compositor.focused_window()
+        local layout = if w then compositor.layout_for(w.id) else nil
+        if layout then
+            local at = layout.position_in_view
+            print(string.format("check compositor focused tile %sx%s at %s, column %s row %s", tostring(layout.tile_size[1]),
+                tostring(layout.tile_size[2]), if at then at[1] .. "," .. at[2] else "-", tostring(layout.column), tostring(layout.row)))
         end
     end)
-    niri.on_screenshot(function(path: string) print("check niri screenshot " .. path) end)
+    compositor.on_screenshot(function(path: string) print("check compositor screenshot " .. path) end)
 end
 
 function M.monitors()

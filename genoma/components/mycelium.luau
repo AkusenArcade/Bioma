@@ -27,7 +27,7 @@ local theme = require("core/theme")
 local performance = require("core/performance")
 local focus_mode = require("core/focus_mode")
 local paths = require("core/paths")
-local niri = require("services/niri")
+local compositor = require("services/compositor")
 
 local M = {}
 
@@ -126,11 +126,11 @@ end
 -- columns across nine tenths of its width, each filling most of its
 -- height. Then nothing of the mycelium would be seen.
 local function covered(output: string, size: { width: number, height: number }): boolean
-    local ws = niri.active_workspace_for_output(output)
+    local ws = compositor.active_workspace_for_output(output)
     if not ws then return false end
     local columns: { [number]: { w: number, h: number } } = {}
-    for _, w in niri.windows_on_workspace(ws.id) do
-        local l = niri.layout_for(w.id)
+    for _, w in compositor.windows_on_workspace(ws.id) do
+        local l = compositor.layout_for(w.id)
         if l and l.column and type(l.tile_size) == "table" then
             local c = columns[l.column] or { w = 0, h = 0 }
             c.w = math.max(c.w, l.tile_size[1])

@@ -24,7 +24,7 @@ local focus_mode = require("core/focus_mode")
 local theme = require("core/theme")
 local timing = require("core/timing")
 local monitors = require("services/monitors")
-local niri = require("services/niri")
+local compositor = require("services/compositor")
 local arranging = require("structure/arranging")
 local depth = require("structure/depth")
 local focus = require("structure/focus")
@@ -162,7 +162,7 @@ local function window_line(output: string, side: string): number
         for _, block in config.get("membranes", {}) do
             if claims(block, output) and block.edge == side then
                 local s = metrics_mod.step(block.scale or "normal")
-                return s.margin_edge + s.cell_height + s.tissue_padding * 2 + niri.window_gap() + niri.strut_for(side)
+                return s.margin_edge + s.cell_height + s.tissue_padding * 2 + compositor.window_gap() + compositor.strut_for(side)
             end
         end
         return base.margin_edge
@@ -171,7 +171,7 @@ local function window_line(output: string, side: string): number
     for _, block in config.get("membranes", {}) do
         if claims(block, output) and block.edge == side then s = metrics_mod.step(block.scale or "normal") end
     end
-    return s.margin_edge + s.cell_height + s.tissue_padding * 2 + niri.window_gap() + niri.strut_for(side)
+    return s.margin_edge + s.cell_height + s.tissue_padding * 2 + compositor.window_gap() + compositor.strut_for(side)
 end
 
 M.divisions = { 1, 2, 4, 8 }

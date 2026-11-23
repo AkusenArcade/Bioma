@@ -369,8 +369,8 @@ end
 -- page where macros are written.
 function M.write()
     require("cells/settings").open_on("actions")
-    local niri = require("services/niri")
-    local focused = g.untracked(niri.focused_output)
+    local compositor = require("services/compositor")
+    local focused = g.untracked(compositor.focused_output)
     require("structure/focus").invoke("settings", if focused ~= "" then focused else nil)
 end
 

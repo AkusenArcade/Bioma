@@ -21,7 +21,7 @@
 -- leaves back to it.
 local g = require("@genoma")
 local lock = require("@genoma/lock")
-local niri = require("@genoma/niri")
+local compositor = require("@genoma/compositor")
 local monitors = require("services/monitors")
 local paths = require("core/paths")
 local timing = require("core/timing")
@@ -146,12 +146,12 @@ local leaving = g.state("lock.leaving", false)
 -- The screen that holds the field: the primary monitor, as Bioma's
 -- settings make it (niri's `focus-at-startup`), the same screen as the
 -- greeter's (Akusen, 2026-11-03); the focused output while there is none.
--- Whichever lock surface niri gives the keys to, they reach the field: they
+-- Whichever lock surface the compositor gives the keys to, they reach the field: they
 -- go to the surface that catches.
 local function active(): string
     local primary = monitors.primary()
     if primary ~= "" then return primary end
-    return niri.focused_output or ""
+    return compositor.focused_output or ""
 end
 
 local function submit()

@@ -24,7 +24,7 @@ local choice_mod = require("components/choice")
 local field_mod = require("components/field")
 local niri_settings = require("services/niri_settings")
 local monitors = require("services/monitors")
-local niri = require("services/niri")
+local compositor = require("services/compositor")
 
 local M = {}
 
@@ -300,7 +300,7 @@ function M.new(t: { [string]: any }): any
             return false
         end
         local seen, out = {}, {}
-        for _, w in niri.windows() do
+        for _, w in compositor.windows() do
             local id = w.app_id or ""
             if id ~= "" and not seen[string.lower(id)] then
                 local entry = apps.entry_for(id)

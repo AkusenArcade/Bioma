@@ -24,7 +24,7 @@ local config = require("core/config")
 local typography = require("core/typography")
 local capture = require("services/capture")
 local dictation = require("services/dictation")
-local niri = require("services/niri")
+local compositor = require("services/compositor")
 local choice = require("components/choice")
 local sweep = require("components/sweep")
 local expansion = require("cells/utility_expansion")
@@ -56,7 +56,7 @@ return {
         -- palette editor asked for: that one is answered where it was asked.
         capture.on("captured", function() cell.pulse() end)
         capture.on("picked", function() if capture.pick_kept then cell.pulse() end end)
-        niri.on_screenshot(function() cell.pulse() end)
+        compositor.on_screenshot(function() cell.pulse() end)
 
         -- ---- What it does -------------------------------------------------------
 
@@ -105,8 +105,8 @@ return {
                 -- Closing gives the focus back to the window the text is for.
                 dictation.start()
             elseif place == "window" then
-                local window = g.untracked(niri.focused_window)
-                capture.capture_window(if window then window.id else 0)
+                local window = g.untracked(compositor.focused_window)
+                capture.capture_window(if window then window.id else nil)
             elseif w == "video" then
                 capture.record_output(cell.output)
             elseif w == "text" then

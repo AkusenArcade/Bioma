@@ -32,9 +32,9 @@ local quiet: any = nil
 
 function M.say(what: string)
     if not settled then return end
-    local niri = require("services/niri")
+    local compositor = require("services/compositor")
     local focus = require("structure/focus")
-    local where = g.untracked(niri.focused_output)
+    local where = g.untracked(compositor.focused_output)
     if where == "" then return end
     local domain = SPEAKERS[what]
     if domain and focus.declared(domain, where) then return end

@@ -11,7 +11,7 @@ local g = require("@genoma")
 local config = require("core/config")
 local metrics_mod = require("core/metrics")
 local tissue_mod = require("structure/tissue")
-local niri = require("services/niri")
+local compositor = require("services/compositor")
 local timing = require("core/timing")
 local theme = require("core/theme")
 local colour = require("core/colour")
@@ -60,7 +60,7 @@ function M.new(block: () -> { [string]: any }, output: string, size: { width: nu
 
     -- Where the compositor starts drawing windows: past the strip by niri's
     -- `gaps` and the edge's strut.
-    local function window_inset(): number return niri.window_gap() + niri.strut_for(edge) end
+    local function window_inset(): number return compositor.window_gap() + compositor.strut_for(edge) end
     local function window_line(): number
         if edge == "top" or edge == "left" then return m.strip() + window_inset() end
         return (if horizontal then size.height else size.width) - m.strip() - window_inset()

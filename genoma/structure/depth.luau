@@ -32,7 +32,7 @@
 local g = require("@genoma")
 local config = require("core/config")
 local monitors = require("services/monitors")
-local niri = require("services/niri")
+local compositor = require("services/compositor")
 local arranging = require("structure/arranging")
 
 local M = {}
@@ -52,7 +52,7 @@ local pointer = g.lasting(function() return g.signal(nil :: { x: number, y: numb
 -- How near the screen's edge a pointer leaving the desktop is still at
 -- the edge: inside niri's gap, where no window is, logical units.
 local function edge_band(): number
-    return math.max(4, niri.window_gap() / 2)
+    return math.max(4, compositor.window_gap() / 2)
 end
 
 -- Chosen in the settings: what sizes the layers. The wallpaper is decoded
@@ -75,16 +75,16 @@ end
 -- The focused window, as a point in the layout's logical units, nil
 -- without one.
 local function focused_point(): { x: number, y: number }?
-    local w = niri.focused_window()
+    local w = compositor.focused_window()
     if not w then return nil end
-    local ws = niri.workspaces()[w.workspace_id]
+    local ws = compositor.workspaces()[w.workspace_id]
     if not ws then return nil end
     local o = nil
     for _, candidate in monitors.outputs() do
         if candidate.name == ws.output then o = candidate end
     end
     if not o then return nil end
-    local layout = niri.layout_for(w.id)
+    local layout = compositor.layout_for(w.id)
     if layout and type(layout.position_in_view) == "table" and type(layout.tile_size) == "table" then
         return {
             x = o.x + layout.position_in_view[1] + layout.tile_size[1] / 2,
@@ -93,8 +93,8 @@ local function focused_point(): { x: number, y: number }?
     end
     if layout and layout.column then
         local columns, rows = 1, 1
-        for _, other in niri.windows_on_workspace(w.workspace_id) do
-            local l = niri.layout_for(other.id)
+        for _, other in compositor.windows_on_workspace(w.workspace_id) do
+            local l = compositor.layout_for(other.id)
             if l and l.column then
                 columns = math.max(columns, l.column)
                 if l.column == layout.column then rows = math.max(rows, l.row or 1) end

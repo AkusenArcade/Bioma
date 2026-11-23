@@ -18,7 +18,7 @@ local colour = require("core/colour")
 local typography = require("core/typography")
 local metrics_mod = require("core/metrics")
 local timing = require("core/timing")
-local niri = require("services/niri")
+local compositor = require("services/compositor")
 local bars = require("components/workspace_bars")
 
 local VISIBLE = 5
@@ -29,7 +29,7 @@ return {
         local function spacing(): number return 11 * f() end
         local function mark_size(): number return 16 * f() end
 
-        local function workspace(): any return niri.active_workspace_for_output(cell.output) end
+        local function workspace(): any return compositor.active_workspace_for_output(cell.output) end
         local function named(): boolean
             local ws = workspace()
             return ws ~= nil and ws.name ~= ""
@@ -45,11 +45,11 @@ return {
         -- Told by its id, because the service hands out a fresh record on
         -- every event and a new record is not a new workspace; and stepped
         -- by its index.
-        local last_id, last_index = -1, -1
+        local last_id, last_index = "", -1
         g.watch(workspace, function(ws: any)
             if not ws then return end
             if ws.id ~= last_id then
-                if last_id ~= -1 then cell.pulse() end
+                if last_id ~= "" then cell.pulse() end
                 last_id = ws.id
             end
             if last_index >= 0 and ws.idx ~= last_index then shift(if ws.idx > last_index then 1 else -1) end
@@ -70,7 +70,7 @@ return {
 
         -- ---- The list ----------------------------------------------------------
 
-        local function rows(): { any } return niri.workspaces_for_output(cell.output) end
+        local function rows(): { any } return compositor.workspaces_for_output(cell.output) end
         local function row_height(): number return 44 * f() end
         local function button(): number return 36 * f() end
         local function row_padding(): number return 8 * f() end
@@ -108,20 +108,20 @@ return {
 
         -- Jump and close: the action is done, and staying open would be noise.
         local function jump(ws: any)
-            niri.focus_workspace(ws.idx)
+            compositor.focus_workspace(ws.id)
             cell.open.value = false
         end
 
         -- A name is the user's own word for the workspace. Without one, the
         -- window it is showing says more than "Workspace 4" beside a button
-        -- with a 4 in it. niri keeps one empty workspace at the end: a place,
-        -- not a content.
+        -- with a 4 in it. niri and Umbriel keep one empty workspace at the
+        -- end: a place, not a content.
         local function describe(ws: any): string
             if ws.name ~= "" then return ws.name end
-            local w = niri.windows()[ws.active_window_id]
+            local w = compositor.windows()[ws.active_window_id]
             return if w and w.title ~= "" then w.title else ""
         end
-        local function vacant(ws: any): boolean return ws.name == "" and ws.active_window_id < 0 end
+        local function vacant(ws: any): boolean return ws.name == "" and ws.active_window_id == "" end
 
         local function row(item: () -> any, index: () -> number): any
             local function ws(): any return item() end
@@ -277,13 +277,13 @@ return {
             end,
             -- Previous and next workspace without opening anything.
             on_wheel = function(_, dy: number)
-                if dy ~= 0 then niri.focus_workspace_step(cell.output, dy > 0) end
+                if dy ~= 0 then compositor.focus_workspace_step(cell.output, dy > 0) end
             end,
             -- And by hand, a finger or a held press carried across it: the
             -- strip of workspaces is pushed along, so left or up brings the
             -- next one, right or down the one before.
             on_swipe = function(direction: string)
-                niri.focus_workspace_step(cell.output, direction == "left" or direction == "up")
+                compositor.focus_workspace_step(cell.output, direction == "left" or direction == "up")
             end,
             on_key = function(key: string)
                 local list = g.untracked(rows)

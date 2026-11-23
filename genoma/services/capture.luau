@@ -402,7 +402,7 @@ end
 -- dispatched, not when the image is there, and a clipboard manager puts
 -- the old selection straight back after a clear: so it waits for the
 -- contents to change, by checksum, up to two seconds.
-function M.capture_window(id: number)
+function M.capture_window(id: string?)
     last_error.value = ""
     busy.value = true
     local target = still_path()
@@ -415,7 +415,7 @@ function M.capture_window(id: number)
             .. '[ "$now" != "$before" ] && break; '
             .. 'sleep 0.05; i=$((i+1)); done; '
             .. 'wl-paste --type image/png > "$1" 2>/dev/null; [ -s "$1" ]',
-            "window", target, if id > 0 then "--id " .. id else "" },
+            "window", target, if id and id ~= "" then "--id " .. id else "" },
         on_exit = function(code: number)
             if code ~= 0 then
                 fail("window capture failed (" .. code .. ")")

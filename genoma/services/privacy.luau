@@ -8,12 +8,13 @@
 -- than through PipeWire, so `scripts/cameras` watches the device nodes;
 -- an open that only asks a device what it can do comes and goes within a
 -- moment, so a holder is believed after `privacy.camera_confirm`. A screen
--- is a niri cast.
+-- is the compositor's cast: niri says which program and what, Hyprland
+-- only that one runs.
 local g = require("@genoma")
 local config = require("core/config")
 local paths = require("core/paths")
 local audio = require("services/audio")
-local niri = require("services/niri")
+local compositor = require("services/compositor")
 
 local M = {}
 
@@ -109,8 +110,8 @@ local names = g.signal({})
 local function casts(): { any }
     local out = {}
     if not active() then return out end
-    for _, c in niri.casts() do
-        if c.is_active ~= false then table.insert(out, c) end
+    for _, c in compositor.casts() do
+        if c.active ~= false then table.insert(out, c) end
     end
     return out
 end
@@ -133,10 +134,9 @@ end, function(pids: string)
     }
 end)
 local function target_of(c: any): string
-    local t = c.target or {}
-    if t.Output then return t.Output.name or "" end
-    if t.Window then
-        local w = niri.windows()[t.Window.id]
+    if c.output then return c.output end
+    if c.window then
+        local w = compositor.windows()[c.window]
         return if w then (if w.title ~= "" then w.title else w.app_id) else "A window"
     end
     return ""
@@ -145,16 +145,16 @@ local screen = g.computed(function(): { any }
     local out = {}
     for _, c in casts() do
         local app = if c.pid then names.value[tostring(c.pid)] or "" else ""
-        if app == "" and c.pw_node_id then
+        if app == "" and c.node then
             for _, link in audio.links() do
-                if link.output == c.pw_node_id then
+                if link.output == c.node then
                     local target = audio.node(link.input)
                     if target then app = app_of(target) end
                 end
             end
         end
         table.insert(out, { kind = "screen", app = if app ~= "" then app else "Screen", detail = target_of(c),
-            key = "screen:" .. tostring(c.stream_id) })
+            key = "screen:" .. tostring(c.id) })
     end
     return out
 end)

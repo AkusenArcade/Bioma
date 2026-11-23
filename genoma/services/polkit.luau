@@ -105,11 +105,11 @@ function M.retry() if agent then agent:retry() end end
 -- so the agent is there before anything asks.
 function M.start()
     local focus = require("structure/focus")
-    local niri = require("services/niri")
+    local compositor = require("services/compositor")
     local output: string? = nil
     g.watch(M.asking, function(asking: boolean)
         if asking then
-            local focused = g.untracked(niri.focused_output)
+            local focused = g.untracked(compositor.focused_output)
             output = if focused ~= "" then focused else nil
             local c = focus.cell_for("polkit", output)
             if not (c and g.untracked(c.shown)) then focus.invoke("polkit", output) end

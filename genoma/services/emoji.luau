@@ -7,7 +7,7 @@ local g = require("@genoma")
 local config = require("core/config")
 local paths = require("core/paths")
 local timing = require("core/timing")
-local niri = require("services/niri")
+local compositor = require("services/compositor")
 local dictation = require("services/dictation")
 
 local M = {}
@@ -178,10 +178,10 @@ function M.send(entry: any)
             in_flight = false
             return
         end
-        local window = g.untracked(niri.focused_window)
+        local window = g.untracked(compositor.focused_window)
         p:write(g.to_json({
             text = text,
-            terminal = dictation.is_terminal(g.untracked(niri.focused_app_id)),
+            terminal = dictation.is_terminal(g.untracked(compositor.focused_app_id)),
             copyOnly = window == nil or not can_paste,
         }) .. "\n")
     end)

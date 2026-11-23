@@ -17,7 +17,7 @@
 local g = require("@genoma")
 local config = require("core/config")
 local apps_mod = require("core/apps")
-local niri = require("services/niri")
+local compositor = require("services/compositor")
 
 local M = {}
 
@@ -76,7 +76,7 @@ local function digest(rows: { any }, self_pid: number)
     end
     -- Windows by pid, Xwayland's left out.
     local window_at, open = {}, {}
-    for _, w in g.untracked(niri.windows) do
+    for _, w in g.untracked(compositor.windows) do
         if w.app_id and w.app_id ~= "" then
             table.insert(open, w.app_id)
             local proc = procs[w.pid]

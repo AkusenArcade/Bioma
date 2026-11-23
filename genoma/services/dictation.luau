@@ -15,7 +15,7 @@ local g = require("@genoma")
 local config = require("core/config")
 local paths = require("core/paths")
 local capture = require("services/capture")
-local niri = require("services/niri")
+local compositor = require("services/compositor")
 
 local M = {}
 
@@ -127,10 +127,10 @@ local function deliver(text: string)
     end
     -- No window to paste into: the text stays on the clipboard rather than
     -- be pasted into nothing and taken back by the restore.
-    local window = g.untracked(niri.focused_window)
+    local window = g.untracked(compositor.focused_window)
     paster:write(g.to_json({
         text = text,
-        terminal = M.is_terminal(g.untracked(niri.focused_app_id)),
+        terminal = M.is_terminal(g.untracked(compositor.focused_app_id)),
         copyOnly = window == nil or not can_paste,
     }) .. "\n")
 end

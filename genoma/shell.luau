@@ -281,10 +281,10 @@ table.insert(surfaces, g.surface {
 -- Being asked for: `scripts/genoma ipc cell toggle <domain> [output]`. The
 -- output the keyboard is on is the one meant, unless the call names one. An
 -- old name still reaches the cell it became.
-local niri = require("services/niri")
+local compositor = require("services/compositor")
 local function meant(output: string?): string?
     if output and output ~= "" then return output end
-    local focused = g.untracked(niri.focused_output)
+    local focused = g.untracked(compositor.focused_output)
     return if focused ~= "" then focused else nil
 end
 g.ipc("cell", {

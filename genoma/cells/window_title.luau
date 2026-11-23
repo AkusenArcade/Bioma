@@ -20,7 +20,7 @@ local theme = require("core/theme")
 local colour = require("core/colour")
 local typography = require("core/typography")
 local timing = require("core/timing")
-local niri = require("services/niri")
+local compositor = require("services/compositor")
 local apps = require("core/apps")
 local focus = require("structure/focus")
 local sweep = require("components/sweep")
@@ -53,7 +53,7 @@ return {
 
         -- The shell has the focus, and a cell is what has it: a cell holding
         -- the keyboard while the window keeps the focus is still a window.
-        local function on_cell(): boolean return focus.holds_keyboard() and niri.focused_window() == nil end
+        local function on_cell(): boolean return focus.holds_keyboard() and compositor.focused_window() == nil end
         local function cell_name(): string
             local subject = focus.open_cell()
             if not subject then return "" end
@@ -63,7 +63,7 @@ return {
 
         local function incoming(): string
             if on_cell() then return cell_name() end
-            local _, text = settled(niri.focused_title())
+            local _, text = settled(compositor.focused_title())
             return text
         end
 
@@ -73,7 +73,7 @@ return {
         local appear: any = nil
         g.watch(function()
             if on_cell() then return false end
-            local spinning = settled(niri.focused_title())
+            local spinning = settled(compositor.focused_title())
             return spinning
         end, function(spinning: boolean)
             if appear then appear:stop() end
@@ -139,11 +139,11 @@ return {
             padding_trailing = 16,
             interactive = true,
             -- It exists while something has the focus, either of the two.
-            condition = function() return if niri.focused_window() ~= nil or on_cell() then 1 else 0 end,
+            condition = function() return if compositor.focused_window() ~= nil or on_cell() then 1 else 0 end,
             content_width = function() return icon_size() + spacing() + waiting_room() + label_width() end,
             -- With a cell in the title there is no window to centre.
             on_click = function()
-                if not g.untracked(on_cell) then niri.center_focused_window() end
+                if not g.untracked(on_cell) then compositor.center_focused_window() end
             end,
             contracted = function()
                 return g.box {
@@ -167,7 +167,7 @@ return {
                             -- Never another application's logo: an unresolved
                             -- icon gets the neutral glyph.
                             icon = function()
-                                local path = apps.icon_for(niri.focused_app_id())
+                                local path = apps.icon_for(compositor.focused_app_id())
                                 return if path ~= "" then path else "app-fallback"
                             end,
                         },

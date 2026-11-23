@@ -13,8 +13,8 @@ local M = {}
 
 -- The output a call means: the one niri has focused.
 local function focused(): string?
-    local niri = require("services/niri")
-    local name = g.untracked(niri.focused_output)
+    local compositor = require("services/compositor")
+    local name = g.untracked(compositor.focused_output)
     return if name ~= "" then name else nil
 end
 
@@ -412,11 +412,11 @@ function M.register()
         end,
         window = function(): string
             local capture = require("services/capture")
-            local niri = require("services/niri")
-            local window = g.untracked(niri.focused_window)
+            local compositor = require("services/compositor")
+            local window = g.untracked(compositor.focused_window)
             capture.pending_action = "still"
-            capture.capture_window(if window then window.id else 0)
-            return g.untracked(niri.focused_title)
+            capture.capture_window(if window then window.id else nil)
+            return g.untracked(compositor.focused_title)
         end,
         colour = function(): string
             require("services/capture").pick_colour()

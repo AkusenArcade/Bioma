@@ -8,7 +8,7 @@
 local g = require("@genoma")
 local config = require("core/config")
 local apps = require("core/apps")
-local niri = require("services/niri")
+local compositor = require("services/compositor")
 
 local M = {}
 
@@ -66,7 +66,7 @@ end)
 local function matched_apps(): { string }
     local out = {}
     if #matchers.value == 0 then return out end
-    for _, w in niri.windows() do
+    for _, w in compositor.windows() do
         local id = w.app_id
         if id ~= "" then
             for _, test in matchers.value do
