@@ -69,7 +69,7 @@ end
 function M.node(output: string, size: { width: number, height: number }, backdrop: boolean): any
     local function bleed(): number
         if backdrop then return 96 end
-        return if depth.on() then math.abs(depth.WALLPAPER) else 0
+        return if depth.chosen() then math.abs(depth.WALLPAPER) else 0
     end
     local density = if backdrop then 0.25 else 1
     local function source(): string return wallpaper.path_for(output) end

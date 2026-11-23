@@ -55,8 +55,18 @@ local function edge_band(): number
     return math.max(4, niri.window_gap() / 2)
 end
 
+-- Chosen in the settings: what sizes the layers. The wallpaper is decoded
+-- a little past the screen so it has room to move, and that room stays
+-- while the organisms are placed: a picture sized again is a picture
+-- decoded again, and the screen showed black under the grid until it was
+-- (Akusen, 2026-11-23: black blinks entering and leaving the arrange mode).
+function M.chosen(): boolean
+    return config.get("appearance.depth", false) == true
+end
+-- Moving now: not while the organisms are placed, where they follow the
+-- hand that carries them instead.
 function M.on(): boolean
-    return config.get("appearance.depth", false) == true and not arranging.active()
+    return M.chosen() and not arranging.active()
 end
 function M.on_windows(): boolean
     return config.get("appearance.depth_windows", false) == true
