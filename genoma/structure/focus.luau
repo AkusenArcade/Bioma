@@ -89,10 +89,23 @@ function M.output(): string?
     return if c then c.output else nil
 end
 
+-- The attention moves to `c`, and whatever held it goes. One that was open
+-- closes, and if it was there only because it was asked for, it leaves
+-- with the close (structure/cell.luau). One that is all panel (the
+-- launcher, the quick actions, a summoned audio capsule) was never opened:
+-- it holds the attention by being asked for, so it leaves by no longer
+-- being asked for, as a press outside sends it (`dismiss`). Left asked for,
+-- the launcher stayed on screen with no keyboard and no answer (Akusen,
+-- 2026-11-23).
 function M.opened(c: any)
     local was = current()
-    if was ~= 0 and was ~= c.focus_id and cells[was] then
-        cells[was].open.value = false
+    local before = if was ~= 0 and was ~= c.focus_id then cells[was] else nil
+    if before then
+        if g.untracked(function() return before.open.value end) then
+            before.open.value = false
+        elseif not before.aside then
+            before.visibility.set_invoked(false)
+        end
     end
     open_id.value = c.focus_id
 end
