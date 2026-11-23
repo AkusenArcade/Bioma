@@ -54,12 +54,13 @@ depends=(
     'xdg-utils'
     # The weather organism: Open-Meteo, through the proxy when one is on.
     'curl'
-    # Capture: screenshots, text recognition (capture.ocr_language is eng),
-    # screen recording.
+    # Capture: screenshots, text recognition (capture.ocr_language is eng).
+    # Screen recording's wl-screenrec is optional: it is built from the AUR,
+    # and when it stopped building against ffmpeg 9.1 (2026-11-23) a hard
+    # dependency on it kept Bioma from installing at all.
     'grim'
     'tesseract'
     'tesseract-data-eng'
-    'wl-screenrec'
     # Audio: pw-play for the alarm and the sound effects, pw-record for the
     # microphone.
     'pipewire'
@@ -103,6 +104,7 @@ optdepends=(
     'gnome-online-accounts: the calendars of Google, Microsoft, Nextcloud and WebDAV accounts in the clock'
     'gnome-online-accounts-gtk: adding those accounts outside GNOME Settings'
     'gamemode: performance mode, on by itself while a game runs'
+    'wl-screenrec: screen recording in the capture cell (AUR)'
 )
 # libspa builds a small C shim that makepkg's LTO turns into bitcode, which
 # Rust's linker cannot resolve (undefined spa_format_parse_libspa_rs).

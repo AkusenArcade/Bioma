@@ -131,7 +131,6 @@ need grim       grim            "screenshots"
 need tesseract  tesseract       "text recognition from a region"
 need_part "$(tesseract --list-langs 2>/dev/null | grep -qx eng && echo yes)" \
     "tessdata eng" "text recognition, in English" "tesseract-data-eng"
-need wl-screenrec wl-screenrec  "screen recording (AUR)"
 need pw-play    pipewire-audio  "the alarm's sound, the microphone"
 need nmcli      networkmanager  "Wi-Fi, wired, VPN and proxy triggers"
 need bluetoothctl bluez-utils   "Bluetooth pairing"
@@ -165,6 +164,8 @@ want_part "$(python3 -c 'import evdev' 2>/dev/null && echo yes)" "python-evdev" 
 want_part "$([ -w /dev/uinput ] && echo yes)" "/dev/uinput" \
     "dictation: pasting; without it the text stays on the clipboard" \
     "packaging/system/70-bioma-uinput.rules into /etc/udev/rules.d"
+want_part "$(has wl-screenrec)" "wl-screenrec" \
+    "screen recording in the capture cell" "AUR wl-screenrec"
 want_part "$(has bnw)" "network wizard" \
     "company network setup, from the connectivity cell" "AUR business-network-wizard"
 

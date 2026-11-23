@@ -607,7 +607,16 @@ local function start_recorder(target: { string })
                 if counting then counting:stop() end
                 counting = nil
                 -- SIGINT is how a recording ends: 130 (or 2), not a failure.
-                if code ~= 0 and code ~= 130 and code ~= 2 then
+                -- 127 is sh finding no wl-screenrec. The package leaves it
+                -- optional, so its absence is said where it can be seen: a
+                -- failure only on the log looked like RECORD doing nothing.
+                if code == 127 then
+                    fail("screen recording needs wl-screenrec (AUR)")
+                    pending_video.value = ""
+                    g.process { command = { "notify-send", "--app-name=Bioma", "--icon=video-x-generic",
+                        "Screen recording needs wl-screenrec",
+                        "Install it from the AUR (wl-screenrec), then record again." } }
+                elseif code ~= 0 and code ~= 130 and code ~= 2 then
                     fail("recording failed (" .. code .. ")")
                     pending_video.value = ""
                 end

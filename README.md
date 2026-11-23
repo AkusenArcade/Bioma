@@ -353,7 +353,7 @@ the whole shell. Only the second table is left to you.
 | UDisks | `udisks2` | the drives cell: mounting, opening and ejecting |
 | polkit | `polkit` | the polkit cell, Bioma's authentication agent, and the setup's login screen step |
 | curl | `curl` | the weather organism's forecast, from Open-Meteo |
-| grim, tesseract, wl-screenrec | `grim`, `tesseract`, `tesseract-data-eng`, AUR `wl-screenrec` | screenshots, text recognition, screen recording (VAAPI) |
+| grim, tesseract | `grim`, `tesseract`, `tesseract-data-eng` | screenshots, text recognition |
 | PipeWire | `pipewire`, `pipewire-audio` | audio, the alarm and the sound effects, the microphone |
 | NetworkManager | `networkmanager` | Wi-Fi, wired, VPN profiles, proxy triggers |
 | BlueZ | `bluez`, `bluez-utils` | Bluetooth |
@@ -371,6 +371,7 @@ the whole shell. Only the second table is left to you.
 | whisper.cpp, its model, python-evdev | `whisper-cpp`, `ggml-vulkan`, AUR `whisper.cpp-model-large-v3-turbo-q5_0`, `python-evdev` | dictation — see [Dictation](#dictation). The model alone is 547 MB. `python-evdev` alone is what lets the emoji cell paste; without it the emoji is left on the clipboard |
 | GNOME Online Accounts | `gnome-online-accounts`, `gnome-online-accounts-gtk` | the clock's calendars from Google, Microsoft, Nextcloud and WebDAV accounts; the second adds an account outside GNOME Settings. iCalendar feeds need neither |
 | GameMode | `gamemode` | performance mode coming on by itself while a game runs |
+| wl-screenrec | AUR `wl-screenrec` | screen recording in the capture cell (VAAPI). Without it the cell still takes screenshots and reads text, and a notification says what RECORD needs |
 | Business Network Wizard | AUR `business-network-wizard` | a company network — NTLM proxy, VPN, 802.1X Wi-Fi, shares, printers. When it is installed the connectivity cell's proxy well offers COMPANY NETWORK, which opens it |
 
 ## Install
