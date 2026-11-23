@@ -253,14 +253,59 @@ function M.place(output: string, size: { width: number, height: number }, grid: 
         end
         return col, row, w, h
     end
-    -- What the others on this screen cover, in pixels.
+    -- Where every organism of this screen is drawn, by `id`: { col, row },
+    -- or false for one there is no room for. In the list's order, each
+    -- goes to its own point, or to the nearest one nobody before it
+    -- covers; one that fits nowhere is not shown. A configuration made
+    -- for a larger screen, or one with taller membranes, pressed them
+    -- against the edge one over another (Akusen, 2026-11-23). Only the
+    -- drawing gives way: the point written stays, and on the screen it was
+    -- made for each is back where it was put. Worked out once for a list
+    -- and a grid, however many organisms ask.
+    local laid = { list = nil :: any, key = "", result = {} :: { [string]: any } }
+    function p.layout(list: { any }): { [string]: any }
+        local gx, gy, gw, gh = p.grid()
+        local key = table.concat({ gx, gy, gw, gh, p.square(), p.module(), monitors.primary() }, " ")
+        if laid.list == list and laid.key == key then return laid.result end
+        local result, taken = {}, {}
+        for i, entry in list do
+            if type(entry) == "table" and belongs(entry, output) then
+                local col, row, w, h = p.cover_of(entry)
+                local name = if entry.id then tostring(entry.id) else "@" .. i
+                local found = false
+                if w <= gw + 0.5 and h <= gh + 0.5 then
+                    col, row, found = p.free_point(w, h, col, row, taken, true)
+                end
+                if found then
+                    result[name] = { col, row }
+                    local x, y = p.corner(col, row)
+                    table.insert(taken, { x = x, y = y, w = w, h = h })
+                else
+                    result[name] = false
+                end
+            end
+        end
+        laid.list, laid.key, laid.result = list, key, result
+        return result
+    end
+    -- Where one is drawn: nil for one with no room on this screen.
+    function p.laid(list: { any }, id: any): (number?, number?)
+        local at = if id then p.layout(list)[tostring(id)] else nil
+        if at == false then return nil, nil end
+        return if at then at[1] else nil, if at then at[2] else nil
+    end
+    -- What the others on this screen cover, in pixels, where they are drawn.
     function p.others(list: { any }, except: any): { any }
         local out = {}
-        for _, entry in list do
+        local at = p.layout(list)
+        for i, entry in list do
             if type(entry) == "table" and entry.id ~= except and belongs(entry, output) then
-                local col, row, w, h = p.cover_of(entry)
-                local x, y = p.corner(col, row)
-                table.insert(out, { x = x, y = y, w = w, h = h })
+                local spot = at[if entry.id then tostring(entry.id) else "@" .. i]
+                if spot then
+                    local _, _, w, h = p.cover_of(entry)
+                    local x, y = p.corner(spot[1], spot[2])
+                    table.insert(out, { x = x, y = y, w = w, h = h })
+                end
             end
         end
         return out
@@ -270,7 +315,10 @@ function M.place(output: string, size: { width: number, height: number }, grid: 
     -- on a fine grid the search walks a thousand candidates while an
     -- organism is carried over another, and reading the free area for each
     -- (every membrane of the config, four times) made the carrying stutter.
-    function p.free_point(w: number, h: number, col: number, row: number, others: { any }): (number, number)
+    -- The third value says whether a free point was found; `everywhere`
+    -- looks over the whole grid rather than near the point (the layout,
+    -- which runs once, not at every movement of the hand).
+    function p.free_point(w: number, h: number, col: number, row: number, others: { any }, everywhere: boolean?): (number, number, boolean)
         local gx, gy, gw, gh = p.grid()
         local module, square = p.module(), p.square()
         local function corner(c: number, r: number): (number, number) return gx + c * module, gy + r * module end
@@ -287,9 +335,10 @@ function M.place(output: string, size: { width: number, height: number }, grid: 
             end
             return false
         end
-        if not hits(col, row) then return col, row end
+        if not hits(col, row) then return col, row, true end
         local x0, y0 = corner(col, row)
-        for radius = 1, 48 do
+        local reach = if everywhere then math.ceil(math.max(gw, gh) / square) + 1 else 48
+        for radius = 1, reach do
             local best, best_distance = nil, math.huge
             for dy = -radius, radius do
                 for dx = -radius, radius do
@@ -303,9 +352,9 @@ function M.place(output: string, size: { width: number, height: number }, grid: 
                     end
                 end
             end
-            if best then return best[1], best[2] end
+            if best then return best[1], best[2], true end
         end
-        return col, row
+        return col, row, false
     end
     return p
 end
@@ -336,16 +385,25 @@ function M.organism(a: { [string]: any }): (any, any)
     local function grid_gap(): number return place.metrics().gap end
     local function cover_width(): number return target_width() + grid_gap() end
     local function cover_height(): number return target_height() + grid_gap() end
+    local function list(): { any }
+        return if arranging.active() then arranging.working() else config.get("organisms", {})
+    end
+    -- Where the screen's layout puts it (`place.layout`): its own point,
+    -- or the nearest free one; organisms never overlap.
     local function grid_point(): (number, number)
         local e = entry()
+        local col, row = place.laid(list(), e.id)
+        if col and row then return col, row end
         if e.col ~= nil and e.row ~= nil then return place.kept(cover_width(), cover_height(), e.col, e.row) end
-        -- One with no point yet (just added) goes to the nearest place
-        -- nobody covers: organisms never overlap.
         local fx, fy, fw, fh = place.free()
-        local col, row = place.point(cover_width(), cover_height(),
+        return place.point(cover_width(), cover_height(),
             fx + (e.x or 0.5) * fw - cover_width() / 2, fy + (e.y or 0.5) * fh - cover_height() / 2)
-        local list = if arranging.active() then arranging.working() else config.get("organisms", {})
-        return place.free_point(cover_width(), cover_height(), col, row, place.others(list, e.id))
+    end
+    -- Whether this screen has room for it at all: one that fits nowhere
+    -- is not shown, here or while the organisms are placed.
+    local function has_room(): boolean
+        local id = entry().id
+        return id == nil or place.layout(list())[tostring(id)] ~= false
     end
     local function rest(): (number, number)
         local col, row = grid_point()
@@ -382,6 +440,7 @@ function M.organism(a: { [string]: any }): (any, any)
     local function present(): boolean
         if not body then return false end
         if arranging.retiring(entry().id) then return false end
+        if not has_room() then return false end
         if a.arranging() then return true end
         return if body.present then body.present() else true
     end
