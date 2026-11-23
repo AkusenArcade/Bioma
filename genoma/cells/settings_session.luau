@@ -1,6 +1,7 @@
 --!strict
 -- Settings → Session (cells/settings/SettingsSession.qml at 11bb81e): when
--- the session locks, and the machine sleeps, by itself.
+-- the session locks, the monitors power off, and the machine sleeps, by
+-- itself.
 --
 -- Settings writing straight into the override, which the lock and the
 -- session are bound to: a choice here is the behaviour changing, not a
@@ -34,6 +35,7 @@ function M.new(t: { [string]: any }): any
     local function idle_minutes(): number return config.get("lock.idle_minutes", 10) end
     local function before_sleep(): boolean return config.get("lock.before_sleep", true) == true end
     local function sleep_minutes(): number return config.get("sleep.idle_minutes", 0) end
+    local function blank_minutes(): number return config.get("blank.idle_minutes", 0) end
 
     local function stops(options: { { any } }, current: () -> number, path: string): any
         local list = {}
@@ -78,6 +80,23 @@ function M.new(t: { [string]: any }): any
                 local n = idle_minutes()
                 return if n > 0 then "After " .. n .. " minutes without input, the session locks."
                     else "The session never locks by itself. The key and the System cell still do."
+            end),
+        }),
+        -- Minutes without input before the monitors power off, the same
+        -- stops as the lock's and apart from it. Only where the compositor
+        -- can do it.
+        section("MONITORS OFF AFTER", nil, {
+            stops({ { 0, "Never" }, { 5, "5 min" }, { 10, "10 min" }, { 15, "15 min" }, { 30, "30 min" } },
+                blank_minutes, "blank.idle_minutes"),
+            line(function()
+                local n = blank_minutes()
+                if n <= 0 then return "The monitors never power off by themselves." end
+                if not session.can_blank() then
+                    return "This compositor cannot power the monitors off, so nothing happens."
+                end
+                return "After " .. n .. " minutes without input, the monitors power off. Any input wakes them; a video playing keeps them on."
+            end, function()
+                return if blank_minutes() > 0 and not session.can_blank() then theme.alert() else theme.text()
             end),
         }),
         -- Minutes without input before the machine suspends. `0`, the

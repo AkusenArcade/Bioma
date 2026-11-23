@@ -165,6 +165,11 @@
     "alert_gap": 300
   },
 
+  "blank": {
+    "$comment": "Minutes without input before every monitor powers off, through the compositor (niri, Hyprland, Umbriel); 0 never, the default. Any input brings them back, the mouse too. Apart from the lock: it may come before it or after. Idle inhibitors hold it back, as they hold back the lock.",
+    "idle_minutes": 0
+  },
+
   "sleep": {
     "$comment": "Minutes without input before the machine suspends, through session.suspend (0 never, the default). Idle inhibitors hold it back, as they hold back the lock; with lock.before_sleep the session locks first.",
     "idle_minutes": 0

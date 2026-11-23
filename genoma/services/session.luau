@@ -121,6 +121,16 @@ function M.confirm()
 end
 function M.cancel() pending.value = "" end
 
+-- ---- Monitors off ---------------------------------------------------------------
+--
+-- Through the compositor, whichever it is (niri, Hyprland, Umbriel); the
+-- standard protocols have no way, and a Genoma older than 0.1.22 no call.
+local compositor = require("@genoma/compositor")
+function M.can_blank(): boolean
+    local ok, can = pcall(function() return compositor.can_power_monitors end)
+    return ok and can == true
+end
+
 -- ---- Sleep after a time idle -------------------------------------------------
 --
 -- Minutes without input before the machine suspends, `sleep.idle_minutes`,
@@ -142,6 +152,23 @@ function M.start()
         local began = on and not was
         was = on
         if began then g.process { command = { "setsid", "-f", table.unpack(commands.suspend()) } } end
+    end)
+
+    -- The monitors off after a time idle, `blank.idle_minutes`, and back on
+    -- at the first input. Apart from the lock: it may come before it or
+    -- after. Inhibitors hold it back like the others: a video playing
+    -- keeps the screens lit.
+    g.effect(function()
+        local minutes = config.get("blank.idle_minutes", 0)
+        local seconds = if minutes > 0 and M.can_blank() then math.max(1, minutes) * 60 else 0
+        g.untracked(function() idle:watch("blank", seconds) end)
+    end)
+    local blank = false
+    g.watch(function() return idle:is_idle("blank") end, function(on: boolean)
+        if on == blank then return end
+        blank = on
+        local ok, problem = pcall(function() compositor:power_monitors(not on) end)
+        if not ok then print("Bioma: monitors " .. (if on then "off" else "on") .. " — " .. tostring(problem)) end
     end)
 end
 
