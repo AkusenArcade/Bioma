@@ -394,7 +394,7 @@ function M.new(t: { [string]: any }): any
             direction = "row",
             flow = true,
             align = "start",
-            width = p.inner,
+            width = a.width or p.inner,
             gap = function() return if a.gap then a.gap() else 6 * f() end,
             gap_lines = function() return m().gap_row end,
             items = a.items,

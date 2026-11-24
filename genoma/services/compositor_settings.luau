@@ -48,6 +48,11 @@ local SETTINGS: { [string]: any } = {
         hyprland = { read = "general:gaps_out", write = function(v: number) return { general = { gaps_in = math.round(v / 2), gaps_out = v } } end },
         umbriel = { key = "layout.gap" },
     },
+    -- How a workspace arranges its windows, where nothing below says otherwise.
+    layout = {
+        kind = "text", default = "dwindle",
+        hyprland = { read = "general:layout", write = function(v: string) return { general = { layout = v } } end },
+    },
     border = {
         kind = "number", default = 2,
         hyprland = { read = "general:border_size", write = function(v: number) return { general = { border_size = v } } end },
@@ -237,6 +242,80 @@ local function merge(into: { [string]: any }, part: { [string]: any })
     end
 end
 
+-- ---- Layouts by monitor and workspace -------------------------------------------
+--
+-- Hyprland's: `compositor.hyprland.layouts`, { monitors = { ["DP-1"] = … },
+-- workspaces = { ["3"] = … } }, written as workspace rules. A monitor's is for
+-- every workspace on it; a workspace's wins over its monitor's.
+
+M.layouts = { "dwindle", "master", "scrolling", "monocle" }
+function M.has_layouts(): boolean return name == "hyprland" end
+local function layouts_key(): string return "compositor." .. name .. ".layouts" end
+local function layouts(): any return config.get(layouts_key(), {}) end
+-- `of`: "monitors" or "workspaces"; nil where none is chosen.
+function M.layout_for(of: string, which: string): string? return (layouts()[of] or {})[which] end
+-- Everything chosen in one of the two, by name, sorted.
+function M.layout_names(of: string): { string }
+    local out = {}
+    for k in layouts()[of] or {} do table.insert(out, k) end
+    table.sort(out)
+    return out
+end
+
+-- Hyprland's word for a workspace. A number is said as a range of one: a rule
+-- with the same words as one in hyprland.lua is folded into it where it
+-- stands, and a monitor's rule, which comes after, would win over it.
+local function workspace_selector(which: string): string
+    return if string.match(which, "^%d+$") then "r[" .. which .. "-" .. which .. "]" else "name:" .. which
+end
+local function layout_rules(): string
+    local out = {}
+    for _, monitor in M.layout_names("monitors") do
+        table.insert(out, string.format("hl.workspace_rule({ workspace = %q, layout = %q })", "m[" .. monitor .. "]", M.layout_for("monitors", monitor)))
+    end
+    for _, ws in M.layout_names("workspaces") do
+        table.insert(out, string.format("hl.workspace_rule({ workspace = %q, layout = %q })", workspace_selector(ws), M.layout_for("workspaces", ws)))
+    end
+    return if #out > 0 then "\n" .. table.concat(out, "\n") .. "\n" else ""
+end
+
+-- ---- Window rules ----------------------------------------------------------------
+--
+-- Hyprland's: `compositor.hyprland.rules`, a list of { app, opacity, floating,
+-- width, workspace }, each one application's. Bioma's own only: the rules in
+-- hyprland.lua are a program's, and stay there.
+
+function M.has_rules(): boolean return name == "hyprland" end
+local function rules_key(): string return "compositor." .. name .. ".rules" end
+function M.rules(): { any } return config.get(rules_key(), {}) end
+function M.rule_of(app: string): any
+    for _, r in M.rules() do if r.app == app then return r end end
+    return nil
+end
+
+local function escaped(app: string): string
+    return (string.gsub(app, "[%.%^%$%*%+%?%(%)%[%]%{%}%|\\]", "\\%0"))
+end
+local function window_rules(): string
+    local out = {}
+    for _, r in M.rules() do
+        local parts = {}
+        -- In focus only, as on niri: out of focus it follows every window's.
+        -- `override`, so that it is the figure and not a share of the other.
+        if r.opacity then
+            table.insert(parts, string.format("opacity = \"%s override %s override\"", number_text(r.opacity), number_text(M.value("opacity_unfocused"))))
+        end
+        if r.floating then table.insert(parts, "float = true") end
+        if r.width then table.insert(parts, "scrolling_width = " .. number_text(r.width)) end
+        if r.workspace then table.insert(parts, string.format("workspace = %q", if string.match(r.workspace, "^%d+$") then r.workspace else "name:" .. r.workspace)) end
+        if #parts > 0 then
+            table.insert(out, string.format("hl.window_rule({ name = %q, match = { class = %q }, %s })",
+                "bioma " .. r.app, "^" .. escaped(r.app) .. "$", table.concat(parts, ", ")))
+        end
+    end
+    return if #out > 0 then "\n" .. table.concat(out, "\n") .. "\n" else ""
+end
+
 -- The whole file, from every choice made.
 local function body(): string?
     local head = "Written by Bioma's settings cell (" .. M.label .. "). Changing a setting there rewrites it."
@@ -246,7 +325,7 @@ local function body(): string?
             local v = config.get(key_of(id), nil)
             if v ~= nil and s.hyprland then merge(all, s.hyprland.write(v)) end
         end
-        return "-- " .. head .. "\n\nhl.config(" .. lua_value(all, "") .. ")\n"
+        return "-- " .. head .. "\n\nhl.config(" .. lua_value(all, "") .. ")\n" .. layout_rules() .. window_rules()
     end
     if name == "umbriel" then
         local tables: { [string]: { [string]: any } } = {}
@@ -306,15 +385,55 @@ end
 
 -- Kept, then the whole file written once the hand rests.
 local pending: any = nil
-function M.set(id: string, value: any)
-    if not M.supports(id) then return end
-    if type(value) == "number" then value = math.round(value * 100) / 100 end
-    config.set(key_of(id), value)
+local function write_soon()
     if pending then pending:stop() end
     pending = g.after(0.3, function()
         pending = nil
         write()
     end)
+end
+function M.set(id: string, value: any)
+    if not M.supports(id) then return end
+    if type(value) == "number" then value = math.round(value * 100) / 100 end
+    config.set(key_of(id), value)
+    write_soon()
+end
+
+-- One layout, or nil to leave it to what is wider.
+function M.set_layout(of: string, which: string, layout: string?)
+    if not M.has_layouts() then return end
+    local all = table.clone(g.untracked(layouts))
+    local part = table.clone(all[of] or {})
+    part[which] = layout
+    all[of] = part
+    config.set(layouts_key(), all)
+    write_soon()
+end
+
+local function set_rules(list: { any })
+    config.set(rules_key(), g.array(list))
+    write_soon()
+end
+function M.add_rule(app: string)
+    if not M.has_rules() or app == "" or g.untracked(function() return M.rule_of(app) end) then return end
+    local list = table.clone(g.untracked(M.rules))
+    table.insert(list, { app = app })
+    set_rules(list)
+end
+function M.remove_rule(app: string)
+    local list = {}
+    for _, r in g.untracked(M.rules) do if r.app ~= app then table.insert(list, r) end end
+    set_rules(list)
+end
+-- One thing a rule says, or nil for it not to.
+function M.set_rule(app: string, field: string, value: any)
+    local list = {}
+    for _, r in g.untracked(M.rules) do
+        local copy = table.clone(r)
+        if r.app == app then copy[field] = value end
+        table.insert(list, copy)
+    end
+    set_rules(list)
 end
 
 -- ---- A touchpad ------------------------------------------------------------------

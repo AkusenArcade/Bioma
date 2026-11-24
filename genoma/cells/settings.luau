@@ -37,7 +37,7 @@ local setup = require("services/setup")
 local running = require("services/compositor").name()
 local KEYS_IN = { niri = "niri.kdl", hyprland = "bioma-binds.lua", umbriel = "config.toml" }
 local OWN = if running == "niri" then { key = "niri", label = "NIRI", glyph = "window", hint = "gaps, workspaces, rules", width = 600 }
-    elseif running == "hyprland" or running == "umbriel" then { key = "compositor", label = string.upper(running), glyph = "window", hint = "gaps, focus, input", width = 560 }
+    elseif running == "hyprland" or running == "umbriel" then { key = "compositor", label = string.upper(running), glyph = "window", hint = if running == "hyprland" then "layout, rules, input" else "gaps, focus, input", width = 560 }
     else nil
 
 -- Each says how wide its page needs to be, logical units at the normal step.
