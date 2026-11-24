@@ -153,6 +153,14 @@ function M.new(cell: any)
         end)
     end)
 
+    -- What actually orders the list. A process has a CPU share and a memory
+    -- size, but no GPU share or battery draw of its own here, so those
+    -- domains keep the list by RAM and the label says so (Akusen,
+    -- 2026-11-24: an honest label rather than a per-process GPU column).
+    local function ordered_by(): string
+        return if sort.value == "cpu" then "cpu" else "ram"
+    end
+
     -- Sorted here rather than by running `ps` again: a change of order is a
     -- change of view.
     local sorted = g.computed(function(): { any }
@@ -161,7 +169,7 @@ function M.new(cell: any)
         for _, p in system.processes() do
             if term == "" or string.find(string.lower(p.name), term, 1, true) then table.insert(list, p) end
         end
-        local by = sort.value
+        local by = ordered_by()
         table.sort(list, function(a, b)
             if by == "cpu" then return a.cpu > b.cpu end
             return a.mem_mb > b.mem_mb
@@ -404,7 +412,7 @@ function M.new(cell: any)
                 bend_x = function() return gap() / 2 end,
                 bend_y = metrics_mod.node_size,
                 rate = function()
-                    if not linked.value or sort.value ~= key then return 0 end
+                    if not linked.value or sort.value ~= key or ordered_by() ~= key then return 0 end
                     return flow_of(key)
                 end,
                 lifetime = function() return require("core/timing").seconds.flow end,
@@ -556,7 +564,12 @@ function M.new(cell: any)
                     filter_node,
                 },
                 g.text {
-                    text = function() return "sorted by " .. string.upper(sort.value) end,
+                    text = function()
+                        local by = string.upper(ordered_by())
+                        if ordered_by() == sort.value then return "sorted by " .. by end
+                        local name = if sort.value == "battery" then "BAT" else string.upper(sort.value)
+                        return "no per-app " .. name .. " · by " .. by
+                    end,
                     font = typography.expressive,
                     size = function() return m().font_secondary end,
                     color = theme.text_muted,
