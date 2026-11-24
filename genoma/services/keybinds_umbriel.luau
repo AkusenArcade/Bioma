@@ -159,13 +159,21 @@ local function scan(path: string, text: string, modifier: string): { any }
                     key_end = pos + after - 1,
                     action = action,
                     title = if title and title ~= "" then title else nil,
-                    norm = kdl.normalize(norm_key),
+                    norm_key = norm_key,
                 })
             end
         end
         pos = line_end + 1
     end
     return out
+end
+
+-- Umbriel's wheel is niri's by a shorter name; here it goes by niri's.
+local function from_umbriel(key: string): string
+    return (string.gsub(key, "([Ww]heel)([UDLR]%a+)$", "%1Scroll%2"))
+end
+local function to_umbriel(key: string): string
+    return (string.gsub(key, "WheelScroll(%a+)$", "Wheel%1"))
 end
 
 local function label_of(b: any): string
@@ -208,7 +216,8 @@ local binds = g.computed(function(): { any }
         if file and file.text then
             for _, b in scan(path, file.text, modifier) do
                 b.label = label_of(b)
-                b.caps = kdl.keycaps(b.key)
+                b.caps = kdl.keycaps(from_umbriel(b.key))
+                b.norm = kdl.normalize(from_umbriel(b.norm_key))
                 b.shadowed = false
                 b.fixed = false
                 table.insert(found, b)
@@ -307,7 +316,7 @@ end
 function M.rekey(bind: any, key: string)
     local text = current(bind)
     if not text then return end
-    write(bind.file, string.sub(text, 1, bind.key_start - 1) .. quoted(key) .. string.sub(text, bind.key_end))
+    write(bind.file, string.sub(text, 1, bind.key_start - 1) .. quoted(to_umbriel(key)) .. string.sub(text, bind.key_end))
 end
 
 function M.remove(bind: any)
@@ -329,7 +338,7 @@ function M.add(key: string, action: { name: string, args: { string } }, title: s
     local text = file.text or "[keybinds]\n"
     if not string.find("\n" .. text, "\n%s*%[keybinds%]") then text ..= "\n[keybinds]\n" end
     if string.sub(text, -1) ~= "\n" then text ..= "\n" end
-    local line = quoted(key) .. " = " .. quoted(action_text(action))
+    local line = quoted(to_umbriel(key)) .. " = " .. quoted(action_text(action))
     if title ~= "" then line ..= " # " .. string.gsub(title, "\n", " ") end
     write(M.main, text .. line .. "\n")
 end

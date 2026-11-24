@@ -9,7 +9,9 @@
 -- listed without the pencil and the trash. A combination is
 -- recorded by pressing it, not by typing it: the pencil turns the keycaps
 -- into a field that listens, and the next key pressed with its modifiers is
--- the new combination, written as soon as it is pressed. While the field
+-- the new combination, written as soon as it is pressed. So is a mouse button
+-- or a step of the wheel, anywhere on the page, while a modifier is held:
+-- without one the mouse is only the hand on the page. While the field
 -- listens the compositor's own shortcuts stand aside, or pressing a combination that
 -- is taken would do what it is taken for. A taken combination is refused
 -- where it was pressed, saying by what; Escape leaves the bind as it was,
@@ -55,6 +57,12 @@ local NAMED = {
 local MODIFIERS = {
     Super_L = "Mod", Super_R = "Mod", Meta_L = "Mod", Meta_R = "Mod", Control_L = "Ctrl", Control_R = "Ctrl",
     Alt_L = "Alt", Alt_R = "Alt", Shift_L = "Shift", Shift_R = "Shift", ISO_Level3_Shift = "", Hyper_L = "", Hyper_R = "",
+}
+
+-- The mouse's buttons and the wheel, by the evdev code and niri's names.
+local BUTTONS = {
+    [272] = "MouseLeft", [273] = "MouseRight", [274] = "MouseMiddle",
+    [275] = "MouseBack", [278] = "MouseBack", [276] = "MouseForward", [277] = "MouseForward",
 }
 
 local function key_name(name: string, code: number): string
@@ -212,6 +220,61 @@ function M.new(t: { [string]: any }): any
         stop()
     end
 
+    -- ---- The mouse, while the field listens -------------------------------------
+
+    local function mods_now(): { string }
+        local mods = g.untracked(g.modifiers)
+        local out = {}
+        if mods.logo then table.insert(out, "Mod") end
+        if mods.ctrl then table.insert(out, "Ctrl") end
+        if mods.alt then table.insert(out, "Alt") end
+        if mods.shift then table.insert(out, "Shift") end
+        return out
+    end
+    -- A press that was a combination is not also a press of what it is over
+    -- (the cross under the pointer would remove the bind).
+    local swallowed = false
+    local function pressed(button: number)
+        swallowed = false
+        if not g.untracked(listening) then return end
+        local name = BUTTONS[button]
+        local list = mods_now()
+        if not name or #list == 0 then return end
+        swallowed = true
+        table.insert(list, name)
+        heard(table.concat(list, "+"))
+    end
+    local function wheeled(dx: number, dy: number, steps: boolean): boolean
+        if not steps or not g.untracked(listening) then return false end
+        local list = mods_now()
+        if #list == 0 then return false end
+        -- With Shift held, Genoma turns the wheel's steps sideways.
+        if dy == 0 and table.find(list, "Shift") then dx, dy = 0, dx end
+        local name = if dy < 0 then "WheelScrollUp" elseif dy > 0 then "WheelScrollDown"
+            elseif dx < 0 then "WheelScrollLeft" elseif dx > 0 then "WheelScrollRight" else ""
+        if name ~= "" then
+            table.insert(list, name)
+            heard(table.concat(list, "+"))
+        end
+        return true
+    end
+    -- What the field shows held is what is held: a modifier let go leaves it.
+    g.effect(function()
+        if not listening() then return end
+        local mods = g.modifiers()
+        local list = {}
+        if mods.logo then table.insert(list, "Mod") end
+        if mods.ctrl then table.insert(list, "Ctrl") end
+        if mods.alt then table.insert(list, "Alt") end
+        if mods.shift then table.insert(list, "Shift") end
+        local caps = {}
+        if #list > 0 then
+            caps = keybinds.keycaps(table.concat(list, "+") .. "+")
+            table.remove(caps)
+        end
+        g.untracked(function() held.value = caps end)
+    end)
+
     -- ---- The picker's choices --------------------------------------------------
 
     -- Through `scripts/ipc`, which reaches the shell on either runtime.
@@ -368,6 +431,8 @@ function M.new(t: { [string]: any }): any
             align = "center",
             padding_left = function() return 10 * f() end,
             gap = function() return 6 * f() end,
+            -- Here too, inside the list, which would scroll.
+            on_wheel = wheeled,
             on_hover = function(on: boolean)
                 hovered.value = on
                 if on then hovered_file.value = g.untracked(r).file
@@ -478,6 +543,7 @@ function M.new(t: { [string]: any }): any
                 justify = "center",
                 on_hover = function(on: boolean) slot_hovered.value = on end,
                 on_click = function()
+                    if swallowed then return end
                     if g.untracked(function() return picking.value end) or g.untracked(keybinds.busy) then return end
                     if g.untracked(r).fixed then return end
                     if not g.untracked(live) then edit(g.untracked(r))
@@ -766,7 +832,7 @@ function M.new(t: { [string]: any }): any
             g.text {
                 text = function()
                     if keybinds.error() ~= "" then return keybinds.error() end
-                    if listening() then return "Esc leaves it as it was" end
+                    if listening() then return "Keys, or the mouse with a modifier · Esc leaves it" end
                     if picking.value then return "Enter takes the first" end
                     if hovered_file.value ~= "" then return short_path(hovered_file.value) end
                     return keybinds.where
@@ -785,6 +851,8 @@ function M.new(t: { [string]: any }): any
         height = t.height,
         direction = "column",
         gap = function() return 10 * f() end,
+        on_press = function(button: number) pressed(button) end,
+        on_wheel = wheeled,
         search_row,
         list_well,
         foot,

@@ -35,7 +35,8 @@ local MODS_OUT = { Mod = "SUPER", Super = "SUPER", Alt = "ALT", Shift = "SHIFT",
 -- The modifier mask hyprctl reports.
 local MASK = { { 64, "Super" }, { 4, "Ctrl" }, { 8, "Alt" }, { 1, "Shift" } }
 local MOUSE_IN = { ["mouse:272"] = "MouseLeft", ["mouse:273"] = "MouseRight", ["mouse:274"] = "MouseMiddle",
-    ["mouse:275"] = "MouseBack", ["mouse:276"] = "MouseForward", mouse_down = "WheelScrollDown", mouse_up = "WheelScrollUp" }
+    ["mouse:275"] = "MouseBack", ["mouse:276"] = "MouseForward", mouse_down = "WheelScrollDown", mouse_up = "WheelScrollUp",
+    mouse_left = "WheelScrollLeft", mouse_right = "WheelScrollRight" }
 local MOUSE_OUT: { [string]: string } = {}
 for k, v in MOUSE_IN do MOUSE_OUT[v] = k end
 -- niri's names for punctuation and space are keysyms in lower case.
