@@ -33,8 +33,31 @@ local M = {}
 
 local running = compositor.name
 local on_niri = running == "niri"
--- Off niri: { outputs = { [name] = { x, y, vrr } }, primary = name }.
+-- Off niri: { outputs = { [name] = { x, y, vrr, hdr } }, primary = name }.
 local function wished(): any return config.get("monitors." .. running, {}) end
+
+-- Which monitors can show HDR, as their EDID says (scripts/hdr), asked
+-- again when the screens change. Only Hyprland and Umbriel are told to
+-- turn it on: niri has no HDR.
+local hdr_capable = g.signal({} :: { [string]: boolean })
+local function read_hdr()
+    local out = {}
+    g.process {
+        command = { paths.script("hdr") },
+        on_line = function(line: string)
+            local ok, map = pcall(g.parse_json, line)
+            if ok and type(map) == "table" then out = map end
+        end,
+        on_exit = function() hdr_capable.value = out end,
+    }
+end
+if running == "hyprland" or running == "umbriel" then
+    g.lasting(function()
+        g.watch(function() return #g.outputs() end, function() read_hdr() end)
+    end)
+end
+function M.hdr_supported(name: string): boolean return hdr_capable.value[name] == true end
+function M.hdr(name: string): boolean return ((wished().outputs or {})[name] or {}).hdr == true end
 
 -- What niri reports, one entry per output that is on; and the ones
 -- connected but switched off, which it lists with no geometry.
@@ -164,6 +187,9 @@ function M.vrr_rule(): boolean
 end
 
 -- Whether Bioma's own rule for games is the one in place.
+-- Bioma's rule for games is niri's: elsewhere on demand is full screen.
+function M.games_offered(): boolean return on_niri end
+
 function M.games_rule(): boolean
     if not on_niri then return false end
     for _, item in niri_config.items() do
@@ -211,6 +237,11 @@ local function monitors_body(): string
                 table.insert(out, string.format("    position = \"%dx%d\",", math.round(want.x or o.x or 0), math.round(want.y or o.y or 0)))
                 table.insert(out, "    scale = " .. number_text(o.scale or 1) .. ",")
                 table.insert(out, "    vrr = " .. (vrr[want.vrr or "off"] or 0) .. ",")
+                -- HDR10 needs ten bits; off, Hyprland picks the colours itself.
+                if want.hdr then
+                    table.insert(out, "    cm = \"hdr\",")
+                    table.insert(out, "    bitdepth = 10,")
+                end
                 table.insert(out, "})")
             end
         end
@@ -223,6 +254,7 @@ local function monitors_body(): string
         table.insert(out, "[output." .. name .. "]")
         if want.x ~= nil and want.y ~= nil then table.insert(out, string.format("position = [%d, %d]", math.round(want.x), math.round(want.y))) end
         if want.vrr then table.insert(out, "vrr = \"" .. (vrr[want.vrr] or "off") .. "\"") end
+        if want.hdr ~= nil then table.insert(out, "hdr = \"" .. (if want.hdr then "on" else "off") .. "\"") end
         table.insert(out, "focus_at_startup = " .. tostring(w.primary == name))
         table.insert(out, "")
     end
@@ -403,6 +435,16 @@ function M.set_vrr(name: string, mode: string)
             return kdl.with_vrr(added, last_output(added), mode)
         end
         return rewrite(text, output, function(t: string, section: any) return kdl.with_vrr(t, section, mode) end)
+    end)
+end
+
+-- HDR on or off, for one monitor that can show it (Hyprland, Umbriel).
+function M.set_hdr(name: string, on: boolean)
+    if on_niri or not g.untracked(function() return M.hdr_supported(name) end) then return end
+    wish(function(w: any)
+        local o = table.clone(w.outputs[name] or {})
+        o.hdr = on
+        w.outputs[name] = o
     end)
 end
 

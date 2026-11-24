@@ -495,7 +495,7 @@ function M.new(t: { [string]: any }): any
         },
         g.box { grow = 1 },
         g.box {
-            present = function() return vrr_offered() and vrr_mode() == "demand" end,
+            present = function() return vrr_offered() and vrr_mode() == "demand" and monitors.games_offered() end,
             direction = "row",
             align = "center",
             gap = function() return 8 * f() end,
@@ -506,6 +506,23 @@ function M.new(t: { [string]: any }): any
                 settling = monitors.busy,
                 on_toggle = function(value: boolean)
                     if not g.untracked(monitors.busy) then monitors.set_games(value) end
+                end,
+            },
+        },
+        -- HDR, on a monitor whose EDID says it can and a compositor that
+        -- can be told (Hyprland, Umbriel; services/monitors.luau).
+        g.box {
+            present = function() return monitors.hdr_supported(chosen()) end,
+            direction = "row",
+            align = "center",
+            gap = function() return 8 * f() end,
+            meta_label("HDR"),
+            switch.new {
+                on = function() return monitors.hdr(chosen()) end,
+                factor = f,
+                settling = monitors.busy,
+                on_toggle = function(value: boolean)
+                    if not g.untracked(monitors.busy) then monitors.set_hdr(g.untracked(chosen), value) end
                 end,
             },
         },

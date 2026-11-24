@@ -221,6 +221,7 @@ function M.register()
             return if name and name ~= "" then name else "none"
         end,
         vrr = function(name: string, mode: string): string require("services/monitors").set_vrr(name, mode) return mode end,
+        hdr = function(name: string, on: string): string require("services/monitors").set_hdr(name, on == "true") return on end,
         games = function(on: string): string
             require("services/monitors").set_games(on == "true")
             return if on == "true" then "on" else "off"
