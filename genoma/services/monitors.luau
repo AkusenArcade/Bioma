@@ -247,17 +247,22 @@ local function monitors_body(): string
                 table.insert(out, string.format("    position = \"%dx%d\",", math.round(want.x or o.x or 0), math.round(want.y or o.y or 0)))
                 table.insert(out, "    scale = " .. number_text(want.scale or o.scale or 1) .. ",")
                 table.insert(out, "    vrr = " .. (vrr[want.vrr or "off"] or 0) .. ",")
-                if any_hdr then table.insert(out, "    sdr_eotf = \"gamma22\",") end
+                if any_hdr then
+                    table.insert(out, "    sdr_eotf = \"gamma22\",")
+                    -- What is not HDR, the desktop itself: white at the
+                    -- reference 203 nits (ITU-R BT.2408) and black at none.
+                    -- Hyprland's own 80 and 0.2 are dim and grey, the whole
+                    -- desktop washed out (Akusen, 2026-11-24). On a monitor
+                    -- that is not HDR they change nothing, and are there
+                    -- because Hyprland 0.57.2 does not compare sdr_eotf: a
+                    -- rule where it alone changed is taken for the same.
+                    table.insert(out, "    sdr_max_luminance = 203,")
+                    table.insert(out, "    sdr_min_luminance = 0.005,")
+                end
                 -- HDR10 needs ten bits; off, Hyprland picks the colours itself.
                 if want.hdr then
                     table.insert(out, "    cm = \"hdr\",")
                     table.insert(out, "    bitdepth = 10,")
-                    -- What is not HDR, the desktop itself: white at the
-                    -- reference 203 nits (ITU-R BT.2408) and black at none.
-                    -- Hyprland's own 80 and 0.2 are dim and grey, the whole
-                    -- desktop washed out (Akusen, 2026-11-24).
-                    table.insert(out, "    sdr_max_luminance = 203,")
-                    table.insert(out, "    sdr_min_luminance = 0.005,")
                 end
                 table.insert(out, "})")
             end
