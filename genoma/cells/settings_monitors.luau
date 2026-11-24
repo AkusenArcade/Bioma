@@ -505,27 +505,8 @@ function M.new(t: { [string]: any }): any
         gap = function() return 14 * f() end,
         padding_left = function() return 4 * f() end,
         padding_right = function() return 4 * f() end,
-        -- First in the line, so that the variable refresh's own choices do not
-        -- read as HDR's. On a monitor whose EDID says it can and a compositor that
-        -- can be told (Hyprland, Umbriel; services/monitors.luau).
-        g.box {
-            present = function() return monitors.hdr_supported(chosen()) end,
-            direction = "row",
-            align = "center",
-            gap = function() return 8 * f() end,
-            meta_label("HDR"),
-            switch.new {
-                on = function() return monitors.hdr(chosen()) end,
-                factor = f,
-                settling = monitors.busy,
-                on_toggle = function(value: boolean)
-                    if not g.untracked(monitors.busy) then monitors.set_hdr(g.untracked(chosen), value) end
-                end,
-            },
-        },
         -- The name of a setting is the machine's voice; the sentence
         -- saying it is not offered is the human one.
-        g.box { present = vrr_offered, meta_label("VARIABLE REFRESH") },
         g.text {
             present = function() return not vrr_offered() end,
             text = "No variable refresh on this monitor",
@@ -557,8 +538,30 @@ function M.new(t: { [string]: any }): any
                 end,
             },
         },
+        -- HDR comes before the variable refresh, whose own choices would read
+        -- as HDR's. On a monitor whose EDID says it can and a compositor that
+        -- can be told (Hyprland, Umbriel; services/monitors.luau).
+        g.box {
+            present = function() return monitors.hdr_supported(chosen()) end,
+            direction = "row",
+            align = "center",
+            gap = function() return 8 * f() end,
+            meta_label("HDR"),
+            switch.new {
+                on = function() return monitors.hdr(chosen()) end,
+                factor = f,
+                settling = monitors.busy,
+                on_toggle = function(value: boolean)
+                    if not g.untracked(monitors.busy) then monitors.set_hdr(g.untracked(chosen), value) end
+                end,
+            },
+        },
         g.box {
             present = vrr_offered,
+            direction = "row",
+            align = "center",
+            gap = function() return 8 * f() end,
+            meta_label("VARIABLE REFRESH"),
             segmented.new {
                 metrics = m,
                 font_size = function() return m().font_meta end,
