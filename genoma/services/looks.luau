@@ -376,7 +376,22 @@ function M.start()
     if started then return end
     started = true
     if on == "umbriel" then
+        -- A layer rule that appears while Bioma's surfaces are up is not given
+        -- to them (Umbriel 0.1.0), one that changes is: the first time there
+        -- is one, it is changed and changed back.
+        local dir = g.env("XDG_CONFIG_HOME")
+        if not dir or dir == "" then dir = (g.env("HOME") or "") .. "/.config" end
+        local before = g.file({ path = dir .. "/umbriel/bioma-glass.toml", watch = false }).text or ""
         g.watch(function() return glass.value end, function(body: string) write_glass(body) end)
+        if not string.find(before, "[[layer_rule]]", 1, true) then
+            local function current(): string return g.untracked(function() return glass.value end) end
+            g.after(2, function()
+                write_glass((string.gsub(current(), "blur_ignore_alpha = ([%d%.]+)", function(line: string)
+                    return string.format("blur_ignore_alpha = %.2f", math.max(0.01, (tonumber(line) or 0.5) - 0.01))
+                end)))
+            end)
+            g.after(4, function() write_glass(current()) end)
+        end
     elseif on == "hyprland" then
         g.watch(function() return hyprland_blur.value end, function(body: string) write_blur(body) end)
     end
