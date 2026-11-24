@@ -59,6 +59,11 @@ local SETTINGS: { [string]: any } = {
         umbriel = { key = "input.focus.follows_mouse", from = function(v: any) return v == "sloppy" or v == "always" end,
             to = function(v: boolean) return if v then "sloppy" else "off" end },
     },
+    numlock = {
+        kind = "bool", default = false,
+        hyprland = { read = "input:numlock_by_default", write = function(v: boolean) return { input = { numlock_by_default = v } } end },
+        umbriel = { key = "input.keyboard.numlock_toggle" },
+    },
     mouse_speed = {
         kind = "number", default = 0,
         hyprland = { read = "input:sensitivity", write = function(v: number) return { input = { sensitivity = v } } end },

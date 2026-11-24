@@ -3,7 +3,8 @@
 -- another compositor runs (cells/settings_niri.luau is niri's), with what
 -- that compositor can be told from here (services/compositor_settings.luau):
 -- the gaps, the border, the focus following the pointer, Umbriel's hot
--- corners, the mouse and the touchpad, and Hyprland's window opacity.
+-- corners, num lock, the mouse and the touchpad, and Hyprland's window
+-- opacity.
 --
 -- One well per setting, as on NIRI, and a line in Spectral saying what the
 -- current choice does. Every choice is written into one file of Bioma's,
@@ -184,6 +185,14 @@ function M.new(t: { [string]: any }): any
         end),
     }, function() return settings.supports("corner_top_left") end)
 
+    local numlock = section("NUM LOCK AT START", toggle("numlock"), {
+        line(function()
+            return (if on("numlock")
+                then "The keypad types figures from the moment the session starts. "
+                else "The keypad moves the cursor until num lock is pressed. ") .. written("numlock")
+        end),
+    })
+
     local mouse = section("MOUSE", nil, {
         labelled("SPEED", amount("mouse_speed", -1, 1, 0.1, "")),
         p.row("FLAT ACCELERATION", toggle("mouse_flat")),
@@ -218,7 +227,7 @@ function M.new(t: { [string]: any }): any
     }, function() return settings.supports("opacity_focused") end)
 
     settings.look()
-    return p.column { error_line, gaps, border, follows, hot_corners, mouse, touchpad, opacity }
+    return p.column { error_line, gaps, border, follows, hot_corners, numlock, mouse, touchpad, opacity }
 end
 
 return M
