@@ -20,3 +20,7 @@ cursor-color = {{colors.terminal_cursor.default.hex}}
 cursor-text = {{colors.terminal_cursor_text.default.hex}}
 selection-background = {{colors.terminal_selection_bg.default.hex}}
 selection-foreground = {{colors.terminal_selection_fg.default.hex}}
+
+# Bioma: the window blurred where it is translucent. Ghostty asks for a blur
+# of its own and, unless told to, of nothing: Hyprland then leaves it sharp.
+background-blur = true

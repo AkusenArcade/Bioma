@@ -95,7 +95,7 @@ comment that says why — a key Bioma binds is Bioma's on every compositor.
 | `bioma-rules.lua` | the repository | Hyprland: no map and unmap animation on Bioma's layers |
 | `bioma-autostart.lua` | `scripts/install --autostart` | Hyprland: Bioma started with the session. On Umbriel the same is Bioma's entry in `config.toml`'s own `general.autostart`, a list Umbriel takes whole from the last file that sets it |
 | `bioma-glass.toml` | the shell | Umbriel: the blur under the cells — Umbriel has no `ext-background-effect`, so a layer rule blurs where a surface is more opaque than just under the cells' opacity — and its strength |
-| `bioma-blur.lua` | the APPEARANCE blur slider | Hyprland's `decoration.blur` passes and size |
+| `bioma-blur.lua` | the APPEARANCE blur slider | Hyprland's `decoration.blur` passes and size, for its translucent windows as for the cells: written from the first start, not only when the slider moves |
 | `bioma-keyboard` | the keyboard cell | the layouts and variants |
 | `bioma-cursor` | the theme cell's DESKTOP capsule | the cursor theme and size (Hyprland: its cursor variables, and `hyprctl setcursor` for the session running) |
 | `bioma-settings` | the HYPRLAND or UMBRIEL page of the settings cell | the gaps, the border, the focus following the pointer, Umbriel's hot corners, the mouse and the touchpad, Hyprland's window opacity — each only once it is changed there |

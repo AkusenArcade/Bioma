@@ -19,6 +19,8 @@ hooks never touch each other's. Bioma's changes on top:
   the focused border as a cell's rim (Hyprland's gradient, the rim colour on
   Umbriel); Hyprland's also raises the focused window with an invoked cell's
   shadow. Umbriel's lost two border keys 0.1.0 does not know.
+- `ghostty/ghostty` asks for the blur behind its window (`background-blur`):
+  without it Ghostty names an empty region, and Hyprland leaves it sharp.
 - `qt/apply.sh` is new, and `qt/undo.sh` extended: qt5ct and qt6ct read the
   colour scheme their own config names, so the rendered scheme is pointed at
   there (`color_scheme_path`, `custom_palette`) and unpointed on undo.

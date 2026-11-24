@@ -214,8 +214,8 @@ end
 
 -- How strong the glass is: niri's own `blur` section, global, written as
 -- `bioma-blur.kdl` last, so it overrides the user's `passes` and `offset`
--- and leaves the rest of their section alone; Hyprland's
--- `decoration.blur`, as `bioma-blur.lua`. Only when the step is moved.
+-- and leaves the rest of their section alone, and only when the step is
+-- moved. Hyprland's and Umbriel's are written as they change, below.
 function M.set_blur(strength: number)
     local steps = metrics.blur_steps
     local index = math.clamp(math.floor(strength + 0.5), 1, #steps)
@@ -225,13 +225,20 @@ function M.set_blur(strength: number)
     local said = "Written by Bioma's settings cell (APPEARANCE). Moving the blur slider rewrites it."
     if on == "niri" then
         write_blur("// " .. said .. "\n" .. "blur {\n    passes " .. step.passes .. "\n    offset " .. string.format("%.1f", step.offset) .. "\n}")
-    elseif on == "hyprland" then
-        -- Hyprland's size is the kernel's reach, about twice niri's offset.
-        write_blur("-- " .. said .. "\nhl.config({\n    decoration = {\n        blur = {\n            passes = " .. step.passes
-            .. ",\n            size = " .. math.round(step.offset * 2) .. ",\n        },\n    },\n})\n")
     end
-    -- Umbriel's strength is part of its glass (below), written as it changes.
 end
+
+-- Hyprland's `decoration.blur`, as `bioma-blur.lua`: what it blurs its
+-- translucent windows and Bioma's cells with. Written from the start and not
+-- only when the slider moves, as Umbriel's glass is: its example has one pass
+-- of three, which is hardly a blur (Akusen, 2026-11-24). Hyprland's size is
+-- the kernel's reach, about twice niri's offset.
+local hyprland_blur = g.computed(function(): string
+    local step = metrics.blur_steps[metrics.blur_strength()]
+    return "-- Written by Bioma's settings cell (APPEARANCE). Moving the blur slider rewrites it.\n"
+        .. "hl.config({\n    decoration = {\n        blur = {\n            passes = " .. step.passes
+        .. ",\n            size = " .. math.round(step.offset * 2) .. ",\n        },\n    },\n})\n"
+end)
 
 -- Umbriel's glass. It has no ext-background-effect, through which niri and
 -- Hyprland blur the exact region each cell declares; it blurs a layer
@@ -370,6 +377,8 @@ function M.start()
     started = true
     if on == "umbriel" then
         g.watch(function() return glass.value end, function(body: string) write_glass(body) end)
+    elseif on == "hyprland" then
+        g.watch(function() return hyprland_blur.value end, function(body: string) write_blur(body) end)
     end
     -- Once the shell has settled, and again whenever the palette rests.
     g.after(timing.seconds.settle, function()
