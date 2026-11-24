@@ -8,7 +8,7 @@ The machine is an organism. Bioma shows its vital signs: surfaces appear when
 they have something to say, animate in proportion to what they measure, and go
 quiet when nothing is happening.
 
-- **Compositor**: Niri
+- **Compositor**: Niri; Hyprland 0.57+ and Umbriel in preview
 - **Toolkit**: [Genoma](https://github.com/AkusenArcade/Genoma) (Rust, Luau); Quickshell until 1.0.0-beta.61
 - **Status**: **1.0 beta**. Every cell of the first version is built and in
   daily use, with the settings cell, the launcher, the organisms on the
@@ -626,6 +626,21 @@ longer than 20 ms, by file and line.
 
 `scripts/ipc <target> <function> …` reaches the running shell from outside,
 as the keybinds do: `scripts/ipc cell toggle vitals`.
+
+## Hyprland and Umbriel (preview)
+
+Since 1.0.0-beta.80 Bioma also runs on Hyprland (0.57 or later, whose
+configuration is Lua) and on Umbriel. Inside either, `bioma-shell start` once
+from a terminal, then the setup's third step (HYPRLAND or UMBRIEL) — or
+`bioma-install --autostart` — writes Bioma's keys and autostart into that
+compositor's configuration, starting from its packaged one when there is
+none. Each compositor keeps its own files beside its configuration, so the
+niri configuration is never touched, and Bioma knows at every start which
+compositor it is in. Settings has a HYPRLAND or UMBRIEL page in place of
+NIRI, and the Keybinds page writes their format. Umbriel has no
+`ext-background-effect`, so its blur comes from a layer rule Bioma writes.
+The package still depends on niri, which the greeter runs in; these two are
+in preview until they have been tried in daily use.
 
 ## The Quickshell version
 
