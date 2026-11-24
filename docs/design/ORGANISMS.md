@@ -896,7 +896,7 @@ in twenty-fives so the swarm does not grow or thin with every thread.
 | panel | 424 × 200 | template 2 × 1; bleeds, the swarm clipped within the rim, round corners included (Genoma's `clip` follows a capsule's radius) |
 | creature | 4 long | a dot stretched along its heading, in the colour, lit by a bloom (`genoma:glow`: spread 7, strength 1.4, from brightness 0.15) |
 | speed | 4 + 92 √load a second | 4 idle, ~13 at 1 %, ~50 at 25 %, 96 with all cores |
-| frames | 30 + 135 × load a second | a drift needs few, a dart many (Genoma's `fps`): thirty at rest, the screen's own with all cores |
+| frames | speed ÷ 1.5 a second, at least 8 | a drift needs few, a dart many (Genoma's `fps`): a creature moves at most 1.5 a frame — ~9 at 1 %, ~33 at 25 %, 64 with all cores. Each frame is one the compositor composes again with its blur, so frames beyond the motion are a cost twice (Arc B390 laptop at rest: niri 33 % of the render engine for the swarm's 30) |
 | sight | 28 | how far one sees its neighbours |
 | figures | `CPU` · `RAM` | Orbitron label over the value, lit with the colour, top-left |
 

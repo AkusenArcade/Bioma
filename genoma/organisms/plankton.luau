@@ -20,6 +20,12 @@ local system = require("services/system_monitor")
 local performance = require("core/performance")
 
 local PER_CREATURE = 10
+-- How far a creature may move between two frames, units: the frames are
+-- as many as the swimming needs and no more. Fewer than eight a second
+-- would leave Genoma's simulation behind (sixty steps a second, eight at
+-- most a frame).
+local STEP_PER_FRAME = 1.5
+local FEWEST_FRAMES = 8
 local STEP = 25
 local FEWEST, MOST = 50, 400
 -- The glass's outline: Genoma draws a rim never under two physical pixels,
@@ -33,6 +39,8 @@ return {
         local function load(): number return math.clamp(system.cpu_percent() / 100, 0, 1) end
         local function memory(): number return math.clamp(system.ram_percent() / 100, 0, 1) end
         local function swimming(): boolean return not performance.still() end
+        -- Units a second: a drift at rest, a dart with every core busy.
+        local function speed(): number return 4 + 92 * math.sqrt(load()) end
         local function themed(): boolean return o.entry().colour == "theme" end
         local function tint(): string return if themed() then theme.primary() else theme.state_for(load()) end
         local function figures(): boolean return o.entry().figures ~= false end
@@ -58,15 +66,18 @@ return {
                 agent_size = function() return 4 * f() end,
                 fill = tint,
                 clock = swimming,
-                -- A drift needs few frames, a dart many: thirty a second
-                -- at rest, up to the screen's own with every core busy.
-                fps = function() return 30 + 135 * load() end,
+                -- A drift needs few frames, a dart many: as many as keep
+                -- each step within STEP_PER_FRAME. Every frame is also one
+                -- the compositor composes again, glass blur included, so a
+                -- frame drawn for nothing costs twice (on a laptop's
+                -- integrated card, most of its load at rest).
+                fps = function() return math.max(FEWEST_FRAMES, speed() / STEP_PER_FRAME) end,
                 values = function()
-                    local l, mem = load(), memory()
+                    local mem = memory()
                     return {
                         -- Swimming speed: a drift at rest, a dart with
                         -- every core busy.
-                        (4 + 92 * math.sqrt(l)) * f(),
+                        speed() * f(),
                         -- How far one sees, how much it keeps apart, how
                         -- much it turns with the others, how much it
                         -- gathers: the memory draws the shoal together.
