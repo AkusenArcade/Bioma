@@ -248,6 +248,7 @@ local function output_of(node: any): any
         return nil
     end
     local position = named("position")
+    local scale = named("scale")
     return {
         kind = "output",
         name = node.args[1].value,
@@ -259,6 +260,7 @@ local function output_of(node: any): any
         off = named("off") ~= nil,
         primary = named("focus-at-startup") ~= nil,
         vrr = vrr_of(named("variable-refresh-rate")),
+        scale = if scale and scale.args[1] then tonumber(scale.args[1].value) else nil,
         position = if position then {
             start = position.start,
             ["end"] = position["end"],
@@ -747,6 +749,15 @@ function M.with_vrr(text: string, output: any, mode: string): string
     for _, child in output.children do if child.name == "variable-refresh-rate" then present = child break end end
     local entry = if mode == "demand" then "variable-refresh-rate on-demand=true" else "variable-refresh-rate"
     if mode == "off" then return if present then M.without(text, present) else text end
+    if present then return string.sub(text, 1, present.start - 1) .. entry .. string.sub(text, present["end"]) end
+    return M.with_child(text, output, entry, last_of(output.children))
+end
+
+-- The scale, replaced where it is written, added when it is not.
+function M.with_scale(text: string, output: any, scale: number): string
+    local present = nil
+    for _, child in output.children do if child.name == "scale" then present = child break end end
+    local entry = "scale " .. M.figure(scale)
     if present then return string.sub(text, 1, present.start - 1) .. entry .. string.sub(text, present["end"]) end
     return M.with_child(text, output, entry, last_of(output.children))
 end

@@ -15,7 +15,7 @@
 -- Elsewhere (Hyprland, Umbriel) where each output is comes from
 -- wlr-output-management (@genoma/displays), followed as it changes, and no
 -- niri sections are read. What is asked for there (a position, variable
--- refresh, the primary) is kept in Bioma's configuration
+-- refresh, the primary, the scale) is kept in Bioma's configuration
 -- (`monitors.<compositor>`) and written whole as Bioma's own file for that
 -- compositor (`bioma-monitors.lua` through scripts/hypr-include,
 -- `bioma-monitors.toml` through scripts/umbriel-include); switching one on
@@ -33,7 +33,7 @@ local M = {}
 
 local running = compositor.name
 local on_niri = running == "niri"
--- Off niri: { outputs = { [name] = { x, y, vrr, hdr } }, primary = name }.
+-- Off niri: { outputs = { [name] = { x, y, vrr, hdr, scale } }, primary = name }.
 local function wished(): any return config.get("monitors." .. running, {}) end
 
 -- Which monitors can show HDR, as their EDID says (scripts/hdr), asked
@@ -235,7 +235,7 @@ local function monitors_body(): string
                 table.insert(out, string.format("    output = %q,", name))
                 table.insert(out, string.format("    mode = \"%dx%d@%s\",", o.mode_width, o.mode_height, number_text(o.refresh or 60)))
                 table.insert(out, string.format("    position = \"%dx%d\",", math.round(want.x or o.x or 0), math.round(want.y or o.y or 0)))
-                table.insert(out, "    scale = " .. number_text(o.scale or 1) .. ",")
+                table.insert(out, "    scale = " .. number_text(want.scale or o.scale or 1) .. ",")
                 table.insert(out, "    vrr = " .. (vrr[want.vrr or "off"] or 0) .. ",")
                 -- HDR10 needs ten bits; off, Hyprland picks the colours itself.
                 if want.hdr then
@@ -248,12 +248,13 @@ local function monitors_body(): string
         return table.concat(out, "\n") .. "\n"
     end
     local out = { "# " .. said, "" }
-    local vrr = { off = "off", on = "on", demand = "fullscreen" }
+    local vrr = { off = "disabled", on = "always", demand = "fullscreen" }
     for _, name in names do
         local want = w.outputs[name]
         table.insert(out, "[output." .. name .. "]")
         if want.x ~= nil and want.y ~= nil then table.insert(out, string.format("position = [%d, %d]", math.round(want.x), math.round(want.y))) end
-        if want.vrr then table.insert(out, "vrr = \"" .. (vrr[want.vrr] or "off") .. "\"") end
+        if want.scale then table.insert(out, "scale = " .. number_text(want.scale)) end
+        if want.vrr then table.insert(out, "vrr = \"" .. (vrr[want.vrr] or "disabled") .. "\"") end
         if want.hdr ~= nil then table.insert(out, "hdr = \"" .. (if want.hdr then "on" else "off") .. "\"") end
         table.insert(out, "focus_at_startup = " .. tostring(w.primary == name))
         table.insert(out, "")
@@ -435,6 +436,69 @@ function M.set_vrr(name: string, mode: string)
             return kdl.with_vrr(added, last_output(added), mode)
         end
         return rewrite(text, output, function(t: string, section: any) return kdl.with_vrr(t, section, mode) end)
+    end)
+end
+
+-- The scales offered, and the one an output runs at among them when it is
+-- another (niri's own choice, written by hand).
+local SCALES = { 1, 1.25, 1.5, 1.75, 2 }
+function M.scales(name: string): { number }
+    local out = table.clone(SCALES)
+    local o = M.output_of(name)
+    local now = if o and o.on then o.scale else nil
+    if now then
+        local listed = false
+        for _, v in out do if math.abs(v - now) < 0.005 then listed = true end end
+        if not listed then
+            table.insert(out, now)
+            table.sort(out)
+        end
+    end
+    return out
+end
+
+-- One output's scale. Its logical size changes with it, so the monitors
+-- beyond its right edge, and below its bottom one, move by as much: what
+-- touched it still touches it, and nothing comes to overlap it.
+function M.set_scale(name: string, scale: number)
+    local me = M.output_of(name)
+    if not me or not me.on or math.abs((me.scale or 1) - scale) < 0.005 then return end
+    local ratio = (me.scale or 1) / scale
+    local dw, dh = me.width * ratio - me.width, me.height * ratio - me.height
+    local right, bottom = me.x + me.width, me.y + me.height
+    local moved: { [string]: { x: number, y: number } } = {}
+    for _, o in g.untracked(M.outputs) do
+        if o.name ~= name then
+            local x = if o.x >= right - 1 then o.x + dw else o.x
+            local y = if o.y >= bottom - 1 then o.y + dh else o.y
+            if x ~= o.x or y ~= o.y then moved[o.name] = { x = math.round(x), y = math.round(y) } end
+        end
+    end
+    if not on_niri then
+        wish(function(w: any)
+            local o = table.clone(w.outputs[name] or {})
+            o.scale = scale
+            w.outputs[name] = o
+            for other, p in moved do
+                local entry = table.clone(w.outputs[other] or {})
+                entry.x, entry.y = p.x, p.y
+                w.outputs[other] = entry
+            end
+        end)
+        return
+    end
+    apply(function(text: string, output: any): string
+        if output.name == name then
+            if #output.sections == 0 then
+                local added = kdl.with_output(text, output.name, output.x, output.y)
+                return kdl.with_scale(added, last_output(added), scale)
+            end
+            return rewrite(text, output, function(t: string, section: any) return kdl.with_scale(t, section, scale) end)
+        end
+        local wanted = moved[output.name]
+        if not wanted then return text end
+        if #output.sections == 0 then return kdl.with_output(text, output.name, wanted.x, wanted.y) end
+        return rewrite(text, output, function(t: string, section: any) return kdl.with_position(t, section, wanted.x, wanted.y) end)
     end)
 end
 

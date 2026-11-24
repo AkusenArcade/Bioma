@@ -14,7 +14,8 @@
 --
 -- Below the area, the chosen monitor: its name, whether it is on, whether
 -- it is the one niri focuses at startup (niri's only notion of a primary
--- output) and its scale; on a second line its variable refresh, offered
+-- output) and its scale, chosen among the usual ones (and the one it runs
+-- at, when that is another); on a second line its variable refresh, offered
 -- only where niri says the monitor can. On demand waits for a window rule
 -- that asks for it, and the line says so while none does; GAMES puts
 -- Bioma's own rule for games in place, or takes it back. A monitor
@@ -405,6 +406,12 @@ function M.new(t: { [string]: any }): any
     local function role_fixed(): boolean return monitors.busy() or not power_lit() end
     local function vrr_offered(): boolean local o = chosen_output() return power_lit() and o.vrr_supported == true end
     local function vrr_mode(): string return if power_lit() then chosen_output().vrr else "off" end
+    -- 1, 1.25, 1.5: two decimals at most, none that say nothing.
+    local function scale_text(v: number): string
+        local text = string.format("%.2f", v)
+        text = string.gsub(text, "0+$", "")
+        return (string.gsub(text, "%.$", ""))
+    end
     local function meta_label(text: string): any
         return technical(text, function() return m().font_meta end, theme.text, typography.weight_label)
     end
@@ -456,11 +463,34 @@ function M.new(t: { [string]: any }): any
                 elseif o.primary then monitors.make_primary("") end
             end,
         },
-        g.text {
-            text = function() return if power_lit() then "scale " .. string.format("%.1f", chosen_output().scale) else "" end,
-            color = theme.text_muted,
-            font = typography.expressive,
-            size = function() return m().font_secondary end,
+        g.box {
+            present = power_lit,
+            direction = "row",
+            align = "center",
+            gap = function() return 8 * f() end,
+            meta_label("SCALE"),
+            segmented.new {
+                metrics = m,
+                font_size = function() return m().font_meta end,
+                button_height = function() return 26 * f() end,
+                options = function()
+                    local fixed = monitors.busy()
+                    local out = {}
+                    for _, v in monitors.scales(chosen()) do
+                        table.insert(out, { key = scale_text(v), label = scale_text(v), dimmed = fixed })
+                    end
+                    return out
+                end,
+                current = function()
+                    local o = chosen_output()
+                    return if o and o.on then scale_text(o.scale) else ""
+                end,
+                on_choose = function(key: string)
+                    if g.untracked(monitors.busy) or key == g.untracked(function() return scale_text(chosen_output().scale) end) then return end
+                    local v = tonumber(key)
+                    if v then monitors.set_scale(g.untracked(chosen), v) end
+                end,
+            },
         },
     }
 

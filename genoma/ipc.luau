@@ -47,6 +47,7 @@ function M.register()
         end,
     })
 
+
     g.ipc("audio", {
         up = function(step: string?): string
             local audio = require("services/audio")
@@ -222,6 +223,12 @@ function M.register()
         end,
         vrr = function(name: string, mode: string): string require("services/monitors").set_vrr(name, mode) return mode end,
         hdr = function(name: string, on: string): string require("services/monitors").set_hdr(name, on == "true") return on end,
+        scale = function(name: string, value: string): string
+            local v = tonumber(value)
+            if not v or v < 0.25 or v > 4 then return "a scale is 0.25 to 4" end
+            require("services/monitors").set_scale(name, v)
+            return value
+        end,
         games = function(on: string): string
             require("services/monitors").set_games(on == "true")
             return if on == "true" then "on" else "off"
