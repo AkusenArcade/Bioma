@@ -282,10 +282,20 @@ local function write_own()
     p:close_input()
 end
 
--- One output's wishes changed by `edit`, then the file written.
+-- One output's wishes changed by `edit`, then the file written. The place
+-- of every output is written with it: one left to the compositor is put
+-- again beside the one the file names, so a scale chosen on one monitor
+-- moved the other (Hyprland, 2026-11-24).
 local function wish(edit: (any) -> ())
     local w = table.clone(g.untracked(wished))
     w.outputs = table.clone(w.outputs or {})
+    for _, o in g.untracked(function() return live.value end) do
+        local entry = table.clone(w.outputs[o.name] or {})
+        if entry.x == nil or entry.y == nil then
+            entry.x, entry.y = o.x, o.y
+            w.outputs[o.name] = entry
+        end
+    end
     edit(w)
     config.set("monitors." .. running, w)
     write_own()
