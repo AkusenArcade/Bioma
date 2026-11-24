@@ -614,7 +614,7 @@ function M.new(t: { [string]: any }): any
     }, settings.has_rules)
 
     settings.look()
-    return p.column { error_line, layout, gaps, border, follows, hot_corners, numlock, mouse, touchpad, opacity, rules }
+    return p.column { error_line, gaps, border, follows, layout, hot_corners, numlock, mouse, touchpad, opacity, rules }
 end
 
 return M
