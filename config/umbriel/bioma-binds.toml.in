@@ -1,0 +1,57 @@
+# Bioma — the keys that ask for a cell, for Umbriel (bioma-binds.kdl.in is
+# niri's, bioma-binds.lua.in Hyprland's, with the same keys).
+#
+# The compositor holds the keys and the shell holds the cells, and the whole
+# of the connection is one IPC call: `scripts/ipc cell toggle <domain>` asks
+# the register for a cell of that domain and toggles it. Ask the running
+# shell which domains it knows:
+#
+#     /path/to/Bioma/scripts/ipc cell list
+#
+# **This is a template.** It is written out as `bioma-binds.toml` beside
+# Umbriel's `config.toml`, with `@BIOMA@` replaced by where Bioma actually
+# is, and included from it (`scripts/umbriel-include`). The written copy is
+# yours: one bind a line, so the settings cell's Keybinds page can edit it in
+# place.
+#
+# **The prefix is Super+Alt**, as on niri: the plain Super keys are the
+# compositor's own.
+#
+# Umbriel merges `[keybinds]` key by key and lets config.toml win, whatever
+# order the files come in. So a key bound here is taken out of config.toml's
+# own `[keybinds]` when this file is included, the line kept as a comment
+# that says why: as on niri, a key Bioma binds is Bioma's.
+
+[keybinds]
+"Super+Alt+V" = "spawn '@BIOMA@/scripts/ipc' cell toggle vitals"
+"Super+Alt+P" = "spawn '@BIOMA@/scripts/ipc' cell toggle utility"
+"Super+Alt+K" = "spawn '@BIOMA@/scripts/ipc' cell toggle keyboard"
+"Super+Shift+Space" = { action = "keyboard-layout-next", repeat = false }
+"Super+Alt+T" = "spawn '@BIOMA@/scripts/ipc' cell toggle theme"
+"Super+Alt+A" = "spawn '@BIOMA@/scripts/ipc' cell toggle audio"
+"Super+Alt+S" = "spawn '@BIOMA@/scripts/ipc' cell toggle settings"
+"Super+Alt+Escape" = "spawn '@BIOMA@/scripts/ipc' cell toggle system"
+"XF86AudioRaiseVolume" = { action = "spawn '@BIOMA@/scripts/key' volume-up", allow_when_locked = true }
+"XF86AudioLowerVolume" = { action = "spawn '@BIOMA@/scripts/key' volume-down", allow_when_locked = true }
+"XF86AudioMute" = { action = "spawn '@BIOMA@/scripts/key' mute", allow_when_locked = true, repeat = false }
+"XF86AudioMicMute" = { action = "spawn '@BIOMA@/scripts/key' mic-mute", allow_when_locked = true, repeat = false }
+"XF86MonBrightnessUp" = { action = "spawn '@BIOMA@/scripts/key' brightness-up", allow_when_locked = true }
+"XF86MonBrightnessDown" = { action = "spawn '@BIOMA@/scripts/key' brightness-down", allow_when_locked = true }
+"XF86AudioPlay" = { action = "spawn '@BIOMA@/scripts/key' media-toggle", repeat = false }
+"XF86AudioNext" = { action = "spawn '@BIOMA@/scripts/key' media-next", repeat = false }
+"XF86AudioPrev" = { action = "spawn '@BIOMA@/scripts/key' media-previous", repeat = false }
+"XF86AudioStop" = { action = "spawn '@BIOMA@/scripts/key' media-stop", repeat = false }
+"Print" = { action = "spawn '@BIOMA@/scripts/ipc' capture region", repeat = false }
+"Super+Print" = { action = "spawn '@BIOMA@/scripts/ipc' capture screen", repeat = false }
+"Alt+Print" = { action = "spawn '@BIOMA@/scripts/ipc' capture window", repeat = false }
+"Super+Alt+C" = { action = "spawn '@BIOMA@/scripts/ipc' capture colour", repeat = false }
+"Shift+Print" = { action = "spawn '@BIOMA@/scripts/ipc' capture stop", repeat = false }
+"Super+Alt+D" = { action = "spawn '@BIOMA@/scripts/ipc' capture dictate", repeat = false }
+"Super+Space" = { action = "spawn '@BIOMA@/scripts/ipc' cell toggle launcher", repeat = false }
+"Super+Alt+Space" = { action = "spawn '@BIOMA@/scripts/ipc' cell toggle actions", repeat = false }
+"Super+Alt+MouseMiddle" = "spawn '@BIOMA@/scripts/ipc' actions ring"
+"Super+Alt+Period" = { action = "spawn '@BIOMA@/scripts/ipc' cell toggle emoji", repeat = false }
+"Super+Alt+G" = { action = "spawn '@BIOMA@/scripts/ipc' performance toggle", repeat = false }
+"Super+Alt+F" = { action = "spawn '@BIOMA@/scripts/ipc' focus toggle", repeat = false }
+"Super+Alt+L" = { action = "spawn '@BIOMA@/scripts/lock'", repeat = false }
+"Super+Alt+B" = { action = "spawn '@BIOMA@/scripts/shell' toggle", repeat = false }

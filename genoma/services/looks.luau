@@ -1,6 +1,7 @@
 --!strict
 -- The desktop's look outside the palette: its icon theme, its cursor, and
--- how strong niri's blur is (services/Looks.qml at 8ed8892).
+-- how strong niri's blur is (services/Looks.qml at 8ed8892); on Umbriel,
+-- the glass under the cells itself.
 --
 -- Neither is the shell's to keep. The icon theme is the desktop's setting
 -- (gsettings, qt5ct and qt6ct's own); the cursor is the same setting for the
@@ -22,6 +23,7 @@ local colour = require("core/colour")
 local config = require("core/config")
 local metrics = require("core/metrics")
 local paths = require("core/paths")
+local performance = require("core/performance")
 local theme = require("core/theme")
 local timing = require("core/timing")
 
@@ -119,9 +121,13 @@ local function remember(values: { [string]: any })
     chosen.value = next_chosen
 end
 
--- One writer at a time for each niri include; a body that arrives while
--- one is written is written after it, the latest only.
-local function include_writer(name: string): (string) -> ()
+local on = require("services/compositor").name()
+
+-- One writer at a time for each include; a body that arrives while one is
+-- written is written after it, the latest only. niri's files by default,
+-- Umbriel's through its own script.
+local function include_writer(name: string, umbriel: boolean?): (string) -> ()
+    local script, who = if umbriel then "umbriel-include" else "niri-include", if umbriel then "Umbriel" else "niri"
     local writing, next_body = false, nil :: string?
     local function write(body: string)
         if writing then
@@ -131,12 +137,12 @@ local function include_writer(name: string): (string) -> ()
         writing = true
         local said = {}
         local p = g.process {
-            command = { paths.script("niri-include"), name },
+            command = { paths.script(script), name },
             on_error_line = function(line: string) table.insert(said, line) end,
             on_exit = function()
                 writing = false
                 local reason = string.match(table.concat(said, "\n"), "^%s*(.-)%s*$") or ""
-                if reason ~= "" then refused.value = "niri refused it: " .. reason end
+                if reason ~= "" then refused.value = who .. " refused it: " .. reason end
                 if next_body then
                     local again = next_body :: string
                     next_body = nil
@@ -151,6 +157,7 @@ local function include_writer(name: string): (string) -> ()
 end
 local write_cursor = include_writer("cursor")
 local write_blur = include_writer("blur")
+local write_glass = include_writer("glass", true)
 
 local function apply_icons(id: string)
     local live = live_name(g.untracked(M.icons), id, g.untracked(icon_live))
@@ -164,6 +171,7 @@ local function apply_cursor(id: string, px: number)
     remember({ cursor = id, live = live, size = px })
     refused.value = ""
     g.process { command = { paths.script("looks"), "cursor", live, tostring(px) } }
+    if on ~= "niri" then return end
     local quoted = '"' .. string.gsub(live, '["\\]', "") .. '"'
     write_cursor("// Written by Bioma's theme cell (DESKTOP). Choosing a cursor there rewrites it.\n"
         .. "cursor {\n    xcursor-theme " .. quoted .. "\n    xcursor-size " .. px .. "\n}")
@@ -199,10 +207,36 @@ function M.set_blur(strength: number)
     local index = math.clamp(math.floor(strength + 0.5), 1, #steps)
     if index == g.untracked(metrics.blur_strength) then return end
     config.set("cell.blurStrength", index)
+    if on ~= "niri" then return end
     local step = steps[index]
     write_blur("// Written by Bioma's settings cell (APPEARANCE). Moving the blur slider rewrites it.\n"
         .. "blur {\n    passes " .. step.passes .. "\n    offset " .. string.format("%.1f", step.offset) .. "\n}")
 end
+
+-- Umbriel's glass. It has no ext-background-effect, through which niri and
+-- Hyprland blur the exact region each cell declares; it blurs a layer
+-- surface by rule, everywhere its pixels are opaque enough
+-- (`blur_ignore_alpha`). So the line is drawn just under the cells' own
+-- opacity: a cell is blurred, the tissue around it (0.5) and the shadows
+-- are not, as long as the cells are more opaque than they are. Live
+-- content behind, not the wallpaper's cached blur (`blur_optimized`), as
+-- niri's xray is off. The strength goes to Umbriel's own `[appearance.blur]`,
+-- global as niri's `blur` section is. Written as `bioma-glass.toml` whenever
+-- one of them changes.
+local glass = g.computed(function(): string
+    local step = metrics.blur_steps[metrics.blur_strength()]
+    local line = math.max(0.01, config.get("cell.opacity", 0.72) - 0.02)
+    return "# Written by Bioma (services/looks.luau): the glass under its cells. Changing\n"
+        .. "# the cells' opacity or blur in its settings rewrites it.\n\n"
+        .. "[appearance.blur]\n"
+        .. "passes = " .. step.passes .. "\n"
+        .. "radius = " .. math.max(1, math.floor(step.offset + 0.5)) .. "\n\n"
+        .. "[[layer_rule]]\n"
+        .. 'match.namespace = "^bioma-(membrane-.+|float|osd|organisms)$"\n'
+        .. "blur = " .. (if performance.blurred() then "true" else "false") .. "\n"
+        .. "blur_ignore_alpha = " .. string.format("%.2f", line) .. "\n"
+        .. "blur_optimized = false\n"
+end)
 
 -- ---- Bioma's cursors and icons --------------------------------------------------
 
@@ -314,6 +348,9 @@ end
 function M.start()
     if started then return end
     started = true
+    if on == "umbriel" then
+        g.watch(function() return glass.value end, function(body: string) write_glass(body) end)
+    end
     -- Once the shell has settled, and again whenever the palette rests.
     g.after(timing.seconds.settle, function()
         settled = true

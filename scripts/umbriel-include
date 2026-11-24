@@ -1,0 +1,278 @@
+#!/usr/bin/env python3
+"""Write one of Bioma's own Umbriel files and make sure Umbriel reads it:
+scripts/niri-include's twin.
+
+    umbriel-include NAME < body.toml
+
+The body goes to $umbriel_dir/bioma-NAME.toml, but only after Umbriel has
+accepted it on its own (`umbriel config validate`) and only if it differs
+from what is there. Then "bioma-NAME.toml" joins config.toml's
+`[include.optional] files`, once.
+
+Umbriel merges tables key by key, collects rule lists such as
+`[[layer_rule]]`, and applies the including file last: config.toml wins
+over every file it includes. niri lets the file included last win, so
+what Bioma sets there overrides the same setting made earlier; here the
+same is done by hand. Each setting the body makes in a table (not a rule
+list) is taken out of the same table in config.toml, and each key it
+binds out of config.toml's `[keybinds]`, chord for chord whatever its
+spelling ("Mod+Space" is "Super+space"): the line left as a comment that
+says why. A setting written as a dotted key from another table
+(`appearance.blur.radius = 3` under no header) is not seen.
+
+Umbriel reloads by itself when a file it reads changes, an optional one
+that appears included; config.toml is checked whole before it is replaced,
+and left as it was if Umbriel refuses it.
+
+Without a config.toml, Umbriel runs on its built-in settings, and a file of
+Bioma's lines alone would replace them (a `[keybinds]` table replaces the
+built-in binds): that is refused.
+
+Prints nothing on success; Umbriel's reason on stderr and exit 1 when
+refused.
+"""
+import os
+import re
+import subprocess
+import sys
+import tempfile
+
+try:
+    import tomllib
+except ImportError:  # Python < 3.11
+    tomllib = None
+
+
+def fail(message):
+    print(message, file=sys.stderr)
+    sys.exit(1)
+
+
+def validate(text):
+    """Umbriel's reason for refusing `text`, or None when it accepts it."""
+    fd, path = tempfile.mkstemp(prefix="bioma-umbriel-include.", suffix=".toml")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as out:
+            out.write(text)
+        return validate_file(path)
+    finally:
+        os.unlink(path)
+
+
+def validate_file(path):
+    env = {k: v for k, v in os.environ.items() if k != "UMBRIEL_SOCKET"}
+    run = subprocess.run(["umbriel", "config", "validate", "-c", path], capture_output=True, text=True, env=env)
+    if run.returncode == 0:
+        return None
+    said = [l for l in (run.stderr + run.stdout).splitlines() if l.startswith(("warning:", "error:"))]
+    line = said[0] if said else (run.stderr.strip().splitlines() or ["refused"])[-1]
+    # "warning: /tmp/x.toml:3:1: ignoring keybind 'X' (bad chord)": the reason.
+    return re.sub(r"^(warning|error):\s*(\S+:\d+:\d+:\s*)?", "", line)
+
+
+# ---- TOML text, read as Umbriel's config.toml is written -------------------------
+#
+# Only what is needed: where a table starts, where an array closes, what is a
+# comment. Strings are basic or literal, single-line, as config.toml's are.
+
+def scan(text, start, want):
+    """Offset of the first `want` at or after start that is syntax: not in a
+    string, not in a comment. -1 when there is none."""
+    i, quote, comment = start, None, False
+    while i < len(text):
+        c = text[i]
+        if c == "\n":
+            quote, comment = None, False
+        elif comment:
+            pass
+        elif quote:
+            if quote == '"' and c == "\\":
+                i += 1
+            elif c == quote:
+                quote = None
+        elif c in "\"'":
+            quote = c
+        elif c == "#":
+            comment = True
+        elif c == want:
+            return i
+        i += 1
+    return -1
+
+
+HEADER = re.compile(r"^[ \t]*\[\[?[ \t]*([^\]\s]+)[ \t]*\]\]?[ \t]*(#.*)?$", re.M)
+
+
+def tables(text):
+    """[(name, start of the header line, start of the body, end)] in order."""
+    found = [(m.group(1), m.start(), m.end()) for m in HEADER.finditer(text)]
+    out = []
+    for i, (name, head, body) in enumerate(found):
+        end = found[i + 1][1] if i + 1 < len(found) else len(text)
+        out.append((name, head, body, end))
+    return out
+
+
+def include(text, entry):
+    """config.toml with `entry` in [include.optional] files: added to the
+    list where there is one, the list or the table made where there is
+    not. The text unchanged when it is there already."""
+    quoted = '"' + entry + '"'
+    for name, _head, body, end in tables(text):
+        if name != "include.optional":
+            continue
+        m = re.compile(r"^[ \t]*files[ \t]*=[ \t]*", re.M).search(text, body, end)
+        if not m:
+            return text[:body] + "\nfiles = [" + quoted + "]" + text[body:]
+        open_at = scan(text, m.end(), "[")
+        close_at = scan(text, open_at + 1, "]") if open_at >= 0 else -1
+        if open_at < 0 or close_at < 0:
+            fail("Umbriel's include.optional.files is not a list")
+        inner = text[open_at + 1:close_at]
+        if re.search(r"[\"']" + re.escape(entry) + r"[\"']", inner):
+            return text
+        stripped = inner.rstrip()
+        if "\n" in inner:
+            indent = re.search(r"\n([ \t]*)\S", inner)
+            pad = indent.group(1) if indent else "  "
+            sep = "" if stripped.endswith((",", "[")) or not stripped.strip() else ","
+            return text[:open_at + 1] + stripped + sep + "\n" + pad + quoted + ",\n" + text[close_at:]
+        sep = ", " if stripped.strip() else ""
+        return text[:open_at + 1] + stripped + sep + quoted + text[close_at:]
+    tail = "" if text.endswith("\n") or not text else "\n"
+    return text + tail + "\n[include.optional]\nfiles = [" + quoted + "]\n"
+
+
+# ---- Chords ---------------------------------------------------------------------
+
+MODIFIERS = {"super": "super", "logo": "super", "win": "super", "alt": "alt", "shift": "shift",
+             "ctrl": "ctrl", "control": "ctrl"}
+
+
+def chord(name, mod_key):
+    """A bind's name as a comparable chord: its modifiers as a set, Mod
+    resolved to `general.mod_key`, and the key, case aside."""
+    parts = name.split("+")
+    mods = frozenset(MODIFIERS.get(p.lower(), p.lower()) if p.lower() != "mod" else mod_key for p in parts[:-1])
+    return mods, parts[-1].lower()
+
+
+def mod_key_of(text):
+    if tomllib:
+        try:
+            return MODIFIERS.get(str(tomllib.loads(text).get("general", {}).get("mod_key", "Super")).lower(), "super")
+        except tomllib.TOMLDecodeError:
+            pass
+    return "super"
+
+
+BIND = re.compile(r'^([ \t]*)("(?:[^"\\]|\\.)*"|\'[^\']*\'|[A-Za-z0-9_+-]+)[ \t]*=.*$', re.M)
+
+
+def bound(text):
+    """The names the [keybinds] tables of `text` bind."""
+    names = []
+    for name, _head, body, end in tables(text):
+        if name == "keybinds":
+            names += [m.group(2).strip("\"'") for m in BIND.finditer(text, body, end)]
+    return names
+
+
+def settings(body):
+    """{table: {key}} for each plain value the body sets in a table, rule
+    lists and [keybinds] aside."""
+    out = {}
+
+    def walk(table, path):
+        for key, value in table.items():
+            if isinstance(value, dict):
+                walk(value, path + [key])
+            elif path and path != ["keybinds"] and not (isinstance(value, list) and value and isinstance(value[0], dict)):
+                out.setdefault(".".join(path), set()).add(key)
+    if tomllib:
+        walk(tomllib.loads(body), [])
+    return out
+
+
+def take(text, keys, made, file_name):
+    """config.toml with each of its own [keybinds] lines on one of `keys`'
+    chords, and each line setting one of `made`'s, made a comment."""
+    mod_key = mod_key_of(text)
+    wanted = {chord(k, mod_key) for k in keys}
+    for name, _head, body, end in reversed(tables(text)):
+        if name == "keybinds":
+            def taken(key):
+                return chord(key, mod_key) in wanted
+            said = "Bound by Bioma"
+        elif name in made:
+            def taken(key, name=name):
+                return key in made[name]
+            said = "Set by Bioma"
+        else:
+            continue
+
+        def out(m):
+            if not taken(m.group(2).strip("\"'")):
+                return m.group(0)
+            return m.group(1) + "# " + said + " (" + file_name + "): " + m.group(0).strip()
+        text = text[:body] + BIND.sub(out, text[body:end]) + text[end:]
+    return text
+
+
+def main():
+    if len(sys.argv) != 2 or not re.fullmatch(r"[a-z0-9-]+", sys.argv[1]):
+        fail("usage: umbriel-include NAME < body.toml")
+    name = sys.argv[1]
+    directory = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "umbriel")
+    config = os.path.join(directory, "config.toml")
+    file_name = "bioma-" + name + ".toml"
+    path = os.path.join(directory, file_name)
+
+    if not os.path.isfile(config):
+        fail("Umbriel has no config.toml yet: copy /usr/share/umbriel/config.toml to " + config + ", then try again")
+
+    body = sys.stdin.read()
+    if not body.endswith("\n"):
+        body += "\n"
+    reason = validate(body)
+    if reason:
+        fail(reason)
+
+    target = os.path.realpath(config)
+    with open(target, encoding="utf-8") as f:
+        before = f.read()
+    after = take(include(before, file_name), bound(body), settings(body), file_name)
+
+    old = None
+    if os.path.isfile(path):
+        with open(path, encoding="utf-8") as f:
+            old = f.read()
+    if old != body:
+        tmp = path + ".tmp." + str(os.getpid())
+        with open(tmp, "w", encoding="utf-8") as out:
+            out.write(body)
+        os.replace(tmp, path)
+
+    if after != before:
+        # Checked beside the real one, so its includes resolve as they will.
+        fd, check = tempfile.mkstemp(dir=os.path.dirname(target), prefix=".bioma-config.", suffix=".toml")
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as out:
+                out.write(after)
+            reason = validate_file(check)
+            if reason:
+                if old is None:
+                    os.unlink(path)
+                elif old != body:
+                    with open(path, "w", encoding="utf-8") as out:
+                        out.write(old)
+                fail(reason)
+            os.chmod(check, os.stat(target).st_mode & 0o7777)
+            os.replace(check, target)
+        finally:
+            if os.path.exists(check):
+                os.unlink(check)
+
+
+if __name__ == "__main__":
+    main()

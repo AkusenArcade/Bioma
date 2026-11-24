@@ -9,7 +9,9 @@
 -- an open that only asks a device what it can do comes and goes within a
 -- moment, so a holder is believed after `privacy.camera_confirm`. A screen
 -- is the compositor's cast: niri says which program and what, Hyprland
--- only that one runs.
+-- only that one runs. Otherwise it is a PipeWire video source that is no
+-- device, the portal's (Umbriel's "umbriel-screen-capture"), read like a
+-- microphone: by its links.
 local g = require("@genoma")
 local config = require("core/config")
 local paths = require("core/paths")
@@ -39,13 +41,21 @@ local function device_of(n: any): string
     return n.name or ""
 end
 
+-- A video source that is a device, a camera; one that is not, a screen
+-- someone shares.
+local function is_camera(n: any): boolean
+    local p = n.properties or {}
+    return p["device.api"] ~= nil or p["media.role"] == "Camera"
+end
+
 -- Uses of one medium through PipeWire's links, one per application and device.
-local function from_links(source_kind: string, target_kind: string, kind: string): { any }
+local function from_links(source_kind: string, target_kind: string, kind: string, wanted: ((any) -> boolean)?): { any }
     local out, seen = {}, {}
     if not active() then return out end
     for _, link in audio.links() do
         local source, target = audio.node(link.output), audio.node(link.input)
-        if source and target and source.kind == source_kind and target.kind == target_kind then
+        if source and target and source.kind == source_kind and target.kind == target_kind
+            and (wanted == nil or wanted(source)) then
             local app = app_of(target)
             local key = kind .. ":" .. app .. ":" .. source.id
             if not seen[key] then
@@ -91,7 +101,7 @@ g.effect(function()
 end)
 
 local camera = g.computed(function(): { any }
-    local out = from_links("video-source", "video-stream", "camera")
+    local out = from_links("video-source", "video-stream", "camera", is_camera)
     local _ = tick.value
     local confirm, now, seen = config.get("privacy.camera_confirm", 1500) / 1000, g.now(), {}
     for _, h in holding.value do
@@ -143,7 +153,18 @@ local function target_of(c: any): string
 end
 local screen = g.computed(function(): { any }
     local out = {}
+    -- The shares PipeWire shows that no cast of the compositor's names by
+    -- its node. Where there are any, a cast that names neither a node nor
+    -- a program (Hyprland's) is one of them, told better here.
+    local named: { [number]: boolean } = {}
     for _, c in casts() do
+        if c.node then named[c.node] = true end
+    end
+    local shares = from_links("video-source", "video-stream", "screen", function(n: any): boolean
+        return not is_camera(n) and not named[n.id]
+    end)
+    for _, c in casts() do
+        if #shares > 0 and not c.node and not c.pid then continue end
         local app = if c.pid then names.value[tostring(c.pid)] or "" else ""
         if app == "" and c.node then
             for _, link in audio.links() do
@@ -155,6 +176,9 @@ local screen = g.computed(function(): { any }
         end
         table.insert(out, { kind = "screen", app = if app ~= "" then app else "Screen", detail = target_of(c),
             key = "screen:" .. tostring(c.id) })
+    end
+    for _, u in shares do
+        table.insert(out, { kind = "screen", app = if u.app ~= "" then u.app else "Screen", detail = "", key = u.key })
     end
     return out
 end)
