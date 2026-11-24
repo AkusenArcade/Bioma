@@ -68,7 +68,7 @@ fi
 if ! command -v systemd-run >/dev/null 2>&1 \
         || [ ! -S "${XDG_RUNTIME_DIR:-/nonexistent}/systemd/private" ]; then
     [ -n "$dir" ] && cd "$dir" 2>/dev/null
-    unset XDG_ACTIVATION_TOKEN DESKTOP_STARTUP_ID
+    unset XDG_ACTIVATION_TOKEN DESKTOP_STARTUP_ID HL_INITIAL_WORKSPACE_TOKEN UMBRIEL_LAUNCH_TOKEN
     if [ -n "$token" ]; then
         export XDG_ACTIVATION_TOKEN="$token" DESKTOP_STARTUP_ID="$token"
     fi
@@ -83,6 +83,9 @@ while IFS='=' read -r -d '' name _; do
         INVOCATION_ID|JOURNAL_STREAM|MANAGERPID|MANAGERPIDFDID|NOTIFY_SOCKET \
         |SYSTEMD_EXEC_PID|MEMORY_PRESSURE_*|LISTEN_*|WATCHDOG_* \
         |DESKTOP_STARTUP_ID|XDG_ACTIVATION_TOKEN) ;;
+        # Where the compositor started the shell: an application that has it
+        # would open on that workspace, not where it was asked for.
+        HL_INITIAL_WORKSPACE_TOKEN|UMBRIEL_LAUNCH_TOKEN) ;;
         QS_*|SHLVL|PWD|OLDPWD|_) ;;
         *) args+=("--setenv=$name") ;;
     esac
