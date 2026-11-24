@@ -21,7 +21,8 @@
 #
 # Hyprland (0.57 or later: its configuration is Lua) gets bioma-rules.lua and
 # bioma-binds.lua beside hyprland.lua, required at its end
-# (scripts/hypr-include), and with --autostart bioma-autostart.lua. Umbriel
+# (scripts/hypr-include), and with --autostart bioma-autostart.lua; without a
+# hyprland.lua, Hyprland's packaged example is copied there first. Umbriel
 # gets bioma-binds.toml, included from config.toml (scripts/umbriel-include,
 # which takes the same keys out of config.toml, since config.toml would win),
 # and with --autostart Bioma in config.toml's `general.autostart`; without a
@@ -348,8 +349,13 @@ if [ "$compositor" = hyprland ]; then
     hdir="${XDG_CONFIG_HOME:-$HOME/.config}/hypr"
     config="$hdir/hyprland.lua"
     if [ ! -f "$config" ]; then
-        echo "No Hyprland configuration at $config — start Hyprland once (0.57 writes hyprland.lua)." >&2
-        exit 1
+        if [ ! -f /usr/share/hypr/hyprland.lua ]; then
+            echo "No Hyprland configuration at $config, and none packaged to start from (Hyprland 0.57 or later)." >&2
+            exit 1
+        fi
+        mkdir -p "$hdir"
+        cp /usr/share/hypr/hyprland.lua "$config"
+        echo "copied    Hyprland's example configuration to $config"
     fi
     real="$(readlink -f "$config")"
     backup="$real.before-bioma.$(date +%Y%m%d-%H%M%S)"

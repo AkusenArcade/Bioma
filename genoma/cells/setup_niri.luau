@@ -73,7 +73,7 @@ function M.new(t: { [string]: any }): any
                 },
             },
             g.box {
-                present = function() return known() and (has_config() or w.name == "Umbriel") and not complete() end,
+                present = function() return known() and (has_config() or w.name ~= "niri") and not complete() end,
                 direction = "row",
                 align = "center",
                 gap = function() return 10 * f() end,
@@ -93,7 +93,7 @@ function M.new(t: { [string]: any }): any
             p.line(function()
                 if not known() then return "Reading " .. w.name .. "'s configuration…" end
                 if not has_config() then
-                    return if w.name == "Umbriel" then "Umbriel has no config.toml yet: its starting one is copied there first."
+                    return if w.name ~= "niri" then w.name .. " has no " .. w.config .. " yet: its packaged one is copied there first."
                         else w.name .. " has no configuration file yet. Start " .. w.name .. " once, then come back to this step."
                 end
                 if complete() then return "Everything is in place. The keys can be changed in Settings → Keybinds." end
