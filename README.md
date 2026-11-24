@@ -637,7 +637,8 @@ compositor's configuration, starting from its packaged one when there is
 none. Each compositor keeps its own files beside its configuration, so the
 niri configuration is never touched, and Bioma knows at every start which
 compositor it is in. Settings has a HYPRLAND or UMBRIEL page in place of
-NIRI, and the Keybinds page writes their format. Umbriel has no
+NIRI (gaps, border, input, layouts by monitor and workspace, window opacity
+and rules), and the Keybinds page writes their format. Umbriel has no
 `ext-background-effect`, so its blur comes from a layer rule Bioma writes.
 The package still depends on niri, which the greeter runs in; these two are
 in preview until they have been tried in daily use.

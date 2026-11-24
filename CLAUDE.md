@@ -1,7 +1,8 @@
 # Bioma
 
-A Wayland desktop shell for **Niri**, running on **Genoma** (Rust + Luau,
-`~/Documents/Development/Genoma`) since 1.0.0-beta.61. The Quickshell (Qt/QML)
+A Wayland desktop shell for **niri, Hyprland and Umbriel**, running on
+**Genoma** (Rust + Luau, `~/Documents/Development/Genoma`) since 1.0.0-beta.61.
+The Quickshell (Qt/QML)
 version it was first written in is no longer in the tree: the tag
 `quickshell-final` is the last commit that carries it.
 
@@ -74,7 +75,12 @@ open beside it.
 - **All dimensions are logical units**, never physical pixels. Round only
   critical dimensions (hairlines, 1.3 px threads) to the physical pixel.
 - **Blur applies to cells only, never to the tissue background**, and via
-  `ext-background-effect`, never compositor layer rules.
+  `ext-background-effect`, never compositor layer rules. Umbriel has no
+  `ext-background-effect`: its layer rule (`services/looks.luau`) is the one
+  exception.
+- **The three compositors are peers.** Whatever touches the compositor is done
+  for niri, Hyprland and Umbriel, or says which of them cannot have it.
+  None is the reference.
 - **One service singleton per domain.** Never a poller per cell.
 
 ## Layout
@@ -84,7 +90,7 @@ genoma/            the shell, the lock and the greeter: core/, structure/,
                    components/, services/, cells/, organisms/ (genoma/PORT.md)
 config/            default.json (base layer) + palettes/
 assets/            icons, fonts
-scripts/           start, lock, greeter, ipc, niri's include
+scripts/           start, lock, greeter, ipc, each compositor's include
 docs/              PRD and design material
 ```
 

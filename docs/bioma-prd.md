@@ -2,11 +2,12 @@
 
 A Wayland desktop shell built as independent, living surfaces rather than a bar.
 
-Target compositor: Niri. Toolkit: Quickshell (Qt/QML).
+Target compositors: niri, Hyprland (0.57 or later) and Umbriel, as peers (§2).
+Toolkit: Genoma (Rust + Luau); it was first written on Quickshell (Qt/QML).
 Language: English throughout — code, config keys, UI strings, comments.
 The project name **Bioma** is the only Italian word retained.
 
-Status: design closed, implementation not started.
+Status: design closed; built and in beta since 2026-09.
 Companion document: `bioma-spec.md` (design rationale, in Italian — working
 material, not a source of strings).
 
@@ -29,6 +30,15 @@ cursor theme and an icon theme of Bioma's own, drawn in that palette and
 redrawn when it changes (reopened 2026-10-05; `docs/design/CURSORS.md`,
 `docs/design/ICON_THEME.md`). The icon theme draws folders and files; the
 rest comes from a theme the user chooses under it.
+
+**Three compositors, at par** (2026-11-18, built by 2026-11-25). Bioma runs on
+niri, Hyprland and Umbriel and none of them is the reference: whatever touches
+the compositor (keys, includes, autostart, monitors, keyboard layouts, theme
+templates, window rules, the settings page of its own) is done for all three,
+or the interface says it cannot be had there. Where the rest of this document
+says niri without naming a file or a protocol of niri's, read the running
+compositor. Bioma detects it at every start, writes only that one's
+configuration, through its own files beside it, and never the others'.
 
 **Lock screen and greeter are in scope** (reopened and built by 2026-09-27:
 `lock/`, `greeter/`). They were left out because a bug there locks the user out
@@ -387,8 +397,10 @@ and at-rest density.
 
 ### 6.6 Blur
 
-Niri supports blur from 26.04 via the `ext-background-effect` protocol, already
-supported by Quickshell.
+niri (from 26.04) and Hyprland blur through the `ext-background-effect` protocol.
+Umbriel does not offer it: there the glass is a layer rule with an alpha
+threshold that Bioma writes (`services/looks.luau`), the one exception to the
+first point below.
 
 - **Do not use compositor layer rules** — they blur the entire layer including
   transparent regions, i.e. the gaps between cells.
@@ -846,8 +858,8 @@ screenshots, OCR and recording. The Utility cell reads both.
     cached** or a folder of fifty images stutters on open.
   - Wallpaper modes — fill, fit, **span**, per-monitor — are requirements, ported
     from Prisma, not designed here. The wallpaper is "which image *and how*".
-  - Palette propagation to GTK and Niri via matugen templates plus the
-    `colors_changed` hook. Prisma already writes to `niri.kdl` and calls reload.
+  - Palette propagation to GTK and to the compositor via matugen templates plus
+    the `colors_changed` hook.
 
 ### 9.8 Session menu
 
@@ -922,6 +934,10 @@ screenshots, OCR and recording. The Utility cell reads both.
     gaps, focus ring width, focus following the pointer, named workspaces,
     startup entries, and per-application window rules for opacity, opening
     width and workspace
+  - on Hyprland and Umbriel, a page of their own in NIRI's place (added
+    2026-11-25): gaps, border, focus following the pointer, num lock, mouse and
+    touchpad, window opacity, a rule per application, and the layout everywhere,
+    by monitor and by workspace, written into Bioma's own `bioma-settings` file
   - every window's opacity in focus and out of focus (added 2026-11-09),
     written into Bioma's own `bioma-windows.kdl`, included after niri's files;
     an application's rule overrides the in-focus value only
@@ -929,8 +945,8 @@ screenshots, OCR and recording. The Utility cell reads both.
 - **Notes.** This is the second largest piece after the launcher. Both of the
   expensive parts exist in Prisma: `MonitorManager.qml` (drag-and-drop, magnetic
   snap, non-destructive `niri.kdl` patching) and `KeybindsPage.qml` (parses the
-  `binds` block, writes, reloads). Writing into Niri's own config is accepted and
-  already implemented; preserve the sections not being touched.
+  `binds` block, writes, reloads). Writing into the compositor's own configuration
+  is accepted and implemented for the three; preserve what is not being touched.
 
 ### 9.13 Launcher
 
@@ -952,8 +968,8 @@ screenshots, OCR and recording. The Utility cell reads both.
   by IPC afterwards. It grows from the settings cell like any expansion.
 - **Steps.** Welcome (the logotype and what the steps are for), layout (one
   of the three shipped presets, applied live), look
-  (palette, wallpaper, other applications), niri (keys, includes, autostart —
-  what `bioma-install` does), login (Bioma's greeter or the existing login
+  (palette, wallpaper, other applications), the compositor (keys, includes,
+  autostart — what `bioma-install` does — its template and the keyboard layouts), login (Bioma's greeter or the existing login
   manager, through `pkexec`), conflicts and system (only when something is
   found: another shell or notification daemon, missing packages, services that
   are off), keys.
