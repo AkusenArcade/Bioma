@@ -1,12 +1,13 @@
 --!strict
 -- The desktop's look outside the palette: its icon theme, its cursor, and
--- how strong niri's blur is (services/Looks.qml at 8ed8892); on Umbriel,
--- the glass under the cells itself.
+-- how strong the compositor's blur is (services/Looks.qml at 8ed8892); on
+-- Umbriel, the glass under the cells itself.
 --
 -- Neither is the shell's to keep. The icon theme is the desktop's setting
 -- (gsettings, qt5ct and qt6ct's own); the cursor is the same setting for the
--- toolkits and niri's `cursor` section, written as `bioma-cursor.kdl`
--- through `scripts/niri-include`. So what is shown is read from the desktop
+-- toolkits and the compositor's own (niri's `cursor` section, Hyprland's
+-- cursor variables, Umbriel's `[input.cursor]`), written as `bioma-cursor`
+-- through the compositor's include script. So what is shown is read from the desktop
 -- (`scripts/looks list`), and nothing is written until something is chosen.
 --
 -- Bioma's own cursors and icons are drawn in the palette (`scripts/cursors`,
@@ -124,10 +125,12 @@ end
 local on = require("services/compositor").name()
 
 -- One writer at a time for each include; a body that arrives while one is
--- written is written after it, the latest only. niri's files by default,
--- Umbriel's through its own script.
-local function include_writer(name: string, umbriel: boolean?): (string) -> ()
-    local script, who = if umbriel then "umbriel-include" else "niri-include", if umbriel then "Umbriel" else "niri"
+-- written is written after it, the latest only, through the running
+-- compositor's script (niri-include, hypr-include, umbriel-include).
+local INCLUDES = { niri = { "niri-include", "niri" }, hyprland = { "hypr-include", "Hyprland" }, umbriel = { "umbriel-include", "Umbriel" } }
+local function include_writer(name: string): (string) -> ()
+    local how = INCLUDES[on] or INCLUDES.niri
+    local script, who = how[1], how[2]
     local writing, next_body = false, nil :: string?
     local function write(body: string)
         if writing then
@@ -157,7 +160,7 @@ local function include_writer(name: string, umbriel: boolean?): (string) -> ()
 end
 local write_cursor = include_writer("cursor")
 local write_blur = include_writer("blur")
-local write_glass = include_writer("glass", true)
+local write_glass = include_writer("glass")
 
 local function apply_icons(id: string)
     local live = live_name(g.untracked(M.icons), id, g.untracked(icon_live))
@@ -171,10 +174,20 @@ local function apply_cursor(id: string, px: number)
     remember({ cursor = id, live = live, size = px })
     refused.value = ""
     g.process { command = { paths.script("looks"), "cursor", live, tostring(px) } }
-    if on ~= "niri" then return end
     local quoted = '"' .. string.gsub(live, '["\\]', "") .. '"'
-    write_cursor("// Written by Bioma's theme cell (DESKTOP). Choosing a cursor there rewrites it.\n"
-        .. "cursor {\n    xcursor-theme " .. quoted .. "\n    xcursor-size " .. px .. "\n}")
+    local said = "Written by Bioma's theme cell (DESKTOP). Choosing a cursor there rewrites it."
+    if on == "niri" then
+        write_cursor("// " .. said .. "\n" .. "cursor {\n    xcursor-theme " .. quoted .. "\n    xcursor-size " .. px .. "\n}")
+    elseif on == "hyprland" then
+        -- For the sessions to come; the one running takes it at once.
+        local size = '"' .. px .. '"'
+        write_cursor("-- " .. said .. "\n"
+            .. 'hl.env("XCURSOR_THEME", ' .. quoted .. ")\nhl.env(\"XCURSOR_SIZE\", " .. size .. ")\n"
+            .. 'hl.env("HYPRCURSOR_THEME", ' .. quoted .. ")\nhl.env(\"HYPRCURSOR_SIZE\", " .. size .. ")\n")
+        g.process { command = { "hyprctl", "setcursor", live, tostring(px) } }
+    elseif on == "umbriel" then
+        write_cursor("# " .. said .. "\n\n[input.cursor]\ntheme = " .. quoted .. "\nsize = " .. px .. "\n")
+    end
 end
 
 function M.set_icons(id: string)
@@ -201,16 +214,23 @@ end
 
 -- How strong the glass is: niri's own `blur` section, global, written as
 -- `bioma-blur.kdl` last, so it overrides the user's `passes` and `offset`
--- and leaves the rest of their section alone. Only when the step is moved.
+-- and leaves the rest of their section alone; Hyprland's
+-- `decoration.blur`, as `bioma-blur.lua`. Only when the step is moved.
 function M.set_blur(strength: number)
     local steps = metrics.blur_steps
     local index = math.clamp(math.floor(strength + 0.5), 1, #steps)
     if index == g.untracked(metrics.blur_strength) then return end
     config.set("cell.blurStrength", index)
-    if on ~= "niri" then return end
     local step = steps[index]
-    write_blur("// Written by Bioma's settings cell (APPEARANCE). Moving the blur slider rewrites it.\n"
-        .. "blur {\n    passes " .. step.passes .. "\n    offset " .. string.format("%.1f", step.offset) .. "\n}")
+    local said = "Written by Bioma's settings cell (APPEARANCE). Moving the blur slider rewrites it."
+    if on == "niri" then
+        write_blur("// " .. said .. "\n" .. "blur {\n    passes " .. step.passes .. "\n    offset " .. string.format("%.1f", step.offset) .. "\n}")
+    elseif on == "hyprland" then
+        -- Hyprland's size is the kernel's reach, about twice niri's offset.
+        write_blur("-- " .. said .. "\nhl.config({\n    decoration = {\n        blur = {\n            passes = " .. step.passes
+            .. ",\n            size = " .. math.round(step.offset * 2) .. ",\n        },\n    },\n})\n")
+    end
+    -- Umbriel's strength is part of its glass (below), written as it changes.
 end
 
 -- Umbriel's glass. It has no ext-background-effect, through which niri and

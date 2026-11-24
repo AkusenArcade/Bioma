@@ -31,6 +31,15 @@ local scroller_mod = require("components/scroller")
 local choice_mod = require("components/choice")
 local setup = require("services/setup")
 
+-- The compositor's own page is NIRI on niri, and on Hyprland and Umbriel
+-- the smaller page that says what they can be told from here; elsewhere
+-- there is none. The keys' file is the one the Keybinds page writes.
+local running = require("services/compositor").name()
+local KEYS_IN = { niri = "niri.kdl", hyprland = "bioma-binds.lua", umbriel = "config.toml" }
+local OWN = if running == "niri" then { key = "niri", label = "NIRI", glyph = "window", hint = "gaps, workspaces, rules", width = 600 }
+    elseif running == "hyprland" or running == "umbriel" then { key = "compositor", label = string.upper(running), glyph = "window", hint = "gaps, focus, input", width = 560 }
+    else nil
+
 -- Each says how wide its page needs to be, logical units at the normal step.
 local CATEGORIES = {
     { key = "structure", label = "STRUCTURE", glyph = "structure", hint = "membranes, tissues, order", width = 644 },
@@ -38,13 +47,13 @@ local CATEGORIES = {
     { key = "organisms", label = "ORGANISMS", glyph = "organisms", hint = "on the desktop, by hand", width = 560 },
     { key = "appearance", label = "APPEARANCE", glyph = "appearance", hint = "opacity, blur, radius, scale", width = 440 },
     { key = "monitors", label = "MONITORS", glyph = "monitors", hint = "position, scale, snapping", width = 720 },
-    { key = "keybinds", label = "KEYBINDS", glyph = "keyboard", hint = "shortcuts · niri.kdl", width = 560 },
-    { key = "niri", label = "NIRI", glyph = "window", hint = "gaps, workspaces, rules", width = 600 },
+    { key = "keybinds", label = "KEYBINDS", glyph = "keyboard", hint = "shortcuts · " .. (KEYS_IN[running] or "none"), width = 560 },
     { key = "session", label = "SESSION", glyph = "lock", hint = "locking, power profile", width = 540 },
     { key = "sounds", label = "SOUNDS", glyph = "sounds", hint = "events, volume", width = 540 },
     { key = "modes", label = "MODES", glyph = "performance", hint = "focus, performance", width = 560 },
     { key = "actions", label = "ACTIONS", glyph = "actions", hint = "the ring at the pointer", width = 600 },
 }
+if OWN then table.insert(CATEGORIES, 7, OWN) end
 
 -- The pages written on Genoma so far, by category.
 local PAGES = {
@@ -54,6 +63,7 @@ local PAGES = {
     keybinds = "cells/settings_keybinds",
     monitors = "cells/settings_monitors",
     niri = "cells/settings_niri",
+    compositor = "cells/settings_compositor",
     organisms = "cells/settings_organisms",
     modes = "cells/settings_modes",
     session = "cells/settings_session",
@@ -70,7 +80,9 @@ local PAGES = {
 local place = g.state("settings.category", g.env("BIOMA_GENOMA_SETTINGS") or "")
 -- Categories that were renamed, by their old key: Performance became Modes
 -- when focus mode joined it (2026-11-06).
-local RENAMED = { performance = "modes" }
+-- Old names, and the compositor's page under the other compositor's name.
+local RENAMED = { performance = "modes", niri = if running == "niri" then nil else "compositor",
+    compositor = if running == "niri" then "niri" else nil }
 if RENAMED[g.untracked(function() return place.value end)] then
     place.value = RENAMED[g.untracked(function() return place.value end)]
 end

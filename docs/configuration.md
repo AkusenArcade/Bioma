@@ -72,6 +72,29 @@ Each is included last on purpose. niri merges most sections property by
 property and the later file wins, so a file like this overrides only what it
 names and leaves the rest of the section where the user set it.
 
+## What Hyprland and Umbriel are told
+
+The same files, in each one's language, beside its own configuration:
+`bioma-NAME.lua` in `~/.config/hypr`, required from the end of
+`hyprland.lua` (`scripts/hypr-include`, which has `Hyprland --verify-config`
+check the file first), or `bioma-NAME.toml` in `~/.config/umbriel`, added to
+`config.toml`'s `[include.optional] files` (`scripts/umbriel-include`, after
+`umbriel config validate`). Hyprland lets the file read later win, as niri
+does. Umbriel lets `config.toml` win over every file it includes, so what a
+Bioma file sets is taken out of `config.toml` there, the line kept as a
+comment that says why — a key Bioma binds is Bioma's on every compositor.
+
+| File | Written by | What it sets |
+|---|---|---|
+| `bioma-binds` | the keys' template, then the Keybinds page | the keys. On Hyprland the page rewrites this file and lists `hyprland.lua`'s own binds without editing them (a Lua program, its keys often built from variables); on Umbriel it rewrites `config.toml`'s binds too, where they are |
+| `bioma-rules.lua` | the repository | Hyprland: no map and unmap animation on Bioma's layers |
+| `bioma-glass.toml` | the shell | Umbriel: the blur under the cells — Umbriel has no `ext-background-effect`, so a layer rule blurs where a surface is more opaque than just under the cells' opacity — and its strength |
+| `bioma-blur.lua` | the APPEARANCE blur slider | Hyprland's `decoration.blur` passes and size |
+| `bioma-keyboard` | the keyboard cell | the layouts and variants |
+| `bioma-cursor` | the theme cell's DESKTOP capsule | the cursor theme and size (Hyprland: its cursor variables, and `hyprctl setcursor` for the session running) |
+| `bioma-settings` | the HYPRLAND or UMBRIEL page of the settings cell | the gaps, the border, the focus following the pointer, Umbriel's hot corners, the mouse and the touchpad, Hyprland's window opacity — each only once it is changed there |
+| `bioma-monitors` | the MONITORS page | each monitor's position and variable refresh, and the primary (Umbriel's `focus_at_startup`); switching one on or off is asked of the compositor for the session only |
+
 ## Structural terms
 
 - **membrane** — one edge of one monitor. Tissues anchored to it share its
@@ -520,7 +543,9 @@ what a cell displays. A cell's own settings live in its `options`.
 | `clock.zones` | The other places the opened clock shows, as IANA zones (`Asia/Tokyo`). The clock cell adds and removes them itself. |
 | `clock.timer` / `clock.alarm` | The timer's last length in seconds, and the alarm as `{ "hour", "minute", "on" }`. Both are written by the clock cell; they end in a critical notification and the freedesktop alarm sound. |
 | `proxy.profiles` / `proxy.mode` | Proxy profiles — `{ "id", "name", "type": "http" \| "socks5", "host", "port", "noProxy", "triggers": [{ "kind": "vpn", "uuid" } \| { "kind": "wifi", "ssid" } \| { "kind": "wired" }] }` — and which is on: `auto` (the first whose trigger matches), `off`, or a profile's id. Written by the connectivity cell. The one on is set as the desktop's proxy (`org.gnome.system.proxy`) and handed to the programs the shell starts as `http_proxy` and the rest. With no profiles the shell leaves the desktop's proxy alone. |
-| `keyboard.layouts` | The layouts the keyboard cell has set, as `[{ "layout": "it", "variant": "" }]`, in order — the first is the one niri starts with. Absent until the list is first changed from the cell; until then the layouts are whatever the system and niri's configuration already say. Written to niri as `bioma-keyboard.kdl`. |
+| `keyboard.layouts` | The layouts the keyboard cell has set, as `[{ "layout": "it", "variant": "" }]`, in order — the first is the one the compositor starts with. Absent until the list is first changed from the cell; until then the layouts are whatever the system and the compositor's configuration already say. Written as the compositor's `bioma-keyboard` file. |
+| `compositor.<name>.<setting>` | What the HYPRLAND or UMBRIEL settings page has set (`compositor.umbriel.gaps`, `compositor.hyprland.follows`, …), written whole into that compositor's `bioma-settings` file. A setting absent here is left to the compositor's own files. |
+| `monitors.hyprland` / `monitors.umbriel` | What the MONITORS page has asked for off niri, as `{ "outputs": { "DP-1": { "x", "y", "vrr" } }, "primary": "DP-1" }`, written whole into that compositor's `bioma-monitors` file. On niri the page writes niri's own `output` sections instead. |
 | `clipboard.history` | How many copies the clipboard cell keeps (50). Kept in `~/.cache/bioma/clipboard`, private to the user, while the shell runs; what a password manager marks sensitive is never kept. |
 | `polkit.agent` | Whether Bioma is the session's polkit agent (true): the one that asks for the password when something needs permission, through the polkit cell. polkit takes one agent per session, so with another one started too — polkit-gnome from niri's `spawn-at-startup` — whichever registers first answers; take the other out of the autostart. Off, Bioma leaves it to another. |
 | `drives.include_loop` | Count loop devices the user set up (`udisksctl loop-setup -f image`) as removable drives (false). It is there so the drives cell can be tried without a stick in the machine. |

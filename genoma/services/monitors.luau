@@ -13,17 +13,28 @@
 -- sections, and which one is focused at startup.
 --
 -- Elsewhere (Hyprland, Umbriel) where each output is comes from
--- wlr-output-management (@genoma/displays), followed as it changes; no
--- niri sections are read there, and writing the layout is the settings'
--- work for that compositor (plan step 5d).
+-- wlr-output-management (@genoma/displays), followed as it changes, and no
+-- niri sections are read. What is asked for there (a position, variable
+-- refresh, the primary) is kept in Bioma's configuration
+-- (`monitors.<compositor>`) and written whole as Bioma's own file for that
+-- compositor (`bioma-monitors.lua` through scripts/hypr-include,
+-- `bioma-monitors.toml` through scripts/umbriel-include); switching one on
+-- or off is asked of wlr-output-management, for now, as `niri msg output`
+-- does on niri.
 local g = require("@genoma")
 local compositor = require("@genoma/compositor")
 local displays = require("@genoma/displays")
 local niri_config = require("services/niri_config")
 local kdl = require("services/niri_kdl")
 local paths = require("core/paths")
+local config = require("core/config")
 
 local M = {}
+
+local running = compositor.name
+local on_niri = running == "niri"
+-- Off niri: { outputs = { [name] = { x, y, vrr } }, primary = name }.
+local function wished(): any return config.get("monitors." .. running, {}) end
 
 -- What niri reports, one entry per output that is on; and the ones
 -- connected but switched off, which it lists with no geometry.
@@ -57,6 +68,12 @@ local function with_sections(output: any, on: boolean): any
     record.on = on
     record.sections = named
     record.primary = false
+    if not on_niri then
+        local w = wished()
+        record.primary = w.primary == output.name
+        record.vrr = ((w.outputs or {})[output.name] or {}).vrr or "off"
+        return record
+    end
     for _, section in named do
         if section.primary then record.primary = true end
     end
@@ -117,6 +134,12 @@ end
 -- matched against what the compositor says of it.
 function M.primary(): string
     local screens = g.outputs()
+    if not on_niri then
+        local named = g.untracked(wished).primary
+        for _, screen in screens do
+            if screen.name == named then return named end
+        end
+    end
     for _, section in sections() do
         if section.primary then
             for _, screen in screens do
@@ -132,6 +155,8 @@ function M.answered(): boolean return answered.value end
 -- Whether any window rule asks for variable refresh: without one, an
 -- output set to on-demand never turns it on.
 function M.vrr_rule(): boolean
+    -- Hyprland's and Umbriel's on-demand is full screen, and wants no rule.
+    if not on_niri then return true end
     for _, item in niri_config.items() do
         if item.kind == "rule" and item.vrr then return true end
     end
@@ -140,6 +165,7 @@ end
 
 -- Whether Bioma's own rule for games is the one in place.
 function M.games_rule(): boolean
+    if not on_niri then return false end
     for _, item in niri_config.items() do
         if item.kind == "rule" and item.vrr and string.sub(item.file, -#"/bioma-vrr.kdl") == "/bioma-vrr.kdl" then
             return true
@@ -152,8 +178,85 @@ end
 --
 -- Bioma writes niri's output sections itself, through `niri validate`.
 
-function M.busy(): boolean return niri_config.busy() end
-function M.error(): string return niri_config.error() end
+local own_busy = g.signal(false)
+local own_error = g.signal("")
+function M.busy(): boolean return if on_niri then niri_config.busy() else own_busy.value end
+function M.error(): string return if on_niri then niri_config.error() else own_error.value end
+
+-- ---- Off niri: Bioma's own file ------------------------------------------------
+
+local function number_text(v: number): string
+    return if v == math.floor(v) then tostring(math.floor(v)) else string.format("%.3f", v)
+end
+
+-- The whole file, from what is wished and what each output runs: a
+-- Hyprland monitor rule names everything, so its mode and scale are the
+-- ones in use.
+local function monitors_body(): string
+    local w = g.untracked(wished)
+    local said = "Written by Bioma's settings cell (MONITORS). Changing the layout there rewrites it."
+    local names = {}
+    for name in w.outputs or {} do table.insert(names, name) end
+    table.sort(names)
+    if running == "hyprland" then
+        local out = { "-- " .. said, "" }
+        local vrr = { off = 0, on = 1, demand = 2 }
+        for _, name in names do
+            local o = M.output_of(name)
+            local want = w.outputs[name]
+            if o and o.mode_width then
+                table.insert(out, "hl.monitor({")
+                table.insert(out, string.format("    output = %q,", name))
+                table.insert(out, string.format("    mode = \"%dx%d@%s\",", o.mode_width, o.mode_height, number_text(o.refresh or 60)))
+                table.insert(out, string.format("    position = \"%dx%d\",", math.round(want.x or o.x or 0), math.round(want.y or o.y or 0)))
+                table.insert(out, "    scale = " .. number_text(o.scale or 1) .. ",")
+                table.insert(out, "    vrr = " .. (vrr[want.vrr or "off"] or 0) .. ",")
+                table.insert(out, "})")
+            end
+        end
+        return table.concat(out, "\n") .. "\n"
+    end
+    local out = { "# " .. said, "" }
+    local vrr = { off = "off", on = "on", demand = "fullscreen" }
+    for _, name in names do
+        local want = w.outputs[name]
+        table.insert(out, "[output." .. name .. "]")
+        if want.x ~= nil and want.y ~= nil then table.insert(out, string.format("position = [%d, %d]", math.round(want.x), math.round(want.y))) end
+        if want.vrr then table.insert(out, "vrr = \"" .. (vrr[want.vrr] or "off") .. "\"") end
+        table.insert(out, "focus_at_startup = " .. tostring(w.primary == name))
+        table.insert(out, "")
+    end
+    return table.concat(out, "\n")
+end
+
+local function write_own()
+    if running ~= "hyprland" and running ~= "umbriel" then
+        own_error.value = "Bioma does not write this compositor's monitors."
+        return
+    end
+    own_busy.value = true
+    local said = {}
+    local p = g.process {
+        command = { paths.script(if running == "hyprland" then "hypr-include" else "umbriel-include"), "monitors" },
+        on_error_line = function(line: string) table.insert(said, line) end,
+        on_exit = function(code: number)
+            own_busy.value = false
+            own_error.value = if code == 0 then ""
+                else (if running == "hyprland" then "Hyprland" else "Umbriel") .. " refused it" .. (if #said > 0 then ": " .. said[1] else ".")
+        end,
+    }
+    p:write(monitors_body())
+    p:close_input()
+end
+
+-- One output's wishes changed by `edit`, then the file written.
+local function wish(edit: (any) -> ())
+    local w = table.clone(g.untracked(wished))
+    w.outputs = table.clone(w.outputs or {})
+    edit(w)
+    config.set("monitors." .. running, w)
+    write_own()
+end
 
 
 -- Every section of one output in one file, rewritten by `edit`, one at a
@@ -221,6 +324,16 @@ end
 -- Positions in logical units, `{ ["DP-1"] = { x = 0, y = 0 }, … }`. Only
 -- the outputs named are written.
 function M.place(positions: { [string]: { x: number, y: number } })
+    if not on_niri then
+        wish(function(w: any)
+            for name, p in positions do
+                local o = table.clone(w.outputs[name] or {})
+                o.x, o.y = p.x, p.y
+                w.outputs[name] = o
+            end
+        end)
+        return
+    end
     apply(function(text: string, output: any): string
         local wanted = positions[output.name]
         if not wanted or (wanted.x == output.x and wanted.y == output.y) then return text end
@@ -237,6 +350,11 @@ function M.power(name: string, on: boolean): boolean
     if not on and g.untracked(M.count) <= 1 then return false end
     local output = M.output_of(name)
     if not output or output.on == on or switching then return true end
+    if not on_niri then
+        local ok, why = pcall(function() displays:apply({ [name] = { enabled = on } }) end)
+        if not ok then own_error.value = tostring(why) end
+        return true
+    end
     switching = true
     g.process {
         command = { "niri", "msg", "output", name, if on then "on" else "off" },
@@ -249,6 +367,13 @@ function M.power(name: string, on: boolean): boolean
 end
 
 function M.make_primary(name: string)
+    if not on_niri then
+        wish(function(w: any)
+            w.primary = if name ~= "" then name else nil
+            if name ~= "" and not w.outputs[name] then w.outputs[name] = {} end
+        end)
+        return
+    end
     apply(function(text: string, output: any): string
         local on = output.name == name
         if #output.sections == 0 then
@@ -262,6 +387,14 @@ end
 
 -- `off`, `on` or `demand`, for one output.
 function M.set_vrr(name: string, mode: string)
+    if not on_niri then
+        wish(function(w: any)
+            local o = table.clone(w.outputs[name] or {})
+            o.vrr = mode
+            w.outputs[name] = o
+        end)
+        return
+    end
     apply(function(text: string, output: any): string
         if output.name ~= name or output.vrr == mode then return text end
         if #output.sections == 0 then
@@ -277,7 +410,7 @@ end
 -- `bioma-vrr.kdl`; switched off, the file says so and holds no rule.
 local games_writing = false
 function M.set_games(on: boolean)
-    if on == g.untracked(M.games_rule) or games_writing then return end
+    if not on_niri or on == g.untracked(M.games_rule) or games_writing then return end
     games_writing = true
     local body = if on
         then "// Written by Bioma's settings cell (MONITORS). Variable refresh set to on demand\n"
@@ -428,7 +561,6 @@ local function from_displays()
     answered.value = true
 end
 
-local on_niri = compositor.name == "niri"
 if on_niri then
     M.refresh = refresh
     refresh()

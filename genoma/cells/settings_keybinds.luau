@@ -2,19 +2,22 @@
 -- Settings → Keybinds (cells/settings/SettingsKeybinds.qml at 11bb81e):
 -- the keys, added, edited and removed.
 --
--- Every bind niri reads, one row each, in the order niri reads them: what
--- the bind does and the keys that do it, as keycaps. A combination is
+-- Every bind the compositor reads, one row each, in the order it reads
+-- them: what the bind does and the keys that do it, as keycaps
+-- (services/keybinds.luau speaks niri's, Hyprland's or Umbriel's files). A
+-- bind it reads but Bioma cannot rewrite (Hyprland's own, in its Lua) is
+-- listed without the pencil and the trash. A combination is
 -- recorded by pressing it, not by typing it: the pencil turns the keycaps
 -- into a field that listens, and the next key pressed with its modifiers is
 -- the new combination, written as soon as it is pressed. While the field
--- listens niri's own shortcuts stand aside, or pressing a combination that
+-- listens the compositor's own shortcuts stand aside, or pressing a combination that
 -- is taken would do what it is taken for. A taken combination is refused
 -- where it was pressed, saying by what; Escape leaves the bind as it was,
 -- and the cross that replaces the pencil removes it.
 --
 -- A new shortcut starts from what it does: the dashed chip opens a picker
--- on a thread (the cells first, then niri's own actions, then the
--- applications niri spawns, and last whatever was typed, as a command),
+-- on a thread (the cells first, then the compositor's own actions, then the
+-- applications it spawns, and last whatever was typed, as a command),
 -- and what is chosen arrives at the end of the list already listening for
 -- its keys.
 local g = require("@genoma")
@@ -241,9 +244,9 @@ function M.new(t: { [string]: any }): any
         end
         for _, name in keybinds.actions() do
             local label = keybinds.humanize(name)
-            if keep(label) then table.insert(out, { group = "NIRI", label = label, title = "", action = { name = name, args = {} } }) end
+            if keep(label) then table.insert(out, { group = keybinds.group, label = label, title = "", action = { name = name, args = {} } }) end
         end
-        -- The applications, spawned by niri itself, by name.
+        -- The applications, spawned by the compositor itself, by name.
         local seen: { [string]: boolean } = {}
         local listed = {}
         for _, e in apps.entries() do
@@ -459,7 +462,7 @@ function M.new(t: { [string]: any }): any
             -- bind, and nobody looks for a removal behind a pencil
             -- (Akusen, 2026-11-03). It asks before it removes.
             g.box {
-                present = function() return not live() and not is_new() end,
+                present = function() return not live() and not is_new() and not r().fixed end,
                 p.remove(function()
                     if g.untracked(function() return picking.value end) or g.untracked(keybinds.busy) then return end
                     drop(g.untracked(r).id)
@@ -476,11 +479,13 @@ function M.new(t: { [string]: any }): any
                 on_hover = function(on: boolean) slot_hovered.value = on end,
                 on_click = function()
                     if g.untracked(function() return picking.value end) or g.untracked(keybinds.busy) then return end
+                    if g.untracked(r).fixed then return end
                     if not g.untracked(live) then edit(g.untracked(r))
                     elseif g.untracked(is_new) then stop()
                     else drop(g.untracked(r).id) end
                 end,
                 g.icon {
+                    present = function() return not r().fixed end,
                     width = function() return (if live() then 10 else 13) * f() end,
                     height = function() return (if live() then 10 else 13) * f() end,
                     icon = function() return if live() then "close" else "edit" end,
@@ -491,7 +496,7 @@ function M.new(t: { [string]: any }): any
                 },
                 hint_mod.new {
                     text = function() return if live() then (if is_new() then "Cancel" else "Remove") else "Edit" end,
-                    over = function() return slot_hovered.value end,
+                    over = function() return slot_hovered.value and not r().fixed end,
                     factor = f,
                 },
             },
@@ -545,7 +550,7 @@ function M.new(t: { [string]: any }): any
         g.text {
             overlay = true,
             present = function() return #rows.value == 0 end,
-            text = function() return if #words.value > 0 then "Nothing bound to that" else "Reading niri's configuration…" end,
+            text = function() return if #words.value > 0 then "Nothing bound to that" else "Reading the configuration…" end,
             color = theme.text_faint,
             font = typography.expressive,
             size = function() return m().font_secondary end,
@@ -764,7 +769,7 @@ function M.new(t: { [string]: any }): any
                     if listening() then return "Esc leaves it as it was" end
                     if picking.value then return "Enter takes the first" end
                     if hovered_file.value ~= "" then return short_path(hovered_file.value) end
-                    return "reads and rewrites niri's binds, where they are written"
+                    return keybinds.where
                 end,
                 color = function() return if keybinds.error() ~= "" then theme.alert() else theme.text_faint() end,
                 font = typography.technical,
