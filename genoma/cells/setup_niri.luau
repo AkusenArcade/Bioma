@@ -26,6 +26,7 @@ local autostart = g.signal(true)
 function M.new(t: { [string]: any }): any
     local p = page.new(t)
     local f = p.factor
+    local w = setup.compositor
     local function known(): boolean return setup.report_read() end
     local function has_config(): boolean return setup.niri_state().config == "ok" end
     local function complete(): boolean return setup.niri_set() and (not autostart.value or setup.autostart_set()) end
@@ -36,12 +37,11 @@ function M.new(t: { [string]: any }): any
     g.effect(function()
         if not known() then return end
         local line = if setup.niri_error() ~= "" then w.name .. " refused it"
-            elseif setup.niri_set() then (if setup.autostart_set() then "Set up, starts with " .. w.name else "Set up")
+            elseif setup.niri_set() then (if setup.autostart_set() then "Set up, starts at login" else "Set up")
             else ""
         if line ~= "" then g.untracked(function() setup.note("niri", line) end) end
     end)
     local home = g.env("HOME") or ""
-    local w = setup.compositor
 
     return p.column {
         p.section("IN " .. string.upper(w.name) .. "'S CONFIGURATION", nil, {
