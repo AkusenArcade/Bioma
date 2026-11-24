@@ -99,7 +99,7 @@ comment that says why — a key Bioma binds is Bioma's on every compositor.
 | `bioma-keyboard` | the keyboard cell | the layouts and variants |
 | `bioma-cursor` | the theme cell's DESKTOP capsule | the cursor theme and size (Hyprland: its cursor variables, and `hyprctl setcursor` for the session running) |
 | `bioma-settings` | the HYPRLAND or UMBRIEL page of the settings cell | the gaps, the border, the focus following the pointer, Umbriel's hot corners, the mouse and the touchpad, Hyprland's window opacity — each only once it is changed there |
-| `bioma-monitors` | the MONITORS page | each monitor's position, scale, variable refresh and HDR, and the primary (Umbriel's `focus_at_startup`); switching one on or off is asked of the compositor for the session only. HDR is offered on a monitor whose EDID lists the PQ transfer function (`scripts/hdr`): Hyprland's `cm = "hdr"` at ten bits, Umbriel's `hdr = "on"`. niri has no HDR, and no switch |
+| `bioma-monitors` | the MONITORS page | each monitor's position, scale, variable refresh and HDR, and the primary (Umbriel's `focus_at_startup`); switching one on or off is asked of the compositor for the session only. HDR is offered on a monitor whose EDID lists the PQ transfer function (`scripts/hdr`): Hyprland's `cm = "hdr"` at ten bits, with the desktop's white at 203 nits, its black at 0.005 and every monitor read at gamma 2.2 (Hyprland's own curve lifts the shadows), Umbriel's `hdr = "on"`. niri has no HDR, and no switch |
 
 ## Structural terms
 

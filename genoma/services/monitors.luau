@@ -227,6 +227,16 @@ local function monitors_body(): string
     if running == "hyprland" then
         local out = { "-- " .. said, "" }
         local vrr = { off = 0, on = 1, demand = 2 }
+        -- The desktop on an HDR monitor is read with Hyprland's piecewise sRGB
+        -- curve unless told otherwise, which lifts every shadow; monitors, and
+        -- what is drawn for them, are gamma 2.2. Said of every monitor at once:
+        -- how the desktop is read is one setting for all, and a monitor that
+        -- is not HDR must be written back with the same curve, or it darkens.
+        local any_hdr = false
+        for _, name in names do
+            if w.outputs[name].hdr and M.output_of(name) then any_hdr = true end
+        end
+        if any_hdr then table.insert(out, "hl.config({ render = { cm_sdr_eotf = \"gamma22force\" } })\n") end
         for _, name in names do
             local o = M.output_of(name)
             local want = w.outputs[name]
@@ -237,10 +247,17 @@ local function monitors_body(): string
                 table.insert(out, string.format("    position = \"%dx%d\",", math.round(want.x or o.x or 0), math.round(want.y or o.y or 0)))
                 table.insert(out, "    scale = " .. number_text(want.scale or o.scale or 1) .. ",")
                 table.insert(out, "    vrr = " .. (vrr[want.vrr or "off"] or 0) .. ",")
+                if any_hdr then table.insert(out, "    sdr_eotf = \"gamma22\",") end
                 -- HDR10 needs ten bits; off, Hyprland picks the colours itself.
                 if want.hdr then
                     table.insert(out, "    cm = \"hdr\",")
                     table.insert(out, "    bitdepth = 10,")
+                    -- What is not HDR, the desktop itself: white at the
+                    -- reference 203 nits (ITU-R BT.2408) and black at none.
+                    -- Hyprland's own 80 and 0.2 are dim and grey, the whole
+                    -- desktop washed out (Akusen, 2026-11-24).
+                    table.insert(out, "    sdr_max_luminance = 203,")
+                    table.insert(out, "    sdr_min_luminance = 0.005,")
                 end
                 table.insert(out, "})")
             end
