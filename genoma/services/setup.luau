@@ -258,6 +258,8 @@ function M.set_up_niri(autostart: boolean)
                 if l ~= "" and string.sub(l, 1, #own) ~= own then first = l break end
             end
             mark("niriError", first or (M.compositor.name .. " refused the configuration."))
+        else
+            require("services/keyboard").carry()
         end
         refresh()
     end)

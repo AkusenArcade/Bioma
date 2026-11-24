@@ -143,6 +143,14 @@ local function write(list: { any })
     writer:close_input()
 end
 
+-- The layouts chosen before, under another compositor, told to this one:
+-- the setup asks, once this compositor's configuration is Bioma's too. Not
+-- compared with what is loaded: Hyprland does not say the variant.
+function M.carry()
+    local kept = g.untracked(function() return config.get("keyboard.layouts", {}) end)
+    if #kept > 0 then write(kept) end
+end
+
 function M.add(entry: any)
     if not entry then return end
     local list = codes()
