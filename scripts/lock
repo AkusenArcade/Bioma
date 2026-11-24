@@ -35,7 +35,7 @@ fi
 # `genoma` on the PATH. Without it, the fallback below locks.
 genoma_bin=""
 if [ -d "$here/genoma" ]; then
-    genoma_bin="${GENOMA_BIN:-$(command -v genoma || true)}"
+    genoma_bin="${GENOMA_BIN:-$(command -v genoma || echo "$HOME/.local/bin/genoma")}"
     [ -n "$genoma_bin" ] && [ -x "$genoma_bin" ] || genoma_bin=""
 fi
 

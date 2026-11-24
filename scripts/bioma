@@ -3,7 +3,7 @@
 # (`scripts/genoma`), which is $GENOMA_BIN, else `genoma` on the PATH.
 set -eu
 here="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
-genoma_bin="${GENOMA_BIN:-$(command -v genoma || true)}"
+genoma_bin="${GENOMA_BIN:-$(command -v genoma || echo "$HOME/.local/bin/genoma")}"
 if [ -z "$genoma_bin" ] || [ ! -x "$genoma_bin" ]; then
     echo "bioma: Genoma's runtime is missing (install the genoma package, or set GENOMA_BIN)" >&2
     exit 1
