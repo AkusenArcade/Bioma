@@ -260,6 +260,10 @@ function M.set_up_niri(autostart: boolean)
             mark("niriError", first or (M.compositor.name .. " refused the configuration."))
         else
             require("services/keyboard").carry()
+            -- A list of templates made under another compositor has that
+            -- one's, not this one's.
+            local templates = require("services/templates")
+            templates.set_on(templates.own, true)
         end
         refresh()
     end)

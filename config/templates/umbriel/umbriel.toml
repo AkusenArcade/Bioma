@@ -9,11 +9,12 @@ error = "#{{colors.error.default.hex_stripped}}FF"
 insert_hint = "#{{colors.tertiary.default.hex_stripped}}80"
 backdrop = "#{{colors.surface_variant.default.hex_stripped}}FF"
 
+[appearance]
+corner_radius = {{bioma.window_radius}}
+
 [colors.border]
-focused = "#{{colors.primary.default.hex_stripped}}FF"
+focused = "#{{colors.rim.default.hex_stripped}}FF"
 unfocused = "#{{colors.surface_variant.default.hex_stripped}}FF"
-scratchpad_focused = "#{{colors.tertiary.default.hex_stripped}}FF"
-scratchpad_unfocused = "#{{colors.tertiary_container.default.hex_stripped}}FF"
 outer = "#{{colors.terminal_background.default.hex_stripped}}FF"
 
 [colors.overview]

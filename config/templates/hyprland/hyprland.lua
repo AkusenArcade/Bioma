@@ -8,12 +8,33 @@ local on_secondary = "rgb({{colors.on_secondary.default.hex_stripped}})"
 local error = "rgb({{colors.error.default.hex_stripped}})"
 local on_error = "rgb({{colors.on_error.default.hex_stripped}})"
 
+-- The focused window's border is lit the way a cell's rim is, as niri's ring
+-- is (config/templates/niri/niri.kdl): the light above and slightly to the
+-- left (the style guide's 165°, which Hyprland counts as 75, from the
+-- horizontal), falling to the outline colour below. It is
+-- raised by an invoked cell's shadow, and the windows take the shell's corner
+-- radius: 20 px at 100 % of RADIUS.
+local rim = "rgb({{colors.rim.default.hex_stripped}})"
+local outline = "rgb({{colors.outline.default.hex_stripped}})"
+local shadow = "rgba(" .. string.sub("{{bioma.window_shadow}}", 2) .. ")"
+
 local function apply_theme()
     hl.config({
         general = {
             col = {
-                active_border = primary,
+                active_border = { colors = { rim, outline }, angle = 75 },
                 inactive_border = surface,
+            },
+        },
+        decoration = {
+            rounding = {{bioma.window_radius}},
+            shadow = {
+                enabled = true,
+                range = 28,
+                render_power = 3,
+                offset = { 0, 0 },
+                color = shadow,
+                color_inactive = "rgba(00000000)",
             },
         },
         group = {

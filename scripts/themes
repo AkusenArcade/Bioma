@@ -99,7 +99,7 @@ def outputs(entry, mode):
 def source(entry, mode):
     if "input_path_dynamic" in entry:
         code, out, _ = run(hook_command(entry["input_path_dynamic"], mode))
-        return out.splitlines()[-1] if code == 0 and out else None
+        return os.path.normpath(os.path.join(TEMPLATES, out.splitlines()[-1])) if code == 0 and out else None
     return os.path.normpath(os.path.join(TEMPLATES, entry["input_path"]))
 
 

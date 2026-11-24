@@ -15,6 +15,10 @@ hooks never touch each other's. Bioma's changes on top:
   matched and `undo.sh` would have removed — and it sets the windows' corner
   radius from the shell's (`{{bioma.window_radius}}`) and the focus ring's
   width from the settings cell's Niri page (`{{bioma.focus_width}}`).
+- `hyprland/` and `umbriel/` carry the windows' corner radius too, and light
+  the focused border as a cell's rim (Hyprland's gradient, the rim colour on
+  Umbriel); Hyprland's also raises the focused window with an invoked cell's
+  shadow. Umbriel's lost two border keys 0.1.0 does not know.
 - `qt/apply.sh` is new, and `qt/undo.sh` extended: qt5ct and qt6ct read the
   colour scheme their own config names, so the rendered scheme is pointed at
   there (`color_scheme_path`, `custom_palette`) and unpointed on undo.
