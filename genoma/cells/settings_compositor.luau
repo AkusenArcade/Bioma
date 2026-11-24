@@ -298,12 +298,17 @@ function M.new(t: { [string]: any }): any
         end)
         return function() return list.value end
     end
-    -- A workspace by the name it has, or else by its id: Hyprland's number,
-    -- which is not the place it has on its monitor, or Umbriel's "DP-1:2".
+    -- A workspace by the name it has, or else by Hyprland's number for it, which
+    -- is not the place it has on its monitor, or by its monitor and place on
+    -- Umbriel ("DP-1:2"), whose own ids are not places either.
+    local function workspace_key(ws: any): string
+        if ws.name ~= "" then return ws.name end
+        return if settings.name == "umbriel" then ws.output .. ":" .. ws.idx else ws.id
+    end
     local function workspace_names(): { string }
         local out = {}
         for _, ws in compositor.workspace_list() do
-            local n = if ws.name ~= "" then ws.name else ws.id
+            local n = workspace_key(ws)
             if not table.find(out, n) and string.sub(n, 1, 8) ~= "special:" then table.insert(out, n) end
         end
         return out
@@ -313,7 +318,7 @@ function M.new(t: { [string]: any }): any
         local output, index = string.match(which, "^(.*):(%d+)$")
         if output then return index .. "  ·  " .. output end
         for _, ws in compositor.workspace_list() do
-            if (if ws.name ~= "" then ws.name else ws.id) == which then return which .. "  ·  " .. ws.output end
+            if workspace_key(ws) == which then return which .. "  ·  " .. ws.output end
         end
         return which
     end
@@ -338,6 +343,38 @@ function M.new(t: { [string]: any }): any
     -- ---- Window rules --------------------------------------------------
 
     local adding = g.signal(false)
+    -- The workspace whose name is being typed, and what is open.
+    local naming = g.signal("")
+    local open_ws = g.signal("")
+    local ws_text = g.signal("")
+    local ws_node, ws_field = field_mod.new {
+        text = ws_text,
+        width = function() return p.inner() - 80 * f() end,
+        font = typography.expressive,
+        size = function() return m().font_secondary end,
+        placeholder = "A name",
+        taking = function() return naming.value ~= "" end,
+    }
+    local function ws_problem(): string
+        if naming.value == "" then return "" end
+        return settings.workspace_problem(ws_text.value, naming.value)
+    end
+    local function commit_name()
+        local which = g.untracked(function() return naming.value end)
+        if which == "" then return end
+        local wanted = string.match(g.untracked(function() return ws_text.value end), "^%s*(.-)%s*$") or ""
+        if g.untracked(ws_problem) == "" and wanted ~= which then
+            settings.rename_workspace(which, wanted)
+            open_ws.value = wanted
+        end
+        naming.value = ""
+    end
+    local function start_naming(which: string)
+        adding.value = false
+        commit_name()
+        naming.value = which
+        ws_field.set(which)
+    end
     local open_rule = g.signal("")
     local query = g.signal("")
     local query_node, query_field = field_mod.new {
@@ -390,6 +427,17 @@ function M.new(t: { [string]: any }): any
         open_rule.value = choice.app_id
     end
     t.keyed(function(key: string, typed: string?, mods: { [string]: any }): boolean
+        if g.untracked(function() return naming.value end) ~= "" then
+            if key == "Escape" then
+                naming.value = ""
+                return true
+            end
+            if key == "Return" or key == "KP_Enter" then
+                commit_name()
+                return true
+            end
+            return ws_field.key(key, typed, mods)
+        end
         if not g.untracked(function() return adding.value end) then return false end
         if key == "Escape" then
             adding.value = false
@@ -534,6 +582,7 @@ function M.new(t: { [string]: any }): any
                     items = function()
                         local out = { "" }
                         for i = 1, 9 do table.insert(out, tostring(i)) end
+                        for _, ws in settings.workspaces() do table.insert(out, ws.name) end
                         for _, n in workspace_names() do
                             if not string.match(n, ":%d+$") and not table.find(out, n) then table.insert(out, n) end
                         end
@@ -559,6 +608,158 @@ function M.new(t: { [string]: any }): any
             },
         }
     end
+
+    -- A rule's or a workspace's own row, opening on what it holds.
+    local function headline(a: { [string]: any }): any
+        local hovered = g.signal(false)
+        return g.capsule {
+            role = "button",
+            width = p.inner,
+            height = function() return 34 * f() end,
+            direction = "row",
+            align = "center",
+            gap = function() return 10 * f() end,
+            padding_left = function() return 10 * f() end,
+            padding_right = function() return 4 * f() end,
+            radius = function() return metrics_mod.radius_for(34 * f(), m()) end,
+            fill = function()
+                if a.open() then return colour.alpha(theme.primary(), 0.10) end
+                return if hovered.value then colour.alpha(theme.text(), 0.05) else CLEAR
+            end,
+            rim_top = CLEAR,
+            rim_bottom = CLEAR,
+            on_hover = function(over: boolean) hovered.value = over end,
+            on_click = a.on_click,
+            g.text {
+                text = a.name,
+                color = theme.text,
+                font = typography.expressive,
+                size = function() return m().font_secondary end,
+                max_width = function() return p.inner() * 0.4 end,
+            },
+            g.text {
+                text = a.summary,
+                color = theme.text_muted,
+                font = typography.technical,
+                size = function() return m().font_meta end,
+                tracking = typography.label_tracking,
+                max_width = function() return p.inner() * 0.4 end,
+            },
+            g.box { grow = 1 },
+            g.box {
+                direction = "row",
+                align = "center",
+                gap = function() return 2 * f() end,
+                opacity = function() return if hovered.value or a.open() then 1 else theme.tool_rest end,
+                table.unpack(a.tools),
+            },
+        }
+    end
+
+    -- ---- Named workspaces ----------------------------------------------------------
+
+    local function workspace_row(item: () -> any): any
+        local which = g.untracked(item).name
+        local function ws(): any return settings.workspace_of(which) or { name = which } end
+        local function open(): boolean return open_ws.value == which end
+        local function inner(): number return p.inner() - 34 * f() end
+        local anywhere = if settings.name == "umbriel" then "EVERY MONITOR" else "ANY MONITOR"
+        -- No order to change: Umbriel and Hyprland put them where they will.
+        local tools: { any } = { p.remove(function()
+            if g.untracked(function() return naming.value end) == which then naming.value = "" end
+            settings.remove_workspace(which)
+        end) }
+        local function edge(): string
+            if naming.value == which and ws_problem() ~= "" then return theme.alert() end
+            return if naming.value == which then theme.primary() else theme.control_edge()
+        end
+        return g.box {
+            direction = "column",
+            align = "start",
+            gap = function() return m().gap_row end,
+            headline {
+                open = open,
+                name = which,
+                summary = function() return if ws().output then string.upper(ws().output) else "" end,
+                on_click = function() open_ws.value = if g.untracked(open) then "" else which end,
+                tools = tools,
+            },
+            g.box {
+                present = open,
+                direction = "column",
+                align = "start",
+                gap = function() return m().gap_row end,
+                padding_left = function() return 34 * f() end,
+                g.capsule {
+                    role = "button",
+                    width = inner,
+                    height = function() return 28 * f() end,
+                    padding_x = function() return 14 * f() end,
+                    direction = "row",
+                    align = "center",
+                    justify = "start",
+                    radius = function() return metrics_mod.radius_for(28 * f(), m()) end,
+                    fill = CLEAR,
+                    rim_top = edge,
+                    rim_bottom = edge,
+                    on_click = function() if g.untracked(function() return naming.value end) ~= which then start_naming(which) end end,
+                    g.text {
+                        present = function() return naming.value ~= which end,
+                        text = which,
+                        color = theme.text,
+                        font = typography.expressive,
+                        size = function() return m().font_secondary end,
+                    },
+                    g.box { present = function() return naming.value == which end, ws_node },
+                },
+                g.box { present = function() return naming.value == which and ws_problem() ~= "" end, line(ws_problem, theme.alert) },
+                p.flow {
+                    width = inner,
+                    items = function()
+                        local out = { "" }
+                        for _, o in monitors.outputs() do table.insert(out, o.name) end
+                        local now = ws().output
+                        if now and not table.find(out, now) then table.insert(out, now) end
+                        return out
+                    end,
+                    key = function(n: string) return if n == "" then "any" else n end,
+                    chip = function(n: () -> string)
+                        return choice_mod.new {
+                            label = function() return if n() ~= "" then n() else anywhere end,
+                            kind = function() return if (ws().output or "") == n() then "primary" else "plain" end,
+                            metrics = m,
+                            dimmed = busy,
+                            on_click = function()
+                                local chosen = g.untracked(n)
+                                settings.set_workspace_output(which, if chosen ~= "" then chosen else nil)
+                            end,
+                        }
+                    end,
+                },
+            },
+        }
+    end
+    local workspaces = section("WORKSPACES", nil, {
+        g.box {
+            present = function() return #settings.workspaces() == 0 end,
+            line(function() return "None named: " .. settings.title .. " makes a workspace as soon as one is needed. A named one is always there, and window rules can send windows to it." end),
+        },
+        g.each {
+            direction = "column",
+            gap = function() return 4 * f() end,
+            items = function() return settings.workspaces() end,
+            key = function(w: any) return w.name end,
+            row = workspace_row,
+        },
+        p.offer("NEW", function()
+            if g.untracked(busy) then return end
+            commit_name()
+            local made = settings.add_workspace()
+            open_ws.value = made
+            start_naming(made)
+        end),
+        line(function() return "Renaming one renames it in the window rules here. Written in " .. settings.file .. "." end, theme.text_muted),
+    }, settings.has_workspaces)
 
     local rules = section("WINDOW RULES", nil, {
         g.box {
@@ -614,7 +815,7 @@ function M.new(t: { [string]: any }): any
     }, settings.has_rules)
 
     settings.look()
-    return p.column { error_line, gaps, border, follows, layout, hot_corners, numlock, mouse, touchpad, opacity, rules }
+    return p.column { error_line, gaps, border, follows, layout, hot_corners, numlock, mouse, touchpad, opacity, workspaces, rules }
 end
 
 return M

@@ -936,7 +936,8 @@ screenshots, OCR and recording. The Utility cell reads both.
     width and workspace
   - on Hyprland and Umbriel, a page of their own in NIRI's place (added
     2026-11-25): gaps, border, focus following the pointer, num lock, mouse and
-    touchpad, window opacity, a rule per application, and the layout everywhere,
+    touchpad, window opacity, named workspaces, a rule per application, and the
+    layout everywhere,
     by monitor and by workspace, written into Bioma's own `bioma-settings` file
   - every window's opacity in focus and out of focus (added 2026-11-09),
     written into Bioma's own `bioma-windows.kdl`, included after niri's files;

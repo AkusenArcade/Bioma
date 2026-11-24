@@ -252,7 +252,7 @@ end
 -- { ["3"] = … } }: Hyprland's workspace rules, Umbriel's `[output.….layout]`
 -- and `[[workspace]]`. A monitor's is for every workspace on it; a workspace's
 -- wins over its monitor's. A workspace is called by the name the person gave
--- it, else by its id: Hyprland's number, Umbriel's "DP-1:2".
+-- it, else by Hyprland's number or, on Umbriel, its monitor and place, "DP-1:2".
 
 M.layouts = if name == "umbriel" then { "scrolling", "dwindle", "master", "stacking" } else { "dwindle", "master", "scrolling", "monocle" }
 -- The file a person writes, which Bioma's are included from.
@@ -270,6 +270,31 @@ function M.layout_names(of: string): { string }
     return out
 end
 
+-- ---- Named workspaces -------------------------------------------------------------
+--
+-- `compositor.<name>.workspaces`, a list of { name, output }: always there,
+-- empty or not, and a name a window rule can send windows to. Umbriel's names
+-- belong to a monitor each: without one, every monitor has its own.
+
+function M.has_workspaces(): boolean return name == "hyprland" or name == "umbriel" end
+local function workspaces_key(): string return "compositor." .. name .. ".workspaces" end
+function M.workspaces(): { any } return config.get(workspaces_key(), {}) end
+function M.workspace_of(which: string): any
+    for _, ws in M.workspaces() do if ws.name == which then return ws end end
+    return nil
+end
+-- Why a name cannot be given, or "". `except`: the one being renamed.
+function M.workspace_problem(wanted: string, except: string?): string
+    wanted = string.match(wanted, "^%s*(.-)%s*$") or ""
+    if wanted == "" then return "A workspace needs a name." end
+    if string.match(wanted, "^%d+$") then return "A number is a place, not a name." end
+    if string.find(wanted, "[:\"\\%c]") then return "A name has no colon, quote or backslash." end
+    for _, ws in M.workspaces() do
+        if ws.name ~= except and string.lower(ws.name) == string.lower(wanted) then return "Another workspace already has this name." end
+    end
+    return ""
+end
+
 -- Hyprland's word for a workspace. A number is said as a range of one: a rule
 -- with the same words as one in hyprland.lua is folded into it where it
 -- stands, and a monitor's rule, which comes after, would win over it.
@@ -278,6 +303,10 @@ local function workspace_selector(which: string): string
 end
 local function layout_rules(): string
     local out = {}
+    for _, ws in M.workspaces() do
+        table.insert(out, string.format("hl.workspace_rule({ workspace = %q, persistent = true%s })", "name:" .. ws.name,
+            if ws.output then string.format(", monitor = %q", ws.output) else ""))
+    end
     for _, monitor in M.layout_names("monitors") do
         table.insert(out, string.format("hl.workspace_rule({ workspace = %q, layout = %q })", "m[" .. monitor .. "]", M.layout_for("monitors", monitor)))
     end
@@ -328,17 +357,30 @@ end
 -- window's opacity comes before an application's.
 local function umbriel_workspaces(): { string }
     local out = {}
-    for _, ws in M.layout_names("workspaces") do
+    local function rule(which: { string }, output: string?, layout: string?)
         table.insert(out, "[[workspace]]")
-        local output, index = string.match(ws, "^(.*):(%d+)$")
-        if output then
-            table.insert(out, "index = " .. index)
-            table.insert(out, "output = " .. toml_value(output))
-        else
-            table.insert(out, "name = " .. toml_value(ws))
-        end
-        table.insert(out, "layout.mode = " .. toml_value(M.layout_for("workspaces", ws)))
+        for _, l in which do table.insert(out, l) end
+        if output then table.insert(out, "output = " .. toml_value(output)) end
+        if layout then table.insert(out, "layout.mode = " .. toml_value(layout)) end
         table.insert(out, "")
+    end
+    for _, ws in M.workspaces() do
+        rule({ "name = " .. toml_value(ws.name) }, ws.output, M.layout_for("workspaces", ws.name))
+    end
+    for _, which in M.layout_names("workspaces") do
+        local output, index = string.match(which, "^(.*):(%d+)$")
+        if output then
+            rule({ "index = " .. index }, output, M.layout_for("workspaces", which))
+        elseif not M.workspace_of(which) then
+            -- Named in the person's own files: where it is now, since a rule
+            -- by name alone makes one on every monitor.
+            for _, ws in require("services/compositor").workspace_list() do
+                if ws.name == which and ws.output ~= "" then
+                    rule({ "name = " .. toml_value(which) }, ws.output, M.layout_for("workspaces", which))
+                    break
+                end
+            end
+        end
     end
     return out
 end
@@ -360,7 +402,11 @@ local function umbriel_rules(): { string }
         local parts = {}
         if r.floating then table.insert(parts, "default_floating = true") end
         if r.width then table.insert(parts, "default_scrolling_extent = " .. number_text(r.width)) end
-        if r.workspace then table.insert(parts, "default_workspace = " .. (if string.match(r.workspace, "^%d+$") then r.workspace else toml_value(r.workspace))) end
+        if r.workspace then
+            table.insert(parts, "default_workspace = " .. (if string.match(r.workspace, "^%d+$") then r.workspace else toml_value(r.workspace)))
+            local ws = M.workspace_of(r.workspace)
+            if ws and ws.output then table.insert(parts, "default_output = " .. toml_value(ws.output)) end
+        end
         rule(r.app, nil, parts)
         if r.opacity then rule(r.app, true, { "opacity = " .. number_text(r.opacity) }) end
     end
@@ -464,6 +510,75 @@ function M.set_layout(of: string, which: string, layout: string?)
     all[of] = part
     config.set(layouts_key(), all)
     write_soon()
+end
+
+local function set_workspaces(list: { any }, more: { { any } }?)
+    local pairs_ = { { workspaces_key(), g.array(list) } }
+    for _, p in more or {} do table.insert(pairs_, p) end
+    config.set_many(pairs_)
+    write_soon()
+end
+local function workspaces_now(): { any } return table.clone(g.untracked(M.workspaces)) end
+local function at(list: { any }, which: string): number?
+    for i, ws in list do if ws.name == which then return i end end
+    return nil
+end
+function M.add_workspace(): string
+    local list = workspaces_now()
+    local n = #list + 1
+    while g.untracked(function() return M.workspace_problem("Workspace " .. n, nil) end) ~= "" do n += 1 end
+    local made = { name = "Workspace " .. n, output = nil :: string? }
+    -- Umbriel's belong to a monitor; the one looked at is as good as any.
+    local here = g.untracked(require("services/compositor").focused_output)
+    if name == "umbriel" and here ~= "" then made.output = here end
+    table.insert(list, made)
+    set_workspaces(list)
+    return made.name
+end
+function M.set_workspace_output(which: string, output: string?)
+    local list = workspaces_now()
+    local i = at(list, which)
+    if not i then return end
+    list[i] = { name = which, output = output }
+    set_workspaces(list)
+end
+-- What names it goes with it: its layout, and the rules that send windows there.
+local function follow(old: string, new: string?): { { any } }
+    local out: { { any } } = {}
+    local all = table.clone(g.untracked(layouts))
+    local part = table.clone(all.workspaces or {})
+    if part[old] then
+        if new then part[new] = part[old] end
+        part[old] = nil
+        all.workspaces = part
+        table.insert(out, { layouts_key(), all })
+    end
+    local rules, changed = {}, false
+    for _, r in g.untracked(M.rules) do
+        local copy = table.clone(r)
+        if copy.workspace == old then
+            copy.workspace = new
+            changed = true
+        end
+        table.insert(rules, copy)
+    end
+    if changed then table.insert(out, { rules_key(), g.array(rules) }) end
+    return out
+end
+function M.rename_workspace(which: string, wanted: string)
+    wanted = string.match(wanted, "^%s*(.-)%s*$") or ""
+    local list = workspaces_now()
+    local i = at(list, which)
+    if not i or wanted == which or g.untracked(function() return M.workspace_problem(wanted, which) end) ~= "" then return end
+    list[i] = { name = wanted, output = list[i].output }
+    set_workspaces(list, follow(which, wanted))
+end
+function M.remove_workspace(which: string)
+    local list = workspaces_now()
+    local i = at(list, which)
+    if not i then return end
+    table.remove(list, i)
+    set_workspaces(list, follow(which, nil))
 end
 
 local function set_rules(list: { any })
