@@ -3,8 +3,8 @@
 -- another compositor runs (cells/settings_niri.luau is niri's), with what
 -- that compositor can be told from here (services/compositor_settings.luau):
 -- the gaps, the border, the focus following the pointer, Umbriel's hot
--- corners, num lock, the mouse and the touchpad, and Hyprland's layouts
--- (everywhere, by monitor and by workspace), window opacity and rules.
+-- corners, num lock, the mouse and the touchpad, the layouts (everywhere, by
+-- monitor and by workspace), the window opacity and the window rules.
 --
 -- One well per setting, as on NIRI, and a line in Spectral saying what the
 -- current choice does. Every choice is written into one file of Bioma's,
@@ -241,14 +241,15 @@ function M.new(t: { [string]: any }): any
         line(function() return "Every window's opacity, with and without the focus. " .. written("opacity_focused", "opacity_unfocused") end),
     }, function() return settings.supports("opacity_focused") end)
 
-    -- ---- Layouts (Hyprland) -----------------------------------------------------
+    -- ---- Layouts -----------------------------------------------------
 
-    local LAYOUT_LABELS = { dwindle = "Dwindle", master = "Master", scrolling = "Scrolling", monocle = "Monocle" }
+    local LAYOUT_LABELS = { dwindle = "Dwindle", master = "Master", scrolling = "Scrolling", monocle = "Monocle", stacking = "Stacking" }
     local LAYOUT_SAYS = {
         dwindle = "each new window halves the one in focus",
         master = "one large window, the others stacked beside it",
         scrolling = "columns in a strip that scrolls, as on niri",
         monocle = "one window at a time, filling the screen",
+        stacking = "windows where they are put, one over another",
     }
     local function layout_choice(current: () -> string, choose: (string) -> (), same: boolean): any
         return segmented.new {
@@ -297,8 +298,8 @@ function M.new(t: { [string]: any }): any
         end)
         return function() return list.value end
     end
-    -- A workspace by the name it has, or else Hyprland's number for it, which
-    -- is not the place it has on its monitor.
+    -- A workspace by the name it has, or else by its id: Hyprland's number,
+    -- which is not the place it has on its monitor, or Umbriel's "DP-1:2".
     local function workspace_names(): { string }
         local out = {}
         for _, ws in compositor.workspace_list() do
@@ -309,6 +310,8 @@ function M.new(t: { [string]: any }): any
     end
     -- Where it is now, beside it.
     local function workspace_label(which: string): string
+        local output, index = string.match(which, "^(.*):(%d+)$")
+        if output then return index .. "  ·  " .. output end
         for _, ws in compositor.workspace_list() do
             if (if ws.name ~= "" then ws.name else ws.id) == which then return which .. "  ·  " .. ws.output end
         end
@@ -319,7 +322,7 @@ function M.new(t: { [string]: any }): any
     local layout = section("LAYOUT", nil, {
         p.row("EVERYWHERE", layout_choice(layout_shown, function(key: string) settings.set("layout", key) end, false)),
         line(function()
-            return (LAYOUT_LABELS[layout_shown()] or layout_shown()) .. ": " .. (LAYOUT_SAYS[layout_shown()] or "a layout of Hyprland's own") .. ". " .. written("layout")
+            return (LAYOUT_LABELS[layout_shown()] or layout_shown()) .. ": " .. (LAYOUT_SAYS[layout_shown()] or "a layout of " .. settings.title .. "'s own") .. ". " .. written("layout")
         end),
         labelled("BY MONITOR", layout_rows("monitors", named("monitors", function()
             local out = {}
@@ -332,7 +335,7 @@ function M.new(t: { [string]: any }): any
         end, theme.text_muted),
     }, settings.has_layouts)
 
-    -- ---- Window rules (Hyprland) --------------------------------------------------
+    -- ---- Window rules --------------------------------------------------
 
     local adding = g.signal(false)
     local open_rule = g.signal("")
@@ -532,7 +535,7 @@ function M.new(t: { [string]: any }): any
                         local out = { "" }
                         for i = 1, 9 do table.insert(out, tostring(i)) end
                         for _, n in workspace_names() do
-                            if not table.find(out, n) then table.insert(out, n) end
+                            if not string.match(n, ":%d+$") and not table.find(out, n) then table.insert(out, n) end
                         end
                         local chosen = rule().workspace
                         if chosen and not table.find(out, chosen) then table.insert(out, chosen) end
@@ -607,7 +610,7 @@ function M.new(t: { [string]: any }): any
             query_field.set("")
             adding.value = not g.untracked(function() return adding.value end)
         end),
-        line(function() return "The rules of your own in hyprland.lua are left to it." end, theme.text_muted),
+        line(function() return "The rules of your own in " .. settings.main .. " are left to it." end, theme.text_muted),
     }, settings.has_rules)
 
     settings.look()

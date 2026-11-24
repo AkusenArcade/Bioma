@@ -52,6 +52,7 @@ local SETTINGS: { [string]: any } = {
     layout = {
         kind = "text", default = "dwindle",
         hyprland = { read = "general:layout", write = function(v: string) return { general = { layout = v } } end },
+        umbriel = { key = "layout.mode" },
     },
     border = {
         kind = "number", default = 2,
@@ -109,10 +110,13 @@ local SETTINGS: { [string]: any } = {
     opacity_focused = {
         kind = "number", default = 1,
         hyprland = { read = "decoration:active_opacity", write = function(v: number) return { decoration = { active_opacity = v } } end },
+        -- A window rule, which nothing is read from (`window_rules`).
+        umbriel = { rule = true },
     },
     opacity_unfocused = {
         kind = "number", default = 1,
         hyprland = { read = "decoration:inactive_opacity", write = function(v: number) return { decoration = { inactive_opacity = v } } end },
+        umbriel = { rule = true },
     },
 }
 for _, c in M.corners do
@@ -140,7 +144,7 @@ function M.refresh()
     local ids, names = {}, {}
     for id, s in SETTINGS do
         local how = s[name]
-        if how then
+        if how and not how.rule then
             table.insert(ids, id)
             table.insert(names, if name == "hyprland" then how.read else how.key)
         end
@@ -244,12 +248,16 @@ end
 
 -- ---- Layouts by monitor and workspace -------------------------------------------
 --
--- Hyprland's: `compositor.hyprland.layouts`, { monitors = { ["DP-1"] = … },
--- workspaces = { ["3"] = … } }, written as workspace rules. A monitor's is for
--- every workspace on it; a workspace's wins over its monitor's.
+-- `compositor.<name>.layouts`, { monitors = { ["DP-1"] = … }, workspaces =
+-- { ["3"] = … } }: Hyprland's workspace rules, Umbriel's `[output.….layout]`
+-- and `[[workspace]]`. A monitor's is for every workspace on it; a workspace's
+-- wins over its monitor's. A workspace is called by the name the person gave
+-- it, else by its id: Hyprland's number, Umbriel's "DP-1:2".
 
-M.layouts = { "dwindle", "master", "scrolling", "monocle" }
-function M.has_layouts(): boolean return name == "hyprland" end
+M.layouts = if name == "umbriel" then { "scrolling", "dwindle", "master", "stacking" } else { "dwindle", "master", "scrolling", "monocle" }
+-- The file a person writes, which Bioma's are included from.
+M.main = if name == "umbriel" then "config.toml" else "hyprland.lua"
+function M.has_layouts(): boolean return name == "hyprland" or name == "umbriel" end
 local function layouts_key(): string return "compositor." .. name .. ".layouts" end
 local function layouts(): any return config.get(layouts_key(), {}) end
 -- `of`: "monitors" or "workspaces"; nil where none is chosen.
@@ -281,11 +289,11 @@ end
 
 -- ---- Window rules ----------------------------------------------------------------
 --
--- Hyprland's: `compositor.hyprland.rules`, a list of { app, opacity, floating,
--- width, workspace }, each one application's. Bioma's own only: the rules in
--- hyprland.lua are a program's, and stay there.
+-- `compositor.<name>.rules`, a list of { app, opacity, floating, width,
+-- workspace }, each one application's. Bioma's own only: the rules in the
+-- compositor's own file are a person's (Hyprland's a program's), and stay there.
 
-function M.has_rules(): boolean return name == "hyprland" end
+function M.has_rules(): boolean return name == "hyprland" or name == "umbriel" end
 local function rules_key(): string return "compositor." .. name .. ".rules" end
 function M.rules(): { any } return config.get(rules_key(), {}) end
 function M.rule_of(app: string): any
@@ -316,6 +324,49 @@ local function window_rules(): string
     return if #out > 0 then "\n" .. table.concat(out, "\n") .. "\n" else ""
 end
 
+-- Umbriel's, in TOML. Its window rules are merged and the later wins, so every
+-- window's opacity comes before an application's.
+local function umbriel_workspaces(): { string }
+    local out = {}
+    for _, ws in M.layout_names("workspaces") do
+        table.insert(out, "[[workspace]]")
+        local output, index = string.match(ws, "^(.*):(%d+)$")
+        if output then
+            table.insert(out, "index = " .. index)
+            table.insert(out, "output = " .. toml_value(output))
+        else
+            table.insert(out, "name = " .. toml_value(ws))
+        end
+        table.insert(out, "layout.mode = " .. toml_value(M.layout_for("workspaces", ws)))
+        table.insert(out, "")
+    end
+    return out
+end
+local function umbriel_rules(): { string }
+    local out = {}
+    local function rule(app: string?, focused: boolean?, parts: { string })
+        if #parts == 0 then return end
+        table.insert(out, "[[window_rule]]")
+        if app then table.insert(out, "match.app_id = " .. toml_value("^" .. escaped(app) .. "$")) end
+        if focused ~= nil then table.insert(out, "match.is_focused = " .. tostring(focused)) end
+        for _, part in parts do table.insert(out, part) end
+        table.insert(out, "")
+    end
+    for _, id in { "opacity_focused", "opacity_unfocused" } do
+        local v = config.get(key_of(id), nil)
+        if v ~= nil then rule(nil, id == "opacity_focused", { "opacity = " .. number_text(v) }) end
+    end
+    for _, r in M.rules() do
+        local parts = {}
+        if r.floating then table.insert(parts, "default_floating = true") end
+        if r.width then table.insert(parts, "default_scrolling_extent = " .. number_text(r.width)) end
+        if r.workspace then table.insert(parts, "default_workspace = " .. (if string.match(r.workspace, "^%d+$") then r.workspace else toml_value(r.workspace))) end
+        rule(r.app, nil, parts)
+        if r.opacity then rule(r.app, true, { "opacity = " .. number_text(r.opacity) }) end
+    end
+    return out
+end
+
 -- The whole file, from every choice made.
 local function body(): string?
     local head = "Written by Bioma's settings cell (" .. M.label .. "). Changing a setting there rewrites it."
@@ -338,10 +389,13 @@ local function body(): string?
         for id, s in SETTINGS do
             local v = config.get(key_of(id), nil)
             local how = s.umbriel
-            if v ~= nil and how then
+            if v ~= nil and how and how.key then
                 put(how.key, if how.to then how.to(v) else v)
                 for k, extra in how.extra or {} do put(k, extra) end
             end
+        end
+        for _, monitor in M.layout_names("monitors") do
+            put("output." .. monitor .. ".layout.mode", M.layout_for("monitors", monitor))
         end
         local paths_list = {}
         for p in tables do table.insert(paths_list, p) end
@@ -355,6 +409,8 @@ local function body(): string?
             for _, k in leaves do table.insert(out, k .. " = " .. toml_value(tables[p][k])) end
             table.insert(out, "")
         end
+        for _, l in umbriel_workspaces() do table.insert(out, l) end
+        for _, l in umbriel_rules() do table.insert(out, l) end
         return table.concat(out, "\n")
     end
     return nil
