@@ -7,7 +7,7 @@
 -- One well per setting, a line in Spectral saying what the current choice
 -- does and in which file it is written, rows that open on what they hold.
 -- A window rule is shown as the application it is about, and only its
--- opacity, its width and its workspace are edited here; the rest of what it
+-- opacity, its width, its workspace and whether it floats are edited here; the rest of what it
 -- says is counted and left alone. Everything is written as it is changed,
 -- into niri's own files, by Bioma on Quickshell for now.
 local g = require("@genoma")
@@ -81,6 +81,7 @@ local function rule_summary(rule: any): string
     if rule.opacity ~= nil and not niri_settings.every_window(rule) then
         table.insert(out, math.round(rule.opacity * 100) .. "% opaque in focus")
     end
+    if rule.floating then table.insert(out, "floating") end
     if rule.width ~= nil then table.insert(out, width_words(rule.width)) end
     if rule.workspace ~= nil then table.insert(out, "on " .. rule.workspace) end
     if #out == (if apps_n > 1 then 1 else 0) then table.insert(out, "nothing set here") end
@@ -637,6 +638,7 @@ function M.new(t: { [string]: any }): any
         local outputs: { [any]: any } = { direction = "row", gap = function() return 6 * f() end }
         return g.box {
             direction = "column",
+            align = "start",
             gap = function() return m().gap_row end,
             headline {
                 open = open,
@@ -653,6 +655,7 @@ function M.new(t: { [string]: any }): any
             g.box {
                 present = open,
                 direction = "column",
+                align = "start",
                 gap = function() return m().gap_row end,
                 padding_left = function() return 34 * f() end,
                 g.capsule {
@@ -684,6 +687,7 @@ function M.new(t: { [string]: any }): any
                 },
                 g.box { present = function() return workspace_problem() ~= "" end, line(workspace_problem, theme.alert) },
                 p.flow {
+                    width = function() return p.inner() - 34 * f() end,
                     items = function()
                         local out = { "" }
                         for _, o in monitors.outputs() do table.insert(out, o.name) end
@@ -700,9 +704,16 @@ function M.new(t: { [string]: any }): any
                         }
                     end,
                 },
-                muted(function()
-                    return "Renaming it renames it in the window rules and the keys that go to it. Windows already on it stay where they are. Written in " .. file_name(ws().file) .. "."
-                end),
+                g.text {
+                    color = theme.text_muted,
+                    font = typography.expressive,
+                    size = function() return m().font_secondary end,
+                    max_width = function() return p.inner() - 34 * f() end,
+                    wrap = true,
+                    text = function()
+                        return "Renaming it renames it in the window rules and the keys that go to it. Windows already on it stay where they are. Written in " .. file_name(ws().file) .. "."
+                    end,
+                },
             },
         }
     end
@@ -807,9 +818,21 @@ function M.new(t: { [string]: any }): any
         local function open(): boolean return open_rule.value == id() end
         local function app(): any return rule_app(rule()) end
         local inner = function() return p.inner() - 34 * f() end
+        -- A line as wide as what is under a rule, not as the well.
+        local function said(text: () -> string): any
+            return g.text {
+                text = text,
+                color = theme.text_muted,
+                font = typography.expressive,
+                size = function() return m().font_secondary end,
+                max_width = inner,
+                wrap = true,
+            }
+        end
         local function setting(label: string, body: any, clear: (() -> ())?, has: (() -> boolean)?): any
             return g.box {
                 direction = "column",
+                align = "start",
                 gap = function() return 6 * f() end,
                 g.box {
                     width = inner,
@@ -827,6 +850,7 @@ function M.new(t: { [string]: any }): any
         end
         return g.box {
             direction = "column",
+            align = "start",
             gap = function() return m().gap_row end,
             headline {
                 open = open,
@@ -845,6 +869,7 @@ function M.new(t: { [string]: any }): any
             g.box {
                 present = open,
                 direction = "column",
+                align = "start",
                 gap = function() return 10 * f() end,
                 padding_left = function() return 34 * f() end,
                 -- In focus only: out of focus every window follows WINDOW
@@ -857,14 +882,28 @@ function M.new(t: { [string]: any }): any
                         function() niri_settings.set_rule_opacity(g.untracked(rule), nil) end,
                         function() return rule().opacity ~= nil end),
                 },
+                g.box {
+                    width = inner,
+                    direction = "row",
+                    align = "center",
+                    meta("FLOATING", theme.text_muted),
+                    g.box { grow = 1 },
+                    switch.new {
+                        on = function() return rule().floating == true end,
+                        factor = f,
+                        dimmed = busy,
+                        on_toggle = function(value: boolean) niri_settings.set_rule_floating(g.untracked(rule), value) end,
+                    },
+                },
                 setting("WIDTH WHEN IT OPENS", g.box {
                     direction = "column",
+                    align = "start",
                     gap = function() return 4 * f() end,
                     amount(function() local w = rule().width return if w and w.kind == "proportion" then w.value * 100 else nil end,
                         function(v: number) niri_settings.set_rule_width(g.untracked(rule), v / 100) end, 10, 100, 5, "%", inner),
                     g.box {
                         present = function() local w = rule().width return w == nil or w.kind ~= "proportion" end,
-                        muted(function()
+                        said(function()
                             local w = rule().width
                             return if w and w.kind == "fixed" then math.round(w.value) .. " px for now: moving the slider makes it a share of the screen."
                                 else "As wide as the window asks for now: moving the slider makes it a share of the screen."
@@ -872,6 +911,7 @@ function M.new(t: { [string]: any }): any
                     },
                 }, function() niri_settings.set_rule_width(g.untracked(rule), nil) end, function() return rule().width ~= nil end),
                 setting("OPENS ON", p.flow {
+                    width = inner,
                     items = function()
                         local out = { "" }
                         for _, ws in niri_settings.workspaces() do table.insert(out, ws.name) end
@@ -891,7 +931,7 @@ function M.new(t: { [string]: any }): any
                         }
                     end,
                 }),
-                muted(function()
+                said(function()
                     local rest = rule_rest(rule())
                     local a = app()
                     return (if #rest > 0 then "The rule also has " .. table.concat(rest, ", ") .. ", left as they are. " else "")

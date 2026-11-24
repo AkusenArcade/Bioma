@@ -235,7 +235,7 @@ local function busy_now(): boolean return g.untracked(niri_config.busy) end
 local function signature(item: any): string
     if not item then return "" end
     if item.kind == "rule" then
-        return g.to_json({ item.matches, item.opacity or false, item.width or false, item.workspace or false, item.others })
+        return g.to_json({ item.matches, item.opacity or false, item.width or false, item.workspace or false, item.floating or false, item.others })
     end
     if item.kind == "workspace" then return item.name .. "\0" .. item.output end
     if item.kind == "spawn" then return table.concat(item.args, "\0") .. "\0" .. tostring(item.sh) .. tostring(item.on) end
@@ -729,6 +729,10 @@ function M.set_rule_width(rule: any, fraction: number?)
 end
 function M.set_rule_workspace(rule: any, name: string?)
     set_rule(rule, "open-on-workspace", if name == nil or name == "" then nil else "open-on-workspace " .. kdl.quote(name))
+end
+-- Floating, or whatever niri makes of it.
+function M.set_rule_floating(rule: any, on: boolean)
+    set_rule(rule, "open-floating", if on then "open-floating true" else nil)
 end
 function M.remove_rule(rule: any)
     if busy_now() or not M.removable(rule) then return end

@@ -296,9 +296,9 @@ local function rule_of(node: any): any
 end
 
 -- What the Niri settings page edits of a rule: its opacity, the width its
--- windows open at and the workspace they open on, the last of each, which
+-- windows open at, the workspace they open on and whether they float, the last of each, which
 -- is the one niri goes by. Everything else in it is counted.
-local RULE_EDITS = { "opacity", "default-column-width", "open-on-workspace" }
+local RULE_EDITS = { "opacity", "default-column-width", "open-on-workspace", "open-floating" }
 local function width_of(node: any): any
     if not node then return nil end
     local size = nil
@@ -322,6 +322,8 @@ local function rule_details(rule: any): any
     rule.opacity = if opacity and #opacity.args > 0 then tonumber(opacity.args[1].value) else nil
     rule.width = width_of(last["default-column-width"])
     rule.workspace = if workspace and #workspace.args > 0 then workspace.args[1].value else nil
+    local floating = last["open-floating"]
+    rule.floating = floating ~= nil and #floating.args > 0 and tostring(floating.args[1].value) == "true"
     return rule
 end
 
