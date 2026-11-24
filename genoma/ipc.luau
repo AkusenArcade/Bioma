@@ -223,6 +223,12 @@ function M.register()
         end,
         vrr = function(name: string, mode: string): string require("services/monitors").set_vrr(name, mode) return mode end,
         hdr = function(name: string, on: string): string require("services/monitors").set_hdr(name, on == "true") return on end,
+        white = function(name: string, nits: string): string
+            local v = tonumber(nits)
+            if not v then return "white is in nits" end
+            require("services/monitors").set_white(name, v)
+            return nits
+        end,
         scale = function(name: string, value: string): string
             local v = tonumber(value)
             if not v or v < 0.25 or v > 4 then return "a scale is 0.25 to 4" end

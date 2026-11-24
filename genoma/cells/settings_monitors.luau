@@ -26,6 +26,8 @@ local metrics_mod = require("core/metrics")
 local theme = require("core/theme")
 local typography = require("core/typography")
 local segmented = require("components/segmented")
+local slider = require("components/slider")
+local timing = require("core/timing")
 local switch = require("components/switch")
 local monitors = require("services/monitors")
 local place = require("cells/settings_place")
@@ -496,6 +498,26 @@ function M.new(t: { [string]: any }): any
 
     -- ---- Variable refresh ---------------------------------------------------
 
+    -- The white being set by hand, and whose: the configuration's otherwise.
+    local held_white = g.signal(nil :: any)
+    local white_rest: any = nil
+    local function white(): number
+        local h = held_white.value
+        if h and h.name == chosen() then return h.nits end
+        return monitors.white(chosen())
+    end
+    local function move_white(fraction: number)
+        local name = g.untracked(chosen)
+        local nits = math.round((monitors.white_from + fraction * (monitors.white_to - monitors.white_from)) / 5) * 5
+        held_white.value = { name = name, nits = nits }
+        if white_rest then white_rest:stop() end
+        white_rest = g.after(timing.seconds.debounce, function()
+            white_rest = nil
+            monitors.set_white(name, nits)
+            held_white.value = nil
+        end)
+    end
+
     local second = g.box {
         present = power_lit,
         width = area_width,
@@ -554,6 +576,31 @@ function M.new(t: { [string]: any }): any
                 on_toggle = function(value: boolean)
                     if not g.untracked(monitors.busy) then monitors.set_hdr(g.untracked(chosen), value) end
                 end,
+            },
+            -- On, how bright the desktop's white is, in nits: written once
+            -- the hand rests.
+            g.box {
+                present = function() return monitors.hdr(chosen()) end,
+                direction = "row",
+                align = "center",
+                gap = function() return 6 * f() end,
+                slider.new {
+                    width = function() return 90 * f() end,
+                    factor = f,
+                    dimmed = function() return false end,
+                    value = function() return (white() - monitors.white_from) / (monitors.white_to - monitors.white_from) end,
+                    on_move = move_white,
+                },
+                g.box {
+                    width = function() return 44 * f() end,
+                    g.text {
+                        text = function() return math.round(white()) .. " nit" end,
+                        color = theme.text_muted,
+                        font = typography.technical,
+                        size = function() return m().font_meta end,
+                        tabular = true,
+                    },
+                },
             },
         },
         g.box {

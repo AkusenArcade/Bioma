@@ -58,6 +58,12 @@ if running == "hyprland" or running == "umbriel" then
 end
 function M.hdr_supported(name: string): boolean return hdr_capable.value[name] == true end
 function M.hdr(name: string): boolean return ((wished().outputs or {})[name] or {}).hdr == true end
+-- The white of what is not HDR on an HDR monitor, the desktop itself, in
+-- nits: the reference 203 (ITU-R BT.2408) until chosen, as monitors differ
+-- in how bright they are without HDR.
+M.white_from, M.white_to = 80, 600
+local WHITE = 203
+function M.white(name: string): number return ((wished().outputs or {})[name] or {}).white or WHITE end
 
 -- What niri reports, one entry per output that is on; and the ones
 -- connected but switched off, which it lists with no geometry.
@@ -249,14 +255,14 @@ local function monitors_body(): string
                 table.insert(out, "    vrr = " .. (vrr[want.vrr or "off"] or 0) .. ",")
                 if any_hdr then
                     table.insert(out, "    sdr_eotf = \"gamma22\",")
-                    -- What is not HDR, the desktop itself: white at the
-                    -- reference 203 nits (ITU-R BT.2408) and black at none.
+                    -- What is not HDR, the desktop itself: white where
+                    -- it is chosen (`white`) and black at none.
                     -- Hyprland's own 80 and 0.2 are dim and grey, the whole
                     -- desktop washed out (Akusen, 2026-11-24). On a monitor
                     -- that is not HDR they change nothing, and are there
                     -- because Hyprland 0.57.2 does not compare sdr_eotf: a
                     -- rule where it alone changed is taken for the same.
-                    table.insert(out, "    sdr_max_luminance = 203,")
+                    table.insert(out, "    sdr_max_luminance = " .. (if want.hdr then want.white or WHITE else WHITE) .. ",")
                     table.insert(out, "    sdr_min_luminance = 0.005,")
                 end
                 -- HDR10 needs ten bits; off, Hyprland picks the colours itself.
@@ -277,6 +283,7 @@ local function monitors_body(): string
         if want.x ~= nil and want.y ~= nil then table.insert(out, string.format("position = [%d, %d]", math.round(want.x), math.round(want.y))) end
         if want.scale then table.insert(out, "scale = " .. number_text(want.scale)) end
         if want.vrr then table.insert(out, "vrr = \"" .. (vrr[want.vrr] or "disabled") .. "\"") end
+        if want.white then table.insert(out, "sdr_white = " .. want.white) end
         if want.hdr ~= nil then table.insert(out, "hdr = \"" .. (if want.hdr then "on" else "off") .. "\"") end
         table.insert(out, "focus_at_startup = " .. tostring(w.primary == name))
         table.insert(out, "")
@@ -531,6 +538,18 @@ function M.set_scale(name: string, scale: number)
         if not wanted then return text end
         if #output.sections == 0 then return kdl.with_output(text, output.name, wanted.x, wanted.y) end
         return rewrite(text, output, function(t: string, section: any) return kdl.with_position(t, section, wanted.x, wanted.y) end)
+    end)
+end
+
+-- How bright the desktop's white is on an HDR monitor.
+function M.set_white(name: string, nits: number)
+    if on_niri or not g.untracked(function() return M.hdr(name) end) then return end
+    local v = math.clamp(math.round(nits), M.white_from, M.white_to)
+    if v == g.untracked(function() return M.white(name) end) then return end
+    wish(function(w: any)
+        local o = table.clone(w.outputs[name] or {})
+        o.white = v
+        w.outputs[name] = o
     end)
 end
 
