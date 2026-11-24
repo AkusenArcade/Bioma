@@ -2,19 +2,35 @@
 # Set Bioma up for this user, from wherever the repository is.
 #
 #     scripts/install              check what is missing, write the keys, and
-#                                  include Bioma's niri files
-#     scripts/install --autostart  also start Bioma with the niri session
+#                                  include Bioma's files in the compositor's
+#                                  configuration
+#     scripts/install --autostart  also start Bioma with the session
 #     scripts/install --force      write the keys again over an existing copy
 #     scripts/install --check      only say what is missing
 #     scripts/install --report     what --check says, and what is already in
-#                                  niri's configuration, one fact per line in
-#                                  tab-separated fields — for the setup
-#     scripts/install --niri-only  write the keys and the includes without
+#                                  the compositor's configuration, one fact per
+#                                  line in tab-separated fields — for the setup
+#     scripts/install --files-only write the keys and the includes without
 #                                  checking for programs first — for the setup,
 #                                  which says what is missing on a page of its
-#                                  own
+#                                  own (--niri-only, its old name, still works)
+#     scripts/install --compositor niri|hyprland|umbriel
+#                                  set Bioma up for that one. Without it: the
+#                                  one running, else the only one installed,
+#                                  else niri.
 #
-# What it writes, all of it next to niri's config.kdl:
+# Hyprland (0.57 or later: its configuration is Lua) gets bioma-rules.lua and
+# bioma-binds.lua beside hyprland.lua, required at its end
+# (scripts/hypr-include), and with --autostart bioma-autostart.lua. Umbriel
+# gets bioma-binds.toml, included from config.toml (scripts/umbriel-include,
+# which takes the same keys out of config.toml, since config.toml would win),
+# and with --autostart Bioma in config.toml's `general.autostart`; without a
+# config.toml, Umbriel's packaged one is copied there first. Either way the
+# configuration is copied aside first and checked whole afterwards
+# (`Hyprland --verify-config`, `umbriel config validate`), and put back if the
+# compositor refuses it.
+#
+# On niri, what it writes, all of it next to niri's config.kdl:
 #   - bioma-binds.kdl, from config/niri/bioma-binds.kdl.in with the repository's
 #     path filled in. Only if there is none yet: the copy is the user's, and the
 #     settings cell's Keybinds page edits it in place. A copy already there gets
@@ -35,17 +51,44 @@ force=false
 check_only=false
 report=false
 niri_only=false
-for arg in "$@"; do
-    case "$arg" in
+compositor=""
+while [ $# -gt 0 ]; do
+    case "$1" in
         --autostart) autostart=true ;;
         --force) force=true ;;
         --check) check_only=true ;;
         --report) report=true; check_only=true ;;
-        --niri-only) niri_only=true ;;
-        -h|--help) sed -n '2,28p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
-        *) echo "unknown option: $arg" >&2; exit 2 ;;
+        --files-only|--niri-only) niri_only=true ;;
+        --compositor) shift; compositor="${1:-}" ;;
+        --compositor=*) compositor="${1#--compositor=}" ;;
+        -h|--help) sed -n '2,46p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        *) echo "unknown option: $1" >&2; exit 2 ;;
     esac
+    shift
 done
+
+# The compositor: the one this runs under, else the only one installed.
+running_umbriel() {
+    [ -n "${UMBRIEL_SOCKET:-}" ] && return 0
+    [ -n "${WAYLAND_DISPLAY:-}" ] && [ -S "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/umbriel-$WAYLAND_DISPLAY.sock" ]
+}
+if [ -z "$compositor" ]; then
+    if [ -n "${NIRI_SOCKET:-}" ]; then compositor=niri
+    elif [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then compositor=hyprland
+    elif running_umbriel; then compositor=umbriel
+    else
+        installed=()
+        command -v niri >/dev/null 2>&1 && installed+=(niri)
+        command -v Hyprland >/dev/null 2>&1 && installed+=(hyprland)
+        command -v umbriel >/dev/null 2>&1 && installed+=(umbriel)
+        compositor="${installed[0]:-niri}"
+        [ "${#installed[@]}" -gt 1 ] && compositor=niri
+    fi
+fi
+case "$compositor" in
+    niri|hyprland|umbriel) ;;
+    *) echo "unknown compositor: $compositor (niri, hyprland or umbriel)" >&2; exit 2 ;;
+esac
 
 # ---- What is missing ---------------------------------------------------------
 #
@@ -111,7 +154,11 @@ font() { fc-list : family 2>/dev/null | grep -i "$1" >/dev/null && echo yes; }
 if $niri_only; then exec 3>&1 1>/dev/null; fi
 
 $report || echo "Required:"
-need niri       niri            "the compositor, 26.04 or later"
+case "$compositor" in
+    niri) need niri niri "the compositor, 26.04 or later" ;;
+    hyprland) need Hyprland hyprland "the compositor, 0.57 or later" ;;
+    umbriel) need umbriel umbriel "the compositor" ;;
+esac
 need genoma     genoma          "the shell runtime"
 need python3    python          "the helper scripts"
 need gsettings  glib2           "desktop settings: theme, icons, cursor, proxy"
@@ -169,7 +216,7 @@ want_part "$(has wl-screenrec)" "wl-screenrec" \
 want_part "$(has bnw)" "network wizard" \
     "company network setup, from the connectivity cell" "AUR business-network-wizard"
 
-if ! $report && command -v niri >/dev/null 2>&1; then
+if ! $report && [ "$compositor" = niri ] && command -v niri >/dev/null 2>&1; then
     version="$(niri --version 2>/dev/null | awk '{print $2}')"
     major="${version%%.*}"
     if [ -n "$major" ] && [ "$major" -lt 26 ] 2>/dev/null; then
@@ -177,27 +224,51 @@ if ! $report && command -v niri >/dev/null 2>&1; then
     fi
 fi
 
-# What is already in niri's configuration, for --report: the keys file, the
-# two includes, the line that starts Bioma with the session, and whether
-# anything can ask for a password — the setup's NIRI and LOGIN steps read
-# these rather than guessing.
+# What is already in the compositor's configuration, for --report: which
+# compositor, its configuration file, the keys file, the includes, the line
+# that starts Bioma with the session, and whether anything can ask for a
+# password — the setup's compositor and LOGIN steps read these rather than
+# guessing.
 report_niri() {
     local config real dir
-    config="${NIRI_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/niri/config.kdl}"
+    printf 'compositor\tname\t%s\n' "$compositor"
+    case "$compositor" in
+        niri) config="${NIRI_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/niri/config.kdl}" ;;
+        hyprland) config="${XDG_CONFIG_HOME:-$HOME/.config}/hypr/hyprland.lua" ;;
+        umbriel) config="${XDG_CONFIG_HOME:-$HOME/.config}/umbriel/config.toml" ;;
+    esac
     if [ ! -f "$config" ]; then
-        printf 'niri\tconfig\tmissing\n'
+        printf 'compositor\tconfig\tmissing\n'
     else
         real="$(readlink -f "$config")"
         dir="$(dirname "$real")"
-        printf 'niri\tconfig\tok\t%s\n' "$real"
+        printf 'compositor\tconfig\tok\t%s\n' "$real"
         found() { grep -qE "$1" "$real" && echo ok || echo missing; }
-        printf 'niri\tbinds\t%s\n' "$([ -f "$dir/bioma-binds.kdl" ] && echo ok || echo missing)"
-        printf 'niri\tinclude\t%s\n' \
-            "$(found '^[[:space:]]*include[[:space:]]+"[^"]*/config/niri/bioma\.kdl"')"
-        printf 'niri\tinclude-binds\t%s\n' \
-            "$(found '^[[:space:]]*include[[:space:]]+"(.*/)?bioma-binds\.kdl"')"
-        printf 'niri\tautostart\t%s\n' \
-            "$(found '^[[:space:]]*spawn-at-startup[[:space:]]+"[^"]*/scripts/shell"[[:space:]]+"start"')"
+        case "$compositor" in
+            niri)
+                printf 'compositor\tbinds\t%s\n' "$([ -f "$dir/bioma-binds.kdl" ] && echo ok || echo missing)"
+                printf 'compositor\tinclude\t%s\n' \
+                    "$(found '^[[:space:]]*include[[:space:]]+"[^"]*/config/niri/bioma\.kdl"')"
+                printf 'compositor\tinclude-binds\t%s\n' \
+                    "$(found '^[[:space:]]*include[[:space:]]+"(.*/)?bioma-binds\.kdl"')"
+                printf 'compositor\tautostart\t%s\n' \
+                    "$(found '^[[:space:]]*spawn-at-startup[[:space:]]+"[^"]*/scripts/shell"[[:space:]]+"start"')"
+                ;;
+            hyprland)
+                printf 'compositor\tbinds\t%s\n' "$([ -f "$dir/bioma-binds.lua" ] && echo ok || echo missing)"
+                printf 'compositor\tinclude\t%s\n' "$(found '^[[:space:]]*require[[:space:]]*\(?[[:space:]]*["'"'"']bioma-rules["'"'"']')"
+                printf 'compositor\tinclude-binds\t%s\n' "$(found '^[[:space:]]*require[[:space:]]*\(?[[:space:]]*["'"'"']bioma-binds["'"'"']')"
+                printf 'compositor\tautostart\t%s\n' "$(found '^[[:space:]]*require[[:space:]]*\(?[[:space:]]*["'"'"']bioma-autostart["'"'"']')"
+                ;;
+            umbriel)
+                printf 'compositor\tbinds\t%s\n' "$([ -f "$dir/bioma-binds.toml" ] && echo ok || echo missing)"
+                # Umbriel needs no rules of Bioma's from the repository: its
+                # glass is written by the shell.
+                printf 'compositor\tinclude\tok\n'
+                printf 'compositor\tinclude-binds\t%s\n' "$(found '["'"'"']bioma-binds\.toml["'"'"']')"
+                printf 'compositor\tautostart\t%s\n' "$(found "^[[:space:]]*autostart[[:space:]]*=.*/scripts/shell'?[[:space:]]+start")"
+                ;;
+        esac
     fi
     # An authentication agent is a process of the session; there is no bus
     # name to ask for. These are the ones a niri session is likely to run,
@@ -253,6 +324,137 @@ if [ "$missing_required" -gt 0 ]; then
     exit 1
 fi
 $check_only && exit 0
+
+# ---- Hyprland and Umbriel ----------------------------------------------------------
+
+# A copy of Bioma's keys that names another Bioma (the clone before a
+# package, or a repository that moved) is pointed here; its keys stay.
+repoint() {   # file
+    python3 - "$1" "$here" <<'PY'
+import re, sys
+path, here = sys.argv[1], sys.argv[2]
+text = open(path).read()
+roots = set(re.findall(r"""['"]([^'"\s]+)/scripts/[a-z-]+""", text))
+roots.discard(here)
+for root in roots:
+    text = text.replace(root + "/scripts/", here + "/scripts/")
+if roots:
+    open(path, "w").write(text)
+print(" ".join(sorted(roots)))
+PY
+}
+
+if [ "$compositor" = hyprland ]; then
+    hdir="${XDG_CONFIG_HOME:-$HOME/.config}/hypr"
+    config="$hdir/hyprland.lua"
+    if [ ! -f "$config" ]; then
+        echo "No Hyprland configuration at $config — start Hyprland once (0.57 writes hyprland.lua)." >&2
+        exit 1
+    fi
+    real="$(readlink -f "$config")"
+    backup="$real.before-bioma.$(date +%Y%m%d-%H%M%S)"
+    cp -p "$real" "$backup"
+    put_back() { cp -p "$backup" "$real"; echo "Hyprland refused it, so hyprland.lua is back as it was." >&2; exit 1; }
+    "$here/scripts/hypr-include" rules <"$here/config/hyprland/bioma-rules.lua" || put_back
+    binds="$hdir/bioma-binds.lua"
+    if [ ! -f "$binds" ] || $force; then
+        sed "s#@BIOMA@#$here#g" "$here/config/hyprland/bioma-binds.lua.in" | "$here/scripts/hypr-include" binds || put_back
+        "$here/scripts/binds" --compositor hyprland --record
+        echo "wrote     $binds"
+    else
+        moved="$(repoint "$binds")"
+        [ -n "$moved" ] && echo "pointed   $binds from $moved to $here"
+        "$here/scripts/hypr-include" binds <"$binds" || put_back
+        "$here/scripts/binds" --compositor hyprland || true
+        echo "kept      $binds (yours; --force writes it again)"
+    fi
+    if $autostart; then
+        printf -- '-- Bioma, started with the session (scripts/install --autostart).\nhl.on("hyprland.start", function()\n    hl.exec_cmd(%s)\nend)\n' \
+            "\"'$here/scripts/shell' start\"" | "$here/scripts/hypr-include" autostart || put_back
+        echo "wrote     $hdir/bioma-autostart.lua"
+    fi
+    if refusal="$(env -u HYPRLAND_INSTANCE_SIGNATURE Hyprland --verify-config -c "$config" 2>&1)" && ! printf '%s' "$refusal" | grep -q 'error\|unknown config key'; then
+        if cmp -s "$backup" "$real"; then rm -f "$backup"; else echo "hyprland.lua was changed; the previous one is $backup"; fi
+        echo "Hyprland accepts the configuration."
+    else
+        cp -p "$backup" "$real"
+        echo "Hyprland refused the result, so hyprland.lua is back as it was:" >&2
+        printf '%s\n' "$refusal" | grep -m3 -E 'error|unknown|attempt' >&2
+        exit 1
+    fi
+    echo
+    echo "Start Bioma with $here/scripts/shell bioma — or log in again, with --autostart."
+    exit 0
+fi
+
+if [ "$compositor" = umbriel ]; then
+    udir="${XDG_CONFIG_HOME:-$HOME/.config}/umbriel"
+    config="$udir/config.toml"
+    if [ ! -f "$config" ]; then
+        if [ ! -f /usr/share/umbriel/config.toml ]; then
+            echo "No Umbriel configuration at $config, and none packaged to start from." >&2
+            exit 1
+        fi
+        mkdir -p "$udir"
+        cp /usr/share/umbriel/config.toml "$config"
+        echo "copied    Umbriel's starting configuration to $config"
+    fi
+    real="$(readlink -f "$config")"
+    backup="$real.before-bioma.$(date +%Y%m%d-%H%M%S)"
+    cp -p "$real" "$backup"
+    put_back() { cp -p "$backup" "$real"; echo "Umbriel refused it, so config.toml is back as it was." >&2; exit 1; }
+    binds="$udir/bioma-binds.toml"
+    if [ ! -f "$binds" ] || $force; then
+        sed "s#@BIOMA@#$here#g" "$here/config/umbriel/bioma-binds.toml.in" | "$here/scripts/umbriel-include" binds || put_back
+        "$here/scripts/binds" --compositor umbriel --record
+        echo "wrote     $binds"
+    else
+        moved="$(repoint "$binds")"
+        [ -n "$moved" ] && echo "pointed   $binds from $moved to $here"
+        "$here/scripts/umbriel-include" binds <"$binds" || put_back
+        "$here/scripts/binds" --compositor umbriel || true
+        echo "kept      $binds (yours; --force writes it again)"
+    fi
+    if $autostart; then
+        # A list: Umbriel takes the last file's whole, so it is config.toml's
+        # own, Bioma's command added to what is there (or pointed here).
+        python3 - "$real" "'$here/scripts/shell' start" <<'PY' || put_back
+import json, re, sys
+path, command = sys.argv[1], sys.argv[2]
+lines = open(path).read().split("\n")
+quoted = json.dumps(command)
+general = next((i for i, l in enumerate(lines) if re.match(r"\s*\[general\]\s*(#.*)?$", l)), None)
+if general is None:
+    lines += ["", "[general]", "autostart = [" + quoted + "]"]
+else:
+    end = next((i for i in range(general + 1, len(lines)) if re.match(r"\s*\[", lines[i])), len(lines))
+    at = next((i for i in range(general + 1, end) if re.match(r"\s*autostart\s*=\s*\[.*\]", lines[i])), None)
+    if at is None:
+        lines.insert(general + 1, "autostart = [" + quoted + "]")
+    else:
+        line = lines[at]
+        open_at, close_at = line.index("["), line.rindex("]")
+        items = [x for x in re.findall(r'"(?:[^"\\]|\\.)*"', line[open_at:close_at]) if "/scripts/shell" not in x]
+        lines[at] = line[:open_at] + "[" + ", ".join(items + [quoted]) + line[close_at:]
+text = "\n".join(lines)
+if text != open(path).read():
+    open(path, "w").write(text)
+    print("added     Bioma to general.autostart")
+PY
+    fi
+    if refusal="$(env -u UMBRIEL_SOCKET umbriel config validate -c "$config" 2>&1)"; then
+        if cmp -s "$backup" "$real"; then rm -f "$backup"; else echo "config.toml was changed; the previous one is $backup"; fi
+        echo "Umbriel accepts the configuration."
+    else
+        cp -p "$backup" "$real"
+        echo "Umbriel refused the result, so config.toml is back as it was:" >&2
+        printf '%s\n' "$refusal" | tail -3 >&2
+        exit 1
+    fi
+    echo
+    echo "Start Bioma with $here/scripts/shell bioma — or log in again, with --autostart."
+    exit 0
+fi
 
 # ---- niri ------------------------------------------------------------------------
 

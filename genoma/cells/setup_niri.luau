@@ -1,13 +1,14 @@
 --!strict
--- The setup's niri step (cells/settings/SetupNiri.qml at 2cafc17): Bioma's
--- keys and files in niri's configuration. See docs/design/SETUP.md, step 3.
+-- The setup's compositor step (cells/settings/SetupNiri.qml at 2cafc17):
+-- Bioma's keys and files in the configuration of the compositor that runs,
+-- niri, Hyprland or Umbriel. See docs/design/SETUP.md, step 3.
 --
 -- What `bioma-install --autostart` does from a terminal, with the outcome
--- drawn instead of printed: the keys file beside config.kdl, the includes,
--- and the line that starts Bioma with the session. config.kdl is copied
--- aside first and handed to `niri validate`; what niri refuses is put back,
--- and the first line it refused is quoted here. Written by Quickshell
--- while the two run side by side (services/setup.luau).
+-- drawn instead of printed: the keys file beside the configuration, the
+-- includes, and the line that starts Bioma with the session. The
+-- configuration is copied aside first and checked whole by the compositor;
+-- what it refuses is put back, and the first line it refused is quoted here
+-- (services/setup.luau).
 local g = require("@genoma")
 local theme = require("core/theme")
 local page = require("components/page")
@@ -34,30 +35,31 @@ function M.new(t: { [string]: any }): any
     end
     g.effect(function()
         if not known() then return end
-        local line = if setup.niri_error() ~= "" then "niri refused it"
-            elseif setup.niri_set() then (if setup.autostart_set() then "Set up, starts with niri" else "Set up")
+        local line = if setup.niri_error() ~= "" then w.name .. " refused it"
+            elseif setup.niri_set() then (if setup.autostart_set() then "Set up, starts with " .. w.name else "Set up")
             else ""
         if line ~= "" then g.untracked(function() setup.note("niri", line) end) end
     end)
     local home = g.env("HOME") or ""
+    local w = setup.compositor
 
     return p.column {
-        p.section("IN NIRI'S CONFIGURATION", nil, {
+        p.section("IN " .. string.upper(w.name) .. "'S CONFIGURATION", nil, {
             p.fact {
                 label = "KEYS",
-                detail = function() return "bioma-binds.kdl, beside config.kdl: yours to edit" end,
+                detail = function() return w.keys .. ", beside " .. w.config .. ": yours to edit" end,
                 state = function() return state(setup.niri_state().binds == "ok") end,
             },
             p.fact {
                 label = "INCLUDES",
-                detail = function() return "Bioma's niri rules and the keys file" end,
+                detail = function() return w.rules end,
                 state = function()
                     local s = setup.niri_state()
                     return state(s.include == "ok" and s["include-binds"] == "ok")
                 end,
             },
             p.fact {
-                label = "START WITH NIRI",
+                label = "START AT LOGIN",
                 detail = function() return "Bioma comes up when the session does" end,
                 state = function() return state(setup.autostart_set()) end,
                 trailing_width = 50,
@@ -71,13 +73,13 @@ function M.new(t: { [string]: any }): any
                 },
             },
             g.box {
-                present = function() return known() and has_config() and not complete() end,
+                present = function() return known() and (has_config() or w.name == "Umbriel") and not complete() end,
                 direction = "row",
                 align = "center",
                 gap = function() return 10 * f() end,
                 choice.new {
                     metrics = t.metrics,
-                    label = function() return if setup.niri_busy() then "WRITING" else "SET UP NIRI" end,
+                    label = function() return if setup.niri_busy() then "WRITING" else "SET UP " .. w.label end,
                     kind = "primary",
                     dimmed = setup.niri_busy,
                     on_click = function() setup.set_up_niri(g.untracked(function() return autostart.value end)) end,
@@ -86,13 +88,16 @@ function M.new(t: { [string]: any }): any
             },
             g.box {
                 present = function() return setup.niri_error() ~= "" end,
-                p.line(function() return "niri refused the result, so config.kdl was put back as it was: " .. setup.niri_error() end, theme.alert),
+                p.line(function() return w.name .. " refused the result, so " .. w.config .. " was put back as it was: " .. setup.niri_error() end, theme.alert),
             },
             p.line(function()
-                if not known() then return "Reading niri's configuration…" end
-                if not has_config() then return "niri has no configuration file yet. Start niri once, then come back to this step." end
+                if not known() then return "Reading " .. w.name .. "'s configuration…" end
+                if not has_config() then
+                    return if w.name == "Umbriel" then "Umbriel has no config.toml yet: its starting one is copied there first."
+                        else w.name .. " has no configuration file yet. Start " .. w.name .. " once, then come back to this step."
+                end
                 if complete() then return "Everything is in place. The keys can be changed in Settings → Keybinds." end
-                return "config.kdl is copied aside first, and nothing niri would refuse is kept."
+                return w.config .. " is copied aside first, and nothing " .. w.name .. " would refuse is kept."
             end),
         }),
         p.section("THE FILE", nil, {

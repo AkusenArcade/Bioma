@@ -27,6 +27,10 @@
 #                  wallpaper has to cross the same seam — and the password is
 #                  typed on the same layout
 #   niri.kdl       the greeter's compositor configuration
+#   hypr/, umbriel/, hyprland.lua, umbriel.toml
+#                  the same for Hyprland and Umbriel, from the files Bioma
+#                  wrote for them, for a machine without niri
+#                  (scripts/greeter-session uses niri when it is there)
 #   user.json      who to greet, and the session they were last in
 #   avatar         their picture
 #
@@ -51,7 +55,7 @@ umask 027
 next="$dest/next"
 live="$dest/live"
 rm -rf "$next"
-mkdir -p "$next"/{shell,config/bioma/generated,wallpapers,data/fonts,niri}
+mkdir -p "$next"/{shell,config/bioma/generated,wallpapers,data/fonts,niri,hypr,umbriel}
 
 # ---- The shell ----------------------------------------------------------------
 
@@ -221,6 +225,15 @@ if [ -x "$next/bin/genoma" ]; then
 fi
 sed -e "s|@GREETER@|$live|g" -e "s#@START@#$start#" "$here/config/niri/greeter.kdl.in" > "$next/niri.kdl"
 
+# Hyprland's and Umbriel's, for a machine without niri: the monitors, the
+# keyboard and the cursor Bioma wrote for each, and the greeter's own file.
+for part in bioma-monitors bioma-keyboard bioma-cursor; do
+    if [ -f "$config/hypr/$part.lua" ]; then cp "$config/hypr/$part.lua" "$next/hypr/"; else : > "$next/hypr/$part.lua"; fi
+    if [ -f "$config/umbriel/$part.toml" ]; then cp "$config/umbriel/$part.toml" "$next/umbriel/"; else : > "$next/umbriel/$part.toml"; fi
+done
+sed -e "s|@GREETER@|$live|g" -e "s#@START@#$start#" "$here/config/hyprland/greeter.lua.in" > "$next/hyprland.lua"
+sed -e "s|@GREETER@|$live|g" -e "s#@START@#$start#" "$here/config/umbriel/greeter.toml.in" > "$next/umbriel.toml"
+
 # ---- The cursor ----------------------------------------------------------------------
 
 # The theme bioma-cursor.kdl names, and those it inherits from, when they are
@@ -230,6 +243,9 @@ sed -e "s|@GREETER@|$live|g" -e "s#@START@#$start#" "$here/config/niri/greeter.k
 # scripts/greeter-session puts this directory on the greeter's cursor path.
 mkdir -p "$next/data/icons"
 theme="$(sed -n 's/^[[:space:]]*xcursor-theme[[:space:]]*"\(.*\)".*/\1/p' "$niri_config/bioma-cursor.kdl" 2>/dev/null | tail -1 || true)"
+# Hyprland's or Umbriel's, on a machine without niri's.
+[ -n "$theme" ] || theme="$(sed -n 's/^hl\.env("XCURSOR_THEME", "\(.*\)").*/\1/p' "$config/hypr/bioma-cursor.lua" 2>/dev/null | tail -1 || true)"
+[ -n "$theme" ] || theme="$(sed -n 's/^[[:space:]]*theme[[:space:]]*=[[:space:]]*"\(.*\)".*/\1/p' "$config/umbriel/bioma-cursor.toml" 2>/dev/null | tail -1 || true)"
 while [ -n "$theme" ] && [ ! -e "$next/data/icons/$theme" ]; do
     found=""
     for root in "${XDG_DATA_HOME:-$HOME/.local/share}/icons" "$HOME/.icons"; do

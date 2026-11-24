@@ -1,0 +1,24 @@
+-- Bioma's greeter on Hyprland, where niri is not installed
+-- (config/niri/greeter.kdl.in is niri's, and comes first). scripts/greeter-sync
+-- writes it into the greeter's copy, @GREETER@ replaced by where the copy
+-- is and @START@ by what to run; scripts/greeter-session starts Hyprland on
+-- it. The user's monitors, keyboard and cursor, as Bioma wrote them for
+-- their Hyprland, are copied beside it, so the screens are laid out as in
+-- the session and the password is typed on the same layout.
+
+package.path = "@GREETER@/hypr/?.lua;" .. package.path
+for _, part in ipairs({ "bioma-monitors", "bioma-keyboard", "bioma-cursor" }) do
+    pcall(require, part)
+end
+
+hl.config({
+    misc = { disable_hyprland_logo = true, force_default_wallpaper = 0, disable_splash_rendering = true },
+    ecosystem = { no_update_news = true, no_donation_nag = true },
+    input = { numlock_by_default = true },
+    animations = { enabled = false },
+})
+
+-- The greeter, and Hyprland ends with it.
+hl.on("hyprland.start", function()
+    hl.exec_cmd("@START@; hyprctl dispatch 'hl.dsp.exit()'")
+end)

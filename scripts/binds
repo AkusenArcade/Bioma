@@ -26,6 +26,15 @@
 # What is added goes at the end of the file's binds block, with the comment
 # that stands over it in the template. The result is handed to `niri validate`
 # before it is written, and nothing is written if niri refuses it.
+#
+#     binds --compositor hyprland|umbriel [--record]
+#
+# The same for bioma-binds.lua or bioma-binds.toml, whose templates hold one
+# bind a line: a line is added at the end, written through hypr-include or
+# umbriel-include, which have the compositor check it first. Without
+# --compositor, the one this runs under (Hyprland's or Umbriel's session),
+# else niri. Their binds are remembered as offered in the same file, each
+# under the compositor's name.
 import os
 import re
 import shutil
@@ -304,7 +313,124 @@ def migrate(path):
     return [f"moved     {len(moved)} keys to scripts/ipc"]
 
 
+# ---- Hyprland and Umbriel: a bind a line ------------------------------------------
+
+LINE_TEMPLATES = {
+    "hyprland": os.path.join(HERE, "config", "hyprland", "bioma-binds.lua.in"),
+    "umbriel": os.path.join(HERE, "config", "umbriel", "bioma-binds.toml.in"),
+}
+HYPR_BIND = re.compile(r'^\s*bind\(\s*"([^"]+)"\s*,\s*(.*?)\s*(?:,\s*(\{.*\}))?\s*\)\s*$')
+TOML_BIND = re.compile(r'^\s*("(?:[^"\\]|\\.)*"|[A-Za-z0-9_+-]+)\s*=\s*(.*?)\s*(?:#\s*(.*))?$')
+MOD_NAMES = {"super": "super", "win": "super", "logo": "super", "mod": "super", "mod4": "super",
+             "alt": "alt", "mod1": "alt", "shift": "shift", "ctrl": "ctrl", "control": "ctrl"}
+
+
+def chord(keys, sep):
+    parts = [p.strip() for p in keys.split(sep) if p.strip()]
+    mods = sorted({MOD_NAMES.get(p.lower(), p.lower()) for p in parts[:-1]})
+    return "+".join(mods + [parts[-1].lower() if parts else ""])
+
+
+def ours(text):
+    """A bind's deed wherever Bioma lives and however it is spaced."""
+    text = re.sub(r"""(['"])[^'"\s]*/(scripts/[A-Za-z0-9_-]+)""", r"\1@BIOMA@/\2", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def line_binds(kind, text):
+    """Every bind line: key, deed, title, the line itself."""
+    out, in_binds = [], kind == "hyprland"
+    for line in text.split("\n"):
+        if kind == "umbriel":
+            header = re.match(r"^\s*\[\[?\s*([^\]\s]+)\s*\]\]?\s*(#.*)?$", line)
+            if header:
+                in_binds = header.group(1) == "keybinds"
+                continue
+            if not in_binds or line.lstrip().startswith("#"):
+                continue
+            m = TOML_BIND.match(line)
+            if not m or "[" in m.group(1) or "," in m.group(1):
+                continue
+            out.append({"key": chord(m.group(1).strip('"'), "+"), "action": ours(m.group(2)),
+                        "title": (m.group(3) or "").strip(), "text": line})
+        else:
+            m = HYPR_BIND.match(line)
+            if not m:
+                continue
+            title = re.search(r'description\s*=\s*"([^"]*)"', m.group(3) or "")
+            out.append({"key": chord(m.group(1), "+"), "action": ours(m.group(2)),
+                        "title": title.group(1) if title else "", "text": line})
+    return out
+
+
+def line_main(kind, args):
+    directory = os.path.join(CONFIG_HOME, "hypr" if kind == "hyprland" else "umbriel")
+    path = os.path.join(directory, "bioma-binds.lua" if kind == "hyprland" else "bioma-binds.toml")
+    wanted = line_binds(kind, open(LINE_TEMPLATES[kind], encoding="utf-8").read().replace("@BIOMA@", HERE))
+    for bind in wanted:
+        bind["action"] = kind + "\t" + bind["action"]
+    if "--record" in args:
+        remember({b["action"] for b in wanted} | offered())
+        return 0
+    if not os.path.isfile(path):
+        return 0
+    text = open(path, encoding="utf-8").read()
+    mine = line_binds(kind, text)
+    present = {kind + "\t" + b["action"] for b in mine}
+    taken = {b["key"]: os.path.basename(path) for b in mine}
+    config = os.path.join(directory, "config.toml")
+    if kind == "umbriel" and os.path.isfile(config):
+        for b in line_binds(kind, open(config, encoding="utf-8").read()):
+            present.add(kind + "\t" + b["action"])
+            taken.setdefault(b["key"], "config.toml")
+    before = offered()
+    adding, said = [], []
+    for bind in wanted:
+        if bind["action"] in before or bind["action"] in present:
+            continue
+        if bind["key"] in taken:
+            said.append(f"skipped   {bind['title'] or bind['action']}: the key is taken in {taken[bind['key']]}")
+            continue
+        adding.append(bind)
+        taken[bind["key"]] = os.path.basename(path)
+    if adding:
+        result = text.rstrip("\n") + "\n" + "\n".join(b["text"] for b in adding) + "\n"
+        script = os.path.join(HERE, "scripts", "hypr-include" if kind == "hyprland" else "umbriel-include")
+        done = subprocess.run([script, "binds"], input=result, capture_output=True, text=True)
+        if done.returncode != 0:
+            print(f"{'Hyprland' if kind == 'hyprland' else 'Umbriel'} refused the new keys, so {path} is as it was:",
+                  file=sys.stderr)
+            print(done.stderr.strip(), file=sys.stderr)
+            return 1
+        for bind in adding:
+            said.append(f"added     {bind['title'] or bind['action']}")
+    remember(before | {b["action"] for b in wanted})
+    for line in said:
+        print(line)
+    return 0
+
+
+def compositor_of(args):
+    for i, arg in enumerate(args):
+        if arg == "--compositor" and i + 1 < len(args):
+            return args[i + 1]
+        if arg.startswith("--compositor="):
+            return arg.split("=", 1)[1]
+    if os.environ.get("NIRI_SOCKET"):
+        return "niri"
+    if os.environ.get("HYPRLAND_INSTANCE_SIGNATURE"):
+        return "hyprland"
+    runtime = os.environ.get("XDG_RUNTIME_DIR", "")
+    display = os.environ.get("WAYLAND_DISPLAY", "")
+    if os.environ.get("UMBRIEL_SOCKET") or (display and os.path.exists(os.path.join(runtime, f"umbriel-{display}.sock"))):
+        return "umbriel"
+    return "niri"
+
+
 def main(args):
+    kind = compositor_of(args)
+    if kind in LINE_TEMPLATES:
+        return line_main(kind, args)
     config = os.environ.get("NIRI_CONFIG") or os.path.join(CONFIG_HOME, "niri", "config.kdl")
     if not os.path.isfile(config):
         return 0

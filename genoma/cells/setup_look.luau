@@ -36,12 +36,12 @@ function M.new(t: { [string]: any }): any
         g.untracked(function() setup.note("look", line) end)
     end)
 
-    -- The applications a switch here would colour: installed, and not niri,
-    -- which is on from the start.
+    -- The applications a switch here would colour: installed, and not the
+    -- compositor, which is on from the start.
     local function apps(): { any }
         local out = {}
         for _, entry in templates.catalogue() do
-            if entry.installed and entry.id ~= "niri" then table.insert(out, entry) end
+            if entry.installed and entry.id ~= templates.own then table.insert(out, entry) end
         end
         return out
     end

@@ -74,6 +74,11 @@ names and leaves the rest of the section where the user set it.
 
 ## What Hyprland and Umbriel are told
 
+`scripts/install` does this for the compositor it runs under (or the one
+installed, or the one `--compositor` names), and the setup's third step runs
+it; for Umbriel, a missing `config.toml` is first copied from Umbriel's own
+starting one.
+
 The same files, in each one's language, beside its own configuration:
 `bioma-NAME.lua` in `~/.config/hypr`, required from the end of
 `hyprland.lua` (`scripts/hypr-include`, which has `Hyprland --verify-config`
@@ -88,6 +93,7 @@ comment that says why — a key Bioma binds is Bioma's on every compositor.
 |---|---|---|
 | `bioma-binds` | the keys' template, then the Keybinds page | the keys. On Hyprland the page rewrites this file and lists `hyprland.lua`'s own binds without editing them (a Lua program, its keys often built from variables); on Umbriel it rewrites `config.toml`'s binds too, where they are |
 | `bioma-rules.lua` | the repository | Hyprland: no map and unmap animation on Bioma's layers |
+| `bioma-autostart.lua` | `scripts/install --autostart` | Hyprland: Bioma started with the session. On Umbriel the same is Bioma's entry in `config.toml`'s own `general.autostart`, a list Umbriel takes whole from the last file that sets it |
 | `bioma-glass.toml` | the shell | Umbriel: the blur under the cells — Umbriel has no `ext-background-effect`, so a layer rule blurs where a surface is more opaque than just under the cells' opacity — and its strength |
 | `bioma-blur.lua` | the APPEARANCE blur slider | Hyprland's `decoration.blur` passes and size |
 | `bioma-keyboard` | the keyboard cell | the layouts and variants |

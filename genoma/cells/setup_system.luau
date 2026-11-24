@@ -52,7 +52,7 @@ function M.new(t: { [string]: any }): any
     end
 
     local function places(): string
-        local said = { niri = "niri's configuration", unit = "a systemd unit", autostart = "the session's autostart", running = "" }
+        local said = { niri = "niri's configuration", hyprland = "Hyprland's configuration", umbriel = "Umbriel's config.toml", unit = "a systemd unit", autostart = "the session's autostart", running = "" }
         local out = {}
         for _, source in setup.polkit_sources() do
             local s = said[source.kind] or ""
@@ -128,7 +128,7 @@ function M.new(t: { [string]: any }): any
                 if setup.polkit_wanted() then
                     return "No polkit agent is running, so nothing in Bioma that needs your password can ask for it. Bioma's own could not register with polkit; the shell's log says why."
                 end
-                return "No polkit agent is running, so nothing in Bioma that needs your password can ask for it. Bioma has its own, and it is switched off: turn it back on, or install another and start it with niri — polkit-gnome is the usual choice."
+                return "No polkit agent is running, so nothing in Bioma that needs your password can ask for it. Bioma has its own, and it is switched off: turn it back on, or install another and start it with the session — polkit-gnome is the usual choice."
             end),
             g.box {
                 present = function() return not setup.polkit_wanted() end,

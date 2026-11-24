@@ -37,9 +37,12 @@ do
 end
 
 function M.catalogue(): { any } return catalogue.value end
--- By default niri alone: every other application is somebody's own
--- configuration, switched on from APPS in the theme cell.
-function M.enabled(): { string } return config.get("theme.templates", { "niri" }) end
+-- By default the compositor that runs alone (niri, Hyprland or Umbriel):
+-- every other application is somebody's own configuration, switched on
+-- from APPS in the theme cell.
+local own = require("services/compositor").name()
+M.own = if own == "hyprland" or own == "umbriel" then own else "niri"
+function M.enabled(): { string } return config.get("theme.templates", { M.own }) end
 function M.is_on(id: string): boolean return table.find(M.enabled(), id) ~= nil end
 
 -- Switched on, a template's hook runs at the next render whatever it finds.

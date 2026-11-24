@@ -55,6 +55,18 @@ function M.pending(): boolean return config.get("setup.pending", false) == true 
 -- ---- What the machine has ---------------------------------------------------------
 
 local report_read = g.signal(false)
+
+-- The compositor the setup's third step speaks of, and its words: its
+-- name, its configuration file, Bioma's keys file there, and what else
+-- Bioma includes (scripts/install writes them for each).
+local running = require("services/compositor").name()
+local WORDS = {
+    niri = { name = "niri", label = "NIRI", config = "config.kdl", keys = "bioma-binds.kdl", rules = "Bioma's niri rules and the keys file", check = "niri validate" },
+    hyprland = { name = "Hyprland", label = "HYPRLAND", config = "hyprland.lua", keys = "bioma-binds.lua", rules = "Bioma's layer rules and the keys file", check = "Hyprland --verify-config" },
+    umbriel = { name = "Umbriel", label = "UMBRIEL", config = "config.toml", keys = "bioma-binds.toml", rules = "the keys file", check = "umbriel config validate" },
+}
+M.compositor = WORDS[running] or WORDS.niri
+local install_for = if WORDS[running] then running else "niri"
 local required = g.signal({} :: { any })
 local optional = g.signal({} :: { any })
 local disabled = g.signal({} :: { string })
@@ -125,7 +137,7 @@ local steps = g.computed(function(): { any }
         { key = "welcome", label = "WELCOME", glyph = "mark", hint = "what this is", width = 520 },
         { key = "layout", label = "LAYOUT", glyph = "structure", hint = "where everything goes", width = 640 },
         { key = "look", label = "LOOK", glyph = "theme", hint = "palette and wallpaper", width = 520 },
-        { key = "niri", label = "NIRI", glyph = "window", hint = "keys and autostart", width = 520 },
+        { key = "niri", label = M.compositor.label, glyph = "window", hint = "keys and autostart", width = 520 },
         { key = "login", label = "LOGIN", glyph = "lock", hint = "the login screen", width = 520 },
     }
     if #conflicts.value > 0 then
@@ -232,18 +244,20 @@ function M.set_up_niri(autostart: boolean)
     if g.untracked(M.niri_busy) then return end
     mark("niriError", "")
     mark("niriBusy", true)
-    local command = { paths.script("install"), "--niri-only" }
+    local command = { paths.script("install"), "--files-only", "--compositor", install_for }
     if autostart then table.insert(command, "--autostart") end
     run(command, function(code: number, said: { string })
         mark("niriBusy", false)
         if code ~= 0 then
-            -- The first line niri refused, under the script's own sentence.
+            -- The first line the compositor refused, under the script's own
+            -- sentence.
             local first = nil
+            local own = M.compositor.name .. " refused"
             for _, line in said do
                 local l = string.match(line, "^%s*(.-)%s*$") or ""
-                if l ~= "" and string.sub(l, 1, 12) ~= "niri refused" then first = l break end
+                if l ~= "" and string.sub(l, 1, #own) ~= own then first = l break end
             end
-            mark("niriError", first or "niri refused the configuration.")
+            mark("niriError", first or (M.compositor.name .. " refused the configuration."))
         end
         refresh()
     end)
@@ -353,7 +367,7 @@ local function collect(command: { string }, done: ({ string }) -> ())
 end
 
 refresh = function()
-    collect({ paths.script("install"), "--report" }, function(lines: { string })
+    collect({ paths.script("install"), "--report", "--compositor", install_for }, function(lines: { string })
         local req, opt, off, niri, agent = {}, {}, {}, {}, true
         for _, line in lines do
             local f = string.split(line, "\t")
@@ -362,7 +376,7 @@ refresh = function()
                     { ok = f[2] == "ok", name = f[3] or "", what = f[4] or "", package = f[5] or "" })
             elseif f[1] == "service" and f[2] == "disabled" then
                 table.insert(off, f[3])
-            elseif f[1] == "niri" then
+            elseif f[1] == "compositor" or f[1] == "niri" then
                 niri[f[2]] = f[3]
                 if f[2] == "config" and f[4] then niri_config.value = f[4] end
             elseif f[1] == "polkit" then
@@ -518,8 +532,9 @@ end)
 
 -- ---- The keys ------------------------------------------------------------------------
 --
--- The seven to know, by the title niri's hotkey overlay shows them under,
--- so what is drawn is what is bound in the user's own file.
+-- The seven to know, by the title niri's hotkey overlay shows them under
+-- (the description on Hyprland, the line's comment on Umbriel), so what is
+-- drawn is what is bound in the user's own file.
 local KEY_LIST = {
     { "Bioma: launcher", "Applications, and files by name." },
     { "Bioma: settings", "This, and the whole layout." },
@@ -534,7 +549,8 @@ function M.keys(): { any }
     for _, entry in KEY_LIST do
         local caps = {}
         for _, bind in keybinds.binds() do
-            if not bind.shadowed and bind.props and bind.props["hotkey-overlay-title"] == entry[1] then caps = bind.caps end
+            local title = if bind.props then bind.props["hotkey-overlay-title"] elseif not bind.fixed then (bind.title or bind.label) else nil
+            if not bind.shadowed and title == entry[1] then caps = bind.caps end
         end
         table.insert(out, { caps = caps, line = entry[2], name = string.upper((string.gsub(entry[1], "^Bioma: ", ""))) })
     end

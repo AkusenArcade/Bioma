@@ -12,6 +12,9 @@ in one of three places, and each is undone the way its owner would undo it:
   niri       a `spawn-at-startup` line in niri's configuration, or a file it
              includes: commented out, with a note saying why, so it reads as a
              decision and is one keystroke to take back.
+  hyprland   an `exec_cmd` line in one of Hyprland's .lua files: the same.
+  umbriel    an entry of `general.autostart` in Umbriel's config.toml: taken
+             out of the list, the line it was on kept above as a comment.
   systemd    an enabled user unit (hyprpolkitagent, plasma-polkit-agent, …):
              disabled and stopped.
   autostart  an XDG autostart entry the session would run: shadowed by a copy
@@ -23,6 +26,8 @@ Then the running agent is sent SIGTERM. Nothing is ever deleted.
 `report` prints tab-separated lines, NAME being the agent's program:
   running   NAME  PID
   niri      NAME  FILE  LINE
+  hyprland  NAME  FILE  LINE
+  umbriel   NAME  FILE  LINE
   unit      NAME  UNIT
   autostart NAME  FILE
 `takeover` prints the same for what it changed, and `error  REASON` on stderr
@@ -120,6 +125,109 @@ def niri_spawns():
     return found
 
 
+# ---- Hyprland and Umbriel ------------------------------------------------------
+
+HYPR_DIR = os.path.join(CONFIG_HOME, "hypr")
+UMBRIEL_CONFIG = os.path.join(CONFIG_HOME, "umbriel", "config.toml")
+EXEC = re.compile(r'^\s*(?:hl\.)?exec_cmd\s*\(\s*(["\'])(.*?)\1')
+
+
+def hyprland_spawns():
+    """exec_cmd lines that start an agent, in every .lua file of Hyprland's."""
+    found = []
+    try:
+        names = sorted(n for n in os.listdir(HYPR_DIR) if n.endswith(".lua"))
+    except OSError:
+        return found
+    for name in names:
+        path = os.path.realpath(os.path.join(HYPR_DIR, name))
+        with open(path, encoding="utf-8", errors="replace") as f:
+            for number, line in enumerate(f, 1):
+                m = EXEC.match(line)
+                if m and AGENTS.search(m.group(2)):
+                    found.append((path, number, program(m.group(2))))
+    return found
+
+
+def umbriel_spawns():
+    """Entries of general.autostart that start an agent."""
+    found = []
+    path = os.path.realpath(UMBRIEL_CONFIG)
+    if not os.path.isfile(path):
+        return found
+    in_general = False
+    with open(path, encoding="utf-8", errors="replace") as f:
+        for number, line in enumerate(f, 1):
+            header = re.match(r"^\s*\[\[?\s*([^\]\s]+)", line)
+            if header:
+                in_general = header.group(1) == "general"
+            elif in_general and re.match(r"\s*autostart\s*=", line):
+                for entry in re.findall(r'"((?:[^"\\]|\\.)*)"', line):
+                    if AGENTS.search(entry):
+                        found.append((path, number, program(entry)))
+    return found
+
+
+def checked(command, path, text):
+    """The compositor's verdict on `path` holding `text`, checked beside it."""
+    import tempfile
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path), prefix=".bioma-polkit.", suffix=os.path.splitext(path)[1])
+    with os.fdopen(fd, "w", encoding="utf-8") as out:
+        out.write(text)
+    try:
+        env = {k: v for k, v in os.environ.items() if k not in ("HYPRLAND_INSTANCE_SIGNATURE", "UMBRIEL_SOCKET")}
+        result = subprocess.run(command + [tmp], capture_output=True, text=True, env=env)
+        said = result.stdout + result.stderr
+        ok = result.returncode == 0 and not re.search(r"error|unknown config key", said.split("Config parsing result")[-1]
+                                                       if "Config parsing result" in said else "", re.I)
+        return ok, said, tmp
+    except FileNotFoundError:
+        os.unlink(tmp)
+        return False, "the compositor is not installed", None
+
+
+def take_lines(spawns, comment, kind, command, edit):
+    """Each file's lines rewritten by edit(lines, number), checked, written."""
+    failed = False
+    for path in sorted({p for p, _, _ in spawns}):
+        with open(path, encoding="utf-8") as f:
+            lines = f.readlines()
+        for p, number, _ in sorted(spawns, key=lambda s: -s[1]):
+            if p == path:
+                edit(lines, number)
+        ok, said, tmp = checked(command, path, "".join(lines))
+        if ok and tmp:
+            os.replace(tmp, path)
+            for p, number, name in spawns:
+                if p == path:
+                    print(f"{kind}\t{name}\t{path}\t{number}")
+        else:
+            if tmp and os.path.exists(tmp):
+                os.unlink(tmp)
+            last = [l for l in said.splitlines() if l.strip()]
+            print(f"error\t{kind} refused the change: {last[-1] if last else 'unknown'}", file=sys.stderr)
+            failed = True
+    return failed
+
+
+def comment_out(prefix):
+    def edit(lines, number):
+        line = lines[number - 1]
+        indent = line[:len(line) - len(line.lstrip())]
+        lines[number - 1] = indent + prefix + " " + line.lstrip()
+        lines.insert(number - 1, indent + prefix + NOTE[2:])
+    return edit
+
+
+def drop_agents(lines, number):
+    line = lines[number - 1]
+    kept = [e for e in re.findall(r'"(?:[^"\\]|\\.)*"', line) if not AGENTS.search(e)]
+    start, end = line.index("["), line.rindex("]")
+    lines[number - 1] = line[:start] + "[" + ", ".join(kept) + line[end:]
+    lines.insert(number - 1, "# " + line.lstrip())
+    lines.insert(number - 1, "#" + NOTE[2:])
+
+
 # ---- systemd -----------------------------------------------------------------
 
 def units():
@@ -205,6 +313,10 @@ def report():
         print(f"running\t{name}\t{pid}")
     for path, number, name in niri_spawns():
         print(f"niri\t{name}\t{path}\t{number}")
+    for path, number, name in hyprland_spawns():
+        print(f"hyprland\t{name}\t{path}\t{number}")
+    for path, number, name in umbriel_spawns():
+        print(f"umbriel\t{name}\t{path}\t{number}")
     for unit, name in units():
         print(f"unit\t{name}\t{unit}")
     for path, name in autostarts():
@@ -271,6 +383,15 @@ def takeover():
             print(f"error\tniri refused the change: {lines[-1] if lines else 'unknown'}",
                   file=sys.stderr)
             failed = True
+
+    # Hyprland and Umbriel: the line commented out, or the entry taken out,
+    # each file checked by the compositor first.
+    spawns = hyprland_spawns()
+    if spawns and take_lines(spawns, "--", "hyprland", ["Hyprland", "--verify-config", "-c"], comment_out("--")):
+        failed = True
+    spawns = umbriel_spawns()
+    if spawns and take_lines(spawns, "#", "umbriel", ["umbriel", "config", "validate", "-c"], drop_agents):
+        failed = True
 
     # systemd: disabled and stopped.
     for unit, name in units():

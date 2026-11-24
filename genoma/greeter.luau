@@ -163,16 +163,18 @@ end
 local density = gate_mod.density
 local twenty_four = gate_mod.twenty_four
 
--- The screen the keyboard is on, asked of niri once: niri hands the keys to
--- the focused output, at a greeter the one marked focus-at-startup.
+-- The screen the keyboard is on, the first the compositor names: it hands
+-- the keys to the focused output, at a greeter the one marked to have the
+-- focus at startup (niri's focus-at-startup, Umbriel's focus_at_startup).
+-- Whichever compositor holds the greeter, through Genoma's.
 local primary = g.signal(test)
-if test == "" then g.process {
-    command = { "niri", "msg", "--json", "focused-output" },
-    on_line = function(line: string)
-        local ok, data = pcall(g.parse_json, line)
-        if ok and type(data) == "table" and data.name then primary.value = data.name end
-    end,
-} end
+if test == "" then
+    local compositor = require("@genoma/compositor")
+    g.effect(function()
+        local named = compositor.focused_output
+        if named and named ~= "" and g.untracked(function() return primary.value end) == "" then primary.value = named end
+    end)
+end
 
 -- ---- Checking the password -------------------------------------------------------
 

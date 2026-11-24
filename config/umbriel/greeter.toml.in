@@ -1,0 +1,23 @@
+# Bioma's greeter on Umbriel, where neither niri nor Hyprland is installed
+# (config/niri/greeter.kdl.in and config/hyprland/greeter.lua.in come
+# first). scripts/greeter-sync writes it into the greeter's copy,
+# @GREETER@ replaced by where the copy is and @START@ by what to run;
+# scripts/greeter-session starts Umbriel on it. The user's monitors,
+# keyboard and cursor, as Bioma wrote them for their Umbriel, are included,
+# so the screens are laid out as in the session and the password is typed
+# on the same layout.
+
+[include.optional]
+files = ["@GREETER@/umbriel/bioma-monitors.toml", "@GREETER@/umbriel/bioma-keyboard.toml", "@GREETER@/umbriel/bioma-cursor.toml"]
+
+[general]
+show_cheatsheet = false
+xwayland = false
+# The greeter, and Umbriel ends with it.
+autostart = ["@START@; umbriel msg session-quit skip-confirmation"]
+
+[input.keyboard]
+numlock_toggle = true
+
+# No keys: at a login screen only the greeter listens.
+[keybinds]

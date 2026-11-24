@@ -1,6 +1,8 @@
 #!/bin/sh
 # What greetd runs, as the `greeter` user: a minimal niri holding Bioma's
-# greeter, which ends when the greeter has handed over to the session.
+# greeter, which ends when the greeter has handed over to the session. On a
+# machine without niri, a minimal Hyprland, or else Umbriel, from the files
+# scripts/greeter-sync writes for them.
 #
 #     [default_session]
 #     command = "/usr/share/bioma/scripts/greeter-session"
@@ -29,10 +31,22 @@ runnable() {
     [ -x "$live/bin/genoma" ]
 }
 
-if [ ! -f "$live/niri.kdl" ] || ! command -v niri >/dev/null 2>&1 || ! runnable; then
+# The compositor the greeter runs in, and the session agreety starts should
+# there be no greeter to run.
+compositor=""
+if command -v niri >/dev/null 2>&1 && [ -f "$live/niri.kdl" ]; then compositor=niri
+elif command -v Hyprland >/dev/null 2>&1 && [ -f "$live/hyprland.lua" ]; then compositor=hyprland
+elif command -v umbriel >/dev/null 2>&1 && [ -f "$live/umbriel.toml" ]; then compositor=umbriel
+fi
+session=niri-session
+for candidate in niri-session start-hyprland start-umbriel; do
+    if command -v "$candidate" >/dev/null 2>&1; then session="$candidate"; break; fi
+done
+
+if [ -z "$compositor" ] || ! runnable; then
     echo "=== bioma greeter $(date -Iseconds): no copy at $live, agreety instead ===" \
         >>/tmp/bioma-greeter.log 2>&1 || true
-    exec agreety --cmd niri-session
+    exec agreety --cmd "$session"
 fi
 
 export BIOMA_GREETER_DIR="$live"
@@ -63,14 +77,20 @@ echo "=== bioma greeter $(date -Iseconds) from $live ==="
 failed="$XDG_RUNTIME_DIR/bioma-greeter-failed"
 rm -f "$failed"
 
+case "$compositor" in
+    niri) set -- niri -c "$live/niri.kdl" ;;
+    hyprland) set -- Hyprland -c "$live/hyprland.lua" ;;
+    umbriel) set -- umbriel -c "$live/umbriel.toml" ;;
+esac
+echo "in $compositor"
 if command -v dbus-run-session >/dev/null 2>&1; then
-    dbus-run-session -- niri -c "$live/niri.kdl" 3>&- 4>&- || true
+    dbus-run-session -- "$@" 3>&- 4>&- || true
 else
-    niri -c "$live/niri.kdl" 3>&- 4>&- || true
+    "$@" 3>&- 4>&- || true
 fi
 
 if [ -e "$failed" ]; then
     rm -f "$failed"
     echo "=== bioma greeter $(date -Iseconds): the greeter failed, agreety instead ==="
-    exec agreety --cmd niri-session >&3 2>&4
+    exec agreety --cmd "$session" >&3 2>&4
 fi
