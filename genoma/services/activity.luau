@@ -73,11 +73,9 @@ end
 -- ---- Presence ---------------------------------------------------------------------
 
 local idle = require("@genoma/idle")
+local awake = require("services/awake")
 local function idle_minutes(): number return math.max(1, config.get("activity.idle_minutes", 5)) end
-g.effect(function()
-    local wanted = if counting() then idle_minutes() * 60 else 0
-    g.untracked(function() idle:after(wanted) end)
-end)
+awake.after("default", function() return if counting() then idle_minutes() * 60 else 0 end)
 
 -- logind's word on the session: the lock screen sets it.
 local locked = g.signal(false)

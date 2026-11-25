@@ -7,9 +7,9 @@
 -- (genoma/PORT.md, "Who acts on the desktop"). An action pressed here is a
 -- choice, and runs.
 local g = require("@genoma")
-local idle = require("@genoma/idle")
 local compositor = require("@genoma/compositor")
 local config = require("core/config")
+local awake = require("services/awake")
 
 local M = {}
 
@@ -157,13 +157,12 @@ local started = false
 function M.start()
     if started then return end
     started = true
-    g.effect(function()
+    local asleep = awake.after("sleep", function()
         local minutes = config.get("sleep.idle_minutes", 0)
-        local seconds = if minutes > 0 and M.available("suspend") then math.max(1, minutes) * 60 else 0
-        g.untracked(function() idle:watch("sleep", seconds) end)
+        return if minutes > 0 and M.available("suspend") then math.max(1, minutes) * 60 else 0
     end)
     local was = false
-    g.watch(function() return idle:is_idle("sleep") end, function(on: boolean)
+    g.watch(asleep, function(on: boolean)
         local began = on and not was
         was = on
         if began then g.process { command = { "setsid", "-f", table.unpack(commands.suspend()) } } end
@@ -173,13 +172,12 @@ function M.start()
     -- at the first input. Apart from the lock: it may come before it or
     -- after. Inhibitors hold it back like the others: a video playing
     -- keeps the screens lit.
-    g.effect(function()
+    local dark = awake.after("blank", function()
         local minutes = config.get("blank.idle_minutes", 0)
-        local seconds = if minutes > 0 and M.can_blank() then math.max(1, minutes) * 60 else 0
-        g.untracked(function() idle:watch("blank", seconds) end)
+        return if minutes > 0 and M.can_blank() then math.max(1, minutes) * 60 else 0
     end)
     local blank = false
-    g.watch(function() return idle:is_idle("blank") end, function(on: boolean)
+    g.watch(dark, function(on: boolean)
         if on == blank then return end
         blank = on
         local ok, problem = pcall(function() compositor:power_monitors(not on) end)

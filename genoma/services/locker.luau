@@ -13,8 +13,8 @@
 -- Bioma on Genoma alone runs it (M6 step 7a, `start`); beside Quickshell,
 -- Quickshell's Locker does, and this is not started.
 local g = require("@genoma")
-local idle = require("@genoma/idle")
 local config = require("core/config")
+local awake = require("services/awake")
 local paths = require("core/paths")
 local timing = require("core/timing")
 
@@ -163,12 +163,12 @@ function M.start()
 
     -- After a time idle, respecting inhibitors: a video playing full screen
     -- is not somebody who walked away.
-    g.effect(function()
+    local gone = awake.after("lock", function()
         local minutes = idle_minutes()
-        g.untracked(function() idle:watch("lock", if minutes > 0 then math.max(1, minutes) * 60 else 0) end)
+        return if minutes > 0 then math.max(1, minutes) * 60 else 0
     end)
     local was_idle = false
-    g.watch(function() return idle:is_idle("lock") end, function(on: boolean)
+    g.watch(gone, function(on: boolean)
         local began = on and not was_idle
         was_idle = on
         if began and not g.untracked(function() return locked.value end) then M.lock() end
