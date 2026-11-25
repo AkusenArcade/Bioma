@@ -198,6 +198,8 @@ undo_hook = "bash '{{ config_dir }}/sway/undo.sh'"
 [templates.umbriel]
 input_path = "./umbriel/umbriel.toml"
 output_path = "$XDG_CONFIG_HOME/umbriel/bioma.toml"
+# Rendered beside it with the same colours (Bioma's own key).
+extra = [{ input_path = "./umbriel/border.glsl", output_path = "$XDG_CONFIG_HOME/umbriel/bioma-border.glsl" }]
 post_hook = "bash '{{ config_dir }}/umbriel/apply.sh'"
 undo_hook = "bash '{{ config_dir }}/umbriel/undo.sh'"
 

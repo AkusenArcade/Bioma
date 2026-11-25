@@ -17,6 +17,17 @@ focused = "#{{colors.rim.default.hex_stripped}}FF"
 unfocused = "#{{colors.surface_variant.default.hex_stripped}}FF"
 outer = "#{{colors.terminal_background.default.hex_stripped}}FF"
 
+# The focused window's border is lit the way a cell's rim is, as niri's ring
+# and Hyprland's border are. Umbriel has one colour for a border; a border
+# effect draws the gradient (bioma-border.glsl), still: it asks for no frames.
+[effects]
+border = "bioma-rim"
+
+[effects.preset.bioma-rim]
+kind = "border"
+shader = "bioma-border.glsl"
+animated = false
+
 [colors.overview]
 background_tint = "#{{colors.surface.default.hex_stripped}}88"
 badge = "#{{colors.primary.default.hex_stripped}}FF"

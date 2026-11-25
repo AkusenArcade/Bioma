@@ -16,9 +16,13 @@ hooks never touch each other's. Bioma's changes on top:
   radius from the shell's (`{{bioma.window_radius}}`) and the focus ring's
   width from the settings cell's Niri page (`{{bioma.focus_width}}`).
 - `hyprland/` and `umbriel/` carry the windows' corner radius too, and light
-  the focused border as a cell's rim (Hyprland's gradient, the rim colour on
-  Umbriel); Hyprland's also raises the focused window with an invoked cell's
-  shadow. Umbriel's lost two border keys 0.1.0 does not know.
+  the focused border as a cell's rim: Hyprland's gradient, and on Umbriel, which
+  has one colour for a border, a still border effect (`umbriel/border.glsl`,
+  written beside `bioma.toml` as the template's `extra`). Hyprland's also raises
+  the focused window with an invoked cell's shadow. Umbriel's lost two border
+  keys 0.1.0 does not know, and its insert hint is the primary, as niri's.
+- `scripts/themes` renders a template's `extra` files with it, Bioma's own key
+  in `builtin.toml`.
 - `ghostty/ghostty` asks for the blur behind its window (`background-blur`):
   without it Ghostty names an empty region, and Hyprland leaves it sharp.
 - `qt/apply.sh` is new, and `qt/undo.sh` extended: qt5ct and qt6ct read the

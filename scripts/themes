@@ -179,17 +179,23 @@ def render_command():
                 template = handle.read()
             missing = set()
             text = render(template, colors, variables, missing)
+            # What the file names is there before it.
+            files = []
+            for extra in entry.get("extra", []):
+                with open(os.path.normpath(os.path.join(TEMPLATES, extra["input_path"])), encoding="utf-8") as handle:
+                    files.append((expand(extra["output_path"]), render(handle.read(), colors, variables, missing)))
+            files += [(target, text) for target in outputs(entry, mode)]
             if missing:
                 outcome["error"] = "unknown colours: " + ", ".join(sorted(missing))
-            for target in outputs(entry, mode):
+            for target, content in files:
                 current = None
                 if os.path.exists(target):
                     with open(target, encoding="utf-8", errors="replace") as handle:
                         current = handle.read()
-                if current != text:
+                if current != content:
                     os.makedirs(os.path.dirname(target), exist_ok=True)
                     with open(target, "w", encoding="utf-8") as handle:
-                        handle.write(text)
+                        handle.write(content)
                     outcome["changed"] = True
             if outcome["changed"] or template_id in force:
                 if "post_hook" in entry:
@@ -220,7 +226,7 @@ def undo_command(template_id):
         return
     if "undo_hook" in entry:
         run(hook_command(entry["undo_hook"], "dark"))
-    for target in outputs(entry, "dark"):
+    for target in outputs(entry, "dark") + [expand(extra["output_path"]) for extra in entry.get("extra", [])]:
         if os.path.exists(target):
             os.remove(target)
     print(json.dumps({"id": template_id, "undone": True}))
