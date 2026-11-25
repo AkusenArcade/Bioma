@@ -20,12 +20,9 @@ local system = require("services/system_monitor")
 local performance = require("core/performance")
 
 local PER_CREATURE = 10
--- How far a creature may move between two frames, units: the frames are
--- as many as the swimming needs and no more. Fewer than eight a second
--- would leave Genoma's simulation behind (sixty steps a second, eight at
--- most a frame).
-local STEP_PER_FRAME = 1.5
-local FEWEST_FRAMES = 8
+-- Frames a second, at rest and with every core busy. Under thirty the
+-- swarm visibly jerks, however slowly it swims.
+local FEWEST_FRAMES, MOST_FRAMES = 30, 60
 local STEP = 25
 local FEWEST, MOST = 50, 400
 -- The glass's outline: Genoma draws a rim never under two physical pixels,
@@ -66,12 +63,12 @@ return {
                 agent_size = function() return 4 * f() end,
                 fill = tint,
                 clock = swimming,
-                -- A drift needs few frames, a dart many: as many as keep
-                -- each step within STEP_PER_FRAME. Every frame is also one
-                -- the compositor composes again, glass blur included, so a
-                -- frame drawn for nothing costs twice (on a laptop's
-                -- integrated card, most of its load at rest).
-                fps = function() return math.max(FEWEST_FRAMES, speed() / STEP_PER_FRAME) end,
+                -- A drift needs few frames, a dart many; a creature never
+                -- moves more than 1.6 units between two. Every frame is
+                -- also one the compositor composes again, glass blur
+                -- included, so a frame drawn for nothing costs twice (on a
+                -- laptop's integrated card, most of its load at rest).
+                fps = function() return FEWEST_FRAMES + (MOST_FRAMES - FEWEST_FRAMES) * load() end,
                 values = function()
                     local mem = memory()
                     return {
