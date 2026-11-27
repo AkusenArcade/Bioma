@@ -32,8 +32,16 @@
 // `shortcut` strings in `config/default.json` are the plain keys the cells
 // were drawn with; move a bind there from the Keybinds page if the key is free
 // on your machine.
+//
+// One plain key is Bioma's on purpose: Mod+T, the terminal, which opens the
+// default one chosen in Settings → Apps (`scripts/terminal`) — what niri's
+// own Mod+T does, following the choice.
 
 binds {
+    Mod+T hotkey-overlay-title="Terminal" {
+        spawn "@BIOMA@/scripts/terminal"
+    }
+
     Mod+Alt+V hotkey-overlay-title="Bioma: vitals" {
         spawn "@BIOMA@/scripts/ipc" "cell" "toggle" "vitals"
     }

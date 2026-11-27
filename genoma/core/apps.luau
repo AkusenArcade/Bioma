@@ -193,13 +193,9 @@ function M.command_of(entry: any, files: { string }?): { string }
     return out
 end
 
--- The desktop's terminal, asked the way the freedesktop proposal asks it
--- (`xdg-terminal-exec`), else $TERMINAL, else the first of the usual ones;
--- each of those takes the command after `-e`.
-local IN_TERMINAL = 'if command -v xdg-terminal-exec >/dev/null 2>&1; then exec xdg-terminal-exec "$@"; fi; '
-    .. 'for t in "$TERMINAL" kitty alacritty foot ghostty wezterm konsole xterm; do '
-    .. '[ -n "$t" ] && command -v "$t" >/dev/null 2>&1 && exec "$t" -e "$@"; done; '
-    .. 'echo "no terminal for $1" >&2; exit 1'
+-- The default terminal (Settings → Apps), as Mod+T opens it:
+-- scripts/terminal, which asks xdg-terminal-exec, else the head of
+-- xdg-terminals.list, else $TERMINAL, else the usual ones.
 
 -- Whether an entry opens files or links given to it (its Exec has %f, %F,
 -- %u or %U): what a file dropped on its dock icon needs.
@@ -231,7 +227,7 @@ function M.run(entry: any, environment: { [string]: string }?, files: { string }
         end
         table.insert(launch, "--")
         if entry.terminal then
-            for _, w in { "bash", "-c", IN_TERMINAL, "terminal" } do table.insert(launch, w) end
+            table.insert(launch, paths.script("terminal"))
         end
         for _, w in command do table.insert(launch, w) end
         g.process { command = launch, env = environment or {} }

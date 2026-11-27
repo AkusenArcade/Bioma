@@ -15,6 +15,8 @@
 --
 -- **The prefix is Super+Alt**, as on niri: the plain Super keys are the
 -- compositor's own.
+-- One plain key is Bioma's on purpose: Super+T, the terminal, which opens
+-- the default one chosen in Settings → Apps (`scripts/terminal`).
 
 -- A key Bioma binds is Bioma's: whatever hyprland.lua bound to it before is
 -- taken off first (Hyprland would run both), as niri lets the file included
@@ -28,6 +30,7 @@ local IPC = "'@BIOMA@/scripts/ipc'"
 local KEY = "'@BIOMA@/scripts/key'"
 local BIOMA = "'@BIOMA@/scripts/"
 
+bind("SUPER + T", BIOMA .. "terminal'", { description = "Terminal" })
 bind("SUPER + ALT + V", IPC .. " cell toggle vitals", { description = "Bioma: vitals" })
 bind("SUPER + ALT + P", IPC .. " cell toggle utility", { description = "Bioma: capture" })
 bind("SUPER + ALT + K", IPC .. " cell toggle keyboard", { description = "Bioma: keyboard" })

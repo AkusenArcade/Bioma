@@ -50,6 +50,7 @@ local CATEGORIES = {
     { key = "keybinds", label = "KEYBINDS", glyph = "keyboard", hint = "shortcuts · " .. (KEYS_IN[running] or "none"), width = 560 },
     { key = "session", label = "SESSION", glyph = "lock", hint = "locking, power profile", width = 540 },
     { key = "sounds", label = "SOUNDS", glyph = "sounds", hint = "events, volume", width = 540 },
+    { key = "apps", label = "APPS", glyph = "launcher", hint = "browser, terminal, files", width = 560 },
     { key = "modes", label = "MODES", glyph = "performance", hint = "focus, performance", width = 560 },
     { key = "actions", label = "ACTIONS", glyph = "actions", hint = "the ring at the pointer", width = 600 },
 }
@@ -59,6 +60,7 @@ if OWN then table.insert(CATEGORIES, 7, OWN) end
 local PAGES = {
     actions = "cells/settings_actions",
     appearance = "cells/settings_appearance",
+    apps = "cells/settings_apps",
     cells = "cells/settings_cells",
     keybinds = "cells/settings_keybinds",
     monitors = "cells/settings_monitors",

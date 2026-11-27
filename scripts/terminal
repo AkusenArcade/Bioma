@@ -1,0 +1,51 @@
+#!/bin/sh
+# The default terminal (Settings → Apps), for Mod+T on niri, Hyprland and
+# Umbriel: it works whether the shell runs or not, since a terminal is what
+# one reaches for when it does not.
+#
+#     terminal [command …]
+#
+# xdg-terminal-exec where it is installed (it reads xdg-terminals.list and
+# knows every terminal's way of being given a command); else the head of
+# xdg-terminals.list, run from its desktop entry's Exec; else $TERMINAL;
+# else the first of the usual ones. A command is given after -e, which all
+# of them take.
+if command -v xdg-terminal-exec >/dev/null 2>&1; then
+    exec xdg-terminal-exec "$@"
+fi
+
+config="${XDG_CONFIG_HOME:-$HOME/.config}"
+data="${XDG_DATA_HOME:-$HOME/.local/share}:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
+
+# The head of the list: what names a terminal, without an action after ":".
+id=$(sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' "$config/xdg-terminals.list" 2>/dev/null \
+    | grep -v -e '^#' -e '^$' | head -n 1 | sed 's/:.*//')
+if [ -n "$id" ]; then
+    case "$id" in *.desktop) ;; *) id="$id.desktop" ;; esac
+    old_ifs=$IFS
+    IFS=:
+    for dir in $data; do
+        entry="$dir/applications/$id"
+        [ -f "$entry" ] || continue
+        IFS=$old_ifs
+        # The first Exec, of the entry itself (before any action), without
+        # its field codes.
+        line=$(sed -n '/^\[Desktop Entry\]/,/^\[/{s/^Exec=//p}' "$entry" | head -n 1 | sed 's/ *%[a-zA-Z]//g')
+        if [ -n "$line" ]; then
+            if [ $# -gt 0 ]; then
+                exec sh -c "$line -e \"\$@\"" sh "$@"
+            fi
+            exec sh -c "$line"
+        fi
+        break
+    done
+    IFS=$old_ifs
+fi
+
+for t in "$TERMINAL" foot kitty alacritty ghostty wezterm konsole gnome-terminal xterm; do
+    [ -n "$t" ] && command -v "$t" >/dev/null 2>&1 || continue
+    if [ $# -gt 0 ]; then exec "$t" -e "$@"; fi
+    exec "$t"
+done
+echo "terminal: no terminal is installed" >&2
+exit 1

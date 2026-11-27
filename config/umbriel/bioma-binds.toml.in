@@ -16,6 +16,8 @@
 #
 # **The prefix is Super+Alt**, as on niri: the plain Super keys are the
 # compositor's own.
+# One plain key is Bioma's on purpose: Super+T, the terminal, which opens
+# the default one chosen in Settings → Apps (`scripts/terminal`).
 #
 # Umbriel merges `[keybinds]` key by key and lets config.toml win, whatever
 # order the files come in. So a key bound here is taken out of config.toml's
@@ -23,6 +25,7 @@
 # that says why: as on niri, a key Bioma binds is Bioma's.
 
 [keybinds]
+"Super+T" = { action = "spawn '@BIOMA@/scripts/terminal'", repeat = false } # Terminal
 "Super+Alt+V" = "spawn '@BIOMA@/scripts/ipc' cell toggle vitals" # Bioma: vitals
 "Super+Alt+P" = "spawn '@BIOMA@/scripts/ipc' cell toggle utility" # Bioma: capture
 "Super+Alt+K" = "spawn '@BIOMA@/scripts/ipc' cell toggle keyboard" # Bioma: keyboard

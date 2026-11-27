@@ -5,27 +5,15 @@
 -- picker opens.
 local g = require("@genoma")
 local apps = require("core/apps")
+local paths = require("core/paths")
 
 local M = {}
 
-local terminal = g.signal({} :: { string })
-local asked = false
-function M.ask()
-    if asked then return end
-    asked = true
-    -- xdg-terminal-exec takes the command as it is, the others after `-e`
-    -- (core/apps.luau asks the same, at launch).
-    g.process {
-        command = { "bash", "-c",
-            "if command -v xdg-terminal-exec >/dev/null 2>&1; then echo xdg-terminal-exec; exit; fi; "
-            .. "for t in \"$TERMINAL\" kitty alacritty foot ghostty wezterm konsole xterm; do "
-            .. "[ -n \"$t\" ] && command -v \"$t\" >/dev/null 2>&1 && { echo \"$t -e\"; exit; }; done" },
-        on_line = function(line: string)
-            local words = string.split(string.match(line, "^%s*(.-)%s*$") or "", " ")
-            if words[1] ~= "" then terminal.value = words end
-        end,
-    }
-end
+-- The default terminal, as Mod+T opens it (scripts/terminal: the command
+-- after it as it is): a bind follows the choice in Settings → Apps, made
+-- before it or after.
+local terminal = g.signal({ paths.script("terminal") } :: { string })
+function M.ask() end
 
 -- Nil when there is nothing to run.
 function M.of(entry: any): { name: string, args: { string } }?

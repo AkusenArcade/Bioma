@@ -293,9 +293,9 @@ from a key.
 ### Settings, in the shell
 
 The layout is edited from the shell itself, with no config file to write by
-hand. The settings cell has eleven pages: Structure (which cell goes where, on
+hand. The settings cell has twelve pages: Structure (which cell goes where, on
 each monitor), Cells (always or conditional), Organisms, Appearance, Monitors,
-Keybinds, Niri, Session, Sounds, Performance and Actions.
+Keybinds, Niri, Session, Sounds, Apps, Performance and Actions.
 Adding a cell costs one block of configuration, and the Structure page writes
 that block for you: the cells not yet on the monitor appear as a row of chips,
 and one that would not fit says NO ROOM before it is added. A tissue can be
@@ -312,7 +312,11 @@ width, focus following the pointer, the named workspaces, what starts with the
 session and the window rules that match an application, written into niri's
 files in place, beside what is already there. Session sets the idle lock, the
 idle sleep (never, unless chosen) and, on a laptop, the power profile to follow
-the plug: one on battery, another on mains.
+the plug: one on battery, another on mains. Apps chooses the default
+applications — browser, mail, terminal, files, text, images, video, music, PDF,
+archives, and any one kind of file alone — written where every program reads
+them (`mimeapps.list`, and `xdg-terminals.list` for the terminal), and `Mod+T`
+opens the terminal chosen there on all three compositors.
 
 The first start walks through a setup in the same panel: a starting layout,
 the look, Bioma's keys and autostart in niri's configuration, the login
@@ -449,6 +453,7 @@ stops Bioma and starts the new version. The first start uses
 | Key | Opens |
 |---|---|
 | `Mod+Space` | the launcher |
+| `Mod+T` | the default terminal (Settings → Apps) |
 | `Mod+Alt+Period` | emoji, pasted into the window that has the focus |
 | `Mod+Alt+S` | settings |
 | `Mod+Alt+T` | theme: wallpaper, palette, icons, cursor, application templates |

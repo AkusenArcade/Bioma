@@ -23,8 +23,9 @@ local CLEAR = "#00000000"
 -- `t`: metrics(), width(), options() ({ { key, label } }), current(),
 -- on_choose(key), and optionally height(), rows (how many options are seen
 -- at once; the others scroll) and face(key) (the font an option is named
--- in: a list of fonts shows each in its own). Returns the node and a
--- handle: open (a signal), close().
+-- in: a list of fonts shows each in its own), picture(key) (an icon file
+-- before an option's name, and before the chosen one's: a list of
+-- applications). Returns the node and a handle: open (a signal), close().
 function M.new(t: { [string]: any }): (any, any)
     local function m(): any return t.metrics() end
     local function f(): number return m().factor end
@@ -86,14 +87,25 @@ function M.new(t: { [string]: any }): (any, any)
             rim_bottom = CLEAR,
             on_hover = function(on: boolean) over.value = on end,
             on_click = function() choose(g.untracked(option).key) end,
-            g.text {
+            g.box {
+                direction = "row",
+                align = "center",
+                gap = function() return 8 * f() end,
+                g.icon {
+                    present = function() return t.picture ~= nil and t.picture(option().key) ~= "" end,
+                    width = function() return 16 * f() end,
+                    height = function() return 16 * f() end,
+                    icon = function() return if t.picture then t.picture(option().key) else "" end,
+                },
+                g.text {
                 text = function() return option().label end,
                 color = function() return if current() then theme.text() else theme.text_muted() end,
                 font = function() return if t.face then t.face(option().key) else typography.technical() end,
                 size = font_control,
                 weight = typography.weight_label,
                 tracking = function() return if t.face then 0 else 0.04 end,
-                max_width = function() return t.width() - padding() * 2 - 34 * f() end,
+                max_width = function() return t.width() - padding() * 2 - 34 * f() - (if t.picture then 24 * f() else 0) end,
+                },
             },
             g.capsule {
                 opacity = function() return if current() then 1 else 0 end,
@@ -126,14 +138,25 @@ function M.new(t: { [string]: any }): (any, any)
         rim_bottom = edge,
         on_hover = function(on: boolean) hovered.value = on end,
         on_click = function() open.value = not g.untracked(function() return open.value end) end,
-        g.text {
+        g.box {
+            direction = "row",
+            align = "center",
+            gap = function() return 7 * f() end,
+            g.icon {
+                present = function() return t.picture ~= nil and t.picture(t.current()) ~= "" end,
+                width = function() return 14 * f() end,
+                height = function() return 14 * f() end,
+                icon = function() return if t.picture then t.picture(t.current()) else "" end,
+            },
+            g.text {
             text = label,
             color = theme.text,
             font = typography.technical,
             size = function() return m().font_meta end,
             weight = typography.weight_label,
             tracking = 0.04,
-            max_width = function() return t.width() - 35 * f() end,
+            max_width = function() return t.width() - 35 * f() - (if t.picture then 21 * f() else 0) end,
+            },
         },
         g.icon {
             width = function() return 9 * f() end,
