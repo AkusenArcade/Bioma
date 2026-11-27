@@ -158,6 +158,20 @@ local colors = g.computed(function(): { [string]: string }
         terminal_bright_cyan = brighter(hued(0.5, s)), terminal_bright_white = hex(fg),
     }
 end)
+-- The terminal's sixteen, normal then bright, black first, and its
+-- selection: what the desktop's theme file gives a terminal on Genoma
+-- (services/desktop_theme.luau), so it has the same colours as those the
+-- templates write.
+local ANSI = { "black", "red", "green", "yellow", "blue", "magenta", "cyan", "white" }
+function M.terminal(): { colours: { string }, selection: string }
+    local c = colors.value
+    local out: { string } = {}
+    for _, side in { "normal", "bright" } do
+        for _, name in ANSI do table.insert(out, c[`terminal_{side}_{name}`]) end
+    end
+    return { colours = out, selection = c.terminal_selection_bg }
+end
+
 -- niri's template also carries the shell's corners to the windows (20 at
 -- 100 % of RADIUS), the focus ring's width, and an invoked cell's shadow to
 -- the focused window.

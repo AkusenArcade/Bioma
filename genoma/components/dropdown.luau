@@ -21,8 +21,10 @@ local M = {}
 local CLEAR = "#00000000"
 
 -- `t`: metrics(), width(), options() ({ { key, label } }), current(),
--- on_choose(key), and optionally height(). Returns the node and a handle:
--- open (a signal), close().
+-- on_choose(key), and optionally height(), rows (how many options are seen
+-- at once; the others scroll) and face(key) (the font an option is named
+-- in: a list of fonts shows each in its own). Returns the node and a
+-- handle: open (a signal), close().
 function M.new(t: { [string]: any }): (any, any)
     local function m(): any return t.metrics() end
     local function f(): number return m().factor end
@@ -54,7 +56,11 @@ function M.new(t: { [string]: any }): (any, any)
         end
         return ""
     end
-    local function list_height(): number return #t.options() * row() + padding() * 2 end
+    local function seen(): number
+        local n = #t.options()
+        return if t.rows then math.min(n, t.rows) else n
+    end
+    local function list_height(): number return seen() * row() + padding() * 2 end
     local function choose(key: string)
         open.value = false
         if key ~= g.untracked(t.current) then t.on_choose(key) end
@@ -83,10 +89,10 @@ function M.new(t: { [string]: any }): (any, any)
             g.text {
                 text = function() return option().label end,
                 color = function() return if current() then theme.text() else theme.text_muted() end,
-                font = typography.technical,
+                font = function() return if t.face then t.face(option().key) else typography.technical() end,
                 size = font_control,
                 weight = typography.weight_label,
-                tracking = 0.04,
+                tracking = function() return if t.face then 0 else 0.04 end,
                 max_width = function() return t.width() - padding() * 2 - 34 * f() end,
             },
             g.capsule {
@@ -164,9 +170,13 @@ function M.new(t: { [string]: any }): (any, any)
                 height = function() return list_height() - padding() * 2 end,
                 opacity = function() return if open.value then 1 else 0 end,
                 transition = { opacity = function() return if open.value then "content_enter" else "content_leave" end },
+                scroll = if t.rows then "y" else nil,
+                clip = if t.rows then true else nil,
                 g.each {
                     overlay = true,
                     attach = "corner",
+                    width = function() return t.width() - padding() * 2 end,
+                    height = function() return #t.options() * row() end,
                     items = t.options,
                     key = function(o: any) return o.key end,
                     row = option_row,

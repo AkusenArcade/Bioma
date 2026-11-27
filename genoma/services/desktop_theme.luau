@@ -8,7 +8,8 @@
 -- What is written is the palette at rest (the destination, not the
 -- crossing): the four interface roles, the alert colour for that side, and
 -- whether it is dark; the radius a 32-unit control takes at the
--- Appearance's RADIUS, the panel radius, and the two voices. Nothing in
+-- Appearance's RADIUS, the panel radius, the two voices and the mono font,
+-- and a terminal's sixteen colours as the templates derive them. Nothing in
 -- Genoma names Bioma: any shell built on Genoma writes the same file.
 --
 -- Only the shell writes it (shell.luau starts this): the lock screen and
@@ -16,6 +17,7 @@
 local g = require("@genoma")
 local config = require("core/config")
 local metrics = require("core/metrics")
+local templates = require("services/templates")
 local theme = require("core/theme")
 local timing = require("core/timing")
 local typography = require("core/typography")
@@ -49,6 +51,9 @@ local text = g.computed(function(): string
     for _, pair in colours do
         table.insert(parts, `    {quoted(pair[1])}: {quoted(string.sub(pair[2], 1, 7))}`)
     end
+    local terminal = templates.terminal()
+    local ansi: { string } = {}
+    for _, c in terminal.colours do table.insert(ansi, quoted(c)) end
     local radius = math.round(metrics.shaped(CONTROL / 2) * 10) / 10
     local panel = math.round(metrics.shaped(metrics.radius_panel) * 10) / 10
     return table.concat({
@@ -60,7 +65,8 @@ local text = g.computed(function(): string
         table.concat(parts, ",\n"),
         "  },",
         `  "sizes": \{ "radius": {radius}, "radius_panel": {panel} \},`,
-        `  "fonts": \{ "technical": {quoted(typography.technical())}, "expressive": {quoted(typography.expressive())} \}`,
+        `  "fonts": \{ "technical": {quoted(typography.technical())}, "expressive": {quoted(typography.expressive())}, "mono": {quoted(typography.mono())} \},`,
+        `  "terminal": \{ "colours": [ {table.concat(ansi, ", ")} ], "selection": {quoted(terminal.selection)} \}`,
         "}",
         "",
     }, "\n")

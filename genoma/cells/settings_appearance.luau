@@ -24,6 +24,7 @@ local segmented = require("components/segmented")
 local slider = require("components/slider")
 local switch = require("components/switch")
 local choice_mod = require("components/choice")
+local dropdown = require("components/dropdown")
 local field_mod = require("components/field")
 local palettes = require("services/palettes")
 local light = require("components/light")
@@ -202,6 +203,63 @@ function M.new(t: { [string]: any }): any
             on_choose = function(key: string) config.set("appearance.motion", key) end,
         },
     })
+
+    -- What a grid of letters is set in: not the shell's, which has its two
+    -- voices, but every terminal's on Genoma (Floema), through the
+    -- desktop's theme file. The monospaced families installed, each named
+    -- in its own face.
+    local monos = g.signal({} :: { { key: string, label: string } })
+    do
+        local found: { [string]: boolean } = {}
+        local names: { string } = {}
+        pcall(function()
+            g.process {
+                command = { "fc-list", ":spacing=mono", "family" },
+                on_line = function(line: string)
+                    -- The first of a family's names, without symbol and
+                    -- bitmap faces nobody writes in.
+                    local name = string.match(line, "^([^,]+)")
+                    if name == nil or found[name] then return end
+                    if string.find(name, "%.pcf$") or string.find(name, "Emoji") or string.find(name, "Symbols")
+                        or string.find(name, "SignWriting") or string.find(name, "Powerline") then
+                        return
+                    end
+                    found[name] = true
+                    table.insert(names, name)
+                end,
+                on_exit = function()
+                    -- A Nerd Font's proportional-icon twin of its Mono one.
+                    local kept: { { key: string, label: string } } = {}
+                    table.sort(names, function(a: string, b: string) return string.lower(a) < string.lower(b) end)
+                    for _, n in names do
+                        if not (string.find(n, "Nerd Font$") and found[n .. " Mono"]) then
+                            table.insert(kept, { key = n, label = n })
+                        end
+                    end
+                    monos.value = kept
+                end,
+            }
+        end)
+    end
+    local mono_node, mono = dropdown.new {
+        metrics = m,
+        width = function() return 220 * f() end,
+        rows = 8,
+        options = function()
+            local list = monos.value
+            local now = typography.mono()
+            for _, o in list do
+                if o.key == now then return list end
+            end
+            local with = table.clone(list)
+            table.insert(with, 1, { key = now, label = now })
+            return with
+        end,
+        current = typography.mono,
+        face = function(key: string) return key end,
+        on_choose = function(key: string) config.set("fonts.mono", key) end,
+    }
+    table.insert(numbers, plain_row { label("MONO"), mono_node })
 
     -- ---- Effects -------------------------------------------------------------------
     --
@@ -438,6 +496,10 @@ function M.new(t: { [string]: any }): any
     end
 
     t.keyed(function(name: string, typed: string?, mods: { [string]: boolean }): boolean
+        if name == "Escape" and g.untracked(function() return mono.open.value end) then
+            mono.close()
+            return true
+        end
         local which = g.untracked(function() return typing.value end)
         if which == "" then return false end
         if name == "Escape" then

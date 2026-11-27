@@ -33,7 +33,8 @@
 
   "fonts": {
     "expressive": "Spectral",
-    "technical": "Orbitron"
+    "technical": "Orbitron",
+    "mono": "Space Mono"
   },
 
   "theme": {

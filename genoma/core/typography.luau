@@ -8,6 +8,9 @@ local M = {}
 
 function M.expressive(): string return config.get("fonts.expressive", "Spectral") end
 function M.technical(): string return config.get("fonts.technical", "Orbitron") end
+-- A third, not a voice of the shell's own: what a grid of letters is set in
+-- (a terminal on Genoma, through the desktop's theme file).
+function M.mono(): string return config.get("fonts.mono", "Space Mono") end
 
 -- 700 is for titles only; values and metadata stay at their scale weights.
 M.weight_value = 500

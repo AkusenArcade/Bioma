@@ -169,6 +169,11 @@ rather than breaks. `expressive` carries human language (clock, window title,
 track metadata, notification body); `technical` carries machine measurement
 (percentages, frequencies, memory, labels, controls).
 
+`mono` (Space Mono) is not a voice of the shell: it is what a grid of letters
+is set in — a terminal on Genoma (Floema) — and it reaches those apps through
+Genoma's theme file, with the sixteen terminal colours the templates derive.
+Settings → Appearance chooses it among the monospaced families installed.
+
 ### `theme`
 
 `source` is `matugen` or `manual`; `palette` names a file in
